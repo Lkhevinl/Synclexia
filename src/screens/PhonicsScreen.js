@@ -1,84 +1,119 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import * as Speech from 'expo-speech';
-import GoBackBtn from '../components/GoBackBtn'; // Import your new button
+import { supabase } from '../lib/supabase';
+import GoBackBtn from '../components/GoBackBtn';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { checkQuestProgress } from '../lib/questHelper';
+import { useAuth } from '../context/AuthContext';
 
 export default function PhonicsScreen() {
-  const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const { profile } = useAuth();
+  const [sections, setSections] = useState([]);
 
-  const speak = (letter) => {
-    Speech.speak(letter, { rate: 0.8, pitch: 1.1 });
+  useEffect(() => {
+    fetchPhonics();
+  }, []);
+
+  const fetchPhonics = async () => {
+    const { data } = await supabase.from('phonics_items').select('*').order('id');
+    
+    if (data) {
+      // GROUP DATA BY CATEGORY
+      const grouped = data.reduce((acc, item) => {
+        // If item has no category, put it in 'Other'
+        const cat = item.category || 'General';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+      }, {});
+
+      // CONVERT TO SECTION LIST FORMAT
+      const sectionsArray = Object.keys(grouped).map(key => ({
+        title: key.toUpperCase(),
+        data: grouped[key]
+      }));
+
+      setSections(sectionsArray);
+    }
   };
 
+  const handlePlay = (text) => {
+    Speech.speak(text);
+    checkQuestProgress(profile.id, 'Phonics'); 
+    checkQuestProgress(profile.id, 'Practice'); 
+  };
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      style={[styles.card, {backgroundColor: item.bg_color || '#fff'}]} 
+      onPress={() => handlePlay(item.label)}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.icon}>{item.icon || "🔊"}</Text>
+      <Text style={styles.label}>{item.label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
-      {/* 1. THE BACK BUTTON */}
+    <ScreenWrapper>
       <GoBackBtn />
+      <Text style={styles.header}>Phonics Library 📚</Text>
+      
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item, index, section }) => {
+          // Logic to render items in a grid (2 columns) inside a SectionList
+          if (index % 2 !== 0) return null; // Skip every second item (it's handled by the previous one)
 
-      <Text style={styles.header}>Phonics Soundboard</Text>
-      <Text style={styles.subHeader}>Tap a tile to hear the sound</Text>
+          const nextItem = section.data[index + 1];
 
-      <ScrollView contentContainerStyle={styles.grid}>
-        {letters.map((letter) => (
-          <TouchableOpacity 
-            key={letter} 
-            style={styles.card} 
-            onPress={() => speak(letter)}
-            activeOpacity={0.6} // Nice touch effect
-          >
-            <Text style={styles.letter}>{letter}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
+          return (
+            <View style={styles.row}>
+              {renderItem({ item })}
+              {nextItem ? renderItem({ item: nextItem }) : <View style={styles.cardInvisible} />}
+            </View>
+          );
+        }}
+        renderSectionHeader={({ section: { title } }) => (
+          <View style={styles.sectionHeader}>
+             <Text style={styles.sectionTitle}>{title}</Text>
+          </View>
+        )}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        stickySectionHeadersEnabled={false}
+      />
+    </ScreenWrapper>
   );
 }
 
+// Layout Math
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 40 - 15) / 2; // (Screen - Padding - Gap) / 2
+
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    padding: 20, 
-    paddingTop: 50, 
-    backgroundColor: '#E0F7FA' // Soft blue background
-  },
-  header: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#006064', 
-    marginBottom: 5 
-  },
-  subHeader: { 
-    fontSize: 16, 
-    color: '#555', 
-    marginBottom: 20 
-  },
-  grid: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'space-between',
-    paddingBottom: 40
-  },
-  // IMPROVED UI: 3D Tile Look
+  header: { fontSize: 26, fontWeight: 'bold', color: '#E91E63', marginTop: 20, marginBottom: 10, textAlign: 'center' },
+  
+  sectionHeader: { marginTop: 20, marginBottom: 10, paddingVertical: 5, borderBottomWidth: 2, borderColor: '#eee' },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#880E4F', letterSpacing: 1 },
+
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+
   card: { 
-    width: '45%', // Two columns
-    aspectRatio: 1, // Perfect square
-    backgroundColor: '#FFFFFF', 
+    width: cardWidth, 
+    height: 140, 
+    borderRadius: 15, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginBottom: 20, 
-    borderRadius: 20, 
-    // Shadow for "Pop" effect
-    elevation: 5, 
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    borderBottomWidth: 6, // 3D effect
-    borderBottomColor: '#B2EBF2'
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: {width:0, height:2}
   },
-  letter: { 
-    fontSize: 60, 
-    fontWeight: 'bold', 
-    color: '#0097A7' 
-  },
+  cardInvisible: { width: cardWidth, backgroundColor: 'transparent' }, // Placeholder for odd numbers
+
+  icon: { fontSize: 45, marginBottom: 5 },
+  label: { fontSize: 20, fontWeight: 'bold', color: '#333' }
 });

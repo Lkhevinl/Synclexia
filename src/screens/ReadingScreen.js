@@ -1,127 +1,89 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, ScrollView } from 'react-native';
-import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../components/GoBackBtn'; // Import Back Button
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Alert } from 'react-native';
+import { supabase } from '../lib/supabase';
+import GoBackBtn from '../components/GoBackBtn';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { checkQuestProgress } from '../lib/questHelper'; // <--- NEW IMPORT
+import { useAuth } from '../context/AuthContext';
 
 export default function ReadingScreen() {
-  const [isDyslexicFont, setIsDyslexicFont] = useState(false);
-  const [fontSize, setFontSize] = useState(22); // Start with a slightly larger font
-  const passage = "The quick brown fox jumps over the lazy dog. Reading can be fun when the letters stop moving. You can adjust the size of this text using the buttons above.";
+  const { profile } = useAuth();
+  const [stories, setStories] = useState([]);
+  const [selectedStory, setSelectedStory] = useState(null);
+
+  useEffect(() => {
+    fetchStories();
+  }, []);
+
+  const fetchStories = async () => {
+    const { data } = await supabase.from('stories').select('*').order('level');
+    if (data) setStories(data);
+  };
+
+  const handleFinishStory = async () => {
+    // 1. Trigger the Real Quest Logic
+    await checkQuestProgress(profile.id, 'Read'); 
+    
+    // 2. Give feedback
+    Alert.alert("Great Job!", "You finished a story. Check your Quests!");
+    setSelectedStory(null);
+  };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper>
       <GoBackBtn />
+      <Text style={styles.header}>Library 📖</Text>
+      <Text style={styles.subHeader}>Choose a story to read</Text>
 
-      <Text style={styles.header}>Reading Practice</Text>
+      <FlatList
+        data={stories}
+        keyExtractor={item => item.id.toString()}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.bookCard} onPress={() => setSelectedStory(item)}>
+            <View style={styles.bookIcon}><Text style={{fontSize:30}}>📚</Text></View>
+            <View>
+                <Text style={styles.bookTitle}>{item.title}</Text>
+                <Text style={styles.bookLevel}>Level {item.level}</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
 
-      {/* TOOLBAR UI - Cleaner & better spacing */}
-      <View style={styles.toolbar}>
-        <View style={styles.toolGroup}>
-            <Text style={styles.label}>Dyslexia Mode</Text>
-            <Switch
-              value={isDyslexicFont}
-              onValueChange={setIsDyslexicFont}
-              trackColor={{ false: "#E0E0E0", true: "#81b0ff" }}
-              thumbColor={isDyslexicFont ? "#2196F3" : "#f4f3f4"}
-            />
-        </View>
+      {/* READING MODAL */}
+      <Modal visible={!!selectedStory} animationType="slide" onRequestClose={() => setSelectedStory(null)}>
+          <View style={styles.readerContainer}>
+              <ScrollView contentContainerStyle={{padding: 20, paddingBottom: 100}}>
+                  <Text style={styles.readerTitle}>{selectedStory?.title}</Text>
+                  <Text style={styles.readerContent}>{selectedStory?.content}</Text>
+              </ScrollView>
 
-        <View style={styles.separator} /> {/* Vertical Divider */}
+              {/* FINISH BUTTON - THIS IS THE KEY */}
+              <TouchableOpacity style={styles.finishBtn} onPress={handleFinishStory}>
+                  <Text style={styles.finishText}>I Finished Reading!</Text>
+              </TouchableOpacity>
 
-        <View style={styles.toolGroup}>
-            <TouchableOpacity onPress={() => setFontSize(Math.max(16, fontSize - 2))} style={styles.iconBtn}>
-                <Ionicons name="remove-circle-outline" size={32} color="#006064"/>
-            </TouchableOpacity>
-            <Text style={styles.sizeText}>Aa</Text>
-            <TouchableOpacity onPress={() => setFontSize(Math.min(44, fontSize + 2))} style={styles.iconBtn}>
-                <Ionicons name="add-circle-outline" size={32} color="#006064"/>
-            </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* READING CARD - More padding & rounded */}
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.paper, isDyslexicFont && styles.yellowPaper]}>
-            <Text style={{
-                fontSize: fontSize,
-                lineHeight: fontSize * 1.5,
-                letterSpacing: isDyslexicFont ? 2.5 : 0.5, // Better spacing
-                color: '#222',
-                fontFamily: isDyslexicFont ? 'monospace' : 'System',
-                fontWeight: '500'
-            }}>
-            {passage}
-            </Text>
-        </View>
-      </ScrollView>
-
-      {/* FLOAT BUTTON FOR SPEECH */}
-      <TouchableOpacity style={styles.fab} onPress={() => Speech.speak(passage)}>
-        <Ionicons name="volume-high" size={30} color="white" />
-        <Text style={styles.fabText}>Read to Me</Text>
-      </TouchableOpacity>
-    </View>
+              <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedStory(null)}>
+                  <Text style={{color: '#666'}}>Close</Text>
+              </TouchableOpacity>
+          </View>
+      </Modal>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' },
-  header: { fontSize: 32, fontWeight: 'bold', color: '#006064', marginBottom: 25 },
-
-  // Toolbar Look
-  toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 25,
-    backgroundColor: '#fff',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderRadius: 25, // Softer corners
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  toolGroup: { flexDirection: 'row', alignItems: 'center' },
-  label: { marginRight: 12, fontWeight: '600', color: '#555', fontSize: 16 },
-  separator: { height: '70%', width: 1, backgroundColor: '#EEEEEE' },
-  iconBtn: { marginHorizontal: 8 },
-  sizeText: { fontSize: 22, fontWeight: 'bold', color: '#333', marginHorizontal: 10 },
-
-  // Paper Look
-  scrollContent: { paddingBottom: 110 }, // Makes room for the FAB
-  paper: {
-    backgroundColor: '#fff',
-    padding: 35, // Lots of breathing room
-    borderRadius: 30,
-    minHeight: 300,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  yellowPaper: { backgroundColor: '#FFF9C4' },
-
-  // Floating Action Button (FAB)
-  fab: {
-    position: 'absolute',
-    bottom: 35,
-    right: 25,
-    backgroundColor: '#4CAF50',
-    flexDirection: 'row',
-    paddingVertical: 18,
-    paddingHorizontal: 30,
-    borderRadius: 50,
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  fabText: { color: 'white', fontWeight: 'bold', fontSize: 18, marginLeft: 10 }
+  header: { fontSize: 28, fontWeight: 'bold', color: '#1565C0', marginTop: 40, textAlign: 'center' },
+  subHeader: { textAlign: 'center', color: '#666', marginBottom: 20 },
+  bookCard: { flexDirection: 'row', backgroundColor: '#E3F2FD', padding: 15, borderRadius: 15, marginBottom: 10, alignItems: 'center' },
+  bookIcon: { width: 50, height: 50, backgroundColor: '#fff', borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  bookTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  bookLevel: { color: '#1565C0', fontWeight: 'bold' },
+  
+  readerContainer: { flex: 1, backgroundColor: '#fff' },
+  readerTitle: { fontSize: 30, fontWeight: 'bold', textAlign: 'center', marginTop: 50, marginBottom: 20 },
+  readerContent: { fontSize: 20, lineHeight: 32, color: '#333' },
+  finishBtn: { position: 'absolute', bottom: 80, alignSelf: 'center', backgroundColor: '#4CAF50', paddingHorizontal: 30, paddingVertical: 15, borderRadius: 30, elevation: 5 },
+  finishText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  closeBtn: { position: 'absolute', top: 50, right: 20, padding: 10 }
 });

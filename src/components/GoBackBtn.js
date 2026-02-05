@@ -1,31 +1,26 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function GoBackBtn() {
   const navigation = useNavigation();
-
+  
   return (
-    <TouchableOpacity style={styles.container} onPress={() => navigation.goBack()}>
-      <Ionicons name="arrow-back-circle" size={28} color="#006064" />
-      <Text style={styles.text}>Back</Text>
+    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.btn}>
+      <Ionicons name="chevron-back" size={28} color="#333" />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5, // Reduced from 20 to 5
-    marginTop: 0,   // Reduced from 10 to 0
-    alignSelf: 'flex-start', // Ensures it sticks to the left
-  },
-  text: {
-    marginLeft: 5,
-    fontSize: 16, // Slightly smaller text for better proportion
-    color: '#006064',
-    fontWeight: '600',
+  btn: {
+    position: 'absolute',
+    top: 50, // Adjust based on your status bar
+    left: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 20,
+    padding: 5
   }
 });

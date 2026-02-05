@@ -1,139 +1,188 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Alert, ScrollView, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ActivityIndicator, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker'; // Required for avatar upload
 import GoBackBtn from '../components/GoBackBtn';
+import { useTheme } from '../context/ThemeContext';
+import { supabase } from '../lib/supabase';
 
 export default function SettingsScreen({ navigation }) {
-  // --- STATE ---
-  const [isDyslexicFont, setIsDyslexicFont] = useState(false);
-  const [isSoundEffects, setIsSoundEffects] = useState(true);
-  const [voiceSpeed, setVoiceSpeed] = useState('Normal');
-  const [isDailyReminder, setIsDailyReminder] = useState(false);
+  const { theme, updateTheme } = useTheme(); 
+  const [modalVisible, setModalVisible] = useState(null); // 'size', 'color', 'style', or null
   
-  // NEW: Background Tint (Irlen Filters)
-  const [bgColor, setBgColor] = useState('#F5F5F5'); // Default Gray-White
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [avatarUri, setAvatarUri] = useState(null);
 
-  // NEW: Profile Data
-  const [studentName, setStudentName] = useState("Learner");
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [tempName, setTempName] = useState("");
+  // 1. LOAD USER DATA
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUser(user);
+          // Fetch extra profile data like full_name or avatar_url
+          const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (data) {
+             setProfile(data);
+             // If we had a real URL in DB, we would set it here.
+             // For now, we use local state or just the placeholder.
+          }
+        }
+      } catch (error) {
+        console.log("Error loading user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUserData();
+  }, []);
 
-  const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Log Out", style: "destructive", onPress: () => navigation.replace('Login') }
-    ]);
+  // 2. CHANGE AVATAR FUNCTION
+  const changeAvatar = async () => {
+    try {
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaType.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled) {
+        setAvatarUri(result.assets[0].uri);
+        // Note: In a production app, you would upload this file to Supabase Storage here
+        // and then update the 'profiles' table with the public URL.
+        Alert.alert("Success", "Profile picture updated locally!");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not open gallery.");
+    }
   };
 
-  const saveProfile = () => {
-    setStudentName(tempName || studentName); // Save the name
-    setShowProfileModal(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigation.replace('Login');
   };
+
+  // --- MODAL CONTENT RENDERER ---
+  const renderModalContent = () => {
+    const colors = ['#FFFFFF', '#FFF9C4', '#E1F5FE', '#E8F5E9', '#FCE4EC', '#F3E5F5'];
+    const fonts = ['System', 'Roboto', 'Serif', 'Monospace']; 
+    const getFont = (f) => f === 'System' ? undefined : f;
+
+    switch (modalVisible) {
+      case 'size':
+        return (
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Font Size</Text>
+            <View style={styles.sliderContainer}>
+                <TouchableOpacity onPress={() => updateTheme('fontSize', Math.max(12, theme.fontSize - 2))} style={styles.sizeBtn}>
+                    <Text style={styles.sizeBtnText}>-</Text>
+                </TouchableOpacity>
+                <Text style={{fontSize: 24, fontWeight:'bold'}}>{theme.fontSize}</Text>
+                <TouchableOpacity onPress={() => updateTheme('fontSize', Math.min(30, theme.fontSize + 2))} style={styles.sizeBtn}>
+                    <Text style={styles.sizeBtnText}>+</Text>
+                </TouchableOpacity>
+            </View>
+            <Text style={[styles.sampleText, { fontSize: theme.fontSize, fontFamily: getFont(theme.fontStyle) }]}>Sample Text</Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(null)}><Text style={styles.closeText}>Done</Text></TouchableOpacity>
+          </View>
+        );
+      case 'color':
+        return (
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Background Color</Text>
+            <View style={styles.colorGrid}>
+                {colors.map((c) => (
+                    <TouchableOpacity 
+                        key={c} 
+                        style={[styles.colorSwatch, { backgroundColor: c, borderWidth: theme.bgColor === c ? 3 : 1 }]} 
+                        onPress={() => updateTheme('bgColor', c)} 
+                    />
+                ))}
+            </View>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(null)}><Text style={styles.closeText}>Done</Text></TouchableOpacity>
+          </View>
+        );
+      case 'style':
+        return (
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Font Style</Text>
+            {fonts.map((f) => (
+                <TouchableOpacity key={f} style={styles.radioRow} onPress={() => updateTheme('fontStyle', f)}>
+                    <Ionicons name={theme.fontStyle === f ? "radio-button-on" : "radio-button-off"} size={24} color="#006064" />
+                    <Text style={[styles.radioText, { fontFamily: getFont(f) }]}>{f}</Text>
+                </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(null)}><Text style={styles.closeText}>Done</Text></TouchableOpacity>
+          </View>
+        );
+      default: return null;
+    }
+  };
+
+  const globalFont = theme.fontStyle === 'System' ? undefined : theme.fontStyle;
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}> 
+    <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
       <GoBackBtn />
-      <Text style={styles.header}>Settings</Text>
+      
+      {/* PROFILE HEADER */}
+      <View style={styles.profileHeader}>
+         <TouchableOpacity onPress={changeAvatar} style={styles.avatar}>
+             {avatarUri ? (
+               <Image source={{ uri: avatarUri }} style={{ width: 60, height: 60, borderRadius: 30 }} />
+             ) : (
+               <Text style={styles.avatarText}>{user ? user.email.charAt(0).toUpperCase() : "?"}</Text>
+             )}
+             
+             {/* Camera Badge */}
+             <View style={styles.editIconBadge}>
+                 <Ionicons name="camera" size={12} color="#fff" />
+             </View>
+         </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        
-        {/* --- SECTION 1: VISUAL AIDS (NEW) --- */}
-        <Text style={styles.sectionTitle}>Visual Comfort (Irlen Filters)</Text>
-        <View style={styles.card}>
-            <Text style={styles.settingLabel}>Background Tint</Text>
-            <Text style={styles.settingSubLabel}>Select a color to reduce eye strain.</Text>
-            
-            <View style={styles.colorRow}>
-                {/* White (Default) */}
-                <TouchableOpacity style={[styles.colorBtn, {backgroundColor: '#F5F5F5', borderWidth: 1}]} onPress={() => setBgColor('#F5F5F5')}>
-                    {bgColor === '#F5F5F5' && <Ionicons name="checkmark" size={20} color="#333"/>}
-                </TouchableOpacity>
-                {/* Soft Yellow */}
-                <TouchableOpacity style={[styles.colorBtn, {backgroundColor: '#FFF9C4'}]} onPress={() => setBgColor('#FFF9C4')}>
-                     {bgColor === '#FFF9C4' && <Ionicons name="checkmark" size={20} color="#333"/>}
-                </TouchableOpacity>
-                {/* Cool Blue */}
-                <TouchableOpacity style={[styles.colorBtn, {backgroundColor: '#E3F2FD'}]} onPress={() => setBgColor('#E3F2FD')}>
-                     {bgColor === '#E3F2FD' && <Ionicons name="checkmark" size={20} color="#333"/>}
-                </TouchableOpacity>
-                {/* Soft Green */}
-                <TouchableOpacity style={[styles.colorBtn, {backgroundColor: '#E8F5E9'}]} onPress={() => setBgColor('#E8F5E9')}>
-                     {bgColor === '#E8F5E9' && <Ionicons name="checkmark" size={20} color="#333"/>}
-                </TouchableOpacity>
-            </View>
-        </View>
+         <View>
+             <Text style={[styles.userName, { fontFamily: globalFont }]}>
+                {loading ? "Loading..." : (profile?.full_name || "Student")} 
+             </Text>
+             <Text style={styles.userEmail}>
+                {user ? user.email : "Not logged in"}
+             </Text>
+         </View>
+      </View>
 
-        {/* --- SECTION 2: ACCESSIBILITY --- */}
-        <Text style={styles.sectionTitle}>Accessibility</Text>
-        <View style={styles.row}>
-          <View>
-            <Text style={styles.settingLabel}>Dyslexia Friendly Font</Text>
-            <Text style={styles.settingSubLabel}>Increases letter spacing</Text>
-          </View>
-          <Switch value={isDyslexicFont} onValueChange={setIsDyslexicFont} trackColor={{true: "#81b0ff"}} />
-        </View>
+      <Text style={[styles.sectionTitle, { fontSize: theme.fontSize, fontFamily: globalFont }]}>Customization</Text>
 
-        <View style={styles.column}>
-            <Text style={styles.settingLabel}>Voice Speed</Text>
-            <View style={styles.segmentControl}>
-                <TouchableOpacity style={[styles.segmentBtn, voiceSpeed === 'Slow' && styles.activeSegment]} onPress={() => setVoiceSpeed('Slow')}>
-                    <Text style={[styles.segmentText, voiceSpeed === 'Slow' && styles.activeText]}>Slow</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.segmentBtn, voiceSpeed === 'Normal' && styles.activeSegment]} onPress={() => setVoiceSpeed('Normal')}>
-                    <Text style={[styles.segmentText, voiceSpeed === 'Normal' && styles.activeText]}>Normal</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+      {/* MENU ITEMS */}
+      <View style={styles.menuContainer}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setModalVisible('size')}>
+              <Ionicons name="text" size={24} color="#555" />
+              <Text style={[styles.menuText, { fontSize: theme.fontSize, fontFamily: globalFont }]}>Font Size</Text>
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
 
-        {/* --- SECTION 3: ALERTS (NEW) --- */}
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.row}>
-          <Text style={styles.settingLabel}>Daily Study Reminder</Text>
-          <Switch value={isDailyReminder} onValueChange={setIsDailyReminder} trackColor={{true: "#4CAF50"}} />
-        </View>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setModalVisible('style')}>
+              <Ionicons name="documents-outline" size={24} color="#555" />
+              <Text style={[styles.menuText, { fontSize: theme.fontSize, fontFamily: globalFont }]}>Font Style</Text>
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
 
-        {/* --- SECTION 4: ACCOUNT --- */}
-        <Text style={styles.sectionTitle}>Account</Text>
-        
-        {/* Updated: Opens the Modal now! */}
-        <TouchableOpacity style={styles.rowBtn} onPress={() => { setTempName(studentName); setShowProfileModal(true); }}>
-            <View>
-                <Text style={styles.settingLabel}>Edit Profile Name</Text>
-                <Text style={styles.settingSubLabel}>Current: {studentName}</Text>
-            </View>
-            <Ionicons name="pencil" size={20} color="#006064" />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => setModalVisible('color')}>
+              <Ionicons name="color-palette-outline" size={24} color="#555" />
+              <Text style={[styles.menuText, { fontSize: theme.fontSize, fontFamily: globalFont }]}>Background Color</Text>
+              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+          </TouchableOpacity>
+      </View>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color="#D32F2F" />
+          <Text style={[styles.logoutText, { fontFamily: globalFont }]}>Logout</Text>
+      </TouchableOpacity>
 
-      </ScrollView>
-
-      {/* --- EDIT PROFILE MODAL --- */}
-      <Modal visible={showProfileModal} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Edit Profile</Text>
-                <Text style={styles.label}>Student Name:</Text>
-                
-                <TextInput 
-                    style={styles.input} 
-                    value={tempName} 
-                    onChangeText={setTempName}
-                    placeholder="Enter name..."
-                />
-
-                <View style={styles.modalBtns}>
-                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowProfileModal(false)}>
-                        <Text style={styles.cancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.saveBtn} onPress={saveProfile}>
-                        <Text style={styles.saveText}>Save Changes</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>
+      <Modal transparent={true} visible={modalVisible !== null} onRequestClose={() => setModalVisible(null)}>
+        <View style={styles.modalOverlay}>{renderModalContent()}</View>
       </Modal>
 
     </View>
@@ -142,42 +191,42 @@ export default function SettingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 50 },
-  header: { fontSize: 32, fontWeight: 'bold', color: '#333', marginBottom: 10 },
-  content: { paddingBottom: 40 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#006064', marginTop: 25, marginBottom: 10, marginLeft: 5 },
   
-  // Card/Row Styles
-  card: { backgroundColor: '#fff', padding: 15, borderRadius: 15, elevation: 2, marginBottom: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 2 },
-  column: { backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 2 },
-  rowBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 10, elevation: 2 },
+  // Profile
+  profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 30, backgroundColor: 'rgba(255,255,255,0.6)', padding: 15, borderRadius: 15 },
+  avatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#006064', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  avatarText: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
+  editIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#333', borderRadius: 10, padding: 4, borderWidth: 1, borderColor: '#fff' },
   
-  settingLabel: { fontSize: 16, fontWeight: '600', color: '#333' },
-  settingSubLabel: { fontSize: 12, color: '#888', marginTop: 2 },
+  userName: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+  userEmail: { fontSize: 14, color: '#666' },
 
-  // Color Filter Buttons
-  colorRow: { flexDirection: 'row', marginTop: 15, gap: 15 },
-  colorBtn: { width: 45, height: 45, borderRadius: 25, justifyContent: 'center', alignItems: 'center', elevation: 3 },
+  sectionTitle: { fontWeight: 'bold', color: '#888', marginBottom: 10, marginTop: 10 },
+  
+  // Menu
+  menuContainer: { backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 15, overflow: 'hidden', marginBottom: 20 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  menuText: { flex: 1, marginLeft: 15, color: '#333' },
 
-  // Segment Buttons
-  segmentControl: { flexDirection: 'row', backgroundColor: '#F0F0F0', borderRadius: 8, padding: 4, marginTop: 10 },
-  segmentBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6 },
-  activeSegment: { backgroundColor: '#fff', elevation: 2 },
-  segmentText: { color: '#888', fontWeight: 'bold' },
-  activeText: { color: '#006064' },
+  logoutBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  logoutText: { color: '#D32F2F', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
 
-  // Logout
-  logoutBtn: { marginTop: 30, backgroundColor: '#FFEBEE', padding: 15, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#FFCDD2' },
-  logoutText: { color: '#D32F2F', fontWeight: 'bold', fontSize: 16 },
-
-  // Modal Styles
+  // Modals
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '80%', backgroundColor: '#fff', padding: 25, borderRadius: 20, elevation: 10 },
-  modalTitle: { fontSize: 22, fontWeight: 'bold', color: '#006064', marginBottom: 20, textAlign: 'center' },
-  input: { backgroundColor: '#F5F5F5', padding: 12, borderRadius: 10, fontSize: 18, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
-  modalBtns: { flexDirection: 'row', justifyContent: 'space-between' },
-  cancelBtn: { padding: 12 },
-  cancelText: { color: '#888', fontWeight: 'bold', fontSize: 16 },
-  saveBtn: { backgroundColor: '#006064', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 10 },
-  saveText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  modalCard: { width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 20, alignItems: 'center', elevation: 10 },
+  modalTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  
+  sliderContainer: { flexDirection: 'row', alignItems: 'center', gap: 20, marginBottom: 20 },
+  sizeBtn: { backgroundColor: '#eee', padding: 10, borderRadius: 10, width: 50, alignItems: 'center' },
+  sizeBtnText: { fontSize: 20, fontWeight: 'bold' },
+  sampleText: { marginBottom: 20, textAlign: 'center' },
+
+  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 15, marginBottom: 20 },
+  colorSwatch: { width: 50, height: 50, borderRadius: 25, borderColor: '#333' },
+
+  radioRow: { flexDirection: 'row', alignItems: 'center', width: '100%', padding: 10, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  radioText: { fontSize: 16, marginLeft: 10 },
+
+  closeBtn: { backgroundColor: '#006064', padding: 10, borderRadius: 10, marginTop: 10, width: '100%', alignItems: 'center' },
+  closeText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
