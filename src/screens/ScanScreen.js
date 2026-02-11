@@ -4,7 +4,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../components/GoBackBtn';
+import ScreenWrapper from '../components/ScreenWrapper'; // <--- Using your wrapper
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext'; // Optional: Use theme colors if you want
 
 export default function ScanScreen() {
   const [image, setImage] = useState(null);
@@ -40,73 +42,143 @@ export default function ScanScreen() {
   const handleScan = async (base64Image) => {
     if (!base64Image) return;
     setIsScanning(true);
-    setScannedText("Thinking...");
+    setScannedText(""); // Clear previous text
     try {
         let formData = new FormData();
         formData.append("base64Image", "data:image/jpeg;base64," + base64Image);
         formData.append("language", "eng");
         formData.append("OCREngine", "2"); 
         formData.append("scale", "true"); 
+        
         const response = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
             headers: { apikey: API_KEY, "Content-Type": "multipart/form-data" },
             body: formData
         });
+        
         const data = await response.json();
+        
         if (data.ParsedResults && data.ParsedResults.length > 0) {
             const detectedText = data.ParsedResults[0].ParsedText;
             setScannedText(detectedText);
             Speech.speak(detectedText);
-        } else { setScannedText("I couldn't read that. Try better lighting."); }
-    } catch (error) { Alert.alert("Error", "Check internet connection."); } finally { setIsScanning(false); }
+        } else { 
+            setScannedText("I couldn't find any text. Try to crop closer or use better lighting."); 
+        }
+    } catch (error) { 
+        Alert.alert("Connection Error", "Please check your internet."); 
+    } finally { 
+        setIsScanning(false); 
+    }
   };
 
   const onScanPress = async (mode) => {
       let base64 = null;
       if (mode === 'camera') base64 = await takePhoto();
       else base64 = await pickImage();
+      
       if (base64) handleScan(base64);
   };
 
   return (
-    <View style={styles.container}>
-      <GoBackBtn />
-      <Text style={styles.header}>Smart Scanner 2.0</Text>
-      <ScrollView contentContainerStyle={{paddingBottom: 20}}>
-          <View style={styles.previewContainer}>
-            {image ? <Image source={{ uri: image }} style={styles.image} /> : <View style={styles.placeholder}><Ionicons name="scan-outline" size={80} color="#ddd" /><Text style={styles.placeholderText}>Take a clear photo of text</Text></View>}
+    <ScreenWrapper style={{ backgroundColor: '#F0F4F8' }}>
+      <View style={styles.topBar}>
+         <GoBackBtn />
+         <Text style={styles.header}>Magic Scanner ✨</Text>
+         <View style={{width: 40}} /> {/* Spacer to center title */}
+      </View>
+
+      <ScrollView contentContainerStyle={{paddingBottom: 40}} showsVerticalScrollIndicator={false}>
+          
+          {/* 1. SCANNER VIEWFINDER CARD */}
+          <View style={styles.cardContainer}>
+             <View style={styles.previewBox}>
+                {image ? (
+                    <Image source={{ uri: image }} style={styles.image} resizeMode="contain" />
+                ) : (
+                    <View style={styles.placeholderState}>
+                        <View style={styles.iconCircle}>
+                           <Ionicons name="scan" size={50} color="#0288D1" />
+                        </View>
+                        <Text style={styles.placeholderTitle}>Ready to Scan</Text>
+                        <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
+                    </View>
+                )}
+             </View>
+
+             {/* LOADING OVERLAY */}
+             {isScanning && (
+                 <View style={styles.loadingOverlay}>
+                     <ActivityIndicator size="large" color="#fff" />
+                     <Text style={styles.loadingText}>Reading text...</Text>
+                 </View>
+             )}
           </View>
+
+          {/* 2. ACTION BUTTONS */}
           <View style={styles.controls}>
-            <TouchableOpacity style={styles.btnCamera} onPress={() => onScanPress('camera')}><Ionicons name="camera" size={28} color="#fff" /><Text style={styles.btnTextPri}>Scan Text</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')}><Ionicons name="image" size={24} color="#006064" /></TouchableOpacity>
+            <TouchableOpacity style={styles.btnCamera} onPress={() => onScanPress('camera')} disabled={isScanning}>
+                <Ionicons name="camera" size={26} color="#fff" />
+                <Text style={styles.btnTextMain}>Take Photo</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
+                <Ionicons name="images" size={26} color="#0277BD" />
+            </TouchableOpacity>
           </View>
-          {isScanning && <ActivityIndicator size="large" color="#006064" style={{marginTop: 20}} />}
-          {!isScanning && scannedText !== "" && (
-            <View style={styles.resultBox}>
-                <Text style={styles.resultTitle}>I found this:</Text>
+
+          {/* 3. RESULT CARD (Only shows if text found) */}
+          {scannedText !== "" && !isScanning && (
+            <View style={styles.resultCard}>
+                <View style={styles.resultHeader}>
+                    <Ionicons name="text-outline" size={20} color="#666" />
+                    <Text style={styles.resultLabel}>Detected Text</Text>
+                </View>
+
                 <Text style={styles.resultText}>{scannedText}</Text>
-                <TouchableOpacity onPress={() => Speech.speak(scannedText)} style={styles.speakBtn}><Ionicons name="volume-high" size={20} color="#fff" /><Text style={styles.speakText}>Listen Again</Text></TouchableOpacity>
+                
+                <View style={styles.divider} />
+
+                <TouchableOpacity onPress={() => Speech.speak(scannedText)} style={styles.speakBtn}>
+                    <Ionicons name="volume-high" size={24} color="#fff" />
+                    <Text style={styles.speakText}>Listen Now</Text>
+                </TouchableOpacity>
             </View>
           )}
+
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#E3F2FD' },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#01579B', marginBottom: 15 },
-  previewContainer: { height: 300, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#B3E5FC', overflow: 'hidden' },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  header: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
+  
+  cardContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, marginBottom: 20, minHeight: 320, justifyContent: 'center' },
+  previewBox: { height: 300, backgroundColor: '#F5F7FA', borderRadius: 15, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
-  placeholder: { alignItems: 'center' },
-  placeholderText: { color: '#aaa', marginTop: 10 },
-  controls: { flexDirection: 'row', gap: 15, marginTop: 20 },
-  btnCamera: { flex: 3, flexDirection: 'row', backgroundColor: '#006064', padding: 18, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  btnGallery: { flex: 1, backgroundColor: '#B2EBF2', padding: 18, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  btnTextPri: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginLeft: 10 },
-  resultBox: { marginTop: 20, backgroundColor: '#fff', padding: 20, borderRadius: 15, elevation: 3 },
-  resultTitle: { fontWeight: 'bold', color: '#555', marginBottom: 10 },
-  resultText: { fontSize: 18, color: '#333', lineHeight: 28 },
-  speakBtn: { marginTop: 20, backgroundColor: '#FF7043', flexDirection: 'row', padding: 12, borderRadius: 10, alignSelf: 'flex-start', alignItems: 'center' },
-  speakText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 }
+  
+  placeholderState: { alignItems: 'center', padding: 20 },
+  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E1F5FE', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  placeholderTitle: { fontSize: 18, fontWeight: 'bold', color: '#455A64' },
+  placeholderSub: { fontSize: 12, color: '#90A4AE', textAlign: 'center', marginTop: 5 },
+
+  loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 20, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  loadingText: { color: '#fff', fontWeight: 'bold', marginTop: 15, fontSize: 16 },
+
+  controls: { flexDirection: 'row', gap: 15, marginBottom: 25 },
+  btnCamera: { flex: 1, backgroundColor: '#0288D1', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 15, elevation: 3 },
+  btnGallery: { width: 70, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center', borderRadius: 15, borderWidth: 1, borderColor: '#B3E5FC' },
+  btnTextMain: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
+
+  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 2, marginBottom: 30 },
+  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, opacity: 0.7 },
+  resultLabel: { fontWeight: 'bold', color: '#555', marginLeft: 8, fontSize: 12, textTransform: 'uppercase' },
+  resultText: { fontSize: 18, color: '#333', lineHeight: 28, fontFamily: 'System' }, // Use 'System' or your font
+  
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
+  
+  speakBtn: { backgroundColor: '#FF7043', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 12, elevation: 3 },
+  speakText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }
 });

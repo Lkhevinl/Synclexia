@@ -1,16 +1,20 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
+// 1. Create the Context
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
+  // Default Settings
   const [theme, setTheme] = useState({
-    fontSize: 18,
-    bgColor: '#FFF9C4', 
-    fontStyle: 'System'
+    fontSize: 14,          // Default Text Size
+    bgColor: '#F5F7FA',    // Default Background
+    fontStyle: 'System',   // Default Font
+    primaryColor: '#4c669f' // Default Accent
   });
 
-  const updateTheme = (key, value) => {
-    setTheme((prev) => ({ ...prev, [key]: value }));
+  // 2. Function to update settings
+  const updateTheme = (newSettings) => {
+    setTheme((prev) => ({ ...prev, ...newSettings }));
   };
 
   return (
@@ -20,4 +24,5 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
+// 3. Hook to use it in any screen
 export const useTheme = () => useContext(ThemeContext);

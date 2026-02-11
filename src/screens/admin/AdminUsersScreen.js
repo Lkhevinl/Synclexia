@@ -29,7 +29,11 @@ export default function AdminUsersScreen() {
 
   const fetchUsers = async () => {
     setRefreshing(true);
-    const { data } = await supabase.from('profiles').select('*').eq('role', 'user').order('created_at', {ascending: false});
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .in('role', ['student', 'user'])
+      .order('created_at', {ascending: false});
     if (data) {
         setUsers(data);
         setFilteredUsers(data);

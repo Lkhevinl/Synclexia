@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal,
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
-import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
@@ -14,25 +13,39 @@ const DAILY_TIPS = [
   "Tip: Create diverse learning activities."
 ];
 
-export default function AdminDashboardScreen({ navigation }) {
+export default function TeacherDashboardScreen({ navigation }) {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
+  const [enrolledCount, setEnrolledCount] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
+    fetchEnrolledCount();
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('is_draft', false)
+      .order('created_at', { ascending: false });
     if (data) setNotifications(data);
   };
 
-  const AdminCard = ({ title, subtitle, icon, color, onPress }) => (
+  const fetchEnrolledCount = async () => {
+    const { count } = await supabase
+      .from('enrollments')
+      .select('*', { count: 'exact', head: true })
+      .eq('teacher_id', profile?.id);
+    if (count !== null) setEnrolledCount(count);
+  };
+
+  const TeacherCard = ({ title, subtitle, icon, color, onPress }) => (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.iconBox, { backgroundColor: color }]}>
         <Ionicons name={icon} size={32} color="#fff" />
@@ -54,7 +67,7 @@ export default function AdminDashboardScreen({ navigation }) {
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Teacher"}! 👨‍🏫</Text>
-            <Text style={styles.subGreeting}>Manage your class & learning activities.</Text>
+            <Text style={styles.subGreeting}>Manage your students & activities.</Text>
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
@@ -68,12 +81,12 @@ export default function AdminDashboardScreen({ navigation }) {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>LEVEL</Text>
-            <Text style={styles.statValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
+            <Text style={styles.statValue}>{Math.floor((profile?.xp || 0) / 100) + 1}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>STUDENTS</Text>
-            <Text style={[styles.statValue, {color: '#4CAF50'}]}>--</Text>
+            <Text style={[styles.statValue, { color: '#4CAF50' }]}>{enrolledCount}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -83,85 +96,92 @@ export default function AdminDashboardScreen({ navigation }) {
 
         {/* DAILY TIP */}
         <View style={styles.tipBox}>
-          <Ionicons name="sparkles" size={20} color="#FFD700" style={{marginRight: 10}} />
+          <Ionicons name="sparkles" size={20} color="#FFD700" style={{ marginRight: 10 }} />
           <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
         </View>
 
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Student Management</Text>
-        
-        <AdminCard 
-          title="Writing Practice" 
-          subtitle="Add or delete tracing words"
-          icon="pencil" 
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Class Management</Text>
+
+        {/* TEACHER FEATURES */}
+        <TeacherCard
+          title="Student List"
+          subtitle="View all your enrolled students"
+          icon="people"
+          color="#4CAF50"
+          onPress={() => navigation.navigate('AdminUsers')}
+        />
+
+        <TeacherCard
+          title="Assign Activities"
+          subtitle="Give learning tasks to students"
+          icon="checkbox"
+          color="#2196F3"
+          onPress={() => navigation.navigate('AdminAssignActivities')}
+        />
+
+        <TeacherCard
+          title="Give Rewards"
+          subtitle="Award coins & XP to students"
+          icon="star"
+          color="#FFD700"
+          onPress={() => navigation.navigate('AdminUsers')}
+        />
+
+        <TeacherCard
+          title="Monitor Progress"
+          subtitle="Track student comprehension & XP"
+          icon="trending-up"
           color="#FF9800"
+          onPress={() => navigation.navigate('AdminUsers')}
+        />
+
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
+
+        <TeacherCard
+          title="Writing Practice"
+          subtitle="Create & manage tracing words"
+          icon="pencil"
+          color="#9C27B0"
           onPress={() => navigation.navigate('AdminAddStory')}
         />
 
-        <AdminCard 
-          title="Phonics Audio" 
-          subtitle="Manage sounds and letters"
-          icon="volume-high" 
-          color="#2196F3"
-          onPress={() => navigation.navigate('AdminPhonics')} 
+        <TeacherCard
+          title="Phonics Audio"
+          subtitle="Add sounds & letters for lessons"
+          icon="volume-high"
+          color="#00BCD4"
+          onPress={() => navigation.navigate('AdminPhonics')}
         />
 
-        <AdminCard 
-          title="Student List" 
-          subtitle="View progress and XP"
-          icon="people" 
-          color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')} 
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Communication</Text>
+
+        <TeacherCard
+          title="Feedback & Replies"
+          subtitle="Read student feedback & respond"
+          icon="chatbubbles"
+          color="#E91E63"
+          onPress={() => navigation.navigate('AdminFeedback')}
         />
 
-        <AdminCard 
-          title="Give Rewards" 
-          subtitle="Award coins & XP to students"
-          icon="star" 
-          color="#FFD700"
-          onPress={() => navigation.navigate('AdminUsers')} 
-        />
-
-        <AdminCard 
-          title="Assign Activities" 
-          subtitle="Give learning tasks to students"
-          icon="checkbox" 
-          color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')} 
-        />
-
-        <AdminCard 
-          title="Monitor Progress" 
-          subtitle="Track student comprehension"
-          icon="trending-up" 
-          color="#2196F3"
-          onPress={() => navigation.navigate('AdminUsers')} 
-        />
-
-        <AdminCard 
-          title="Feedback" 
-          subtitle="Read and reply to users"
-          icon="chatbubbles" 
-          color="#9C27B0"
-          onPress={() => navigation.navigate('AdminFeedback')} 
-        />
-
-        <AdminCard 
-          title="Notifications" 
-          subtitle="Send announcements"
-          icon="megaphone" 
+        <TeacherCard
+          title="Announcements"
+          subtitle="Send notifications to students"
+          icon="megaphone"
           color="#FF5722"
-          onPress={() => navigation.navigate('AdminNotifications')} 
+          onPress={() => navigation.navigate('AdminNotifications')}
         />
 
-        <AdminCard 
-          title="Enrollment" 
-          subtitle="Manage student enrollments"
-          icon="qr-code" 
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Enrollment</Text>
+
+        <TeacherCard
+          title="Class Code"
+          subtitle="Generate QR code for students"
+          icon="qr-code"
           color="#009688"
-          onPress={() => navigation.navigate('AdminEnrollment')} 
+          onPress={() => navigation.navigate('AdminEnrollment')}
         />
 
-        <View style={{height: 100}} /> 
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -172,13 +192,13 @@ export default function AdminDashboardScreen({ navigation }) {
             <FlatList
               data={notifications}
               keyExtractor={i => i.id.toString()}
-              renderItem={({item}) => (
+              renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <Text style={styles.notifTitle}>{item.title}</Text>
                   <Text style={styles.notifBody}>{item.content}</Text>
                 </View>
               )}
-              ListEmptyComponent={<Text style={{textAlign:'center', color:'#999'}}>No notifications</Text>}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999' }}>No notifications</Text>}
             />
             <TouchableOpacity style={styles.closeBtn} onPress={() => setNotifVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
@@ -200,7 +220,7 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, shadowColor: "#000", shadowOffset: {width:0, height:4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },

@@ -1,119 +1,153 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import * as Speech from 'expo-speech';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../lib/supabase';
 import GoBackBtn from '../components/GoBackBtn';
-import ScreenWrapper from '../components/ScreenWrapper';
-import { checkQuestProgress } from '../lib/questHelper';
+import { checkQuestProgress } from '../lib/questHelper'; 
 import { useAuth } from '../context/AuthContext';
+
+// Helper for colors
+const getGradientColors = (hexColor) => {
+  if (!hexColor) return ['#4FC3F7', '#0288D1'];
+  
+  const c = hexColor.toLowerCase();
+  if (c.includes('f44336')) return ['#FF8A80', '#D32F2F'];
+  if (c.includes('e91e63')) return ['#FF80AB', '#C2185B'];
+  if (c.includes('9c27b0')) return ['#EA80FC', '#7B1FA2'];
+  if (c.includes('2196f3')) return ['#82B1FF', '#1976D2'];
+  if (c.includes('4caf50')) return ['#B9F6CA', '#388E3C'];
+  if (c.includes('ffeb3b')) return ['#FFFF8D', '#FBC02D'];
+  if (c.includes('ff9800')) return ['#FFD180', '#F57C00'];
+  
+  return [hexColor, hexColor];
+};
 
 export default function PhonicsScreen() {
   const { profile } = useAuth();
-  const [sections, setSections] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPhonics();
   }, []);
 
   const fetchPhonics = async () => {
-    const { data } = await supabase.from('phonics_items').select('*').order('id');
-    
-    if (data) {
-      // GROUP DATA BY CATEGORY
-      const grouped = data.reduce((acc, item) => {
-        // If item has no category, put it in 'Other'
-        const cat = item.category || 'General';
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(item);
-        return acc;
-      }, {});
-
-      // CONVERT TO SECTION LIST FORMAT
-      const sectionsArray = Object.keys(grouped).map(key => ({
-        title: key.toUpperCase(),
-        data: grouped[key]
-      }));
-
-      setSections(sectionsArray);
+    try {
+        const { data } = await supabase.from('phonics_items').select('*').order('label');
+        if (data) setItems(data);
+    } catch (e) {
+        console.log("Error loading phonics:", e);
+    } finally {
+        setLoading(false);
     }
   };
 
   const handlePlay = (text) => {
-    Speech.speak(text);
-    checkQuestProgress(profile.id, 'Phonics'); 
-    checkQuestProgress(profile.id, 'Practice'); 
+    Speech.speak(text, { rate: 0.9, pitch: 1.1 });
+    if (profile?.id) {
+        checkQuestProgress(profile.id, 'Phonics'); 
+        checkQuestProgress(profile.id, 'Practice'); 
+    }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[styles.card, {backgroundColor: item.bg_color || '#fff'}]} 
-      onPress={() => handlePlay(item.label)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.icon}>{item.icon || "🔊"}</Text>
-      <Text style={styles.label}>{item.label}</Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <ScreenWrapper>
-      <GoBackBtn />
-      <Text style={styles.header}>Phonics Library 📚</Text>
-      
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item, index, section }) => {
-          // Logic to render items in a grid (2 columns) inside a SectionList
-          if (index % 2 !== 0) return null; // Skip every second item (it's handled by the previous one)
+    <View style={styles.mainContainer}>
+      <StatusBar barStyle="dark-content" />
+      <SafeAreaView style={styles.safeArea}>
+        
+        <GoBackBtn />
+        
+        <View style={styles.headerContainer}>
+           <Text style={styles.header}>Phonics Fun 🗣️</Text>
+           <Text style={styles.subHeader}>Tap to hear the sound!</Text>
+        </View>
+        
+        {loading ? (
+            <ActivityIndicator size="large" color="#FF9800" style={{marginTop: 50}} />
+        ) : (
+            <FlatList 
+              data={items}
+              keyExtractor={item => item.id.toString()}
+              numColumns={2}
+              columnWrapperStyle={styles.columnWrapper}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              renderItem={({item}) => {
+                const gradientColors = getGradientColors(item.bg_color);
 
-          const nextItem = section.data[index + 1];
-
-          return (
-            <View style={styles.row}>
-              {renderItem({ item })}
-              {nextItem ? renderItem({ item: nextItem }) : <View style={styles.cardInvisible} />}
-            </View>
-          );
-        }}
-        renderSectionHeader={({ section: { title } }) => (
-          <View style={styles.sectionHeader}>
-             <Text style={styles.sectionTitle}>{title}</Text>
-          </View>
+                return (
+                  <TouchableOpacity 
+                    style={styles.cardContainer} 
+                    onPress={() => handlePlay(item.label)}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient
+                      colors={gradientColors}
+                      style={styles.cardGradient}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    >
+                      <Text style={styles.icon}>{item.icon}</Text>
+                      <Text style={styles.label}>{item.label}</Text>
+                      
+                      {/* Glossy shine overlay */}
+                      <View style={styles.shine} />
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              }}
+            />
         )}
-        contentContainerStyle={{ paddingBottom: 50 }}
-        stickySectionHeadersEnabled={false}
-      />
-    </ScreenWrapper>
+      </SafeAreaView>
+    </View>
   );
 }
 
-// Layout Math
-const { width } = Dimensions.get('window');
-const cardWidth = (width - 40 - 15) / 2; // (Screen - Padding - Gap) / 2
-
 const styles = StyleSheet.create({
-  header: { fontSize: 26, fontWeight: 'bold', color: '#E91E63', marginTop: 20, marginBottom: 10, textAlign: 'center' },
+  mainContainer: { flex: 1, backgroundColor: '#F0F4F8' },
+  safeArea: { flex: 1 },
   
-  sectionHeader: { marginTop: 20, marginBottom: 10, paddingVertical: 5, borderBottomWidth: 2, borderColor: '#eee' },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#880E4F', letterSpacing: 1 },
+  headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 }, // Added paddingTop to clear back button
+  header: { fontSize: 32, fontWeight: 'bold', color: '#37474F', letterSpacing: 1 },
+  subHeader: { fontSize: 16, color: '#78909C', marginTop: 5 },
 
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
+  listContent: { paddingBottom: 40, paddingHorizontal: 20 },
+  columnWrapper: { justifyContent: 'space-between' },
 
-  card: { 
-    width: cardWidth, 
-    height: 140, 
-    borderRadius: 15, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: {width:0, height:2}
+  cardContainer: { 
+    width: '47%', 
+    aspectRatio: 1, 
+    marginBottom: 20, 
+    borderRadius: 25, 
+    elevation: 8, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
-  cardInvisible: { width: cardWidth, backgroundColor: 'transparent' }, // Placeholder for odd numbers
-
-  icon: { fontSize: 45, marginBottom: 5 },
-  label: { fontSize: 20, fontWeight: 'bold', color: '#333' }
+  
+  cardGradient: { 
+    flex: 1, 
+    borderRadius: 25, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    overflow: 'hidden' // Keeps the shine inside
+  },
+  
+  icon: { fontSize: 50, marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.1)', textShadowRadius: 4 },
+  label: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 2 },
+  
+  shine: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '40%',
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderTopLeftRadius: 25,
+      borderTopRightRadius: 25,
+  }
 });
