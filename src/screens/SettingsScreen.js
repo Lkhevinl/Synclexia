@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -13,24 +13,17 @@ export default function SettingsScreen({ navigation }) {
   const isTeacher = profile?.role === 'teacher';
   const isStudent = profile?.role === 'student';
 
-  const handleLogout = () => {
-    console.log('Logout button pressed');
-    console.log('signOut function exists:', typeof signOut);
-    
-    Alert.alert("Log Out", "Are you sure?", [
-      { text: "Cancel", onPress: () => console.log('Logout cancelled') },
-      { text: "Log Out", style: 'destructive', onPress: async () => {
-        console.log('Logout confirmed');
-        try {
-          console.log('Calling signOut...');
-          const result = await signOut();
-          console.log('SignOut result:', result);
-        } catch (error) {
-          console.error('Logout error:', error);
-          Alert.alert("Error", "Failed to logout: " + error.message);
-        }
-      }}
-    ]);
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setDashboardMode('auto');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      Alert.alert("Error", "Failed to logout: " + error.message);
+    }
   };
 
   const FontSizeBtn = ({ label, value }) => (
@@ -137,8 +130,8 @@ export default function SettingsScreen({ navigation }) {
               <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
 
-          {/* SWITCH BUTTON: Student <-> Teacher/Admin */}
-          {profile?.role === 'student' && (
+          {/* SWITCH BUTTON: Only for Admin */}
+          {profile?.role === 'admin' && dashboardMode === 'student' && (
             <TouchableOpacity 
               style={styles.adminBtn} 
               onPress={() => {
@@ -153,7 +146,7 @@ export default function SettingsScreen({ navigation }) {
                 <Text style={styles.adminText}>Switch to Teacher Dashboard</Text>
             </TouchableOpacity>
           )}
-          {(profile?.role === 'teacher' || profile?.role === 'admin') && (
+          {profile?.role === 'admin' && dashboardMode === 'teacher' && (
             <TouchableOpacity 
               style={styles.adminBtn} 
               onPress={() => {

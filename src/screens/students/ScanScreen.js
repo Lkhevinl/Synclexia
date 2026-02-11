@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Ale
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../components/GoBackBtn';
-import ScreenWrapper from '../components/ScreenWrapper'; // <--- Using your wrapper
+import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper'; // <--- Using your wrapper
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../context/ThemeContext'; // Optional: Use theme colors if you want
+import { useTheme } from '../../context/ThemeContext'; // Optional: Use theme colors if you want
 
 export default function ScanScreen() {
   const [image, setImage] = useState(null);

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useNavigation } from '@react-navigation/native';
 
 const DAILY_TIPS = [
   "Tip: Engage your students with interactive lessons!",
@@ -14,6 +15,7 @@ const DAILY_TIPS = [
 ];
 
 export default function TeacherDashboardScreen({ navigation }) {
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
@@ -108,7 +110,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="View all your enrolled students"
           icon="people"
           color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')}
+          onPress={() => navigation.push('AdminUsers')}
         />
 
         <TeacherCard
@@ -116,7 +118,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Give learning tasks to students"
           icon="checkbox"
           color="#2196F3"
-          onPress={() => navigation.navigate('AdminAssignActivities')}
+          onPress={() => navigation.push('AdminAssignActivities')}
         />
 
         <TeacherCard
@@ -124,7 +126,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Award coins & XP to students"
           icon="star"
           color="#FFD700"
-          onPress={() => navigation.navigate('AdminUsers')}
+          onPress={() => navigation.push('AdminUsers')}
         />
 
         <TeacherCard
@@ -132,7 +134,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Track student comprehension & XP"
           icon="trending-up"
           color="#FF9800"
-          onPress={() => navigation.navigate('AdminUsers')}
+          onPress={() => navigation.push('AdminUsers')}
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
@@ -142,7 +144,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Create & manage tracing words"
           icon="pencil"
           color="#9C27B0"
-          onPress={() => navigation.navigate('AdminAddStory')}
+          onPress={() => navigation.push('AdminAddStory')}
         />
 
         <TeacherCard
@@ -150,7 +152,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Add sounds & letters for lessons"
           icon="volume-high"
           color="#00BCD4"
-          onPress={() => navigation.navigate('AdminPhonics')}
+          onPress={() => navigation.push('AdminPhonics')}
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Communication</Text>
@@ -160,7 +162,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Read student feedback & respond"
           icon="chatbubbles"
           color="#E91E63"
-          onPress={() => navigation.navigate('AdminFeedback')}
+          onPress={() => navigation.push('AdminFeedback')}
         />
 
         <TeacherCard
@@ -168,7 +170,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Send notifications to students"
           icon="megaphone"
           color="#FF5722"
-          onPress={() => navigation.navigate('AdminNotifications')}
+          onPress={() => navigation.push('AdminNotifications')}
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Enrollment</Text>
@@ -178,7 +180,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Generate QR code for students"
           icon="qr-code"
           color="#009688"
-          onPress={() => navigation.navigate('AdminEnrollment')}
+          onPress={() => navigation.push('AdminEnrollment')}
         />
 
         <View style={{ height: 100 }} />

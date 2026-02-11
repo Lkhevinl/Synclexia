@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import { LinearGradient } from 'expo-linear-gradient'; 
-import { useTheme } from '../context/ThemeContext'; // <--- Connects to Settings
-import { useAuth } from '../context/AuthContext'; 
-import { supabase } from '../lib/supabase';
+import { useTheme } from '../../context/ThemeContext'; // <--- Connects to Settings
+import { useAuth } from '../../context/AuthContext'; 
+import { supabase } from '../../lib/supabase';
 import { useFocusEffect } from '@react-navigation/native'; 
 
 const DAILY_TIPS = [

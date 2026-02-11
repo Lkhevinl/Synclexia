@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
-import GoBackBtn from '../components/GoBackBtn';
-import ScreenWrapper from '../components/ScreenWrapper';
-import EmptyState from '../components/EmptyState';
+import { supabase } from '../../lib/supabase';
+import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import EmptyState from '../../components/EmptyState';
 
 export default function LeaderboardScreen() {
   const [leaders, setLeaders] = useState([]);

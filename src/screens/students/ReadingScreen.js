@@ -3,8 +3,8 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, 
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
-import GoBackBtn from '../components/GoBackBtn';
-import ScreenWrapper from '../components/ScreenWrapper';
+import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 // Sample Stories (You can move these to Supabase later!)
 const STORIES = [

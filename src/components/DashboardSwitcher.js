@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import DashboardScreen from '../screens/DashboardScreen';
-import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
+import DashboardScreen from '../screens/students/DashboardScreen';
+import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 
 export default function DashboardSwitcher(props) {
   const { profile, dashboardMode } = useAuth();

@@ -8,13 +8,13 @@ import LoadingScreen from '../screens/LoadingScreen';
 // Standard Screens
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
-import DashboardScreen from '../screens/DashboardScreen';
+import DashboardScreen from '../screens/students/DashboardScreen';
 import PhonicsScreen from '../screens/PhonicsScreen';
 import WritingScreen from '../screens/WritingScreen';
-import ReadingScreen from '../screens/ReadingScreen';
-import ScanScreen from '../screens/ScanScreen';
+import ReadingScreen from '../screens/students/ReadingScreen';
+import ScanScreen from '../screens/students/ScanScreen';
 import QuestsScreen from '../screens/QuestScreen';
-import LeaderboardScreen from '../screens/LeaderboardScreen';
+import LeaderboardScreen from '../screens/students/LeaderboardScreen';
 import ShopScreen from '../screens/ShopScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
@@ -30,7 +30,7 @@ import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 import AdminEnrollmentScreen from '../screens/admin/AdminEnrollmentScreen';
 import AdminAssignActivitiesScreen from '../screens/admin/AdminAssignActivitiesScreen';
 import StudentEnrollScreen from '../screens/StudentEnrollScreen';
-import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
+import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
