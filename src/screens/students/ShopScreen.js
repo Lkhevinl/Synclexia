@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Image, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import GoBackBtn from '../components/GoBackBtn';
-import ScreenWrapper from '../components/ScreenWrapper';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 export default function ShopScreen() {
   const { profile, fetchProfile } = useAuth();

@@ -3,10 +3,10 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../lib/supabase';
-import GoBackBtn from '../components/GoBackBtn';
-import { checkQuestProgress } from '../lib/questHelper'; 
-import { useAuth } from '../context/AuthContext';
+import { supabase } from '../../lib/supabase';
+import GoBackBtn from '../../components/GoBackBtn';
+import { checkQuestProgress } from '../../lib/questHelper'; 
+import { useAuth } from '../../context/AuthContext';
 
 // Helper for colors
 const getGradientColors = (hexColor) => {

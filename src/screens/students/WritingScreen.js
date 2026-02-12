@@ -4,10 +4,10 @@ import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { checkQuestProgress } from '../lib/questHelper';
-import GoBackBtn from '../components/GoBackBtn';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { checkQuestProgress } from '../../lib/questHelper';
+import GoBackBtn from '../../components/GoBackBtn';
 
 const DEFAULT_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 const COLORS = ['#000000', '#F44336', '#2196F3', '#4CAF50', '#FFEB3B'];

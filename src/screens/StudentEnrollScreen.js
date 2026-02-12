@@ -15,8 +15,12 @@ export default function StudentEnrollScreen({ navigation }) {
 
   useEffect(() => {
     getCameraPermission();
-    checkExistingEnrollment();
-  }, []);
+    // Only check enrollment if profile is loaded
+    if (profile?.id) {
+      checkExistingEnrollment();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const getCameraPermission = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();

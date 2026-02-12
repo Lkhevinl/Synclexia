@@ -11,9 +11,6 @@ export const AuthProvider = ({ children }) => {
   const [dashboardMode, setDashboardMode] = useState('auto'); // 'auto', 'student', 'teacher'
 
   useEffect(() => {
-    // Reset dashboardMode to 'auto' when profile changes (e.g., after login/logout)
-    setDashboardMode('auto');
-
     // 1. Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -28,12 +25,13 @@ export const AuthProvider = ({ children }) => {
         fetchProfile(session.user.id);
       } else {
         setProfile(null); // Clear profile on logout
+        setDashboardMode('auto'); // Reset mode only on logout
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [profile]);
+  }, []);
 
   const fetchProfile = async (userId) => {
     try {

@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
-import { useNavigation } from '@react-navigation/native';
 
 const DAILY_TIPS = [
   "Tip: Engage your students with interactive lessons!",
@@ -15,7 +14,6 @@ const DAILY_TIPS = [
 ];
 
 export default function TeacherDashboardScreen({ navigation }) {
-  const navigation = useNavigation();
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
@@ -104,13 +102,13 @@ export default function TeacherDashboardScreen({ navigation }) {
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Class Management</Text>
 
-        {/* TEACHER FEATURES */}
+        {/* ✅ FIXED NAVIGATION NAMES BELOW */}
         <TeacherCard
           title="Student List"
           subtitle="View all your enrolled students"
           icon="people"
           color="#4CAF50"
-          onPress={() => navigation.push('AdminUsers')}
+          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
         />
 
         <TeacherCard
@@ -118,7 +116,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Give learning tasks to students"
           icon="checkbox"
           color="#2196F3"
-          onPress={() => navigation.push('AdminAssignActivities')}
+          onPress={() => navigation.push('TeacherAssignActivities')} // Fixed: AdminAssignActivities -> TeacherAssignActivities
         />
 
         <TeacherCard
@@ -126,7 +124,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Award coins & XP to students"
           icon="star"
           color="#FFD700"
-          onPress={() => navigation.push('AdminUsers')}
+          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
         />
 
         <TeacherCard
@@ -134,7 +132,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Track student comprehension & XP"
           icon="trending-up"
           color="#FF9800"
-          onPress={() => navigation.push('AdminUsers')}
+          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
@@ -144,7 +142,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Create & manage tracing words"
           icon="pencil"
           color="#9C27B0"
-          onPress={() => navigation.push('AdminAddStory')}
+          onPress={() => navigation.push('TeacherAddStory')} // Fixed: AdminAddStory -> TeacherAddStory
         />
 
         <TeacherCard
@@ -152,7 +150,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Add sounds & letters for lessons"
           icon="volume-high"
           color="#00BCD4"
-          onPress={() => navigation.push('AdminPhonics')}
+          onPress={() => navigation.push('TeacherPhonics')} // Fixed: AdminPhonics -> TeacherPhonics
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Communication</Text>
@@ -162,7 +160,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Read student feedback & respond"
           icon="chatbubbles"
           color="#E91E63"
-          onPress={() => navigation.push('AdminFeedback')}
+          onPress={() => navigation.push('TeacherFeedback')} // Fixed: AdminFeedback -> TeacherFeedback
         />
 
         <TeacherCard
@@ -170,7 +168,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Send notifications to students"
           icon="megaphone"
           color="#FF5722"
-          onPress={() => navigation.push('AdminNotifications')}
+          onPress={() => navigation.push('TeacherNotifications')} // Fixed: AdminNotifications -> TeacherNotifications
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Enrollment</Text>
@@ -180,7 +178,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Generate QR code for students"
           icon="qr-code"
           color="#009688"
-          onPress={() => navigation.push('AdminEnrollment')}
+          onPress={() => navigation.push('TeacherEnrollment')} // Fixed: AdminEnrollment -> TeacherEnrollment
         />
 
         <View style={{ height: 100 }} />

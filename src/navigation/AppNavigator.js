@@ -9,28 +9,38 @@ import LoadingScreen from '../screens/LoadingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import DashboardScreen from '../screens/students/DashboardScreen';
-import PhonicsScreen from '../screens/PhonicsScreen';
-import WritingScreen from '../screens/WritingScreen';
+import PhonicsScreen from '../screens/students/PhonicsScreen';
+import WritingScreen from '../screens/students/WritingScreen';
 import ReadingScreen from '../screens/students/ReadingScreen';
 import ScanScreen from '../screens/students/ScanScreen';
-import QuestsScreen from '../screens/QuestScreen';
+import QuestsScreen from '../screens/students/QuestScreen';
 import LeaderboardScreen from '../screens/students/LeaderboardScreen';
-import ShopScreen from '../screens/ShopScreen';
+import ShopScreen from '../screens/students/ShopScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 
-// ✅ ADMIN SCREENS (Importing from the 'admin' folder)
+// ✅ TEACHER SCREENS (now in 'teachers' folder)
+import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
+import TeacherAddStoryScreen from '../screens/teachers/TeacherAddStoryScreen';
+import TeacherUsersScreen from '../screens/teachers/TeacherUsersScreen';
+import TeacherNotificationsScreen from '../screens/teachers/TeacherNotificationsScreen';
+import TeacherFeedbackScreen from '../screens/teachers/TeacherFeedbackScreen';
+import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen';
+import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen';
+import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen';
+import StudentEnrollScreen from '../screens/StudentEnrollScreen';
+
+// ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
+import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
-import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 import AdminEnrollmentScreen from '../screens/admin/AdminEnrollmentScreen';
 import AdminAssignActivitiesScreen from '../screens/admin/AdminAssignActivitiesScreen';
-import StudentEnrollScreen from '../screens/StudentEnrollScreen';
-import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
+import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -93,18 +103,26 @@ export default function AppNavigator() {
             {(isTeacher || isAdmin) && (
               <>
                 <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
-                <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
-                <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
-                <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-                <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
-                <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
-                <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
-                <Stack.Screen name="AdminAssignActivities" component={AdminAssignActivitiesScreen} />
+                <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
+                <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
+                <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
+                <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
+                <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
+                <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
+                <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
               </>
             )}
             {isAdmin && (
               <>
                 <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+                <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
+                <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+                <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
+                <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
+                <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
+                <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
+                <Stack.Screen name="AdminAssignActivities" component={AdminAssignActivitiesScreen} />
+                <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
               </>
             )}
         </>
