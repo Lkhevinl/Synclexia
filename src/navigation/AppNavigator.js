@@ -33,6 +33,10 @@ import TeacherProgressScreen from '../screens/teachers/TeacherProgressScreen';
 import StudentEnrollScreen from '../screens/StudentEnrollScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
+import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
+
+// PARENT SCREENS
+import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -44,6 +48,12 @@ import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
 import AdminEnrollmentScreen from '../screens/admin/AdminEnrollmentScreen';
 import AdminAssignActivitiesScreen from '../screens/admin/AdminAssignActivitiesScreen';
 import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
+import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
+import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
+import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
+import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
+import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen';
+import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -81,7 +91,8 @@ export default function AppNavigator() {
   const { session, loading, profile } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin   = profile?.role === 'admin';
+  const isParent  = profile?.role === 'parent';
 
   if (loading) return <LoadingScreen />;
 
@@ -103,6 +114,11 @@ export default function AppNavigator() {
             <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
             <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
             <Stack.Screen name="Spelling" component={SpellingScreen} />
+            <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+            {/* Parent routes — read-only child progress */}
+            {profile?.role === 'parent' && (
+              <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+            )}
             {(isTeacher || isAdmin) && (
               <>
                 <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
@@ -114,6 +130,9 @@ export default function AppNavigator() {
                 <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
                 <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
                 <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
+                <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
+                <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
+                <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
               </>
             )}
             {isAdmin && (
@@ -127,6 +146,9 @@ export default function AppNavigator() {
                 <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
                 <Stack.Screen name="AdminAssignActivities" component={AdminAssignActivitiesScreen} />
                 <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
+                <Stack.Screen name="AdminSpelling" component={AdminSpellingScreen} />
+                <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
+                <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
               </>
             )}
         </>

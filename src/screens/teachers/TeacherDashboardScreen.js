@@ -65,6 +65,7 @@ export default function TeacherDashboardScreen({ navigation }) {
       .from('notifications')
       .select('*')
       .eq('is_draft', false)
+      .eq('teacher_id', profile?.id)
       .order('created_at', { ascending: false });
     if (data) setNotifications(data);
   };
@@ -199,6 +200,30 @@ export default function TeacherDashboardScreen({ navigation }) {
           icon="volume-high"
           color="#00BCD4"
           onPress={() => navigation.push('TeacherPhonics')} // Fixed: AdminPhonics -> TeacherPhonics
+        />
+
+        <TeacherCard
+          title="Spelling Words"
+          subtitle="Add and manage spelling word bank"
+          icon="text"
+          color="#2196F3"
+          onPress={() => navigation.push('TeacherSpelling')}
+        />
+
+        <TeacherCard
+          title="Phonics Activity"
+          subtitle="Manage blend, rhyme & segment games"
+          icon="musical-notes"
+          color="#FF9800"
+          onPress={() => navigation.push('TeacherPhonicsActivity')}
+        />
+
+        <TeacherCard
+          title="Phonological"
+          subtitle="Manage syllable, rime & phoneme tasks"
+          icon="ear"
+          color="#9C27B0"
+          onPress={() => navigation.push('TeacherPhonological')}
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Communication</Text>

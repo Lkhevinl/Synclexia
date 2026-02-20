@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  StatusBar, Animated, Alert,
+  StatusBar, Animated, Alert, ActivityIndicator,
 } from 'react-native';
+import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,40 +14,26 @@ import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-// ─── Game Data ─────────────────────────────────────────────────────────────────
+// ─── DB Fetch ─────────────────────────────────────────────────────────────────
 
-const BLENDING_WORDS = [
-  { phonemes: ['c', 'a', 't'],     word: 'cat',     emoji: '🐱' },
-  { phonemes: ['d', 'o', 'g'],     word: 'dog',     emoji: '🐶' },
-  { phonemes: ['s', 'u', 'n'],     word: 'sun',     emoji: '☀️' },
-  { phonemes: ['h', 'a', 't'],     word: 'hat',     emoji: '🎩' },
-  { phonemes: ['b', 'u', 's'],     word: 'bus',     emoji: '🚌' },
-  { phonemes: ['f', 'i', 'sh'],    word: 'fish',    emoji: '🐟' },
-  { phonemes: ['fr', 'o', 'g'],    word: 'frog',    emoji: '🐸' },
-  { phonemes: ['cl', 'a', 'p'],    word: 'clap',    emoji: '👏' },
-];
+const fetchActivityContent = async (gameType) => {
+  const { data, error } = await supabase
+    .from('phonics_activity_content')
+    .select('id, data')
+    .eq('game_type', gameType)
+    .eq('is_active', true);
+  if (error || !data) return [];
+  return data.map(row => ({ id: row.id, ...row.data }));
+};
 
-const RHYMING_ROUNDS = [
-  { target: 'cat',   options: ['bat', 'dog', 'sun'],  correct: 'bat',   emoji: '🐱' },
-  { target: 'hop',   options: ['mop', 'cat', 'pen'],  correct: 'mop',   emoji: '🐰' },
-  { target: 'big',   options: ['map', 'pig', 'sun'],  correct: 'pig',   emoji: '🐷' },
-  { target: 'ring',  options: ['sing', 'cat', 'hop'], correct: 'sing',  emoji: '💍' },
-  { target: 'bee',   options: ['cat', 'tree', 'hop'], correct: 'tree',  emoji: '🐝' },
-  { target: 'run',   options: ['sit', 'sun', 'cat'],  correct: 'sun',   emoji: '🏃' },
-  { target: 'ship',  options: ['cat', 'drip', 'tip'], correct: 'tip',   emoji: '🚢' },
-  { target: 'night', options: ['light', 'day', 'cat'],correct: 'light', emoji: '🌙' },
-];
-
-const SEGMENTING_WORDS = [
-  { word: 'cat',  phonemes: ['c', 'a', 't'],   count: 3, emoji: '🐱' },
-  { word: 'it',   phonemes: ['i', 't'],         count: 2, emoji: '👆' },
-  { word: 'frog', phonemes: ['fr', 'o', 'g'],  count: 3, emoji: '🐸' },
-  { word: 'ship', phonemes: ['sh', 'i', 'p'],  count: 3, emoji: '🚢' },
-  { word: 'play', phonemes: ['pl', 'ay'],       count: 2, emoji: '🎮' },
-  { word: 'stop', phonemes: ['st', 'o', 'p'],  count: 3, emoji: '🛑' },
-  { word: 'tree', phonemes: ['tr', 'ee'],       count: 2, emoji: '🌳' },
-  { word: 'best', phonemes: ['b', 'e', 'st'],  count: 3, emoji: '⭐' },
-];
+function shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -86,7 +73,21 @@ const ms = StyleSheet.create({
 
 // ─── Blend It Game ─────────────────────────────────────────────────────────────
 
-function BlendGame({ onBack, userId }) {
+function EmptyContent({ label, color, onBack }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+      <Text style={{ fontSize: 60, marginBottom: 16 }}>📭</Text>
+      <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 8 }}>{label}</Text>
+      <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>No activities yet. Ask your teacher or admin to add content!</Text>
+      <TouchableOpacity style={{ backgroundColor: color, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 }} onPress={onBack}>
+        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>← Back</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function BlendGame({ onBack, userId, items }) {
+  const words = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [tappedPhonemes, setTappedPhonemes] = useState([]);
   const [blended, setBlended] = useState(false);
@@ -94,7 +95,7 @@ function BlendGame({ onBack, userId }) {
   const [finished, setFinished] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  const current = BLENDING_WORDS[idx];
+  const current = words[idx];
 
   const speakPhoneme = (ph) => {
     Speech.speak(ph, { rate: 0.8, pitch: 1.1 });
@@ -121,9 +122,9 @@ function BlendGame({ onBack, userId }) {
   };
 
   const handleNext = () => {
-    if (idx + 1 >= BLENDING_WORDS.length) {
+    if (idx + 1 >= words.length) {
       // Log session when game finishes
-      if (userId) logSession({ studentId: userId, activityType: 'phonics_blend', score, total: BLENDING_WORDS.length, details: { game: 'Blend It' } });
+      if (userId) logSession({ studentId: userId, activityType: 'phonics_blend', score, total: words.length, details: { game: 'Blend It' } });
       setFinished(true);
       return;
     }
@@ -132,13 +133,14 @@ function BlendGame({ onBack, userId }) {
     setBlended(false);
   };
 
-  if (finished) return <ScoreScreen score={score} total={BLENDING_WORDS.length} onBack={onBack} label="Blend It!" color="#FF9800" />;
+  if (!words.length) return <EmptyContent label="Blend It!" color="#FF9800" onBack={onBack} />;
+  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Blend It!" color="#FF9800" />;
 
   return (
     <View style={bg.container}>
       <LinearGradient colors={['#FF9800', '#F57C00']} style={bg.header}>
         <Text style={bg.headerTitle}>Blend It! 🔗</Text>
-        <Text style={bg.headerSub}>{idx + 1} / {BLENDING_WORDS.length}</Text>
+        <Text style={bg.headerSub}>{idx + 1} / {words.length}</Text>
       </LinearGradient>
 
       <View style={bg.card}>
@@ -186,13 +188,14 @@ const bg = StyleSheet.create({
 
 // ─── Rhyme Time Game ───────────────────────────────────────────────────────────
 
-function RhymeGame({ onBack, userId }) {
+function RhymeGame({ onBack, userId, items }) {
+  const rounds = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  const current = RHYMING_ROUNDS[idx];
+  const current = rounds[idx];
 
   const speak = (word) => Speech.speak(word, { rate: 0.8, pitch: 1.1 });
 
@@ -210,8 +213,8 @@ function RhymeGame({ onBack, userId }) {
   };
 
   const handleNext = () => {
-    if (idx + 1 >= RHYMING_ROUNDS.length) {
-      if (userId) logSession({ studentId: userId, activityType: 'phonics_rhyme', score, total: RHYMING_ROUNDS.length, details: { game: 'Rhyme Time' } });
+    if (idx + 1 >= rounds.length) {
+      if (userId) logSession({ studentId: userId, activityType: 'phonics_rhyme', score, total: rounds.length, details: { game: 'Rhyme Time' } });
       setFinished(true);
       return;
     }
@@ -219,13 +222,14 @@ function RhymeGame({ onBack, userId }) {
     setSelected(null);
   };
 
-  if (finished) return <ScoreScreen score={score} total={RHYMING_ROUNDS.length} onBack={onBack} label="Rhyme Time!" color="#E91E63" />;
+  if (!rounds.length) return <EmptyContent label="Rhyme Time!" color="#E91E63" onBack={onBack} />;
+  if (finished) return <ScoreScreen score={score} total={rounds.length} onBack={onBack} label="Rhyme Time!" color="#E91E63" />;
 
   return (
     <View style={rg.container}>
       <LinearGradient colors={['#E91E63', '#C2185B']} style={rg.header}>
         <Text style={rg.headerTitle}>Rhyme Time! 🎵</Text>
-        <Text style={rg.headerSub}>{idx + 1} / {RHYMING_ROUNDS.length}</Text>
+        <Text style={rg.headerSub}>{idx + 1} / {rounds.length}</Text>
       </LinearGradient>
 
       <View style={rg.card}>
@@ -285,7 +289,8 @@ const rg = StyleSheet.create({
 
 // ─── Segment Game ──────────────────────────────────────────────────────────────
 
-function SegmentGame({ onBack, userId }) {
+function SegmentGame({ onBack, userId, items }) {
+  const segWords = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [taps, setTaps] = useState(0);
   const [answered, setAnswered] = useState(false);
@@ -293,7 +298,7 @@ function SegmentGame({ onBack, userId }) {
   const [finished, setFinished] = useState(false);
   const tapAnim = useRef(new Animated.Value(1)).current;
 
-  const current = SEGMENTING_WORDS[idx];
+  const current = segWords[idx];
 
   const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
 
@@ -311,8 +316,8 @@ function SegmentGame({ onBack, userId }) {
 
   const handleCheck = () => {
     if (answered) {
-      if (idx + 1 >= SEGMENTING_WORDS.length) {
-        if (userId) logSession({ studentId: userId, activityType: 'phonics_segment', score, total: SEGMENTING_WORDS.length, details: { game: 'Count the Sounds' } });
+      if (idx + 1 >= segWords.length) {
+        if (userId) logSession({ studentId: userId, activityType: 'phonics_segment', score, total: segWords.length, details: { game: 'Count the Sounds' } });
         setFinished(true);
         return;
       }
@@ -332,7 +337,8 @@ function SegmentGame({ onBack, userId }) {
     }
   };
 
-  if (finished) return <ScoreScreen score={score} total={SEGMENTING_WORDS.length} onBack={onBack} label="Count the Sounds!" color="#4CAF50" />;
+  if (!segWords.length) return <EmptyContent label="Count the Sounds!" color="#4CAF50" onBack={onBack} />;
+  if (finished) return <ScoreScreen score={score} total={segWords.length} onBack={onBack} label="Count the Sounds!" color="#4CAF50" />;
 
   const isCorrect = answered && taps === current.count;
 
@@ -340,7 +346,7 @@ function SegmentGame({ onBack, userId }) {
     <View style={sg.container}>
       <LinearGradient colors={['#4CAF50', '#388E3C']} style={sg.header}>
         <Text style={sg.headerTitle}>Count the Sounds! 🔢</Text>
-        <Text style={sg.headerSub}>{idx + 1} / {SEGMENTING_WORDS.length}</Text>
+        <Text style={sg.headerSub}>{idx + 1} / {segWords.length}</Text>
       </LinearGradient>
 
       <View style={sg.card}>
@@ -452,14 +458,27 @@ export default function PhonicsActivityScreen({ navigation }) {
   const { profile } = useAuth();
   const { getOverlayColor } = useTheme();
   const [mode, setMode] = useState(null);
+  const [contentMap, setContentMap] = useState({ blend: [], rhyme: [], segment: [] });
+  const [loading, setLoading] = useState(true);
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
+
+  useEffect(() => {
+    Promise.all([
+      fetchActivityContent('blend'),
+      fetchActivityContent('rhyme'),
+      fetchActivityContent('segment'),
+    ]).then(([blend, rhyme, segment]) => {
+      setContentMap({ blend, rhyme, segment });
+      setLoading(false);
+    });
+  }, []);
 
   const handleBack = () => setMode(null);
 
   const renderGame = () => {
-    if (mode === 'blend')   return <BlendGame   onBack={handleBack} userId={profile?.id} />;
-    if (mode === 'rhyme')   return <RhymeGame   onBack={handleBack} userId={profile?.id} />;
-    if (mode === 'segment') return <SegmentGame onBack={handleBack} userId={profile?.id} />;
+    if (mode === 'blend')   return <BlendGame   onBack={handleBack} userId={profile?.id} items={contentMap.blend} />;
+    if (mode === 'rhyme')   return <RhymeGame   onBack={handleBack} userId={profile?.id} items={contentMap.rhyme} />;
+    if (mode === 'segment') return <SegmentGame onBack={handleBack} userId={profile?.id} items={contentMap.segment} />;
     return null;
   };
 
@@ -468,7 +487,12 @@ export default function PhonicsActivityScreen({ navigation }) {
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={{ flex: 1 }}>
         <GoBackBtn />
-        {mode ? renderGame() : <ModeSelector onSelect={setMode} />}
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#FF9800" />
+            <Text style={{ marginTop: 10, color: '#78909C' }}>Loading activities...</Text>
+          </View>
+        ) : mode ? renderGame() : <ModeSelector onSelect={setMode} />}
       </SafeAreaView>
       {overlayColor && (
         <View style={[styles.overlay, { backgroundColor: overlayColor }]} pointerEvents="none" />

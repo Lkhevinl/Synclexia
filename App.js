@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { AuthProvider } from './src/context/AuthContext';
+import { AdaptiveProvider } from './src/context/AdaptiveContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useTheme } from './src/context/ThemeContext';
 
@@ -24,12 +25,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <ThemeProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-          <GlobalOverlay />
-        </ThemeProvider>
+        <AdaptiveProvider>
+          <ThemeProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+            <GlobalOverlay />
+          </ThemeProvider>
+        </AdaptiveProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -1,5 +1,7 @@
 // lib/analyticsHelper.js
-// Central helper for logging activity sessions and awarding XP
+// Session logging for all activity attempts — records every session to
+// session_logs, awards XP/coins, marks assignments complete, and
+// provides aggregated progress data for the Teacher Progress screen.
 import { supabase } from './supabase';
 
 /**
@@ -15,6 +17,7 @@ const XP_RATES = {
   writing: 5,
   reading: 8,
   scan: 3,
+  phonological_awareness: 8, // onset-rime, syllable, phoneme isolation
 };
 
 /**

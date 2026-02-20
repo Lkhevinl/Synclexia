@@ -170,6 +170,32 @@ export default function AdminDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('AdminEnrollment')} 
         />
 
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
+
+        <AdminCard
+          title="Spelling Words"
+          subtitle="Add and manage spelling word bank"
+          icon="text"
+          color="#2196F3"
+          onPress={() => navigation.navigate('AdminSpelling')}
+        />
+
+        <AdminCard
+          title="Phonics Activity"
+          subtitle="Manage blend, rhyme & segment games"
+          icon="musical-notes"
+          color="#FF9800"
+          onPress={() => navigation.navigate('AdminPhonicsActivity')}
+        />
+
+        <AdminCard
+          title="Phonological"
+          subtitle="Manage syllable, rime & phoneme tasks"
+          icon="ear"
+          color="#9C27B0"
+          onPress={() => navigation.navigate('AdminPhonological')}
+        />
+
         <View style={{height: 20}} /> 
       </ScrollView>
 

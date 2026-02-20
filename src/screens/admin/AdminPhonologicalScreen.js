@@ -1,0 +1,256 @@
+// screens/admin/AdminPhonologicalScreen.js
+// CRUD management for phonological_content table.
+// Admin can add, edit, toggle, and delete syllable / rime / phoneme items.
+
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, FlatList, StyleSheet, TouchableOpacity,
+  TextInput, Alert, ActivityIndicator, ScrollView,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
+import GoBackBtn from '../../components/GoBackBtn';
+
+const TASK_TYPES = [
+  { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
+  { id: 'rime',     label: 'Rime 🎵',     color: '#9C27B0' },
+  { id: 'phoneme',  label: 'Phoneme 🔤',  color: '#E91E63' },
+];
+
+const FORM_HINTS = {
+  syllable: 'word: cat  |  syllables: 1  |  emoji: 🐱',
+  rime:     'target: cat  |  correct: hat  |  distractors: dog,sun',
+  phoneme:  'word: sun  |  position: first or last  |  answer: s  |  options: s,m,b',
+};
+
+export default function AdminPhonologicalScreen() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [taskType, setTaskType] = useState('syllable');
+  const [level, setLevel] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+
+  useEffect(() => { fetchItems(); }, []);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('phonological_content')
+      .select('*')
+      .order('task_type')
+      .order('difficulty_level', { nullsFirst: true });
+    if (error) Alert.alert('Error', error.message);
+    if (data) setItems(data);
+    setLoading(false);
+  };
+
+  const resetForm = () => {
+    setForm({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+    setLevel(null);
+    setEditingId(null);
+  };
+
+  const handleEdit = (item) => {
+    setTaskType(item.task_type);
+    setLevel(item.difficulty_level);
+    setEditingId(item.id);
+    const d = item.data;
+    setForm({
+      word:       d.word || '',
+      syllables:  d.syllables?.toString() || '',
+      emoji:      d.emoji || '',
+      target:     d.target || '',
+      correct:    d.correct || '',
+      distractors: d.distractors?.join(',') || '',
+      position:   d.position || '',
+      answer:     d.answer || '',
+      options:    d.options?.join(',') || '',
+    });
+  };
+
+  const buildData = () => {
+    if (taskType === 'syllable') {
+      if (!form.word || !form.syllables) return null;
+      return { word: form.word.trim(), syllables: parseInt(form.syllables), emoji: form.emoji.trim() };
+    }
+    if (taskType === 'rime') {
+      if (!form.target || !form.correct || !form.distractors) return null;
+      return { target: form.target.trim(), correct: form.correct.trim(), distractors: form.distractors.split(',').map(s => s.trim()) };
+    }
+    if (taskType === 'phoneme') {
+      if (!form.word || !form.position || !form.answer || !form.options) return null;
+      return { word: form.word.trim(), position: form.position.trim(), answer: form.answer.trim(), options: form.options.split(',').map(s => s.trim()) };
+    }
+    return null;
+  };
+
+  const handleSave = async () => {
+    const data = buildData();
+    if (!data) return Alert.alert('Error', 'Please fill all required fields.');
+    const payload = { task_type: taskType, difficulty_level: level, data };
+    if (editingId) {
+      const { error } = await supabase.from('phonological_content').update(payload).eq('id', editingId);
+      if (error) return Alert.alert('Error', error.message);
+      Alert.alert('Updated', 'Item updated.');
+    } else {
+      const { error } = await supabase.from('phonological_content').insert([payload]);
+      if (error) return Alert.alert('Error', error.message);
+      Alert.alert('Added', 'Item added.');
+    }
+    resetForm();
+    fetchItems();
+  };
+
+  const handleToggle = async (item) => {
+    await supabase.from('phonological_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    fetchItems();
+  };
+
+  const handleDelete = (item) => {
+    Alert.alert('Delete', 'Delete this item?', [
+      { text: 'Cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        await supabase.from('phonological_content').delete().eq('id', item.id);
+        fetchItems();
+      }},
+    ]);
+  };
+
+  const taskColor = TASK_TYPES.find(t => t.id === taskType)?.color || '#2196F3';
+
+  const allFields = [
+    { id: 'word',        label: 'Word',                       show: ['syllable', 'phoneme'] },
+    { id: 'syllables',   label: 'Syllable count (number)',    show: ['syllable'] },
+    { id: 'emoji',       label: 'Emoji',                      show: ['syllable'] },
+    { id: 'target',      label: 'Target word',                show: ['rime'] },
+    { id: 'correct',     label: 'Correct rhyme',              show: ['rime'] },
+    { id: 'distractors', label: 'Distractors (comma-sep)',    show: ['rime'] },
+    { id: 'position',    label: 'Position (first / last)',    show: ['phoneme'] },
+    { id: 'answer',      label: 'Correct sound (e.g. s)',     show: ['phoneme'] },
+    { id: 'options',     label: 'Options (comma-sep, e.g. s,m,b)', show: ['phoneme'] },
+  ].filter(f => f.show.includes(taskType));
+
+  return (
+    <View style={styles.container}>
+      <GoBackBtn />
+      <Text style={styles.header}>Phonological Content 🎧</Text>
+
+      <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionLabel}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
+
+        <Text style={styles.fieldLabel}>Task Type</Text>
+        <View style={styles.typeRow}>
+          {TASK_TYPES.map(t => (
+            <TouchableOpacity
+              key={t.id}
+              style={[styles.typeBtn, taskType === t.id && { backgroundColor: t.color }]}
+              onPress={() => { setTaskType(t.id); resetForm(); }}
+            >
+              <Text style={[styles.typeBtnText, taskType === t.id && { color: '#fff' }]}>{t.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.fieldLabel}>Difficulty Level (empty = all levels)</Text>
+        <View style={styles.levelRow}>
+          {[null, 1, 2, 3].map(l => (
+            <TouchableOpacity
+              key={String(l)}
+              style={[styles.levelBtn, level === l && { backgroundColor: taskColor }]}
+              onPress={() => setLevel(l)}
+            >
+              <Text style={[styles.levelBtnText, level === l && { color: '#fff' }]}>{l === null ? 'All' : `L${l}`}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.hintText}>Format: {FORM_HINTS[taskType]}</Text>
+
+        {allFields.map(f => (
+          <TextInput
+            key={f.id}
+            style={styles.input}
+            placeholder={f.label}
+            value={form[f.id]}
+            onChangeText={v => setForm(prev => ({ ...prev, [f.id]: v }))}
+            placeholderTextColor="#90A4AE"
+          />
+        ))}
+
+        <View style={styles.btnRow}>
+          {editingId && (
+            <TouchableOpacity style={styles.cancelBtn} onPress={resetForm}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: taskColor }]} onPress={handleSave}>
+            <Text style={styles.saveBtnText}>{editingId ? 'Update' : 'Add Item'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      <Text style={styles.sectionLabel}>All Items ({items.length})</Text>
+      {loading ? (
+        <ActivityIndicator color="#9C27B0" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          renderItem={({ item }) => {
+            const tt = TASK_TYPES.find(t => t.id === item.task_type);
+            const preview = item.data?.word || item.data?.target || '';
+            return (
+              <View style={[styles.card, !item.is_active && styles.cardInactive]}>
+                <View style={[styles.typeDot, { backgroundColor: tt?.color || '#90A4AE' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardType}>{tt?.label}</Text>
+                  <Text style={styles.cardPreview}>{preview}</Text>
+                  <Text style={styles.cardLevel}>L{item.difficulty_level ?? 'All'}</Text>
+                </View>
+                <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
+                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
+                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
+                  <Ionicons name="trash" size={20} color="#F44336" />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
+  form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 400, elevation: 2 },
+  sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, color: '#78909C', marginBottom: 6, marginTop: 4 },
+  hintText: { fontSize: 11, color: '#B0BEC5', marginBottom: 8, fontStyle: 'italic' },
+  input: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 10, padding: 12, fontSize: 14, color: '#37474F', marginBottom: 8, backgroundColor: '#FAFAFA' },
+  typeRow: { flexDirection: 'row', gap: 6, marginBottom: 10 },
+  typeBtn: { flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', backgroundColor: '#FAFAFA' },
+  typeBtnText: { fontWeight: 'bold', color: '#78909C', fontSize: 12 },
+  levelRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  levelBtn: { flex: 1, borderRadius: 8, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: '#E0E0E0', backgroundColor: '#FAFAFA' },
+  levelBtnText: { fontWeight: 'bold', color: '#78909C', fontSize: 13 },
+  btnRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  saveBtn: { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  cancelBtn: { flex: 1, backgroundColor: '#ECEFF1', borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  cancelBtnText: { color: '#78909C', fontWeight: 'bold', fontSize: 15 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 16, marginBottom: 8, borderRadius: 12, padding: 12, elevation: 2 },
+  cardInactive: { opacity: 0.45 },
+  typeDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  cardType: { fontSize: 12, fontWeight: 'bold', color: '#90A4AE' },
+  cardPreview: { fontSize: 14, color: '#37474F', marginTop: 2 },
+  cardLevel: { fontSize: 11, color: '#B0BEC5', marginTop: 2 },
+  iconBtn: { padding: 8 },
+});

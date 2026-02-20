@@ -135,6 +135,12 @@ export default function SignUpScreen({ navigation }) {
                   >
                     <Text style={[styles.roleText, role === 'teacher' && styles.roleTextActive]}>Teacher</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.roleBtn, role === 'parent' && styles.roleBtnActive]}
+                    onPress={() => setRole('parent')}
+                  >
+                    <Text style={[styles.roleText, role === 'parent' && styles.roleTextActive]}>Parent</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* Sign Up Button */}

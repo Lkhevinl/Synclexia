@@ -74,6 +74,7 @@ export default function DashboardScreen({ navigation }) {
         teacher_name: teacherData?.full_name || 'Teacher'
       });
       fetchAssignments(profile?.id);
+      fetchNotifications(primary.teacher_id); // scope to teacher right after enrollment loads
     }
     
     setCheckingEnrollment(false);
@@ -90,17 +91,17 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (teacherId = enrollment?.teacher_id) => {
     // Show notifications from enrolled teacher + global ones
     let query = supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
     
-    if (enrollment?.teacher_id) {
+    if (teacherId) {
       // teacher-scoped OR global (no teacher_id)
       query = supabase
         .from('notifications')
         .select('*')
         .eq('is_draft', false)
-        .or(`teacher_id.eq.${enrollment.teacher_id},teacher_id.is.null,is_global.eq.true`)
+        .or(`teacher_id.eq.${teacherId},teacher_id.is.null,is_global.eq.true`)
         .order('created_at', { ascending: false });
     }
     
@@ -330,12 +331,13 @@ export default function DashboardScreen({ navigation }) {
           
           {/* MENU GRID */}
           <View style={styles.grid}>
-              <MenuCard title="Phonics"    icon="🗣️" color="#FF9800" route="Phonics"         activityType="phonics" />
-              <MenuCard title="Writing"    icon="✍️" color="#4CAF50" route="Writing"         activityType="writing" />
-              <MenuCard title="Reading"    icon="📖" color="#2196F3" route="Reading"         activityType="reading" />
-              <MenuCard title="Spelling"   icon="🔤" color="#E91E63" route="Spelling"        activityType="phonics" />
-              <MenuCard title="Activities" icon="🎮" color="#00897B" route="PhonicsActivity" activityType="phonics" />
-              <MenuCard title="Scan"       icon="📷" color="#9C27B0" route="Scan"            activityType="scan" />
+              <MenuCard title="Phonics"        icon="🗣️" color="#FF9800" route="Phonics"                  activityType="phonics" />
+              <MenuCard title="Writing"        icon="✍️" color="#4CAF50" route="Writing"                  activityType="writing" />
+              <MenuCard title="Reading"        icon="📖" color="#2196F3" route="Reading"                  activityType="reading" />
+              <MenuCard title="Spelling"       icon="🔤" color="#E91E63" route="Spelling"                 activityType="phonics" />
+              <MenuCard title="Activities"     icon="🎮" color="#00897B" route="PhonicsActivity"          activityType="phonics" />
+              <MenuCard title="Scan"           icon="📷" color="#9C27B0" route="Scan"                     activityType="scan" />
+              <MenuCard title="Awareness"      icon="🎧" color="#6A1B9A" route="PhonologicalAwareness"    activityType="phonological_awareness" />
           </View>
 
           <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Gamification</Text>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  StatusBar, Animated, Alert,
+  StatusBar, Animated, Alert, ActivityIndicator,
 } from 'react-native';
+import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,34 +14,17 @@ import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
-// ─── Word Bank ─────────────────────────────────────────────────────────────────
-// Words grouped by difficulty (CVC → 4-letter → 5-letter)
+// ─── DB Fetch ─────────────────────────────────────────────────────────────────
 
-const WORD_BANK = [
-  // Level 1 — CVC (3-letter)
-  { word: 'cat',  emoji: '🐱', hint: 'A fluffy pet that meows' },
-  { word: 'dog',  emoji: '🐶', hint: 'A pet that barks' },
-  { word: 'sun',  emoji: '☀️', hint: 'It shines in the sky' },
-  { word: 'hat',  emoji: '🎩', hint: 'You wear it on your head' },
-  { word: 'bug',  emoji: '🐛', hint: 'A small crawling creature' },
-  { word: 'pig',  emoji: '🐷', hint: 'A pink farm animal' },
-  { word: 'map',  emoji: '🗺️', hint: 'Used to find your way' },
-  { word: 'cup',  emoji: '🥤', hint: 'You drink from it' },
-  // Level 2 — 4-letter
-  { word: 'frog', emoji: '🐸', hint: 'Jumps and says ribbit' },
-  { word: 'ship', emoji: '🚢', hint: 'Sails on the ocean' },
-  { word: 'clap', emoji: '👏', hint: 'You do this with your hands' },
-  { word: 'flag', emoji: '🚩', hint: 'Waves in the wind' },
-  { word: 'drum', emoji: '🥁', hint: 'You bang on it to make music' },
-  { word: 'bell', emoji: '🔔', hint: 'It rings loudly' },
-  // Level 3 — 5-letter
-  { word: 'smile', emoji: '😊', hint: 'What a happy face makes' },
-  { word: 'crane', emoji: '🏗️', hint: 'Lifts heavy things at a building site' },
-  { word: 'grass', emoji: '🌿', hint: 'Green plants on the ground' },
-  { word: 'light', emoji: '💡', hint: 'A bulb gives you this' },
-  { word: 'cloud', emoji: '☁️', hint: 'Floats in the sky' },
-  { word: 'stone', emoji: '🪨', hint: 'A hard piece of rock' },
-];
+const fetchSpellingWords = async () => {
+  const { data, error } = await supabase
+    .from('spelling_words')
+    .select('id, word, emoji, hint, difficulty_level')
+    .eq('is_active', true)
+    .order('difficulty_level', { ascending: true });
+  if (error || !data) return [];
+  return data;
+};
 
 // Shuffle an array (Fisher-Yates)
 function shuffle(arr) {
@@ -93,11 +77,11 @@ const ms = StyleSheet.create({
 
 // ─── Core Spelling Game ───────────────────────────────────────────────────────
 
-function SpellingGame({ mode, onBack, userId }) {
-  // Shuffle words for this session
-  const [wordList] = useState(() => shuffle(WORD_BANK).slice(0, 10));
+function SpellingGame({ mode, onBack, userId, wordBank }) {
+  // Shuffle words fetched from DB for this session
+  const [wordList] = useState(() => shuffle(wordBank).slice(0, Math.min(10, wordBank.length)));
   const [wordIdx, setWordIdx] = useState(0);
-  const [tiles, setTiles] = useState(() => buildTiles(WORD_BANK[0].word));
+  const [tiles, setTiles] = useState(() => buildTiles(wordBank[0]?.word || 'cat'));
   const [answer, setAnswer] = useState([]);   // Tiles the user has placed
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -377,7 +361,16 @@ export default function SpellingScreen({ navigation }) {
   const { profile } = useAuth();
   const { getOverlayColor } = useTheme();
   const [mode, setMode] = useState(null);
+  const [wordBank, setWordBank] = useState([]);
+  const [loading, setLoading] = useState(true);
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
+
+  useEffect(() => {
+    fetchSpellingWords().then(words => {
+      setWordBank(words);
+      setLoading(false);
+    });
+  }, []);
 
   const handleBack = () => setMode(null);
 
@@ -386,10 +379,21 @@ export default function SpellingScreen({ navigation }) {
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={{ flex: 1 }}>
         <GoBackBtn />
-        {mode
-          ? <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} />
-          : <ModeSelector onSelect={setMode} />
-        }
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#2196F3" />
+            <Text style={{ marginTop: 10, color: '#78909C' }}>Loading words...</Text>
+          </View>
+        ) : wordBank.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={{ fontSize: 40 }}>🔤</Text>
+            <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask your teacher!</Text>
+          </View>
+        ) : mode ? (
+          <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} />
+        ) : (
+          <ModeSelector onSelect={setMode} />
+        )}
       </SafeAreaView>
       {overlayColor && (
         <View style={[root.overlay, { backgroundColor: overlayColor }]} pointerEvents="none" />

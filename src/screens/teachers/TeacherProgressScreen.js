@@ -8,14 +8,15 @@ import { supabase } from '../../lib/supabase';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 
 const ACTIVITY_ICONS = {
-  phonics: '🗣️',
-  phonics_blend: '🔗',
-  phonics_rhyme: '🎵',
-  phonics_segment: '✂️',
-  spelling: '🔤',
-  writing: '✍️',
-  reading: '📖',
-  scan: '📷',
+  phonics:                  '🗣️',
+  phonics_blend:            '🔗',
+  phonics_rhyme:            '🎵',
+  phonics_segment:          '✂️',
+  spelling:                 '🔤',
+  writing:                  '✍️',
+  reading:                  '📖',
+  scan:                     '📷',
+  phonological_awareness:   '🎧',
 };
 
 export default function TeacherProgressScreen({ navigation }) {
