@@ -51,7 +51,7 @@ export default function SupportScreen() {
 
     if (tab === 'About') return (
        <View style={{alignItems: 'center'}}>
-           <Text style={styles.aboutTitle}>SIMS</Text>
+           <Text style={styles.aboutTitle}>Synclexia</Text>
            <Text style={styles.aboutBody}>
               Composed of college students taking up Bachelor of Science in Information Technology 
               in University of Cebu Lapu-lapu and Mandaue.
@@ -68,22 +68,22 @@ export default function SupportScreen() {
                <View style={styles.row}>
                    <View style={styles.memberCard}>
                        <View style={styles.avatarCircle}><Ionicons name="person" size={30} color="#fff"/></View>
-                       <Text style={styles.roleText}>Hacker</Text>
+                       <Text style={styles.roleText}>Lead Developer</Text>
                    </View>
                    <View style={styles.memberCard}>
                        <View style={styles.avatarCircle}><Ionicons name="person" size={30} color="#fff"/></View>
-                       <Text style={styles.roleText}>Hipster</Text>
+                       <Text style={styles.roleText}>UI/UX Designer</Text>
                    </View>
                </View>
 
                <View style={styles.row}>
                    <View style={styles.memberCard}>
                        <View style={styles.avatarCircle}><Ionicons name="person" size={30} color="#fff"/></View>
-                       <Text style={styles.roleText}>Hustler</Text>
+                       <Text style={styles.roleText}>Business Analyst</Text>
                    </View>
                    <View style={styles.memberCard}>
                        <View style={styles.avatarCircle}><Ionicons name="person" size={30} color="#fff"/></View>
-                       <Text style={styles.roleText}>Tester</Text>
+                       <Text style={styles.roleText}>QA Tester</Text>
                    </View>
                </View>
            </View>

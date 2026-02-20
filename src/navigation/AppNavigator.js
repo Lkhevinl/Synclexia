@@ -29,7 +29,10 @@ import TeacherFeedbackScreen from '../screens/teachers/TeacherFeedbackScreen';
 import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen';
 import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen';
 import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen';
+import TeacherProgressScreen from '../screens/teachers/TeacherProgressScreen';
 import StudentEnrollScreen from '../screens/StudentEnrollScreen';
+import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
+import SpellingScreen from '../screens/students/SpellingScreen';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -56,13 +59,11 @@ function AppTabs() {
             paddingBottom: 8, 
             borderTopLeftRadius: 20, 
             borderTopRightRadius: 20,
-            position: 'absolute',
             elevation: 5
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Scan') iconName = focused ? 'camera' : 'camera-outline';
           else if (route.name === 'Settings') iconName = focused ? 'settings' : 'settings-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -71,7 +72,6 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={require('../components/DashboardSwitcher').default} />
-      <Tab.Screen name="Scan" component={ScanScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
@@ -94,12 +94,15 @@ export default function AppNavigator() {
             <Stack.Screen name="Phonics" component={PhonicsScreen} />
             <Stack.Screen name="Writing" component={WritingScreen} />
             <Stack.Screen name="Reading" component={ReadingScreen} />
+            <Stack.Screen name="Scan" component={ScanScreen} />
             <Stack.Screen name="Quests" component={QuestsScreen} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
             <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="Support" component={SupportScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
+            <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
+            <Stack.Screen name="Spelling" component={SpellingScreen} />
             {(isTeacher || isAdmin) && (
               <>
                 <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
@@ -110,6 +113,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
                 <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
                 <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
+                <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
               </>
             )}
             {isAdmin && (

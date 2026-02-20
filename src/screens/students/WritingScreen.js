@@ -7,6 +7,7 @@ import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { checkQuestProgress } from '../../lib/questHelper';
+import { logSession } from '../../lib/analyticsHelper';
 import GoBackBtn from '../../components/GoBackBtn';
 
 const DEFAULT_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -86,7 +87,10 @@ export default function WritingScreen() {
     }
     Speech.speak(`Excellent! You wrote ${selectedItem.label}!`, { rate: 0.9 });
     setSuccessVisible(true);
-    if (profile?.id) checkQuestProgress(profile.id, 'Writing'); 
+    if (profile?.id) {
+      checkQuestProgress(profile.id, 'Writing');
+      logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
+    }
   };
 
   const nextItem = () => {
@@ -171,7 +175,7 @@ export default function WritingScreen() {
          {/* This is a simple visual trick: A moving hand or highlight could go here */}
 
          {/* Layer 3: The Ink (SVG) */}
-         <View style={styles.layer} pointerEvents="none"> 
+         <View style={[styles.layer, { pointerEvents: 'none' }]}> 
             <Svg height="100%" width="100%">
                 {paths.map((p, i) => (
                   <Path 

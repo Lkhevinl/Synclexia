@@ -47,11 +47,10 @@ export const checkQuestProgress = async (userId, actionType, metadata = {}) => {
             { user_id: userId, quest_id: quest.id, progress: newProgress },
             { onConflict: 'user_id, quest_id' }
           );
-          console.log(`Updated: ${quest.title}`);
         }
       }
     }
   } catch (error) {
-    console.error("Quest Error:", error);
+    // Quest update failed silently — non-critical background task
   }
 };

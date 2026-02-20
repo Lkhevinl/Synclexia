@@ -34,7 +34,7 @@ export default function AdminEnrollmentScreen() {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching students:', error);
+      Alert.alert('Error', 'Failed to load enrolled students. Please try again.');
     } else if (data) {
       setEnrolledStudents(data);
     }

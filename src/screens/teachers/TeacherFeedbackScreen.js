@@ -1,11 +1,12 @@
-// ...existing code from AdminFeedbackScreen.js...
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import GoBackBtn from '../../components/GoBackBtn';
 
 export default function TeacherFeedbackScreen() {
+  const { profile } = useAuth();
   const [feedbacks, setFeedbacks] = useState([]);
   const [replyText, setReplyText] = useState("");
   const [selectedId, setSelectedId] = useState(null);
@@ -13,9 +14,23 @@ export default function TeacherFeedbackScreen() {
   useEffect(() => { fetchFeedback(); }, []);
 
   const fetchFeedback = async () => {
+    // Only show feedback from enrolled students
+    const { data: enrollments } = await supabase
+      .from('enrollments')
+      .select('student_id')
+      .eq('teacher_id', profile?.id);
+    
+    const studentIds = enrollments?.map(e => e.student_id) || [];
+    
+    if (studentIds.length === 0) {
+      setFeedbacks([]);
+      return;
+    }
+    
     const { data } = await supabase
       .from('feedback')
       .select('*, profiles(full_name, email)')
+      .in('user_id', studentIds)
       .order('created_at', { ascending: false });
     if (data) setFeedbacks(data);
   };
@@ -24,7 +39,7 @@ export default function TeacherFeedbackScreen() {
     if (!replyText) return;
     const { error } = await supabase
       .from('feedback')
-      .update({ reply: replyText })
+      .update({ reply: replyText, has_unread_reply: true })
       .eq('id', selectedId);
     if (!error) {
       Alert.alert("Sent", "Reply sent to user.");

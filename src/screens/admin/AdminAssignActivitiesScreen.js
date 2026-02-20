@@ -10,7 +10,6 @@ const ACTIVITIES = [
   { id: 'phonics', name: 'Phonics', icon: '🗣️', color: '#FF9800' },
   { id: 'writing', name: 'Writing', icon: '✍️', color: '#4CAF50' },
   { id: 'reading', name: 'Reading', icon: '📖', color: '#2196F3' },
-  { id: 'scan', name: 'Scan', icon: '📷', color: '#9C27B0' },
 ];
 
 export default function AdminAssignActivitiesScreen({ navigation }) {

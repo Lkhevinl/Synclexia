@@ -1,11 +1,12 @@
-// ...existing code from AdminNotificationsScreen.js...
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 import GoBackBtn from '../../components/GoBackBtn';
 
 export default function TeacherNotificationsScreen() {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('Posted');
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
@@ -24,6 +25,7 @@ export default function TeacherNotificationsScreen() {
       .from('notifications')
       .select('*')
       .eq('is_draft', isDraft)
+      .eq('teacher_id', profile?.id)
       .order('created_at', { ascending: false });
     if (data) setNotifications(data);
     if (error) Alert.alert("Error", error.message);
@@ -44,7 +46,7 @@ export default function TeacherNotificationsScreen() {
       } else {
         const { error } = await supabase
           .from('notifications')
-          .insert([{ title, content, is_draft: asDraft }]);
+          .insert([{ title, content, is_draft: asDraft, teacher_id: profile?.id }]);
         if (error) throw error;
         Alert.alert("Success", asDraft ? "Saved to Drafts" : "Posted!");
       }

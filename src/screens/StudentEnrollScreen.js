@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { Camera } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -12,15 +12,17 @@ export default function StudentEnrollScreen({ navigation }) {
   const [scanned, setScanned] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [myTeacher, setMyTeacher] = useState(null);
+  const [myTeachers, setMyTeachers] = useState([]);
 
   useEffect(() => {
     getCameraPermission();
-    // Only check enrollment if profile is loaded
+  }, []);
+
+  useEffect(() => {
     if (profile?.id) {
       checkExistingEnrollment();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id]);
+  }, [profile?.id]); // checkExistingEnrollment only uses profile.id which is the dep
 
   const getCameraPermission = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
@@ -31,11 +33,16 @@ export default function StudentEnrollScreen({ navigation }) {
     const { data, error } = await supabase
       .from('enrollments')
       .select('*, profiles!enrollments_teacher_id_fkey(full_name, email)')
-      .eq('student_id', profile?.id)
-      .single();
+      .eq('student_id', profile?.id);
 
-    if (data) {
-      setMyTeacher(data);
+    if (data && data.length > 0) {
+      setMyTeachers(data);
+      // Set primary teacher for display
+      const primary = data.find(e => e.is_primary) || data[0];
+      setMyTeacher(primary);
+    } else {
+      setMyTeachers([]);
+      setMyTeacher(null);
     }
   };
 
@@ -55,23 +62,32 @@ export default function StudentEnrollScreen({ navigation }) {
 
     const teacherId = match[1];
 
-    // Check if already enrolled
+    // Check if already enrolled with this specific teacher
     const { data: existing } = await supabase
       .from('enrollments')
       .select('*')
       .eq('student_id', profile?.id)
-      .single();
+      .eq('teacher_id', teacherId)
+      .maybeSingle();
 
     if (existing) {
-      Alert.alert('Already Enrolled', 'You are already enrolled with a teacher.');
+      Alert.alert('Already Enrolled', 'You are already enrolled with this teacher.');
       setEnrolling(false);
       return;
     }
 
+    // Check if this is the first enrollment (will be primary)
+    const { count } = await supabase
+      .from('enrollments')
+      .select('*', { count: 'exact', head: true })
+      .eq('student_id', profile?.id);
+
+    const isPrimary = (count || 0) === 0;
+
     // Enroll student
     const { error } = await supabase
       .from('enrollments')
-      .insert([{ student_id: profile?.id, teacher_id: teacherId }]);
+      .insert([{ student_id: profile?.id, teacher_id: teacherId, is_primary: isPrimary }]);
 
     if (error) {
       Alert.alert('Error', error.message);
@@ -91,7 +107,7 @@ export default function StudentEnrollScreen({ navigation }) {
     ]);
   };
 
-  const unenroll = () => {
+  const unenroll = (enrollmentId, wasPrimary) => {
     Alert.alert('Unenroll', 'Are you sure you want to leave this class?', [
       { text: 'Cancel' },
       {
@@ -101,13 +117,27 @@ export default function StudentEnrollScreen({ navigation }) {
           const { error } = await supabase
             .from('enrollments')
             .delete()
-            .eq('student_id', profile?.id);
+            .eq('id', enrollmentId);
 
           if (error) {
             Alert.alert('Error', error.message);
           } else {
+            // If we removed the primary, promote the next one
+            if (wasPrimary) {
+              const { data: remaining } = await supabase
+                .from('enrollments')
+                .select('id')
+                .eq('student_id', profile?.id)
+                .limit(1);
+              if (remaining && remaining.length > 0) {
+                await supabase
+                  .from('enrollments')
+                  .update({ is_primary: true })
+                  .eq('id', remaining[0].id);
+              }
+            }
             Alert.alert('Success', 'You have been unenrolled.');
-            setMyTeacher(null);
+            checkExistingEnrollment();
           }
         },
       },
@@ -141,15 +171,38 @@ export default function StudentEnrollScreen({ navigation }) {
       <Text style={styles.title}>Enroll in a Class</Text>
 
       {myTeacher ? (
-        <View style={styles.enrolledCard}>
-          <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
-          <Text style={styles.enrolledTitle}>You're Enrolled!</Text>
-          <Text style={styles.teacherName}>{myTeacher.profiles?.full_name || 'Teacher'}</Text>
-          <Text style={styles.teacherEmail}>{myTeacher.profiles?.email}</Text>
-          <TouchableOpacity style={styles.unenrollBtn} onPress={unenroll}>
-            <Text style={styles.unenrollText}>Leave Class</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.enrolledCard}>
+            <Ionicons name="checkmark-circle" size={60} color="#4CAF50" />
+            <Text style={styles.enrolledTitle}>You're Enrolled!</Text>
+            
+            {myTeachers.map((t, idx) => (
+              <View key={t.id} style={{ 
+                backgroundColor: t.is_primary ? '#E8F5E9' : '#F5F5F5', 
+                padding: 15, borderRadius: 12, marginTop: 15, width: '100%',
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
+              }}>
+                <View>
+                  <Text style={styles.teacherName}>{t.profiles?.full_name || 'Teacher'}</Text>
+                  <Text style={styles.teacherEmail}>{t.profiles?.email}</Text>
+                  {t.is_primary && (
+                    <Text style={{ fontSize: 10, color: '#4CAF50', fontWeight: 'bold', marginTop: 4 }}>PRIMARY</Text>
+                  )}
+                </View>
+                <TouchableOpacity onPress={() => unenroll(t.id, t.is_primary)}>
+                  <Ionicons name="close-circle" size={24} color="#E53935" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            
+            <TouchableOpacity 
+              style={[styles.rescanBtn, { marginTop: 20, width: '100%' }]}
+              onPress={() => { setMyTeacher(null); setScanned(false); }}
+            >
+              <Text style={styles.rescanText}>Enroll with Another Teacher</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       ) : (
         <>
           <Text style={styles.instruction}>Scan your teacher's QR code</Text>

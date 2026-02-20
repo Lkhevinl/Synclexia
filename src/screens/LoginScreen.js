@@ -30,8 +30,6 @@ export default function LoginScreen({ navigation }) {
         if (error) {
           Alert.alert('Login Failed', error.message);
         } else {
-          console.log("Login Success:", data.user.email);
-          
           // 2. Force App Context to Update
           if (setSession) {
              setSession(data.session);
@@ -146,11 +144,8 @@ const styles = StyleSheet.create({
       backgroundColor: '#fff',
       borderRadius: 25,
       padding: 30,
-      elevation: 10, // Shadow for Android
-      shadowColor: '#000', // Shadow for iOS
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.25,
-      shadowRadius: 10,
+      elevation: 10,
+      boxShadow: '0px 10px 10px rgba(0,0,0,0.25)',
       marginBottom: 20
   },
   cardTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 20, textAlign: 'center' },
@@ -175,10 +170,7 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 20,
-      shadowColor: "#192f6a",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
+      boxShadow: '0px 4px 5px rgba(25,47,106,0.3)',
       elevation: 5
   },
   loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,9 @@ export default function TeacherDashboardScreen({ navigation }) {
   const [notifVisible, setNotifVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [enrolledCount, setEnrolledCount] = useState(0);
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [enrolledStudentIds, setEnrolledStudentIds] = useState([]);
+  const channelRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
@@ -27,6 +30,35 @@ export default function TeacherDashboardScreen({ navigation }) {
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
+
+  // Real-time subscription for student activity
+  useEffect(() => {
+    if (enrolledStudentIds.length === 0) return;
+    
+    // Subscribe to session_logs inserts from enrolled students
+    const channel = supabase
+      .channel('teacher-activity-feed')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'session_logs',
+      }, (payload) => {
+        const newLog = payload.new;
+        // Only show logs from enrolled students
+        if (enrolledStudentIds.includes(newLog.student_id)) {
+          setActivityFeed(prev => [newLog, ...prev].slice(0, 20));
+        }
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+    
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+    };
+  }, [enrolledStudentIds]);
 
   const fetchNotifications = async () => {
     const { data } = await supabase
@@ -38,11 +70,27 @@ export default function TeacherDashboardScreen({ navigation }) {
   };
 
   const fetchEnrolledCount = async () => {
-    const { count } = await supabase
+    const { data } = await supabase
       .from('enrollments')
-      .select('*', { count: 'exact', head: true })
+      .select('student_id')
       .eq('teacher_id', profile?.id);
-    if (count !== null) setEnrolledCount(count);
+    
+    if (data) {
+      setEnrolledCount(data.length);
+      const ids = data.map(e => e.student_id);
+      setEnrolledStudentIds(ids);
+      
+      // Fetch recent activity for feed
+      if (ids.length > 0) {
+        const { data: logs } = await supabase
+          .from('session_logs')
+          .select('*, profiles!session_logs_student_id_fkey(full_name)')
+          .in('student_id', ids)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        if (logs) setActivityFeed(logs);
+      }
+    }
   };
 
   const TeacherCard = ({ title, subtitle, icon, color, onPress }) => (
@@ -132,7 +180,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Track student comprehension & XP"
           icon="trending-up"
           color="#FF9800"
-          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
+          onPress={() => navigation.push('TeacherProgress')}
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
@@ -178,10 +226,39 @@ export default function TeacherDashboardScreen({ navigation }) {
           subtitle="Generate QR code for students"
           icon="qr-code"
           color="#009688"
-          onPress={() => navigation.push('TeacherEnrollment')} // Fixed: AdminEnrollment -> TeacherEnrollment
+          onPress={() => navigation.push('TeacherEnrollment')}
         />
 
-        <View style={{ height: 100 }} />
+        {/* LIVE ACTIVITY FEED */}
+        {activityFeed.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Recent Student Activity</Text>
+            {activityFeed.slice(0, 5).map((log, idx) => (
+              <View key={log.id || idx} style={styles.feedItem}>
+                <View style={[styles.feedDot, { backgroundColor: log.accuracy >= 80 ? '#4CAF50' : log.accuracy >= 50 ? '#FF9800' : '#F44336' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.feedName}>{log.profiles?.full_name || 'Student'}</Text>
+                  <Text style={styles.feedDetail}>
+                    {log.activity_type} — {log.score}/{log.total} ({log.accuracy}%) {log.xp_earned ? `+${log.xp_earned} XP` : ''}
+                  </Text>
+                </View>
+                <Text style={styles.feedTime}>
+                  {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            ))}
+            {activityFeed.length > 5 && (
+              <TouchableOpacity 
+                style={{ alignItems: 'center', paddingVertical: 10 }}
+                onPress={() => navigation.push('TeacherProgress')}
+              >
+                <Text style={{ color: '#3b5998', fontWeight: 'bold' }}>View All Activity →</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        <View style={{ height: 20 }} />
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -220,7 +297,7 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
@@ -244,5 +321,12 @@ const styles = StyleSheet.create({
   notifTitle: { fontWeight: 'bold', color: '#1976D2', marginBottom: 4 },
   notifBody: { color: '#555', fontSize: 13 },
   closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 10 },
-  closeText: { color: '#fff', fontWeight: 'bold' }
+  closeText: { color: '#fff', fontWeight: 'bold' },
+
+  // Activity Feed
+  feedItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 15, marginBottom: 10, elevation: 1 },
+  feedDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
+  feedName: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  feedDetail: { fontSize: 12, color: '#666', marginTop: 2 },
+  feedTime: { fontSize: 11, color: '#999' },
 });

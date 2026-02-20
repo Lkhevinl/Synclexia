@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   // Card Styles
   card: { 
       width: '48%', backgroundColor: '#fff', borderRadius: 20, padding: 10, marginBottom: 15, alignItems: 'center',
-      shadowColor: "#000", shadowOffset: {width:0, height:2}, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3
+      boxShadow: '0px 2px 4px rgba(0,0,0,0.1)', elevation: 3
   },
   cardOwned: { opacity: 0.6, backgroundColor: '#F5F5F5' },
 

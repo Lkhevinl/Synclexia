@@ -4,11 +4,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../../components/GoBackBtn';
-import ScreenWrapper from '../../components/ScreenWrapper'; // <--- Using your wrapper
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../../context/ThemeContext'; // Optional: Use theme colors if you want
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { logSession } from '../../lib/analyticsHelper';
 
 export default function ScanScreen() {
+  const { profile } = useAuth();
   const [image, setImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scannedText, setScannedText] = useState("");
@@ -62,6 +65,16 @@ export default function ScanScreen() {
             const detectedText = data.ParsedResults[0].ParsedText;
             setScannedText(detectedText);
             Speech.speak(detectedText);
+            // Log scan session
+            if (profile?.id) {
+              logSession({
+                studentId: profile.id,
+                activityType: 'scan',
+                score: 1,
+                total: 1,
+                details: { textLength: detectedText.length, wordCount: detectedText.split(/\s+/).length },
+              });
+            }
         } else { 
             setScannedText("I couldn't find any text. Try to crop closer or use better lighting."); 
         }
@@ -85,7 +98,7 @@ export default function ScanScreen() {
       <View style={styles.topBar}>
          <GoBackBtn />
          <Text style={styles.header}>Magic Scanner ✨</Text>
-         <View style={{width: 40}} /> {/* Spacer to center title */}
+         <View style={{width: 40}} />
       </View>
 
       <ScrollView contentContainerStyle={{paddingBottom: 40}} showsVerticalScrollIndicator={false}>

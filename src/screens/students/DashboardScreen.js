@@ -26,11 +26,13 @@ export default function DashboardScreen({ navigation }) {
   const [enrollment, setEnrollment] = useState(null);
   const [checkingEnrollment, setCheckingEnrollment] = useState(true);
   const [assignments, setAssignments] = useState([]); // Track assigned activities
+  const [unreadReplyCount, setUnreadReplyCount] = useState(0);
 
   const isStudent = profile?.role === 'student';
 
   useEffect(() => {
     fetchNotifications();
+    fetchUnreadReplies();
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
@@ -49,32 +51,29 @@ export default function DashboardScreen({ navigation }) {
       return;
     }
 
-    const { data, error } = await supabase
+    // Get primary enrollment, or any enrollment if no primary set
+    const { data: enrollments, error } = await supabase
       .from('enrollments')
       .select('*')
       .eq('student_id', profile?.id)
-      .maybeSingle();
+      .order('is_primary', { ascending: false });
 
-    if (error) {
-      console.error('Enrollment check error:', error);
+    if (error || !enrollments || enrollments.length === 0) {
       setEnrollment(null);
-    } else if (data) {
+    } else {
+      const primary = enrollments[0]; // is_primary=true sorts first
       // Fetch teacher info separately
       const { data: teacherData } = await supabase
         .from('profiles')
         .select('full_name')
-        .eq('id', data.teacher_id)
+        .eq('id', primary.teacher_id)
         .single();
       
       setEnrollment({
-        ...data,
+        ...primary,
         teacher_name: teacherData?.full_name || 'Teacher'
       });
-      console.log('Enrollment found:', data);
       fetchAssignments(profile?.id);
-    } else {
-      console.log('No enrollment found for student');
-      setEnrollment(null);
     }
     
     setCheckingEnrollment(false);
@@ -92,8 +91,31 @@ export default function DashboardScreen({ navigation }) {
   };
 
   const fetchNotifications = async () => {
-    const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
+    // Show notifications from enrolled teacher + global ones
+    let query = supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
+    
+    if (enrollment?.teacher_id) {
+      // teacher-scoped OR global (no teacher_id)
+      query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('is_draft', false)
+        .or(`teacher_id.eq.${enrollment.teacher_id},teacher_id.is.null,is_global.eq.true`)
+        .order('created_at', { ascending: false });
+    }
+    
+    const { data } = await query;
     if (data) setNotifications(data);
+  };
+
+  const fetchUnreadReplies = async () => {
+    if (!profile?.id) return;
+    const { count } = await supabase
+      .from('feedback')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', profile?.id)
+      .eq('has_unread_reply', true);
+    setUnreadReplyCount(count || 0);
   };
 
   // 🔒 BLOCK UNENROLLED STUDENTS FROM SEEING DASHBOARD
@@ -208,7 +230,7 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.headerIcons}>
                 <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
                     <Ionicons name="notifications-outline" size={24} color="#fff" />
-                    {notifications.length > 0 && <View style={styles.redDot} />}
+                    {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.redDot} />}
                 </TouchableOpacity>
             </View>
         </View>
@@ -308,10 +330,12 @@ export default function DashboardScreen({ navigation }) {
           
           {/* MENU GRID */}
           <View style={styles.grid}>
-              <MenuCard title="Phonics" icon="🗣️" color="#FF9800" route="Phonics" activityType="phonics" />
-              <MenuCard title="Writing" icon="✍️" color="#4CAF50" route="Writing" activityType="writing" />
-              <MenuCard title="Reading" icon="📖" color="#2196F3" route="Reading" activityType="reading" />
-              <MenuCard title="Scan"    icon="📷" color="#9C27B0" route="Scan" activityType="scan" />
+              <MenuCard title="Phonics"    icon="🗣️" color="#FF9800" route="Phonics"         activityType="phonics" />
+              <MenuCard title="Writing"    icon="✍️" color="#4CAF50" route="Writing"         activityType="writing" />
+              <MenuCard title="Reading"    icon="📖" color="#2196F3" route="Reading"         activityType="reading" />
+              <MenuCard title="Spelling"   icon="🔤" color="#E91E63" route="Spelling"        activityType="phonics" />
+              <MenuCard title="Activities" icon="🎮" color="#00897B" route="PhonicsActivity" activityType="phonics" />
+              <MenuCard title="Scan"       icon="📷" color="#9C27B0" route="Scan"            activityType="scan" />
           </View>
 
           <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Gamification</Text>
@@ -321,7 +345,7 @@ export default function DashboardScreen({ navigation }) {
               <MenuCard title="Shop"     icon="🛍️" color="#00BCD4" route="Shop" />
           </View>
 
-          <View style={{height: 100}} /> 
+          <View style={{height: 20}} /> 
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -329,6 +353,18 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                   <Text style={styles.modalTitle}>Notifications 🔔</Text>
+                  {unreadReplyCount > 0 && (
+                    <TouchableOpacity 
+                      style={{ backgroundColor: '#E8F5E9', padding: 12, borderRadius: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}
+                      onPress={() => { setNotifVisible(false); navigation.navigate('Support'); }}
+                    >
+                      <Ionicons name="chatbubble-ellipses" size={20} color="#4CAF50" />
+                      <Text style={{ marginLeft: 8, color: '#2E7D32', fontWeight: 'bold', flex: 1 }}>
+                        {unreadReplyCount} new feedback {unreadReplyCount === 1 ? 'reply' : 'replies'}!
+                      </Text>
+                      <Ionicons name="arrow-forward" size={16} color="#4CAF50" />
+                    </TouchableOpacity>
+                  )}
                   <FlatList
                     data={notifications}
                     keyExtractor={i => i.id.toString()}
@@ -389,7 +425,7 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, shadowColor: "#000", shadowOffset: {width:0, height:4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
@@ -401,7 +437,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  cardContainer: { width: '48%', marginBottom: 15, borderRadius: 20, shadowColor: "#000", shadowOffset: {width:0, height:4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5 },
+  cardContainer: { width: '48%', marginBottom: 15, borderRadius: 20, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5 },
   cardGradient: { padding: 20, borderRadius: 20, height: 140, justifyContent: 'center', alignItems: 'center' },
   iconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   cardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginTop: 5 },

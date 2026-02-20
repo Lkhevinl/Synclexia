@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -16,33 +16,31 @@ export default function SettingsScreen({ navigation }) {
   const handleLogout = async () => {
     try {
       await signOut();
-      setDashboardMode('auto');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
+      // AuthContext clears the session which causes AppNavigator
+      // to automatically redirect to Login — no manual reset needed.
     } catch (error) {
       Alert.alert("Error", "Failed to logout: " + error.message);
     }
   };
 
-  const FontSizeBtn = ({ label, value }) => (
-    <TouchableOpacity 
-      style={[styles.optionBtn, theme.fontSize === value && styles.optionBtnActive]} 
-      onPress={() => updateTheme({ fontSize: value })}
+  // ── Accessibility helpers ─────────────────────────────────────────────────
+  const SpacingBtn = ({ label, value }) => (
+    <TouchableOpacity
+      style={[styles.optionBtn, theme.letterSpacing === value && styles.optionBtnActive]}
+      onPress={() => updateTheme({ letterSpacing: value })}
     >
-        <Text style={[styles.optionText, { fontSize: value }, theme.fontSize === value && styles.optionTextActive]}>
-            {label}
-        </Text>
+      <Text style={[styles.optionText, theme.letterSpacing === value && styles.optionTextActive]}>{label}</Text>
     </TouchableOpacity>
   );
 
-  const ColorBtn = ({ color }) => (
-    <TouchableOpacity 
-      style={[styles.colorCircle, { backgroundColor: color }, theme.bgColor === color && styles.colorActive]} 
-      onPress={() => updateTheme({ bgColor: color })}
-    />
-  );
+  const OVERLAY_OPTIONS = [
+    { value: 'none',   emoji: '🚫', label: 'None'   },
+    { value: 'yellow', emoji: '🟡', label: 'Yellow' },
+    { value: 'blue',   emoji: '🔵', label: 'Blue'   },
+    { value: 'green',  emoji: '🟢', label: 'Green'  },
+    { value: 'pink',   emoji: '🩷', label: 'Pink'   },
+    { value: 'orange', emoji: '🟠', label: 'Orange' },
+  ];
 
   return (
     <View style={styles.mainContainer}>
@@ -58,25 +56,56 @@ export default function SettingsScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          {/* VISUALS */}
+          {/* ── DYSLEXIA ACCESSIBILITY ─────────────────────────── */}
           <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                  <Ionicons name="eye" size={24} color="#607D8B" />
-                  <Text style={styles.sectionTitle}>Visuals</Text>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="accessibility" size={24} color="#5C6BC0" />
+              <Text style={[styles.sectionTitle, { color: '#5C6BC0' }]}>Dyslexia Accessibility</Text>
+            </View>
+
+            {/* Dyslexia-Friendly Mode toggle */}
+            <View style={styles.accessRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Dyslexia-Friendly Mode</Text>
+                <Text style={styles.accessDesc}>Larger letter size and extra weight for easier reading</Text>
               </View>
-              <Text style={styles.label}>Text Size</Text>
-              <View style={styles.row}>
-                  <FontSizeBtn label="Small" value={14} />
-                  <FontSizeBtn label="Medium" value={18} />
-                  <FontSizeBtn label="Large" value={24} />
-              </View>
-              <Text style={styles.label}>Theme</Text>
-              <View style={styles.row}>
-                  <ColorBtn color="#F5F7FA" /> 
-                  <ColorBtn color="#FFF3E0" />
-                  <ColorBtn color="#E3F2FD" /> 
-                  <ColorBtn color="#F3E5F5" />
-              </View>
+              <TouchableOpacity
+                style={[styles.toggleBtn, theme.dyslexiaFont && styles.toggleBtnOn]}
+                onPress={() => updateTheme({ dyslexiaFont: !theme.dyslexiaFont })}
+              >
+                <Text style={[styles.toggleText, theme.dyslexiaFont && styles.toggleTextOn]}>
+                  {theme.dyslexiaFont ? 'ON' : 'OFF'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Letter Spacing */}
+            <Text style={styles.label}>Letter Spacing</Text>
+            <View style={styles.row}>
+              <SpacingBtn label="Normal" value="normal" />
+              <SpacingBtn label="Wide"   value="wide"   />
+              <SpacingBtn label="Wider"  value="wider"  />
+            </View>
+
+            {/* Color Overlay */}
+            <Text style={styles.label}>Screen Color Tint</Text>
+            <Text style={styles.accessDesc}>A colored tint can reduce visual stress when reading</Text>
+            <View style={styles.overlayRow}>
+              {OVERLAY_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[styles.overlayBtn, theme.colorOverlay === opt.value && styles.overlayBtnActive]}
+                  onPress={() => updateTheme({ colorOverlay: opt.value })}
+                >
+                  <Text style={styles.overlayEmoji}>{opt.emoji}</Text>
+                  <Text style={[styles.overlayLabel, theme.colorOverlay === opt.value && styles.overlayLabelActive]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           {/* ACCOUNT */}
@@ -138,7 +167,6 @@ export default function SettingsScreen({ navigation }) {
                 <TouchableOpacity 
                   style={styles.adminBtn} 
                   onPress={() => {
-                    console.log('Switching from student to teacher');
                     setDashboardMode('teacher');
                     setTimeout(() => {
                       navigation.reset({
@@ -156,7 +184,6 @@ export default function SettingsScreen({ navigation }) {
                 <TouchableOpacity 
                   style={styles.adminBtn} 
                   onPress={() => {
-                    console.log('Switching to student view, current mode:', dashboardMode);
                     setDashboardMode('student');
                     setTimeout(() => {
                       navigation.reset({
@@ -208,13 +235,25 @@ const styles = StyleSheet.create({
   optionBtnActive: { borderColor: '#607D8B', backgroundColor: '#ECEFF1' },
   optionText: { color: '#B0BEC5', fontWeight: 'bold' },
   optionTextActive: { color: '#455A64' },
-  colorCircle: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#eee' },
-  colorActive: { borderColor: '#607D8B', borderWidth: 3 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 },
   infoLabel: { color: '#78909C' },
   infoValue: { fontWeight: 'bold', color: '#333' },
   divider: { height: 1, backgroundColor: '#f0f0f0' },
   
+  // Accessibility styles
+  accessRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  accessDesc: { fontSize: 12, color: '#B0BEC5', marginBottom: 8 },
+  toggleBtn: { paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20, borderWidth: 2, borderColor: '#CFD8DC', backgroundColor: '#ECEFF1' },
+  toggleBtnOn: { backgroundColor: '#5C6BC0', borderColor: '#3949AB' },
+  toggleText: { fontWeight: 'bold', color: '#90A4AE', fontSize: 13 },
+  toggleTextOn: { color: '#fff' },
+  overlayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  overlayBtn: { alignItems: 'center', paddingHorizontal: 8, paddingVertical: 8, borderRadius: 12, borderWidth: 2, borderColor: '#ECEFF1', backgroundColor: '#F5F7FA', minWidth: 56 },
+  overlayBtnActive: { borderColor: '#5C6BC0', backgroundColor: '#EDE7F6' },
+  overlayEmoji: { fontSize: 22, marginBottom: 2 },
+  overlayLabel: { fontSize: 10, color: '#90A4AE', fontWeight: 'bold' },
+  overlayLabelActive: { color: '#5C6BC0' },
+
   supportItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
   supportText: { flex: 1, marginLeft: 12, fontSize: 15, color: '#455A64' },
   

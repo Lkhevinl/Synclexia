@@ -3,9 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
-import { checkQuestProgress } from '../../lib/questHelper'; 
+import { checkQuestProgress } from '../../lib/questHelper';
+import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 
 // Helper for colors
@@ -24,7 +26,7 @@ const getGradientColors = (hexColor) => {
   return [hexColor, hexColor];
 };
 
-export default function PhonicsScreen() {
+export default function PhonicsScreen({ navigation }) {
   const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function PhonicsScreen() {
         const { data } = await supabase.from('phonics_items').select('*').order('label');
         if (data) setItems(data);
     } catch (e) {
-        console.log("Error loading phonics:", e);
+        // Failed to load phonics items
     } finally {
         setLoading(false);
     }
@@ -47,8 +49,9 @@ export default function PhonicsScreen() {
   const handlePlay = (text) => {
     Speech.speak(text, { rate: 0.9, pitch: 1.1 });
     if (profile?.id) {
-        checkQuestProgress(profile.id, 'Phonics'); 
-        checkQuestProgress(profile.id, 'Practice'); 
+        checkQuestProgress(profile.id, 'Phonics');
+        checkQuestProgress(profile.id, 'Practice');
+        logSession({ studentId: profile.id, activityType: 'phonics', score: 1, total: 1, details: { label: text } });
     }
   };
 
@@ -61,7 +64,15 @@ export default function PhonicsScreen() {
         
         <View style={styles.headerContainer}>
            <Text style={styles.header}>Phonics Fun 🗣️</Text>
-           <Text style={styles.subHeader}>Tap to hear the sound!</Text>
+           <Text style={styles.subHeader}>Tap a card to hear the sound!</Text>
+           <TouchableOpacity
+             style={styles.activitiesBtn}
+             onPress={() => navigation.navigate('PhonicsActivity')}
+             activeOpacity={0.8}
+           >
+             <Ionicons name="game-controller-outline" size={20} color="#fff" />
+             <Text style={styles.activitiesBtnText}>Phonics Activities 🎮</Text>
+           </TouchableOpacity>
         </View>
         
         {loading ? (
@@ -108,9 +119,11 @@ const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: '#F0F4F8' },
   safeArea: { flex: 1 },
   
-  headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 }, // Added paddingTop to clear back button
+  headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 },
   header: { fontSize: 32, fontWeight: 'bold', color: '#37474F', letterSpacing: 1 },
-  subHeader: { fontSize: 16, color: '#78909C', marginTop: 5 },
+  subHeader: { fontSize: 16, color: '#78909C', marginTop: 5, marginBottom: 12 },
+  activitiesBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FF9800', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 },
+  activitiesBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 
   listContent: { paddingBottom: 40, paddingHorizontal: 20 },
   columnWrapper: { justifyContent: 'space-between' },
@@ -120,11 +133,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1, 
     marginBottom: 20, 
     borderRadius: 25, 
-    elevation: 8, 
-    shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    elevation: 8,
+    boxShadow: '0px 4px 5px rgba(0,0,0,0.2)',
   },
   
   cardGradient: { 
@@ -137,8 +147,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden' // Keeps the shine inside
   },
   
-  icon: { fontSize: 50, marginBottom: 10, textShadowColor: 'rgba(0,0,0,0.1)', textShadowRadius: 4 },
-  label: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 2 },
+  icon: { fontSize: 50, marginBottom: 10, textShadow: 'rgba(0,0,0,0.1) 0px 0px 4px' },
+  label: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadow: 'rgba(0,0,0,0.2) 0px 0px 2px' },
   
   shine: {
       position: 'absolute',

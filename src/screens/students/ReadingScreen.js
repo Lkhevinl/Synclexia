@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { useAuth } from '../../context/AuthContext';
+import { logSession } from '../../lib/analyticsHelper';
 
 // Sample Stories (You can move these to Supabase later!)
 const STORIES = [
@@ -17,10 +19,13 @@ const STORIES = [
 ];
 
 export default function ReadingScreen() {
+  const { profile } = useAuth();
   const [selectedStory, setSelectedStory] = useState(null);
+  const readStartTime = useRef(null);
 
   const handleRead = (story) => {
     setSelectedStory(story);
+    readStartTime.current = Date.now();
   };
 
   const handleSpeak = () => {
@@ -31,6 +36,18 @@ export default function ReadingScreen() {
 
   const closeBook = () => {
     Speech.stop();
+    // Log the reading session
+    if (profile?.id && selectedStory && readStartTime.current) {
+      const duration = Math.round((Date.now() - readStartTime.current) / 1000);
+      logSession({
+        studentId: profile.id,
+        activityType: 'reading',
+        score: 1,
+        total: 1,
+        durationSeconds: duration,
+        details: { storyId: selectedStory.id, storyTitle: selectedStory.title, level: selectedStory.level },
+      });
+    }
     setSelectedStory(null);
   };
 
@@ -125,7 +142,7 @@ const styles = StyleSheet.create({
       borderRadius: 12, 
       marginBottom: 20, 
       elevation: 6,
-      shadowColor: '#000', shadowOffset: {width: 4, height: 4}, shadowOpacity: 0.3, shadowRadius: 5,
+      boxShadow: '4px 4px 5px rgba(0,0,0,0.3)',
       borderRightWidth: 5, borderRightColor: 'rgba(0,0,0,0.1)', // 3D effect
       borderBottomWidth: 5, borderBottomColor: 'rgba(0,0,0,0.1)'
   },

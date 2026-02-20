@@ -185,10 +185,7 @@ const styles = StyleSheet.create({
       borderRadius: 25,
       padding: 25,
       elevation: 10,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.25,
-      shadowRadius: 10,
+      boxShadow: '0px 10px 10px rgba(0,0,0,0.25)',
       marginBottom: 20
   },
   
@@ -208,16 +205,13 @@ const styles = StyleSheet.create({
   roleTextActive: { color: '#fff' },
 
   signUpBtn: {
-      backgroundColor: '#4CAF50', // Green for "Go/Start"
+      backgroundColor: '#4CAF50',
       borderRadius: 12,
       height: 55,
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: 10,
-      shadowColor: "#4CAF50",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
+      boxShadow: '0px 4px 5px rgba(76,175,80,0.3)',
       elevation: 5
   },
   btnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },

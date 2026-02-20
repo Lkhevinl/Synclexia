@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (data) setProfile(data);
     } catch (e) {
-      console.log(e);
+      // Profile fetch failed silently — session still valid
     }
   };
 
@@ -46,17 +46,11 @@ export const AuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error("Logout error:", error);
-        throw error;
-      }
-      // Explicitly clear state
+      if (error) throw error;
       setSession(null);
       setProfile(null);
-      console.log("User logged out successfully");
       return true;
     } catch (e) {
-      console.error("Logout failed:", e);
       // Still clear state locally even if Supabase logout fails
       setSession(null);
       setProfile(null);

@@ -20,9 +20,11 @@ export default function AdminDashboardScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
+  const [studentCount, setStudentCount] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
+    fetchStudentCount();
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
@@ -30,6 +32,14 @@ export default function AdminDashboardScreen({ navigation }) {
   const fetchNotifications = async () => {
     const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
     if (data) setNotifications(data);
+  };
+
+  const fetchStudentCount = async () => {
+    const { count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'student');
+    setStudentCount(count || 0);
   };
 
   const AdminCard = ({ title, subtitle, icon, color, onPress }) => (
@@ -53,8 +63,8 @@ export default function AdminDashboardScreen({ navigation }) {
       <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Teacher"}! 👨‍🏫</Text>
-            <Text style={styles.subGreeting}>Manage your class & learning activities.</Text>
+            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 🧑‍🏫</Text>
+            <Text style={styles.subGreeting}>Manage your students & activities.</Text>
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
@@ -63,23 +73,22 @@ export default function AdminDashboardScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* STATS BAR */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>LEVEL</Text>
-            <Text style={styles.statValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>STUDENTS</Text>
-            <Text style={[styles.statValue, {color: '#4CAF50'}]}>--</Text>
-          </View>
-        </View>
       </LinearGradient>
 
+      {/* STATS BAR - floats out of header */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>LEVEL</Text>
+          <Text style={styles.statValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>STUDENTS</Text>
+          <Text style={[styles.statValue, {color: '#4CAF50'}]}>{studentCount}</Text>
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={{ height: 40 }} />
 
         {/* DAILY TIP */}
         <View style={styles.tipBox}>
@@ -161,7 +170,7 @@ export default function AdminDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('AdminEnrollment')} 
         />
 
-        <View style={{height: 100}} /> 
+        <View style={{height: 20}} /> 
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -192,21 +201,21 @@ export default function AdminDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingTop: 80, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  header: { paddingTop: 80, paddingBottom: 40, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   greeting: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   subGreeting: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
   headerIcons: { flexDirection: 'row', gap: 15 },
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, shadowColor: "#000", shadowOffset: {width:0, height:4}, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -30, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 8, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
   divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
 
-  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
+  scrollContent: { paddingTop: 30, paddingHorizontal: 20 },
   tipBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#333', borderRadius: 15, padding: 15, marginBottom: 25 },
   tipText: { color: '#fff', flex: 1, lineHeight: 20 },
   sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
