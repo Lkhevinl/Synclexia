@@ -7,7 +7,7 @@
     "icon": "./assets/icon.png",
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_YOUR_EAS_PROJECT_ID"
+        "projectId": "dedb3934-30bb-4ec0-9651-38d930042e3d"
       }
     },
     "userInterfaceStyle": "light",
@@ -31,6 +31,13 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "owner": "natchkun",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/dedb3934-30bb-4ec0-9651-38d930042e3d"
     }
   }
 }

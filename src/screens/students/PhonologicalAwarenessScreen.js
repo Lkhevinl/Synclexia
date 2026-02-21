@@ -109,9 +109,9 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   const current = items[idx];
   const options = Array.from({ length: Math.min(4, 4) }, (_, i) => i + 1).filter(n => n <= 5);
 
-  const speak = () => Speech.speak(current.word, { rate: 0.6 });
+  const speak = () => { if (current) Speech.speak(current.word, { rate: 0.6 }); };
 
-  useEffect(() => { speak(); }, [idx]);
+  useEffect(() => { if (current) speak(); }, [idx]);
 
   const handleSelect = (n) => {
     if (feedback) return;
@@ -138,6 +138,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
     }, 1200);
   };
 
+  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#2196F3" />;
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#2196F3" />;
 
   return (
@@ -186,10 +187,10 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
   const [done, setDone] = useState(false);
 
   const current = items[idx];
-  const choices = shuffleArr([current.correct, ...current.distractors]);
+  const choices = current ? shuffleArr([current.correct, ...current.distractors]) : [];
 
   const speak = (w) => Speech.speak(w, { rate: 0.65 });
-  useEffect(() => { speak(current.target); }, [idx]);
+  useEffect(() => { if (current) speak(current.target); }, [idx]);
 
   const handleSelect = (choice) => {
     if (feedback) return;
@@ -214,6 +215,7 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
     }, 1200);
   };
 
+  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#9C27B0" />;
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#9C27B0" />;
 
   return (
@@ -262,7 +264,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   const [done, setDone] = useState(false);
 
   const current = items[idx];
-  useEffect(() => { Speech.speak(current.word, { rate: 0.6 }); }, [idx]);
+  useEffect(() => { if (current) Speech.speak(current.word, { rate: 0.6 }); }, [idx]);
 
   const handleSelect = (opt) => {
     if (feedback) return;
@@ -284,6 +286,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
     }, 1200);
   };
 
+  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#E91E63" />;
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#E91E63" />;
 
   return (

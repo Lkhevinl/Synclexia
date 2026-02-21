@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
 import GoBackBtn from '../../components/GoBackBtn';
 
 export default function TeacherEnrollmentScreen() {
@@ -27,16 +28,8 @@ export default function TeacherEnrollmentScreen() {
 
   const fetchEnrolledStudents = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('enrollments')
-      .select('*, profiles!enrollments_student_id_fkey(id, full_name, email, xp, role)')
-      .eq('teacher_id', profile?.id)
-      .order('created_at', { ascending: false });
-    if (error) {
-      Alert.alert('Error', 'Failed to load enrolled students. Please try again.');
-    } else if (data) {
-      setEnrolledStudents(data);
-    }
+    const data = await fetchEnrollmentsWithProfiles(profile?.id);
+    setEnrolledStudents(data);
     setLoading(false);
   };
 

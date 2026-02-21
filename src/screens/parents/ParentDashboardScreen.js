@@ -43,15 +43,29 @@ export default function ParentDashboardScreen({ navigation }) {
 
   const fetchLinkedChildren = async () => {
     setLoading(true);
+    // Step 1: get parent_links rows
     const { data, error } = await supabase
       .from('parent_links')
-      .select('*, profiles!parent_links_student_id_fkey(id, full_name, email, xp, coins, role)')
+      .select('*')
       .eq('parent_id', profile?.id)
       .order('created_at');
 
     if (data && data.length > 0) {
-      setChildren(data);
-      selectChild(data[0]);
+      // Step 2: fetch child profiles
+      const childIds = [...new Set(data.map(l => l.student_id))];
+      const { data: childProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, xp, coins, role')
+        .in('id', childIds);
+      const profileMap = {};
+      (childProfiles || []).forEach(p => { profileMap[p.id] = p; });
+
+      const enriched = data.map(l => ({
+        ...l,
+        profiles: profileMap[l.student_id] || null,
+      }));
+      setChildren(enriched);
+      selectChild(enriched[0]);
     }
     setLoading(false);
   };

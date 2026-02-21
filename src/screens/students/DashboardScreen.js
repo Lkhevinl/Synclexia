@@ -51,12 +51,12 @@ export default function DashboardScreen({ navigation }) {
       return;
     }
 
-    // Get primary enrollment, or any enrollment if no primary set
+    // Get primary enrollment (most recent if is_primary column doesn't exist yet)
     const { data: enrollments, error } = await supabase
       .from('enrollments')
       .select('*')
       .eq('student_id', profile?.id)
-      .order('is_primary', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error || !enrollments || enrollments.length === 0) {
       setEnrollment(null);

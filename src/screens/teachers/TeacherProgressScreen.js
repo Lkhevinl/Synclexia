@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 
 const ACTIVITY_ICONS = {
@@ -33,16 +34,10 @@ export default function TeacherProgressScreen({ navigation }) {
   }, []);
 
   const fetchStudents = async () => {
-    const { data } = await supabase
-      .from('enrollments')
-      .select('*, profiles!enrollments_student_id_fkey(id, full_name, email, xp)')
-      .eq('teacher_id', profile?.id);
-    
-    if (data) {
-      setStudents(data);
-      if (data.length > 0) {
-        loadProgress(data[0]);
-      }
+    const data = await fetchEnrollmentsWithProfiles(profile?.id);
+    setStudents(data);
+    if (data.length > 0) {
+      loadProgress(data[0]);
     }
     setLoading(false);
   };

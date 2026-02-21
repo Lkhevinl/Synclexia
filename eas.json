@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 14.0.0"
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -17,7 +18,9 @@
       },
       "channel": "staging",
       "env": {
-        "ENVIRONMENT": "staging"
+        "ENVIRONMENT": "staging",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://vovpgoxjchsiqvtjvcmh.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_vk0CEFtACdGen6UVeDMiHw_fI6RRPvl"
       }
     },
     "production": {

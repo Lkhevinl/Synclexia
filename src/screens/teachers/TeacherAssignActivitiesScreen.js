@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
 
 const ACTIVITIES = [
   { id: 'phonics', name: 'Phonics', icon: '🗣️', color: '#FF9800' },
@@ -32,15 +33,10 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
   }, []);
 
   const fetchEnrolledStudents = async () => {
-    const { data } = await supabase
-      .from('enrollments')
-      .select('*, profiles!enrollments_student_id_fkey(id, full_name, email, xp)')
-      .eq('teacher_id', profile?.id);
-    if (data) {
-      setStudents(data);
-      if (data.length > 0) {
-        selectStudent(data[0]);
-      }
+    const data = await fetchEnrollmentsWithProfiles(profile?.id);
+    setStudents(data);
+    if (data.length > 0) {
+      selectStudent(data[0]);
     }
     setLoading(false);
   };

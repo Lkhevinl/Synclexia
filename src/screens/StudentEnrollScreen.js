@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -8,37 +8,45 @@ import GoBackBtn from '../components/GoBackBtn';
 
 export default function StudentEnrollScreen({ navigation }) {
   const { profile } = useAuth();
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const [myTeacher, setMyTeacher] = useState(null);
   const [myTeachers, setMyTeachers] = useState([]);
 
   useEffect(() => {
-    getCameraPermission();
+    requestPermission();
   }, []);
 
   useEffect(() => {
     if (profile?.id) {
       checkExistingEnrollment();
     }
-  }, [profile?.id]); // checkExistingEnrollment only uses profile.id which is the dep
-
-  const getCameraPermission = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    setHasPermission(status === 'granted');
-  };
+  }, [profile?.id]);
 
   const checkExistingEnrollment = async () => {
+    // Step 1: get enrollment rows
     const { data, error } = await supabase
       .from('enrollments')
-      .select('*, profiles!enrollments_teacher_id_fkey(full_name, email)')
+      .select('*')
       .eq('student_id', profile?.id);
 
     if (data && data.length > 0) {
-      setMyTeachers(data);
-      // Set primary teacher for display
-      const primary = data.find(e => e.is_primary) || data[0];
+      // Step 2: fetch teacher profiles
+      const teacherIds = [...new Set(data.map(e => e.teacher_id))];
+      const { data: teachers } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', teacherIds);
+      const teacherMap = {};
+      (teachers || []).forEach(t => { teacherMap[t.id] = t; });
+
+      const enriched = data.map(e => ({
+        ...e,
+        profiles: teacherMap[e.teacher_id] || null,
+      }));
+      setMyTeachers(enriched);
+      const primary = enriched.find(e => e.is_primary) || enriched[0];
       setMyTeacher(primary);
     } else {
       setMyTeachers([]);
@@ -84,10 +92,11 @@ export default function StudentEnrollScreen({ navigation }) {
 
     const isPrimary = (count || 0) === 0;
 
-    // Enroll student
+    // Enroll student (is_primary may not exist if migrations haven't run)
+    const insertRow = { student_id: profile?.id, teacher_id: teacherId };
     const { error } = await supabase
       .from('enrollments')
-      .insert([{ student_id: profile?.id, teacher_id: teacherId, is_primary: isPrimary }]);
+      .insert([insertRow]);
 
     if (error) {
       Alert.alert('Error', error.message);
@@ -144,7 +153,7 @@ export default function StudentEnrollScreen({ navigation }) {
     ]);
   };
 
-  if (hasPermission === null) {
+  if (!permission) {
     return (
       <View style={styles.container}>
         <Text>Requesting camera permission...</Text>
@@ -152,7 +161,7 @@ export default function StudentEnrollScreen({ navigation }) {
     );
   }
 
-  if (hasPermission === false) {
+  if (!permission.granted) {
     return (
       <View style={styles.container}>
         <GoBackBtn />
@@ -160,6 +169,9 @@ export default function StudentEnrollScreen({ navigation }) {
           <Ionicons name="camera-off" size={80} color="#ccc" />
           <Text style={styles.errorText}>No camera access</Text>
           <Text style={styles.errorSubtext}>Please enable camera in settings</Text>
+          <TouchableOpacity style={[styles.rescanBtn, { marginTop: 24 }]} onPress={requestPermission}>
+            <Text style={styles.rescanText}>Grant Permission</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -207,11 +219,11 @@ export default function StudentEnrollScreen({ navigation }) {
         <>
           <Text style={styles.instruction}>Scan your teacher's QR code</Text>
           <View style={styles.cameraContainer}>
-            <Camera
+            <CameraView
               style={styles.camera}
-              onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-              barCodeScannerSettings={{
-                barCodeTypes: ['qr'],
+              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+              barcodeScannerSettings={{
+                barcodeTypes: ['qr'],
               }}
             />
             <View style={styles.overlay}>

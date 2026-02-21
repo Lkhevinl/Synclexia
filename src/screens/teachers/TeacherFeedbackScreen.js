@@ -27,12 +27,21 @@ export default function TeacherFeedbackScreen() {
       return;
     }
     
-    const { data } = await supabase
+    const { data: rawFeedback } = await supabase
       .from('feedback')
-      .select('*, profiles(full_name, email)')
+      .select('*')
       .in('user_id', studentIds)
       .order('created_at', { ascending: false });
-    if (data) setFeedbacks(data);
+    if (rawFeedback && rawFeedback.length > 0) {
+      // Fetch user profiles in batch
+      const uids = [...new Set(rawFeedback.map(f => f.user_id))];
+      const { data: profs } = await supabase.from('profiles').select('id, full_name, email').in('id', uids);
+      const profMap = {};
+      (profs || []).forEach(p => { profMap[p.id] = p; });
+      setFeedbacks(rawFeedback.map(f => ({ ...f, profiles: profMap[f.user_id] || null })));
+    } else {
+      setFeedbacks([]);
+    }
   };
 
   const sendReply = async () => {

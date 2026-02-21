@@ -83,13 +83,26 @@ export default function TeacherDashboardScreen({ navigation }) {
       
       // Fetch recent activity for feed
       if (ids.length > 0) {
-        const { data: logs } = await supabase
-          .from('session_logs')
-          .select('*, profiles!session_logs_student_id_fkey(full_name)')
-          .in('student_id', ids)
-          .order('created_at', { ascending: false })
-          .limit(10);
-        if (logs) setActivityFeed(logs);
+        try {
+          // session_logs table may not exist yet — wrap in try/catch
+          const { data: logs } = await supabase
+            .from('session_logs')
+            .select('*')
+            .in('student_id', ids)
+            .order('created_at', { ascending: false })
+            .limit(10);
+          if (logs) {
+            // Attach student names from profiles
+            const { data: nameData } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .in('id', ids);
+            const nameMap = {};
+            (nameData || []).forEach(p => { nameMap[p.id] = p.full_name; });
+            const enriched = logs.map(l => ({ ...l, student_name: nameMap[l.student_id] || 'Student' }));
+            setActivityFeed(enriched);
+          }
+        } catch (_) { /* table doesn't exist yet */ }
       }
     }
   };
@@ -262,7 +275,7 @@ export default function TeacherDashboardScreen({ navigation }) {
               <View key={log.id || idx} style={styles.feedItem}>
                 <View style={[styles.feedDot, { backgroundColor: log.accuracy >= 80 ? '#4CAF50' : log.accuracy >= 50 ? '#FF9800' : '#F44336' }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.feedName}>{log.profiles?.full_name || 'Student'}</Text>
+                  <Text style={styles.feedName}>{log.student_name || 'Student'}</Text>
                   <Text style={styles.feedDetail}>
                     {log.activity_type} — {log.score}/{log.total} ({log.accuracy}%) {log.xp_earned ? `+${log.xp_earned} XP` : ''}
                   </Text>

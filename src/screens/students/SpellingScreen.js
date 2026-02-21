@@ -94,6 +94,7 @@ function SpellingGame({ mode, onBack, userId, wordBank }) {
 
   // When word changes, reset tiles
   useEffect(() => {
+    if (!current) return; // guard: no words loaded yet
     setTiles(buildTiles(current.word));
     setAnswer([]);
     setChecked(false);
@@ -164,6 +165,20 @@ function SpellingGame({ mode, onBack, userId, wordBank }) {
 
   if (finished) {
     return <FinishScreen score={score} total={wordList.length} onBack={onBack} />;
+  }
+
+  // No content from DB
+  if (!wordList.length || !current) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <Text style={{ fontSize: 60, marginBottom: 16 }}>📭</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: '#37474F' }}>No Words Available</Text>
+        <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>Ask your teacher or admin to add spelling words!</Text>
+        <TouchableOpacity style={{ backgroundColor: '#9C27B0', borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 }} onPress={onBack}>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>← Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   const availableTiles = tiles.filter(t => !answer.find(a => a.id === t.id));
