@@ -33,19 +33,26 @@ export default function TeacherProgressScreen({ navigation }) {
     fetchStudents();
   }, []);
 
+  // Null-safe helpers — profiles can be null if RLS blocks the query
+  const getStudentId   = (s) => s?.profiles?.id   ?? s?.student_id;
+  const getStudentName = (s) => s?.profiles?.full_name ?? 'Student';
+  const getStudentXP   = (s) => s?.profiles?.xp   ?? 0;
+
   const fetchStudents = async () => {
     const data = await fetchEnrollmentsWithProfiles(profile?.id);
     setStudents(data);
     if (data.length > 0) {
-      loadProgress(data[0]);
+      await loadProgress(data[0]);
     }
     setLoading(false);
   };
 
   const loadProgress = async (student) => {
     setSelectedStudent(student);
+    const sid = getStudentId(student);
+    if (!sid) return;
     setProgressLoading(true);
-    const data = await getStudentProgress(student.profiles.id, daysBack);
+    const data = await getStudentProgress(sid, daysBack);
     setProgress(data);
     setProgressLoading(false);
   };
@@ -53,8 +60,10 @@ export default function TeacherProgressScreen({ navigation }) {
   const handleDaysChange = async (days) => {
     setDaysBack(days);
     if (selectedStudent) {
+      const sid = getStudentId(selectedStudent);
+      if (!sid) return;
       setProgressLoading(true);
-      const data = await getStudentProgress(selectedStudent.profiles.id, days);
+      const data = await getStudentProgress(sid, days);
       setProgress(data);
       setProgressLoading(false);
     }
@@ -100,21 +109,29 @@ export default function TeacherProgressScreen({ navigation }) {
         <FlatList
           horizontal
           data={students}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.student_id ?? item.id}
           showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.studentChip, selectedStudent?.id === item.id && styles.studentChipActive]}
-              onPress={() => loadProgress(item)}
-            >
-              <Text style={[styles.chipName, selectedStudent?.id === item.id && styles.chipNameActive]}>
-                {item.profiles?.full_name?.split(' ')[0]}
-              </Text>
-              <Text style={[styles.chipXP, selectedStudent?.id === item.id && styles.chipXPActive]}>
-                {item.profiles?.xp || 0} XP
-              </Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }) => {
+            const isActive = getStudentId(selectedStudent) === getStudentId(item);
+            return (
+              <TouchableOpacity
+                style={[styles.studentChip, isActive && styles.studentChipActive]}
+                onPress={() => loadProgress(item)}
+              >
+                <View style={[styles.chipAvatar, isActive && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Text style={styles.chipAvatarText}>
+                    {(getStudentName(item)[0] || '?').toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={[styles.chipName, isActive && styles.chipNameActive]}>
+                  {getStudentName(item).split(' ')[0]}
+                </Text>
+                <Text style={[styles.chipXP, isActive && styles.chipXPActive]}>
+                  {getStudentXP(item)} XP
+                </Text>
+              </TouchableOpacity>
+            );
+          }}
         />
 
         {/* Time Range */}
@@ -216,11 +233,13 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 15, marginTop: 20 },
 
   // Student Chips
-  studentChip: { backgroundColor: '#fff', paddingHorizontal: 18, paddingVertical: 12, borderRadius: 20, marginRight: 10, alignItems: 'center', elevation: 1 },
+  studentChip: { backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, marginRight: 10, alignItems: 'center', elevation: 1, minWidth: 80 },
   studentChipActive: { backgroundColor: '#3b5998' },
-  chipName: { fontWeight: 'bold', color: '#333', fontSize: 14 },
+  chipAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E8EAF6', justifyContent: 'center', alignItems: 'center', marginBottom: 6 },
+  chipAvatarText: { fontWeight: 'bold', color: '#3b5998', fontSize: 15 },
+  chipName: { fontWeight: 'bold', color: '#333', fontSize: 13 },
   chipNameActive: { color: '#fff' },
-  chipXP: { fontSize: 11, color: '#999', marginTop: 3 },
+  chipXP: { fontSize: 11, color: '#999', marginTop: 2 },
   chipXPActive: { color: 'rgba(255,255,255,0.8)' },
 
   // Time Range

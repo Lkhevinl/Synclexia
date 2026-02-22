@@ -1,701 +1,441 @@
-// screens/parents/ParentDashboardScreen.js
-// Parents can view the progress of their linked children.
-// A parent account is linked to a student via the parent_links table.
-// Read-only: parents cannot assign activities or post notifications.
-// Features: child progress, assignments tracker, notifications, adaptive levels,
-//           daily streak, feedback sending, support & settings navigation.
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, StatusBar, RefreshControl, Modal, TextInput,
-  Alert, Dimensions,
+  ActivityIndicator, RefreshControl, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { getStudentProgress } from '../../lib/analyticsHelper';
-import { getAllAdaptiveStates, levelLabel } from '../../lib/adaptiveEngine';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800'];
+const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 const ACTIVITY_LABELS = {
-  phonics:                  '🗣️ Phonics',
-  phonics_blend:            '🔗 Blending',
-  phonics_rhyme:            '🎵 Rhyme',
-  phonics_segment:          '✂️ Segmenting',
-  spelling:                 '🔤 Spelling',
-  writing:                  '✍️ Writing',
-  reading:                  '📖 Reading',
-  scan:                     '📷 Scan',
-  phonological_awareness:   '🎧 Phonological',
+  phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
+  phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
+  reading: '📖 Reading', scan: '📷 Scan', phonological_awareness: '🎧 Phonological',
 };
 
-const TIME_RANGES = [
-  { label: '7 days', days: 7 },
-  { label: '14 days', days: 14 },
-  { label: '30 days', days: 30 },
-];
-
 export default function ParentDashboardScreen({ navigation }) {
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
+
   const [children, setChildren] = useState([]);
-  const [selectedChild, setSelectedChild] = useState(null);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [childProfile, setChildProfile] = useState(null);
   const [progress, setProgress] = useState(null);
-  const [adaptiveStates, setAdaptiveStates] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [daysBack, setDaysBack] = useState(14);
 
-  // Feedback modal
-  const [feedbackVisible, setFeedbackVisible] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [feedbackRating, setFeedbackRating] = useState(5);
-  const [sendingFeedback, setSendingFeedback] = useState(false);
+  // Real-time subscription refs
+  const profileSubRef = useRef(null);
+  const assignSubRef = useRef(null);
+  const msgSubRef = useRef(null);
 
-  // Notifications modal
-  const [notifVisible, setNotifVisible] = useState(false);
-
-  useEffect(() => {
-    fetchLinkedChildren();
-  }, []);
-
-  const fetchLinkedChildren = async () => {
-    setLoading(true);
+  // ── Fetch linked children ──────────────────────────────────────────────────
+  const fetchChildren = async () => {
     const { data } = await supabase
       .from('parent_links')
-      .select('*')
-      .eq('parent_id', profile?.id)
-      .order('created_at');
-
-    if (data && data.length > 0) {
-      const childIds = [...new Set(data.map(l => l.student_id))];
-      const { data: childProfiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, xp, coins, role')
-        .in('id', childIds);
-      const profileMap = {};
-      (childProfiles || []).forEach(p => { profileMap[p.id] = p; });
-
-      const enriched = data.map(l => ({
-        ...l,
-        profiles: profileMap[l.student_id] || null,
-      }));
-      setChildren(enriched);
-      await selectChild(enriched[0], daysBack);
-    }
-    setLoading(false);
+      .select('*, profiles:student_id(id, full_name, email, xp, coins, level, streak)')
+      .eq('parent_id', profile?.id);
+    return data || [];
   };
 
-  const selectChild = async (link, days) => {
-    if (!link?.profiles) return;
-    setSelectedChild(link);
-    const d = days ?? daysBack;
-    const [prog, adaptive, assigns, notifs] = await Promise.all([
-      getStudentProgress(link.profiles.id, d),
-      getAllAdaptiveStates(link.profiles.id),
-      fetchAssignments(link.profiles.id),
-      fetchNotifications(link.profiles.id),
+  // ── Fetch everything for the selected child ────────────────────────────────
+  const loadChild = async (childLink) => {
+    if (!childLink) return;
+    const sid = childLink.profiles?.id ?? childLink.student_id;
+
+    const [{ data: cp }, prog, { data: assign }, { data: msgs }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
+      getStudentProgress(sid, 14),
+      supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false).order('created_at', { ascending: false }),
+      supabase.from('parent_messages').select('id').eq('receiver_id', profile?.id).eq('is_read', false),
     ]);
+
+    setChildProfile(cp);
     setProgress(prog);
-    setAdaptiveStates(adaptive);
-    setAssignments(assigns);
-    setNotifications(notifs);
+    setAssignments(assign || []);
+    setUnreadCount(msgs?.length ?? 0);
   };
 
-  const fetchAssignments = async (studentId) => {
-    try {
-      const { data } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      return data || [];
-    } catch { return []; }
-  };
-
-  const fetchNotifications = async (studentId) => {
-    try {
-      // Get notifications from the student's enrolled teacher
-      const { data: enrollment } = await supabase
-        .from('enrollments')
-        .select('teacher_id')
-        .eq('student_id', studentId)
-        .limit(1)
-        .maybeSingle();
-
-      if (!enrollment) return [];
-
-      const { data } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('teacher_id', enrollment.teacher_id)
-        .eq('is_draft', false)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      return data || [];
-    } catch { return []; }
-  };
-
-  const handleDaysChange = async (days) => {
-    setDaysBack(days);
-    if (selectedChild) {
-      await selectChild(selectedChild, days);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchLinkedChildren();
+  // ── Full refresh ───────────────────────────────────────────────────────────
+  const refresh = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
+    const kids = await fetchChildren();
+    setChildren(kids);
+    const idx = Math.min(selectedIdx, Math.max(kids.length - 1, 0));
+    setSelectedIdx(idx);
+    await loadChild(kids[idx]);
+    setLoading(false);
     setRefreshing(false);
+  }, [profile?.id, selectedIdx]);
+
+  // ── useFocusEffect — re-fetch every time screen comes into focus ───────────
+  useFocusEffect(
+    useCallback(() => {
+      refresh(children.length === 0);
+    }, [profile?.id, selectedIdx])
+  );
+
+  // ── Real-time subscriptions for selected child ─────────────────────────────
+  useEffect(() => {
+    if (!children[selectedIdx]) return;
+    const sid = children[selectedIdx]?.profiles?.id ?? children[selectedIdx]?.student_id;
+    if (!sid) return;
+
+    // Unsubscribe previous
+    profileSubRef.current?.unsubscribe();
+    assignSubRef.current?.unsubscribe();
+    msgSubRef.current?.unsubscribe();
+
+    // Child profile changes (XP, coins, level, streak)
+    profileSubRef.current = supabase
+      .channel(`parent-child-profile-${sid}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${sid}` },
+        (payload) => { setChildProfile(prev => ({ ...prev, ...payload.new })); })
+      .subscribe();
+
+    // Assignments changes
+    assignSubRef.current = supabase
+      .channel(`parent-assignments-${sid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments', filter: `student_id=eq.${sid}` },
+        () => {
+          supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false)
+            .order('created_at', { ascending: false })
+            .then(({ data }) => setAssignments(data || []));
+        })
+      .subscribe();
+
+    // Unread messages
+    msgSubRef.current = supabase
+      .channel(`parent-msgs-${profile?.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parent_messages', filter: `receiver_id=eq.${profile?.id}` },
+        () => {
+          supabase.from('parent_messages').select('id').eq('receiver_id', profile?.id).eq('is_read', false)
+            .then(({ data }) => setUnreadCount(data?.length ?? 0));
+        })
+      .subscribe();
+
+    return () => {
+      profileSubRef.current?.unsubscribe();
+      assignSubRef.current?.unsubscribe();
+      msgSubRef.current?.unsubscribe();
+    };
+  }, [selectedIdx, children.length]);
+
+  // ── Switch child tab ───────────────────────────────────────────────────────
+  const switchChild = async (idx) => {
+    setSelectedIdx(idx);
+    setChildProfile(null);
+    setProgress(null);
+    setAssignments([]);
+    await loadChild(children[idx]);
   };
 
-  const sendFeedback = async () => {
-    if (!feedbackMessage.trim()) {
-      Alert.alert('Error', 'Please enter a message.');
-      return;
-    }
-    setSendingFeedback(true);
-    const { error } = await supabase.from('feedback').insert({
-      user_id: profile?.id,
-      message: feedbackMessage.trim(),
-      rating: feedbackRating,
-    });
-    setSendingFeedback(false);
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      Alert.alert('Thank You!', 'Your feedback has been sent to the teacher.');
-      setFeedbackMessage('');
-      setFeedbackRating(5);
-      setFeedbackVisible(false);
-    }
-  };
+  const child = children[selectedIdx];
+  const cp = childProfile;
+  const name = cp?.full_name ?? child?.profiles?.full_name ?? 'Child';
+  const xp = cp?.xp ?? 0;
+  const level = cp?.level ?? Math.floor(xp / 100) + 1;
+  const coins = cp?.coins ?? 0;
+  const streak = cp?.streak ?? 0;
+  const xpInLevel = xp % 100;
+  const pendingCount = assignments.length;
 
-  const level = Math.floor((selectedChild?.profiles?.xp || 0) / 100) + 1;
-  const xp    = selectedChild?.profiles?.xp || 0;
-  const coins = selectedChild?.profiles?.coins || 0;
-  const xpToNext = 100 - (xp % 100);
-  const xpProgress = (xp % 100) / 100;
-
-  // Compute daily streak from recent sessions
-  const computeStreak = useCallback(() => {
-    if (!progress?.recentSessions?.length) return 0;
-    const days = new Set();
-    progress.recentSessions.forEach(s => {
-      days.add(new Date(s.created_at).toDateString());
-    });
-    let streak = 0;
-    const today = new Date();
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      if (days.has(d.toDateString())) streak++;
-      else if (i > 0) break; // allow today to be missing
-    }
-    return streak;
-  }, [progress]);
-
-  const streak = computeStreak();
-  const pendingAssignments = assignments.filter(a => !a.is_completed);
-  const completedAssignments = assignments.filter(a => a.is_completed);
+  const navParams = { child };
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#6A1B9A" />
+      <View style={s.loadingContainer}>
+        <ActivityIndicator size="large" color="#7B1FA2" />
+        <Text style={s.loadingText}>Loading your children's data...</Text>
       </View>
     );
   }
 
   if (children.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.header}>
-          <Text style={styles.headerTitle}>Parent Dashboard</Text>
-          <Text style={styles.headerSub}>No linked children found.</Text>
+      <View style={s.emptyContainer}>
+        <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.emptyHeader}>
+          <Text style={s.emptyHeaderTitle}>Parent Dashboard</Text>
         </LinearGradient>
-        <View style={styles.centered}>
-          <Ionicons name="people-outline" size={60} color="#ccc" />
-          <Text style={styles.emptyText}>No children linked yet.</Text>
-          <Text style={styles.emptyHint}>Ask the teacher or admin to link your account.</Text>
-        </View>
-        <View style={styles.bottomActions}>
-          <TouchableOpacity style={styles.supportBtn} onPress={() => navigation.navigate('Support')}>
-            <Ionicons name="help-circle-outline" size={20} color="#6A1B9A" />
-            <Text style={styles.supportBtnText}>Support</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-            <Text style={styles.signOutText}>Sign Out</Text>
+        <View style={s.emptyBody}>
+          <Ionicons name="people-outline" size={80} color="#ddd" />
+          <Text style={s.emptyTitle}>No children linked yet</Text>
+          <Text style={s.emptyHint}>Search for your child's account to start monitoring their progress.</Text>
+          <TouchableOpacity style={s.linkChildBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
+            <Ionicons name="add-circle" size={20} color="#fff" />
+            <Text style={s.linkChildBtnText}>Link a Child</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={s.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <LinearGradient colors={['#6A1B9A', '#4A148C']} style={styles.header}>
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Parent Dashboard</Text>
-            <Text style={styles.headerSub}>Welcome, {profile?.full_name}</Text>
+      {/* ── Header ── */}
+      <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.header}>
+        <View style={s.headerTop}>
+          <View>
+            <Text style={s.greeting}>Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'} 👋</Text>
+            <Text style={s.headerSub}>Monitoring your child's progress</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.headerIconBtn} onPress={() => setNotifVisible(true)}>
-              <Ionicons name="notifications-outline" size={22} color="#fff" />
-              {notifications.length > 0 && <View style={styles.notifDot} />}
+          <View style={s.headerActions}>
+            <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
+              <Ionicons name="person-add" size={22} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerIconBtn} onPress={() => setFeedbackVisible(true)}>
-              <Ionicons name="chatbubble-outline" size={22} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerIconBtn} onPress={signOut}>
-              <Ionicons name="log-out-outline" size={22} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Child Selector (if multiple children) */}
-      {children.length > 1 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.childSelector}>
-          {children.map(c => (
-            <TouchableOpacity
-              key={c.id}
-              style={[styles.childChip, selectedChild?.id === c.id && styles.childChipActive]}
-              onPress={() => selectChild(c)}>
-              <Text style={[styles.childChipText, selectedChild?.id === c.id && styles.childChipTextActive]}>
-                {c.profiles?.full_name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#6A1B9A']} />}
-      >
-        {selectedChild && (
-          <>
-            {/* Child Summary Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>
-                    {selectedChild.profiles?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                  </Text>
-                </View>
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text style={styles.childName}>{selectedChild.profiles?.full_name}</Text>
-                  <Text style={styles.childEmail}>{selectedChild.profiles?.email}</Text>
-                </View>
-                {streak > 0 && (
-                  <View style={styles.streakBadge}>
-                    <Text style={styles.streakText}>🔥 {streak}d</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* XP Progress Bar */}
-              <View style={styles.xpBarContainer}>
-                <View style={styles.xpBarBg}>
-                  <View style={[styles.xpBarFill, { width: `${xpProgress * 100}%` }]} />
-                </View>
-                <Text style={styles.xpBarLabel}>{xpToNext} XP to Level {level + 1}</Text>
-              </View>
-
-              <View style={styles.statsRow}>
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>Lv. {level}</Text>
-                  <Text style={styles.statLabel}>LEVEL</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.stat}>
-                  <Text style={styles.statValue}>{xp}</Text>
-                  <Text style={styles.statLabel}>TOTAL XP</Text>
-                </View>
-                <View style={styles.divider} />
-                <View style={styles.stat}>
-                  <Text style={[styles.statValue, { color: '#FFD700' }]}>{coins}</Text>
-                  <Text style={styles.statLabel}>COINS</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Quick Stats Row */}
-            <View style={styles.quickStatsRow}>
-              <View style={[styles.quickStat, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                <Text style={[styles.quickStatValue, { color: '#4CAF50' }]}>{completedAssignments.length}</Text>
-                <Text style={styles.quickStatLabel}>Completed</Text>
-              </View>
-              <View style={[styles.quickStat, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="time" size={24} color="#FF9800" />
-                <Text style={[styles.quickStatValue, { color: '#FF9800' }]}>{pendingAssignments.length}</Text>
-                <Text style={styles.quickStatLabel}>Pending</Text>
-              </View>
-              <View style={[styles.quickStat, { backgroundColor: '#F3E5F5' }]}>
-                <Ionicons name="flame" size={24} color="#6A1B9A" />
-                <Text style={[styles.quickStatValue, { color: '#6A1B9A' }]}>{streak}</Text>
-                <Text style={styles.quickStatLabel}>Day Streak</Text>
-              </View>
-            </View>
-
-            {/* Time Range Selector */}
-            <View style={styles.timeRangeRow}>
-              {TIME_RANGES.map(r => (
-                <TouchableOpacity
-                  key={r.days}
-                  style={[styles.timeBtn, daysBack === r.days && styles.timeBtnActive]}
-                  onPress={() => handleDaysChange(r.days)}
-                >
-                  <Text style={[styles.timeText, daysBack === r.days && styles.timeTextActive]}>{r.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Progress Summary */}
-            {progress && (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>📊 Progress Summary</Text>
-                <View style={styles.statsRow}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{progress.totalSessions}</Text>
-                    <Text style={styles.statLabel}>SESSIONS</Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{progress.totalXP}</Text>
-                    <Text style={styles.statLabel}>XP EARNED</Text>
-                  </View>
-                  <View style={styles.divider} />
-                  <View style={styles.stat}>
-                    <Text style={[styles.statValue, { color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336' }]}>
-                      {progress.avgAccuracy}%
-                    </Text>
-                    <Text style={styles.statLabel}>AVG ACCURACY</Text>
-                  </View>
-                </View>
-
-                {/* Per-activity breakdown */}
-                {Object.keys(progress.byActivity).length > 0 && (
-                  <>
-                    <Text style={styles.subTitle}>Activity Breakdown</Text>
-                    {Object.entries(progress.byActivity).map(([type, data]) => {
-                      const acc = data.totalItems > 0 ? Math.round((data.totalScore / data.totalItems) * 100) : 0;
-                      const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
-                      return (
-                        <View key={type} style={styles.activityRow}>
-                          <Text style={styles.activityLabel}>{ACTIVITY_LABELS[type] || type}</Text>
-                          <View style={styles.activityRight}>
-                            <Text style={styles.activitySessions}>{data.count}x</Text>
-                            <View style={[styles.accBadge, { backgroundColor: color + '20', borderColor: color }]}>
-                              <Text style={[styles.accText, { color }]}>{acc}%</Text>
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </>
-                )}
-              </View>
-            )}
-
-            {/* Assignments Tracker */}
-            {assignments.length > 0 && (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>📋 Assignments</Text>
-                {pendingAssignments.length > 0 && (
-                  <>
-                    <Text style={styles.subTitle}>Pending ({pendingAssignments.length})</Text>
-                    {pendingAssignments.map(a => (
-                      <View key={a.id} style={styles.assignmentRow}>
-                        <View style={[styles.assignDot, { backgroundColor: '#FF9800' }]} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.assignType}>{ACTIVITY_LABELS[a.activity_type] || a.activity_type}</Text>
-                          {a.notes && <Text style={styles.assignNotes}>{a.notes}</Text>}
-                        </View>
-                        <Text style={styles.assignTarget}>Target: {a.target_count || 1}</Text>
-                      </View>
-                    ))}
-                  </>
-                )}
-                {completedAssignments.length > 0 && (
-                  <>
-                    <Text style={styles.subTitle}>Completed ({completedAssignments.length})</Text>
-                    {completedAssignments.slice(0, 5).map(a => (
-                      <View key={a.id} style={[styles.assignmentRow, { opacity: 0.6 }]}>
-                        <Ionicons name="checkmark-circle" size={16} color="#4CAF50" style={{ marginRight: 10 }} />
-                        <Text style={[styles.assignType, { textDecorationLine: 'line-through' }]}>
-                          {ACTIVITY_LABELS[a.activity_type] || a.activity_type}
-                        </Text>
-                      </View>
-                    ))}
-                  </>
-                )}
-              </View>
-            )}
-
-            {/* Adaptive Levels */}
-            {adaptiveStates.length > 0 && (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>🎯 Adaptive Difficulty</Text>
-                {adaptiveStates.map(s => {
-                  const color = s.current_level === 1 ? '#4CAF50' : s.current_level === 2 ? '#FF9800' : '#F44336';
-                  return (
-                    <View key={s.activity_type} style={styles.adaptiveRow}>
-                      <Text style={styles.adaptiveLabel}>{ACTIVITY_LABELS[s.activity_type] || s.activity_type}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={styles.adaptiveAttempts}>{s.attempts || 0} attempts</Text>
-                        <View style={[styles.levelBadge, { backgroundColor: color + '20', borderColor: color }]}>
-                          <Text style={[styles.levelText, { color }]}>{levelLabel(s.current_level)}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-
-            {/* Recent Sessions */}
-            {progress?.recentSessions?.length > 0 && (
-              <View style={styles.card}>
-                <Text style={styles.sectionTitle}>🕐 Recent Activity</Text>
-                {progress.recentSessions.slice(0, 8).map(s => (
-                  <View key={s.id} style={styles.sessionRow}>
-                    <View>
-                      <Text style={styles.sessionType}>{ACTIVITY_LABELS[s.activity_type] || s.activity_type}</Text>
-                      <Text style={styles.sessionDate}>{new Date(s.created_at).toLocaleDateString()}</Text>
-                    </View>
-                    <View style={styles.sessionRight}>
-                      <Text style={styles.sessionXP}>+{s.xp_earned} XP</Text>
-                      <Text style={[styles.sessionAcc, {
-                        color: s.accuracy >= 70 ? '#4CAF50' : s.accuracy >= 40 ? '#FF9800' : '#F44336'
-                      }]}>{s.accuracy}%</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Quick Actions */}
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
-              <View style={styles.actionGrid}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => setFeedbackVisible(true)}>
-                  <Ionicons name="chatbubble-ellipses" size={24} color="#6A1B9A" />
-                  <Text style={styles.actionLabel}>Send Feedback</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Support')}>
-                  <Ionicons name="help-circle" size={24} color="#2196F3" />
-                  <Text style={styles.actionLabel}>Support</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('About')}>
-                  <Ionicons name="information-circle" size={24} color="#FF9800" />
-                  <Text style={styles.actionLabel}>About</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Settings')}>
-                  <Ionicons name="settings" size={24} color="#78909C" />
-                  <Text style={styles.actionLabel}>Settings</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      {/* Notifications Modal */}
-      <Modal visible={notifVisible} transparent animationType="fade" onRequestClose={() => setNotifVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>🔔 Announcements</Text>
-              <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={{ maxHeight: 400 }}>
-              {notifications.length === 0 ? (
-                <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-                  <Ionicons name="megaphone-outline" size={40} color="#ccc" />
-                  <Text style={{ color: '#999', marginTop: 10 }}>No announcements yet</Text>
-                </View>
-              ) : notifications.map(n => (
-                <View key={n.id} style={styles.notifItem}>
-                  <Text style={styles.notifTitle}>{n.title}</Text>
-                  <Text style={styles.notifBody}>{n.content}</Text>
-                  <Text style={styles.notifDate}>{new Date(n.created_at).toLocaleDateString()}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Feedback Modal */}
-      <Modal visible={feedbackVisible} transparent animationType="slide" onRequestClose={() => setFeedbackVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>💬 Send Feedback</Text>
-              <TouchableOpacity onPress={() => setFeedbackVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.feedbackHint}>Share your thoughts about your child's learning experience.</Text>
-
-            <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#666', marginTop: 12, marginBottom: 8 }}>Rating</Text>
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map(r => (
-                <TouchableOpacity key={r} onPress={() => setFeedbackRating(r)}>
-                  <Ionicons
-                    name={r <= feedbackRating ? 'star' : 'star-outline'}
-                    size={32}
-                    color={r <= feedbackRating ? '#FBC02D' : '#ccc'}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              style={styles.feedbackInput}
-              multiline
-              placeholder="Write your feedback..."
-              value={feedbackMessage}
-              onChangeText={setFeedbackMessage}
-              textAlignVertical="top"
-            />
-
-            <TouchableOpacity
-              style={[styles.feedbackSendBtn, sendingFeedback && { opacity: 0.5 }]}
-              onPress={sendFeedback}
-              disabled={sendingFeedback}
-            >
-              {sendingFeedback ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.feedbackSendText}>Send Feedback</Text>
+            <TouchableOpacity style={s.msgBadgeBtn} onPress={() => navigation.navigate('ParentMessages', navParams)}>
+              <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
+              {unreadCount > 0 && (
+                <View style={s.badge}><Text style={s.badgeText}>{unreadCount}</Text></View>
               )}
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    </SafeAreaView>
+
+        {/* Child tabs */}
+        {children.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.childTabs}>
+            {children.map((c, i) => {
+              const n = c.profiles?.full_name ?? 'Child';
+              return (
+                <TouchableOpacity key={c.id} style={[s.childTab, i === selectedIdx && s.childTabActive]} onPress={() => switchChild(i)}>
+                  <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive]}>{n.split(' ')[0]}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+      </LinearGradient>
+
+      <ScrollView
+        contentContainerStyle={s.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#7B1FA2']} />}
+      >
+        {/* ── Child Hero Card ── */}
+        <View style={s.heroCard}>
+          <View style={[s.heroAvatar, { backgroundColor: avatarColor(name) }]}>
+            <Text style={s.heroAvatarText}>{name[0]?.toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.heroName}>{name}</Text>
+            <Text style={s.heroLevel}>Level {level}</Text>
+            <View style={s.xpBarBg}>
+              <View style={[s.xpBarFill, { width: `${xpInLevel}%` }]} />
+            </View>
+            <Text style={s.xpLabel}>{xpInLevel}/100 XP to next level</Text>
+          </View>
+        </View>
+
+        {/* ── Stats Row ── */}
+        <View style={s.statsRow}>
+          {[
+            { icon: 'trophy', color: '#FF9800', val: xp, lbl: 'Total XP' },
+            { icon: 'logo-bitcoin', color: '#FFC107', val: coins, lbl: 'Coins' },
+            { icon: 'flame', color: '#F44336', val: streak, lbl: 'Day Streak' },
+            { icon: 'clipboard', color: '#7B1FA2', val: pendingCount, lbl: 'Pending' },
+          ].map((stat, i) => (
+            <View key={i} style={s.statBox}>
+              <Ionicons name={stat.icon} size={20} color={stat.color} />
+              <Text style={[s.statVal, { color: stat.color }]}>{stat.val}</Text>
+              <Text style={s.statLbl}>{stat.lbl}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* ── Quick Nav Grid ── */}
+        <Text style={s.sectionTitle}>Quick Access</Text>
+        <View style={s.navGrid}>
+          {[
+            { icon: 'bar-chart', color: '#7B1FA2', bg: '#F3E5F5', label: 'Progress', screen: 'ParentProgress' },
+            { icon: 'chatbubbles', color: '#2196F3', bg: '#E3F2FD', label: 'Messages', screen: 'ParentMessages', badge: unreadCount },
+            { icon: 'clipboard', color: '#FF9800', bg: '#FFF3E0', label: 'Assignments', screen: 'ParentAssignments', badge: pendingCount },
+            { icon: 'time', color: '#4CAF50', bg: '#E8F5E9', label: 'Activity Log', screen: 'ParentActivityLog' },
+          ].map((item) => (
+            <TouchableOpacity key={item.screen} style={[s.navCard, { backgroundColor: item.bg }]} onPress={() => navigation.navigate(item.screen, navParams)}>
+              <View style={[s.navIconCircle, { backgroundColor: item.color + '20' }]}>
+                <Ionicons name={item.icon} size={26} color={item.color} />
+              </View>
+              <Text style={[s.navLabel, { color: item.color }]}>{item.label}</Text>
+              {item.badge > 0 && (
+                <View style={[s.navBadge, { backgroundColor: item.color }]}>
+                  <Text style={s.navBadgeText}>{item.badge}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Progress Snapshot ── */}
+        <Text style={s.sectionTitle}>Progress Snapshot (14 days)</Text>
+        <View style={s.card}>
+          {!progress || progress.totalSessions === 0 ? (
+            <View style={s.emptySnap}>
+              <Ionicons name="bar-chart-outline" size={40} color="#ddd" />
+              <Text style={s.emptySnapText}>No activity in the last 14 days</Text>
+            </View>
+          ) : (
+            <>
+              <View style={s.snapRow}>
+                <View style={s.snapItem}>
+                  <Text style={s.snapVal}>{progress.totalSessions}</Text>
+                  <Text style={s.snapLbl}>Sessions</Text>
+                </View>
+                <View style={s.snapDiv} />
+                <View style={s.snapItem}>
+                  <Text style={[s.snapVal, { color: '#4CAF50' }]}>{progress.totalXP}</Text>
+                  <Text style={s.snapLbl}>XP Earned</Text>
+                </View>
+                <View style={s.snapDiv} />
+                <View style={s.snapItem}>
+                  <Text style={[s.snapVal, {
+                    color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336'
+                  }]}>{progress.avgAccuracy}%</Text>
+                  <Text style={s.snapLbl}>Avg Accuracy</Text>
+                </View>
+              </View>
+              {Object.entries(progress.byActivity).slice(0, 3).map(([type, data]) => {
+                const acc = data.totalItems > 0 ? Math.round((data.totalScore / data.totalItems) * 100) : 0;
+                const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
+                return (
+                  <View key={type} style={s.actRow}>
+                    <Text style={s.actIcon}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={s.actTop}>
+                        <Text style={s.actLabel}>{ACTIVITY_LABELS[type] || type}</Text>
+                        <Text style={[s.actAcc, { color }]}>{acc}%</Text>
+                      </View>
+                      <View style={s.barBg}>
+                        <View style={[s.barFill, { width: `${Math.min(acc, 100)}%`, backgroundColor: color }]} />
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+              <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentProgress', navParams)}>
+                <Text style={s.viewAllText}>View full report →</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* ── Pending Assignments ── */}
+        {assignments.length > 0 && (
+          <>
+            <Text style={s.sectionTitle}>Pending Assignments</Text>
+            <View style={s.card}>
+              {assignments.slice(0, 3).map((a) => (
+                <View key={a.id} style={s.assignRow}>
+                  <Text style={s.assignIcon}>{ACTIVITY_LABELS[a.activity_type]?.split(' ')[0] || '📋'}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.assignName}>{ACTIVITY_LABELS[a.activity_type] || a.activity_type}</Text>
+                    {a.notes ? <Text style={s.assignNote}>{a.notes}</Text> : null}
+                  </View>
+                  <View style={[s.diffBadge, { backgroundColor: a.difficulty_level === 3 ? '#FFEBEE' : a.difficulty_level === 2 ? '#FFF3E0' : '#E8F5E9' }]}>
+                    <Text style={[s.diffText, { color: a.difficulty_level === 3 ? '#F44336' : a.difficulty_level === 2 ? '#FF9800' : '#4CAF50' }]}>
+                      {a.difficulty_level === 3 ? 'Hard' : a.difficulty_level === 2 ? 'Medium' : 'Easy'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              {assignments.length > 3 && (
+                <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentAssignments', navParams)}>
+                  <Text style={s.viewAllText}>+{assignments.length - 3} more assignments →</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: '#F5F7FA' },
-  centered:        { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
-  header:          { paddingTop: 10, paddingBottom: 20, paddingHorizontal: 20 },
-  headerRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle:     { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  headerSub:       { fontSize: 13, color: '#fff', opacity: 0.85, marginTop: 2 },
-  headerIcons:     { flexDirection: 'row', gap: 8 },
-  headerIconBtn:   { padding: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10 },
-  notifDot:        { position: 'absolute', top: 3, right: 3, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
-  childSelector:   { paddingHorizontal: 15, paddingVertical: 10, maxHeight: 55 },
-  childChip:       { backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, marginRight: 10, elevation: 2 },
-  childChipActive: { backgroundColor: '#6A1B9A' },
-  childChipText:   { fontWeight: 'bold', color: '#6A1B9A' },
-  childChipTextActive: { color: '#fff' },
-  scroll:          { padding: 15, paddingBottom: 40 },
-  card:            { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14, elevation: 3 },
-  cardHeader:      { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  avatarCircle:    { width: 44, height: 44, borderRadius: 22, backgroundColor: '#6A1B9A', justifyContent: 'center', alignItems: 'center' },
-  avatarText:      { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  childName:       { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
-  childEmail:      { fontSize: 12, color: '#90A4AE' },
-  streakBadge:     { backgroundColor: '#FFF3E0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  streakText:      { fontSize: 13, fontWeight: 'bold', color: '#FF9800' },
-  xpBarContainer:  { marginBottom: 12 },
-  xpBarBg:         { height: 8, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' },
-  xpBarFill:       { height: '100%', backgroundColor: '#6A1B9A', borderRadius: 4 },
-  xpBarLabel:      { fontSize: 10, color: '#90A4AE', marginTop: 4, textAlign: 'right' },
-  statsRow:        { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f0f0f0' },
-  stat:            { alignItems: 'center' },
-  statValue:       { fontSize: 20, fontWeight: 'bold', color: '#6A1B9A' },
-  statLabel:       { fontSize: 10, color: '#90A4AE', marginTop: 2, letterSpacing: 0.5 },
-  divider:         { width: 1, backgroundColor: '#f0f0f0' },
+const s = StyleSheet.create({
+  container:          { flex: 1, backgroundColor: '#F5F0FF' },
+  loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F0FF' },
+  loadingText:        { marginTop: 12, color: '#7B1FA2', fontWeight: '600' },
+  emptyContainer:     { flex: 1, backgroundColor: '#F5F0FF' },
+  emptyHeader:        { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20 },
+  emptyHeaderTitle:   { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  emptyBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  emptyTitle:         { fontSize: 20, fontWeight: 'bold', color: '#555', marginTop: 20 },
+  emptyHint:          { fontSize: 14, color: '#999', marginTop: 8, textAlign: 'center', lineHeight: 22 },
+  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7B1FA2', borderRadius: 25, paddingHorizontal: 24, paddingVertical: 14, marginTop: 24, elevation: 3 },
+  linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  // Quick Stats
-  quickStatsRow:   { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  quickStat:       { flex: 1, borderRadius: 14, padding: 14, alignItems: 'center', elevation: 1 },
-  quickStatValue:  { fontSize: 22, fontWeight: 'bold', marginTop: 4 },
-  quickStatLabel:  { fontSize: 10, color: '#666', fontWeight: 'bold', marginTop: 2, textTransform: 'uppercase' },
+  header:             { paddingTop: 55, paddingBottom: 16, paddingHorizontal: 20 },
+  headerTop:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  greeting:           { fontSize: 20, fontWeight: '900', color: '#fff' },
+  headerSub:          { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  headerActions:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerIconBtn:      { padding: 4 },
+  msgBadgeBtn:        { position: 'relative', padding: 4 },
+  badge:              { position: 'absolute', top: 0, right: 0, backgroundColor: '#F44336', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
+  badgeText:          { color: '#fff', fontSize: 9, fontWeight: 'bold' },
+  childTabs:          { marginTop: 14 },
+  childTab:           { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', marginRight: 8 },
+  childTabActive:     { backgroundColor: '#fff' },
+  childTabText:       { color: 'rgba(255,255,255,0.8)', fontWeight: 'bold', fontSize: 13 },
+  childTabTextActive: { color: '#7B1FA2' },
 
-  // Time Range
-  timeRangeRow:    { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  timeBtn:         { flex: 1, paddingVertical: 10, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', elevation: 1 },
-  timeBtnActive:   { backgroundColor: '#6A1B9A' },
-  timeText:        { fontWeight: 'bold', color: '#666', fontSize: 13 },
-  timeTextActive:  { color: '#fff' },
+  scroll:             { padding: 16 },
 
-  sectionTitle:    { fontSize: 16, fontWeight: 'bold', color: '#37474F', marginBottom: 14 },
-  subTitle:        { fontSize: 13, fontWeight: 'bold', color: '#78909C', marginTop: 14, marginBottom: 8 },
-  activityRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  activityLabel:   { fontSize: 14, color: '#37474F' },
-  activityRight:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  activitySessions:{ fontSize: 12, color: '#90A4AE' },
-  accBadge:        { borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
-  accText:         { fontSize: 12, fontWeight: 'bold' },
+  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3 },
+  heroAvatar:         { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  heroAvatarText:     { color: '#fff', fontSize: 26, fontWeight: 'bold' },
+  heroName:           { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  heroLevel:          { fontSize: 12, color: '#7B1FA2', fontWeight: '600', marginTop: 2 },
+  xpBarBg:            { height: 6, backgroundColor: '#F0E6FF', borderRadius: 3, marginTop: 8, overflow: 'hidden' },
+  xpBarFill:          { height: '100%', backgroundColor: '#7B1FA2', borderRadius: 3 },
+  xpLabel:            { fontSize: 10, color: '#999', marginTop: 4 },
 
-  // Assignments
-  assignmentRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  assignDot:       { width: 8, height: 8, borderRadius: 4, marginRight: 10 },
-  assignType:      { fontSize: 14, fontWeight: '600', color: '#37474F' },
-  assignNotes:     { fontSize: 11, color: '#90A4AE', marginTop: 2 },
-  assignTarget:    { fontSize: 11, fontWeight: 'bold', color: '#78909C' },
+  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginBottom: 14, elevation: 2, overflow: 'hidden' },
+  statBox:            { flex: 1, alignItems: 'center', paddingVertical: 14, borderRightWidth: 1, borderRightColor: '#f5f5f5' },
+  statVal:            { fontSize: 18, fontWeight: 'bold', marginTop: 4 },
+  statLbl:            { fontSize: 9, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
 
-  adaptiveRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  adaptiveLabel:   { fontSize: 14, color: '#37474F' },
-  adaptiveAttempts:{ fontSize: 11, color: '#90A4AE' },
-  levelBadge:      { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 3 },
-  levelText:       { fontSize: 12, fontWeight: 'bold' },
-  sessionRow:      { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
-  sessionType:     { fontSize: 14, fontWeight: '600', color: '#37474F' },
-  sessionDate:     { fontSize: 11, color: '#90A4AE', marginTop: 2 },
-  sessionRight:    { alignItems: 'flex-end' },
-  sessionXP:       { fontSize: 13, fontWeight: 'bold', color: '#6A1B9A' },
-  sessionAcc:      { fontSize: 11, fontWeight: 'bold' },
+  sectionTitle:       { fontSize: 14, fontWeight: 'bold', color: '#555', marginBottom: 10, marginTop: 4 },
 
-  // Quick Actions
-  actionGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  actionBtn:       { width: (SCREEN_WIDTH - 80) / 2, backgroundColor: '#F5F7FA', borderRadius: 14, padding: 16, alignItems: 'center', gap: 6 },
-  actionLabel:     { fontSize: 12, fontWeight: 'bold', color: '#37474F' },
+  navGrid:            { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  navCard:            { width: '47%', borderRadius: 16, padding: 16, alignItems: 'center', elevation: 1, position: 'relative' },
+  navIconCircle:      { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  navLabel:           { fontSize: 13, fontWeight: 'bold' },
+  navBadge:           { position: 'absolute', top: 10, right: 10, borderRadius: 10, minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
+  navBadgeText:       { color: '#fff', fontSize: 10, fontWeight: 'bold' },
 
-  // Bottom
-  bottomActions:   { paddingHorizontal: 20, paddingBottom: 20 },
-  supportBtn:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F3E5F5', borderRadius: 12, padding: 14, marginBottom: 10 },
-  supportBtnText:  { color: '#6A1B9A', fontWeight: 'bold' },
-  emptyText:       { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 16 },
-  emptyHint:       { fontSize: 13, color: '#999', marginTop: 6, textAlign: 'center' },
-  signOutBtn:      { backgroundColor: '#E53935', borderRadius: 12, padding: 14, alignItems: 'center' },
-  signOutText:     { color: '#fff', fontWeight: 'bold' },
+  card:               { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, elevation: 2 },
+  snapRow:            { flexDirection: 'row', justifyContent: 'space-around', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', marginBottom: 14 },
+  snapItem:           { alignItems: 'center' },
+  snapVal:            { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  snapLbl:            { fontSize: 10, color: '#999', marginTop: 2, fontWeight: '600' },
+  snapDiv:            { width: 1, backgroundColor: '#f0f0f0' },
+  actRow:             { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  actIcon:            { fontSize: 22, width: 30 },
+  actTop:             { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  actLabel:           { fontSize: 13, fontWeight: '600', color: '#333' },
+  actAcc:             { fontSize: 13, fontWeight: 'bold' },
+  barBg:              { height: 5, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
+  barFill:            { height: '100%', borderRadius: 3 },
+  emptySnap:          { alignItems: 'center', paddingVertical: 20 },
+  emptySnapText:      { color: '#bbb', marginTop: 8, fontSize: 13 },
+  viewAll:            { marginTop: 12, alignItems: 'center' },
+  viewAllText:        { color: '#7B1FA2', fontWeight: 'bold', fontSize: 13 },
 
-  // Modals
-  modalOverlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent:    { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 24, maxHeight: '80%' },
-  modalHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle:      { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  notifItem:       { marginBottom: 14, borderBottomWidth: 1, borderColor: '#f0f0f0', paddingBottom: 12 },
-  notifTitle:      { fontWeight: 'bold', color: '#6A1B9A', marginBottom: 4, fontSize: 15 },
-  notifBody:       { color: '#555', fontSize: 13, lineHeight: 20 },
-  notifDate:       { fontSize: 10, color: '#90A4AE', marginTop: 4 },
-
-  // Feedback
-  feedbackHint:    { fontSize: 13, color: '#999', marginBottom: 8 },
-  ratingRow:       { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  feedbackInput:   { backgroundColor: '#F5F5F5', borderRadius: 14, padding: 14, fontSize: 15, minHeight: 100, borderWidth: 1, borderColor: '#E0E0E0' },
-  feedbackSendBtn: { backgroundColor: '#6A1B9A', borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 14 },
-  feedbackSendText:{ color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  assignRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', gap: 10 },
+  assignIcon:         { fontSize: 24 },
+  assignName:         { fontSize: 14, fontWeight: '600', color: '#333' },
+  assignNote:         { fontSize: 11, color: '#999', marginTop: 2 },
+  diffBadge:          { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  diffText:           { fontSize: 11, fontWeight: 'bold' },
 });

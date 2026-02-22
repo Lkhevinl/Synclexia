@@ -41,6 +41,11 @@ import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
+import ParentProgressScreen from '../screens/parents/ParentProgressScreen';
+import ParentMessagesScreen from '../screens/parents/ParentMessagesScreen';
+import ParentAssignmentsScreen from '../screens/parents/ParentAssignmentsScreen';
+import ParentActivityLogScreen from '../screens/parents/ParentActivityLogScreen';
+import ParentLinkChildScreen from '../screens/parents/ParentLinkChildScreen';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -122,9 +127,16 @@ export default function AppNavigator() {
             <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
             <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
             <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
-            {/* Parent routes — read-only child progress */}
+            {/* Parent routes */}
             {profile?.role === 'parent' && (
-              <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+              <>
+                <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+                <Stack.Screen name="ParentProgress" component={ParentProgressScreen} />
+                <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
+                <Stack.Screen name="ParentAssignments" component={ParentAssignmentsScreen} />
+                <Stack.Screen name="ParentActivityLog" component={ParentActivityLogScreen} />
+                <Stack.Screen name="ParentLinkChild" component={ParentLinkChildScreen} />
+              </>
             )}
             {(isTeacher || isAdmin) && (
               <>

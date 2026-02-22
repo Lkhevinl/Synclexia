@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import { LinearGradient } from 'expo-linear-gradient'; 
-import { useTheme } from '../../context/ThemeContext'; // <--- Connects to Settings
+import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext'; 
 import { supabase } from '../../lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,7 +17,6 @@ const DAILY_TIPS = [
 ];
 
 export default function DashboardScreen({ navigation }) {
-  // 1. Get the dynamic theme from Context
   const { theme, a11yTextStyle } = useTheme();
   const { profile } = useAuth(); 
   
@@ -26,7 +25,7 @@ export default function DashboardScreen({ navigation }) {
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [enrollment, setEnrollment] = useState(null);
   const [checkingEnrollment, setCheckingEnrollment] = useState(true);
-  const [assignments, setAssignments] = useState([]); // Track assigned activities
+  const [assignments, setAssignments] = useState([]);
   const [unreadReplyCount, setUnreadReplyCount] = useState(0);
 
   const isStudent = profile?.role === 'student';
@@ -38,7 +37,6 @@ export default function DashboardScreen({ navigation }) {
     setDailyTip(randomTip);
   }, []);
 
-  // Check enrollment when screen is focused
   useFocusEffect(
     React.useCallback(() => {
       setCheckingEnrollment(true);
@@ -52,7 +50,6 @@ export default function DashboardScreen({ navigation }) {
       return;
     }
 
-    // Get primary enrollment (most recent if is_primary column doesn't exist yet)
     const { data: enrollments, error } = await supabase
       .from('enrollments')
       .select('*')
@@ -62,8 +59,7 @@ export default function DashboardScreen({ navigation }) {
     if (error || !enrollments || enrollments.length === 0) {
       setEnrollment(null);
     } else {
-      const primary = enrollments[0]; // is_primary=true sorts first
-      // Fetch teacher info separately
+      const primary = enrollments[0];
       const { data: teacherData } = await supabase
         .from('profiles')
         .select('full_name')
@@ -75,7 +71,7 @@ export default function DashboardScreen({ navigation }) {
         teacher_name: teacherData?.full_name || 'Teacher'
       });
       fetchAssignments(profile?.id);
-      fetchNotifications(primary.teacher_id); // scope to teacher right after enrollment loads
+      fetchNotifications(primary.teacher_id);
     }
     
     setCheckingEnrollment(false);
@@ -86,18 +82,12 @@ export default function DashboardScreen({ navigation }) {
       .from('assignments')
       .select('activity_type')
       .eq('student_id', studentId);
-    
-    if (data) {
-      setAssignments(data.map(a => a.activity_type));
-    }
+    if (data) setAssignments(data.map(a => a.activity_type));
   };
 
   const fetchNotifications = async (teacherId = enrollment?.teacher_id) => {
-    // Show notifications from enrolled teacher + global ones
-    let query = supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
-    
+    let query = supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
     if (teacherId) {
-      // teacher-scoped OR global (no teacher_id)
       query = supabase
         .from('notifications')
         .select('*')
@@ -105,7 +95,6 @@ export default function DashboardScreen({ navigation }) {
         .or(`teacher_id.eq.${teacherId},teacher_id.is.null,is_global.eq.true`)
         .order('created_at', { ascending: false });
     }
-    
     const { data } = await query;
     if (data) setNotifications(data);
   };
@@ -120,7 +109,7 @@ export default function DashboardScreen({ navigation }) {
     setUnreadReplyCount(count || 0);
   };
 
-  // 🔒 BLOCK UNENROLLED STUDENTS FROM SEEING DASHBOARD
+  // Block unenrolled students
   if (isStudent && checkingEnrollment === false && !enrollment) {
     return (
       <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
@@ -128,14 +117,22 @@ export default function DashboardScreen({ navigation }) {
         <LinearGradient colors={['#667eea', '#764ba2']} style={styles.enrollmentBlockHeader}>
           <Text style={styles.blockTitle}>Welcome! 👋</Text>
         </LinearGradient>
-        
         <View style={styles.enrollmentBlockContent}>
           <Ionicons name="lock-closed" size={80} color="#667eea" style={{ marginBottom: 20 }} />
           <Text style={styles.blockMainText}>You're Not Enrolled Yet</Text>
           <Text style={styles.blockSubText}>
             To access learning activities, you need to be enrolled by a teacher. Ask your teacher for their class code!
           </Text>
-          
+          {isStudent && profile?.unique_code && (
+            <View style={styles.linkCodeCardBlock}>
+              <Ionicons name="people" size={18} color="#7B1FA2" />
+              <View style={{ marginLeft: 8, flex: 1 }}>
+                <Text style={styles.linkCodeLabel}>Your Parent Link Code</Text>
+                <Text style={styles.linkCodeHint}>Share this with your parent</Text>
+              </View>
+              <Text style={styles.linkCodeValue}>{profile.unique_code}</Text>
+            </View>
+          )}
           <TouchableOpacity 
             style={styles.enrollBlockBtn}
             onPress={() => navigation.navigate('StudentEnroll')}
@@ -144,7 +141,6 @@ export default function DashboardScreen({ navigation }) {
             <Ionicons name="qr-code" size={24} color="#fff" />
             <Text style={styles.enrollBlockBtnText}>Scan Teacher's QR Code</Text>
           </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.settingsBlockBtn}
             onPress={() => navigation.navigate('Settings')}
@@ -170,7 +166,6 @@ export default function DashboardScreen({ navigation }) {
     const { a11yTextStyle: cardA11y } = useTheme();
     const isLocked = isStudent && !enrollment;
     const isNotAssigned = isStudent && enrollment && activityType && !assignments.includes(activityType);
-    
     return (
       <TouchableOpacity 
         style={[styles.cardContainer, (isLocked || isNotAssigned) && styles.cardLocked]} 
@@ -186,38 +181,36 @@ export default function DashboardScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-            colors={[color, color + '99']} 
-            style={styles.cardGradient}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          colors={[color, color + '99']} 
+          style={styles.cardGradient}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         >
-            {isNotAssigned && (
-              <View style={styles.notAssignedBadge}>
-                <Ionicons name="lock-closed" size={16} color="#fff" />
-              </View>
-            )}
-            <View style={styles.iconCircle}>
-                <Text style={{fontSize: 32}}>{icon}</Text>
+          {isNotAssigned && (
+            <View style={styles.notAssignedBadge}>
+              <Ionicons name="lock-closed" size={16} color="#fff" />
             </View>
-            <Text style={[styles.cardTitle, cardA11y]}>{title}</Text>
-            {badge && (
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>!</Text>
-                </View>
-            )}
-            {isLocked && (
-                <View style={styles.lockOverlay}>
-                    <Ionicons name="lock-closed" size={40} color="rgba(255,255,255,0.9)" />
-                </View>
-            )}
+          )}
+          <View style={styles.iconCircle}>
+            <Text style={{ fontSize: 32 }}>{icon}</Text>
+          </View>
+          <Text style={[styles.cardTitle, cardA11y]}>{title}</Text>
+          {badge && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>!</Text>
+            </View>
+          )}
+          {isLocked && (
+            <View style={styles.lockOverlay}>
+              <Ionicons name="lock-closed" size={40} color="rgba(255,255,255,0.9)" />
+            </View>
+          )}
         </LinearGradient>
       </TouchableOpacity>
     );
   };
 
   return (
-    // 2. USE THEME HERE: Dynamic Background Color
     <View style={[styles.mainContainer, { backgroundColor: theme.bgColor }]}>
-      
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       
       {/* HEADER */}
@@ -227,147 +220,160 @@ export default function DashboardScreen({ navigation }) {
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-                <View style={styles.headerLogoWrapper}>
-                  <Image
-                    source={require('../../../assets/icon.png')}
-                    style={styles.headerLogoImg}
-                    resizeMode="contain"
-                  />
-                </View>
-                <View style={{ marginLeft: 10 }}>
-                  <Text style={styles.headerAppName}>Synclexia</Text>
-                  <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Learner"}! 👋</Text>
-                  <Text style={styles.subGreeting}>Let's learn something new.</Text>
-                </View>
+          <View style={styles.headerLeft}>
+            <View style={styles.headerLogoWrapper}>
+              <Image
+                source={require('../../../assets/icon.png')}
+                style={styles.headerLogoImg}
+                resizeMode="contain"
+              />
             </View>
-            <View style={styles.headerIcons}>
-                <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
-                    <Ionicons name="notifications-outline" size={24} color="#fff" />
-                    {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.redDot} />}
-                </TouchableOpacity>
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.headerAppName}>Synclexia</Text>
+              <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Learner"}! 👋</Text>
+              <Text style={styles.subGreeting}>Let's learn something new.</Text>
             </View>
+          </View>
+          <View style={styles.headerIcons}>
+            <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
+              <Ionicons name="notifications-outline" size={24} color="#fff" />
+              {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.redDot} />}
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
       {/* STATS BAR */}
       <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-              <Text style={styles.statLabel}>LEVEL</Text>
-              <Text style={styles.statValue}>{xpToLevel(profile?.xp)}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.statItem}>
-              <Text style={styles.statLabel}>XP</Text>
-              <Text style={[styles.statValue, {color: '#4CAF50'}]}>{profile?.xp || 0}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.statItem}>
-              <Text style={styles.statLabel}>COINS</Text>
-              <Text style={[styles.statValue, {color: '#FFD700'}]}>{profile?.coins || 0}</Text>
-          </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>LEVEL</Text>
+          <Text style={styles.statValue}>{xpToLevel(profile?.xp)}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>XP</Text>
+          <Text style={[styles.statValue, { color: '#4CAF50' }]}>{profile?.xp || 0}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>COINS</Text>
+          <Text style={[styles.statValue, { color: '#FFD700' }]}>{profile?.coins || 0}</Text>
+        </View>
       </View>
 
       {/* SCROLLABLE CONTENT */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
-          {/* ENROLLMENT STATUS CARD */}
-          {isStudent && (
-            <View style={styles.enrollmentStatusCard}>
+
+        {/* ENROLLMENT STATUS CARD */}
+        {isStudent && (
+          <View style={styles.enrollmentStatusCard}>
             <View style={styles.statusHeader}>
-                <Text style={styles.statusLabel}>Enrollment Status</Text>
-                <View style={[styles.statusBadge, enrollment ? styles.statusEnrolled : styles.statusPending]}>
-                  <Text style={[styles.statusBadgeText, !enrollment && styles.statusBadgeTextPending]}>
-                    {enrollment ? 'ENROLLED' : 'PENDING'}
-                  </Text>
-                </View>
+              <Text style={styles.statusLabel}>Enrollment Status</Text>
+              <View style={[styles.statusBadge, enrollment ? styles.statusEnrolled : styles.statusPending]}>
+                <Text style={[styles.statusBadgeText, !enrollment && styles.statusBadgeTextPending]}>
+                  {enrollment ? 'ENROLLED' : 'PENDING'}
+                </Text>
               </View>
-              
-              {enrollment ? (
-                <View style={styles.teacherInfo}>
-                  <Ionicons name="person-circle" size={40} color="#4CAF50" />
-                  <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={styles.teacherLabelSmall}>Assigned Teacher</Text>
-                    <Text style={styles.teacherNameSmall}>{enrollment.teacher_name || 'Teacher'}</Text>
-                  </View>
-                  <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  style={styles.enrollNowBtn}
-                  onPress={() => navigation.navigate('StudentEnroll')}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="qr-code" size={20} color="#F57C00" />
-                  <Text style={styles.enrollNowText}>Scan QR Code to Enroll</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#F57C00" />
-                </TouchableOpacity>
-              )}
             </View>
-          )}
-          
-          {/* DAILY TIP */}
-          <View style={styles.tipBox}>
-              <Ionicons name="sparkles" size={20} color="#FFD700" style={{marginRight: 10}} />
-              <Text style={[styles.tipText, { fontSize: theme.fontSize }, a11yTextStyle]}>{dailyTip}</Text>
+            {enrollment ? (
+              <View style={styles.teacherInfo}>
+                <Ionicons name="person-circle" size={40} color="#4CAF50" />
+                <View style={{ marginLeft: 12, flex: 1 }}>
+                  <Text style={styles.teacherLabelSmall}>Assigned Teacher</Text>
+                  <Text style={styles.teacherNameSmall}>{enrollment.teacher_name || 'Teacher'}</Text>
+                </View>
+                <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={styles.enrollNowBtn}
+                onPress={() => navigation.navigate('StudentEnroll')}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="qr-code" size={20} color="#F57C00" />
+                <Text style={styles.enrollNowText}>Scan QR Code to Enroll</Text>
+                <Ionicons name="arrow-forward" size={18} color="#F57C00" />
+              </TouchableOpacity>
+            )}
           </View>
+        )}
 
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Learning Tools</Text>
-          
-          {/* MENU GRID */}
-          <View style={styles.grid}>
-              <MenuCard title="Phonics"        icon="🗣️" color="#FF9800" route="Phonics"                  activityType="phonics" />
-              <MenuCard title="Writing"        icon="✍️" color="#4CAF50" route="Writing"                  activityType="writing" />
-              <MenuCard title="Reading"        icon="📖" color="#2196F3" route="Reading"                  activityType="reading" />
-              <MenuCard title="Spelling"       icon="🔤" color="#E91E63" route="Spelling"                 activityType="spelling" />
-              <MenuCard title="Activities"     icon="🎮" color="#00897B" route="PhonicsActivity"          activityType="phonics" />
-              <MenuCard title="Scan"           icon="📷" color="#9C27B0" route="Scan"                     activityType="scan" />
-              <MenuCard title="Awareness"      icon="🎧" color="#6A1B9A" route="PhonologicalAwareness"    activityType="phonological_awareness" />
+        {/* PARENT LINK CODE */}
+        {isStudent && profile?.unique_code && (
+          <View style={styles.linkCodeCard}>
+            <View style={styles.linkCodeLeft}>
+              <Ionicons name="people" size={22} color="#7B1FA2" />
+              <View style={{ marginLeft: 10 }}>
+                <Text style={styles.linkCodeLabel}>Parent Link Code</Text>
+                <Text style={styles.linkCodeHint}>Share this with your parent</Text>
+              </View>
+            </View>
+            <Text style={styles.linkCodeValue}>{profile.unique_code}</Text>
           </View>
+        )}
 
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Gamification</Text>
-          <View style={styles.grid}>
-              <MenuCard title="Quests"   icon="📜" color="#F44336" route="Quests" badge={true} />
-              <MenuCard title="Top 10"   icon="🏆" color="#FFC107" route="Leaderboard" />
-              <MenuCard title="Shop"     icon="🛍️" color="#00BCD4" route="Shop" />
-          </View>
+        {/* DAILY TIP */}
+        <View style={styles.tipBox}>
+          <Ionicons name="sparkles" size={20} color="#FFD700" style={{ marginRight: 10 }} />
+          <Text style={[styles.tipText, { fontSize: theme.fontSize }, a11yTextStyle]}>{dailyTip}</Text>
+        </View>
 
-          <View style={{height: 20}} /> 
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Learning Tools</Text>
+        
+        {/* MENU GRID */}
+        <View style={styles.grid}>
+          <MenuCard title="Phonics"     icon="🗣️" color="#FF9800" route="Phonics"               activityType="phonics" />
+          <MenuCard title="Writing"     icon="✍️" color="#4CAF50" route="Writing"               activityType="writing" />
+          <MenuCard title="Reading"     icon="📖" color="#2196F3" route="Reading"               activityType="reading" />
+          <MenuCard title="Spelling"    icon="🔤" color="#E91E63" route="Spelling"              activityType="spelling" />
+          <MenuCard title="Activities"  icon="🎮" color="#00897B" route="PhonicsActivity"       activityType="phonics" />
+          <MenuCard title="Scan"        icon="📷" color="#9C27B0" route="Scan"                  activityType="scan" />
+          <MenuCard title="Awareness"   icon="🎧" color="#6A1B9A" route="PhonologicalAwareness" activityType="phonological_awareness" />
+        </View>
+
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Gamification</Text>
+        <View style={styles.grid}>
+          <MenuCard title="Quests" icon="📜" color="#F44336" route="Quests" badge={true} />
+          <MenuCard title="Top 10" icon="🏆" color="#FFC107" route="Leaderboard" />
+          <MenuCard title="Shop"   icon="🛍️" color="#00BCD4" route="Shop" />
+        </View>
+
+        <View style={{ height: 20 }} /> 
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
       <Modal visible={notifVisible} transparent={true} animationType="fade" onRequestClose={() => setNotifVisible(false)}>
-          <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>Notifications 🔔</Text>
-                  {unreadReplyCount > 0 && (
-                    <TouchableOpacity 
-                      style={{ backgroundColor: '#E8F5E9', padding: 12, borderRadius: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}
-                      onPress={() => { setNotifVisible(false); navigation.navigate('Support'); }}
-                    >
-                      <Ionicons name="chatbubble-ellipses" size={20} color="#4CAF50" />
-                      <Text style={{ marginLeft: 8, color: '#2E7D32', fontWeight: 'bold', flex: 1 }}>
-                        {unreadReplyCount} new feedback {unreadReplyCount === 1 ? 'reply' : 'replies'}!
-                      </Text>
-                      <Ionicons name="arrow-forward" size={16} color="#4CAF50" />
-                    </TouchableOpacity>
-                  )}
-                  <FlatList
-                    data={notifications}
-                    keyExtractor={i => i.id.toString()}
-                    renderItem={({item}) => (
-                        <View style={styles.notifItem}>
-                            <Text style={styles.notifTitle}>{item.title}</Text>
-                            <Text style={styles.notifBody}>{item.content}</Text>
-                        </View>
-                    )}
-                    ListEmptyComponent={<Text style={{textAlign:'center', color:'#999'}}>No new alerts.</Text>}
-                  />
-                  <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.closeBtn}>
-                      <Text style={styles.closeText}>Close</Text>
-                  </TouchableOpacity>
-              </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Notifications 🔔</Text>
+            {unreadReplyCount > 0 && (
+              <TouchableOpacity 
+                style={{ backgroundColor: '#E8F5E9', padding: 12, borderRadius: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => { setNotifVisible(false); navigation.navigate('Support'); }}
+              >
+                <Ionicons name="chatbubble-ellipses" size={20} color="#4CAF50" />
+                <Text style={{ marginLeft: 8, color: '#2E7D32', fontWeight: 'bold', flex: 1 }}>
+                  {unreadReplyCount} new feedback {unreadReplyCount === 1 ? 'reply' : 'replies'}!
+                </Text>
+                <Ionicons name="arrow-forward" size={16} color="#4CAF50" />
+              </TouchableOpacity>
+            )}
+            <FlatList
+              data={notifications}
+              keyExtractor={i => i.id.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.notifItem}>
+                  <Text style={styles.notifTitle}>{item.title}</Text>
+                  <Text style={styles.notifBody}>{item.content}</Text>
+                </View>
+              )}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999' }}>No new alerts.</Text>}
+            />
+            <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.closeBtn}>
+              <Text style={styles.closeText}>Close</Text>
+            </TouchableOpacity>
           </View>
+        </View>
       </Modal>
     </View>
   );
@@ -375,20 +381,20 @@ export default function DashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // Base container style (Background color is now handled dynamically in the Return)
   mainContainer: { flex: 1 }, 
   
   enrollmentBlockHeader: { paddingTop: 100, paddingBottom: 40, paddingHorizontal: 20, alignItems: 'center' },
   blockTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
   enrollmentBlockContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 40 },
   blockMainText: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 15, textAlign: 'center' },
-  blockSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 40, lineHeight: 22 },
+  blockSubText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20, lineHeight: 22 },
   enrollBlockBtn: { flexDirection: 'row', backgroundColor: '#667eea', paddingVertical: 15, paddingHorizontal: 25, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginBottom: 15, width: '90%' },
   enrollBlockBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
   settingsBlockBtn: { flexDirection: 'row', backgroundColor: '#f0f0f0', paddingVertical: 15, paddingHorizontal: 25, borderRadius: 15, justifyContent: 'center', alignItems: 'center', width: '90%' },
   settingsBlockBtnText: { color: '#667eea', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
-  
-  enrollmentStatusCard: { backgroundColor: '#fff', borderRadius: 20, marginHorizontal: 20, marginVertical: 15, padding: 20, elevation: 3 },
+  linkCodeCardBlock: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EDE7F6', borderRadius: 14, padding: 14, marginBottom: 20, width: '90%' },
+
+  enrollmentStatusCard: { backgroundColor: '#fff', borderRadius: 20, marginBottom: 14, padding: 20, elevation: 3 },
   statusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   statusLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', textTransform: 'uppercase', letterSpacing: 1 },
   statusBadge: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
@@ -396,14 +402,18 @@ const styles = StyleSheet.create({
   statusPending: { backgroundColor: '#FFF3E0' },
   statusBadgeText: { fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5, color: '#4CAF50' },
   statusBadgeTextPending: { color: '#F57C00' },
-  
   teacherInfo: { flexDirection: 'row', alignItems: 'center' },
   teacherLabelSmall: { fontSize: 11, color: '#999', fontWeight: 'bold', textTransform: 'uppercase' },
   teacherNameSmall: { fontSize: 15, fontWeight: 'bold', color: '#333', marginTop: 2 },
-  
   enrollNowBtn: { flexDirection: 'row', backgroundColor: '#FFF3E0', borderRadius: 15, padding: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFD8A8' },
   enrollNowText: { flex: 1, marginLeft: 10, fontSize: 14, fontWeight: 'bold', color: '#F57C00' },
-  
+
+  linkCodeCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#EDE7F6', borderRadius: 16, padding: 16, marginBottom: 14, elevation: 1 },
+  linkCodeLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  linkCodeLabel: { fontSize: 13, fontWeight: 'bold', color: '#7B1FA2' },
+  linkCodeHint: { fontSize: 11, color: '#9C6DB5', marginTop: 1 },
+  linkCodeValue: { fontSize: 22, fontWeight: '900', color: '#7B1FA2', letterSpacing: 4 },
+
   headerGradient: { paddingTop: 55, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
@@ -416,7 +426,7 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
   
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
@@ -428,7 +438,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  cardContainer: { width: '48%', marginBottom: 15, borderRadius: 20, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5 },
+  cardContainer: { width: '48%', marginBottom: 15, borderRadius: 20, elevation: 5 },
   cardGradient: { padding: 20, borderRadius: 20, height: 140, justifyContent: 'center', alignItems: 'center' },
   iconCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   cardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginTop: 5 },
@@ -436,44 +446,12 @@ const styles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
   cardLocked: { opacity: 0.6 },
   notAssignedBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FF5252', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  lockOverlay: { 
-    position: 'absolute', 
-    top: 0, 
-    left: 0, 
-    right: 0, 
-    bottom: 0, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0,0,0,0.3)', 
-    borderRadius: 20 
-  },
+  lockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 20 },
 
-  enrollBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF3E0',
-    padding: 15,
-    marginHorizontal: 20,
-    marginTop: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
-    elevation: 2
-  },
+  enrollBanner: { flexDirection: 'row', backgroundColor: '#FFF3E0', padding: 15, marginHorizontal: 20, marginTop: 15, borderRadius: 12, alignItems: 'center', borderLeftWidth: 4, borderLeftColor: '#FF9800', elevation: 2 },
   enrollBannerTitle: { fontSize: 16, fontWeight: 'bold', color: '#E65100' },
   enrollBannerText: { fontSize: 13, color: '#F57C00', marginTop: 2 },
-
-  teacherCard: {
-    flexDirection: 'row',
-    backgroundColor: '#E8F5E9',
-    padding: 12,
-    marginHorizontal: 20,
-    marginTop: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50'
-  },
+  teacherCard: { flexDirection: 'row', backgroundColor: '#E8F5E9', padding: 12, marginHorizontal: 20, marginTop: 15, borderRadius: 12, alignItems: 'center', borderLeftWidth: 4, borderLeftColor: '#4CAF50' },
   teacherLabel: { fontSize: 11, color: '#2E7D32', fontWeight: 'bold' },
   teacherName: { fontSize: 15, fontWeight: 'bold', color: '#1B5E20', marginTop: 2 },
 

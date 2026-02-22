@@ -37,6 +37,23 @@ export const fetchEnrollmentsWithProfiles = async (teacherId, profileFields) => 
     .select(fields.join(', '))
     .in('id', studentIds);
 
+  if (profErr) {
+    // RLS is likely blocking the teacher from reading student profiles.
+    // Fix: run this SQL in Supabase Dashboard > SQL Editor:
+    //
+    //   CREATE POLICY "Teachers can read enrolled student profiles"
+    //   ON profiles FOR SELECT
+    //   USING (
+    //     id IN (
+    //       SELECT student_id FROM enrollments
+    //       WHERE teacher_id = auth.uid()
+    //     )
+    //   );
+    //
+    console.warn('[enrollmentHelper] profiles fetch failed:', profErr.message,
+      '\n→ Add RLS policy: Teachers can read enrolled student profiles');
+  }
+
   // Build a lookup map: id -> profile
   const profileMap = {};
   if (profiles) {

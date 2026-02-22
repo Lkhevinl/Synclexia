@@ -41,17 +41,25 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
     const data = await fetchEnrollmentsWithProfiles(profile?.id);
     setStudents(data);
     if (data.length > 0) {
-      selectStudent(data[0]);
+      await selectStudent(data[0]);
     }
     setLoading(false);
   };
 
+  // Helper: get the student's UUID safely from enrollment row
+  const getStudentId = (student) => student.profiles?.id ?? student.student_id;
+  const getStudentName = (student) => student.profiles?.full_name ?? 'Student';
+  const getStudentEmail = (student) => student.profiles?.email ?? '';
+  const getStudentXP = (student) => student.profiles?.xp ?? 0;
+
   const selectStudent = async (student) => {
     setSelectedStudent(student);
+    const sid = getStudentId(student);
+    if (!sid) return;
     const { data } = await supabase
       .from('assignments')
       .select('*')
-      .eq('student_id', student.profiles.id)
+      .eq('student_id', sid)
       .eq('teacher_id', profile?.id);
     
     const assignmentMap = {};
@@ -65,18 +73,17 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
   const toggleAssignment = async (activityId) => {
     if (!selectedStudent) return;
     const isAssigned = assignments[activityId];
+    const sid = getStudentId(selectedStudent);
     if (isAssigned) {
-      // Remove assignment
       await supabase
         .from('assignments')
         .delete()
-        .eq('student_id', selectedStudent.profiles.id)
+        .eq('student_id', sid)
         .eq('activity_type', activityId)
         .eq('teacher_id', profile?.id);
       setAssignments(prev => ({ ...prev, [activityId]: false }));
       setDetailedAssignments(prev => prev.filter(a => a.activity_type !== activityId));
     } else {
-      // Open config modal for new assignment
       setConfigModal(activityId);
       setConfigDifficulty(1);
       setConfigTarget('1');
@@ -87,12 +94,13 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
   const confirmAssignment = async () => {
     if (!selectedStudent || !configModal) return;
     const targetNum = parseInt(configTarget) || 1;
+    const sid = getStudentId(selectedStudent);
 
     const { data, error } = await supabase
       .from('assignments')
       .insert({
         teacher_id: profile?.id,
-        student_id: selectedStudent.profiles.id,
+        student_id: sid,
         activity_type: configModal,
         difficulty_level: configDifficulty,
         target_count: targetNum,
@@ -120,14 +128,19 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
       style={[styles.studentItem, isSelected && styles.studentItemActive]}
       onPress={onPress}
     >
+      <View style={[styles.studentAvatar, isSelected && { backgroundColor: '#2E7D32' }]}>
+        <Text style={styles.studentAvatarText}>
+          {(getStudentName(item)[0] || '?').toUpperCase()}
+        </Text>
+      </View>
       <View style={styles.studentInfo}>
         <Text style={[styles.studentName, isSelected && styles.studentNameActive]}>
-          {item.profiles?.full_name}
+          {getStudentName(item)}
         </Text>
-        <Text style={styles.studentEmail}>{item.profiles?.email}</Text>
+        <Text style={styles.studentEmail}>{getStudentEmail(item) || 'No email'}</Text>
       </View>
       <Text style={[styles.studentXP, isSelected && styles.studentXPActive]}>
-        {item.profiles?.xp || 0} XP
+        {getStudentXP(item)} XP
       </Text>
     </TouchableOpacity>
   );
@@ -203,11 +216,11 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
         <Text style={styles.sectionLabel}>Select Student</Text>
         <FlatList
           data={students}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item.student_id ?? item.id}
           renderItem={({ item }) => (
             <StudentItem 
               item={item} 
-              isSelected={selectedStudent?.id === item.id}
+              isSelected={getStudentId(selectedStudent) === getStudentId(item)}
               onPress={() => selectStudent(item)}
             />
           )}
@@ -215,7 +228,7 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
         />
         {selectedStudent && (
           <>
-            <Text style={styles.sectionLabel}>Activities for {selectedStudent.profiles?.full_name}</Text>
+            <Text style={styles.sectionLabel}>Activities for {getStudentName(selectedStudent)}</Text>
             <View style={styles.activitiesContainer}>
               {ACTIVITIES.map(activity => (
                 <ActivityItem key={activity.id} activity={activity} />
@@ -231,7 +244,7 @@ export default function TeacherAssignActivitiesScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Configure Assignment</Text>
-            <Text style={styles.modalSub}>{ACTIVITIES.find(a => a.id === configModal)?.name} for {selectedStudent?.profiles?.full_name}</Text>
+            <Text style={styles.modalSub}>{ACTIVITIES.find(a => a.id === configModal)?.name} for {selectedStudent ? getStudentName(selectedStudent) : ''}</Text>
 
             <Text style={styles.configLabel}>Difficulty Level</Text>
             <View style={styles.difficultyRow}>
@@ -288,13 +301,15 @@ const styles = StyleSheet.create({
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },
   scrollContent: { padding: 20 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#666', marginBottom: 15, marginTop: 15 },
-  studentItem: { backgroundColor: '#fff', borderRadius: 15, padding: 15, marginBottom: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderLeftWidth: 4, borderLeftColor: 'transparent' },
+  studentItem: { backgroundColor: '#fff', borderRadius: 15, padding: 15, marginBottom: 10, flexDirection: 'row', alignItems: 'center', borderLeftWidth: 4, borderLeftColor: 'transparent' },
   studentItemActive: { backgroundColor: '#E8F5E9', borderLeftColor: '#4CAF50' },
+  studentAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  studentAvatarText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   studentInfo: { flex: 1 },
-  studentName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  studentName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
   studentNameActive: { color: '#2E7D32' },
-  studentEmail: { fontSize: 12, color: '#999', marginTop: 3 },
-  studentXP: { fontSize: 14, fontWeight: 'bold', color: '#FFD700' },
+  studentEmail: { fontSize: 12, color: '#999', marginTop: 2 },
+  studentXP: { fontSize: 13, fontWeight: 'bold', color: '#FF9800' },
   studentXPActive: { color: '#F57C00' },
   activitiesContainer: { backgroundColor: '#fff', borderRadius: 15, padding: 15, marginTop: 10 },
   activityItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },

@@ -12,6 +12,11 @@ export default function SignUpScreen({ navigation }) {
   const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
 
+  const generateUniqueCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  };
+
   const handleSignUp = async () => {
     if (!email || !password || !fullName) {
       Alert.alert('Missing Info', 'Please fill in all the boxes!');
@@ -33,18 +38,23 @@ export default function SignUpScreen({ navigation }) {
 
     // 2. Create Profile in Database
     if (user) {
+      const profileData = { 
+        id: user.id, 
+        full_name: fullName,
+        email: email.trim().toLowerCase(),
+        xp: 0,
+        coins: 0,
+        role,
+      };
+      if (role === 'student') {
+        profileData.unique_code = generateUniqueCode();
+      }
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{ 
-            id: user.id, 
-            full_name: fullName,
-            xp: 0,
-            coins: 0,
-            role
-        }]);
+        .insert([profileData]);
 
       if (profileError) {
-        Alert.alert('Error', 'Could not create profile.');
+        Alert.alert('Profile Error', profileError.message || 'Could not create profile.');
       } else {
         Alert.alert('Success!', 'Account created. Please log in.');
         navigation.goBack();
