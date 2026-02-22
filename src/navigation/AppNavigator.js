@@ -34,6 +34,9 @@ import StudentEnrollScreen from '../screens/StudentEnrollScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
+import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
+import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
@@ -51,6 +54,7 @@ import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
 import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
 import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
 import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
+import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
 import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
 import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen';
 import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen';
@@ -115,6 +119,8 @@ export default function AppNavigator() {
             <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
             <Stack.Screen name="Spelling" component={SpellingScreen} />
             <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+            <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
+            <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
             {/* Parent routes — read-only child progress */}
             {profile?.role === 'parent' && (
               <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
@@ -149,6 +155,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="AdminSpelling" component={AdminSpellingScreen} />
                 <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
                 <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
+                <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
               </>
             )}
         </>
@@ -156,6 +163,7 @@ export default function AppNavigator() {
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
       )}
     </Stack.Navigator>

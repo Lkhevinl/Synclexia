@@ -170,6 +170,14 @@ export default function AdminDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('AdminEnrollment')} 
         />
 
+        <AdminCard 
+          title="Parent Links" 
+          subtitle="Link parents to students"
+          icon="people-circle" 
+          color="#6A1B9A"
+          onPress={() => navigation.navigate('AdminParentLinks')} 
+        />
+
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
 
         <AdminCard
@@ -235,7 +243,7 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -30, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 8, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },

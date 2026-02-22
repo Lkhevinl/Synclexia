@@ -44,14 +44,14 @@ export default function TeacherFeedbackScreen() {
     }
   };
 
-  const sendReply = async () => {
-    if (!replyText) return;
+  const sendReply = async (itemId) => {
+    if (!replyText || selectedId !== itemId) return;
     const { error } = await supabase
       .from('feedback')
       .update({ reply: replyText, has_unread_reply: true })
-      .eq('id', selectedId);
+      .eq('id', itemId);
     if (!error) {
-      Alert.alert("Sent", "Reply sent to user.");
+      Alert.alert("Sent", "Reply sent to student.");
       setReplyText("");
       setSelectedId(null);
       fetchFeedback();
@@ -61,7 +61,7 @@ export default function TeacherFeedbackScreen() {
   return (
     <View style={styles.container}>
       <GoBackBtn />
-      <Text style={styles.headerTitle}>User Feedback</Text>
+      <Text style={styles.headerTitle}>Student Feedback</Text>
       <FlatList 
         data={feedbacks}
         keyExtractor={item => item.id}
@@ -98,7 +98,20 @@ export default function TeacherFeedbackScreen() {
                             setReplyText(t);
                         }}
                      />
-                     <TouchableOpacity onPress={sendReply}>
+                     <TouchableOpacity onPress={() => {
+                         if (!replyText || selectedId !== item.id) return;
+                         supabase.from('feedback')
+                           .update({ reply: replyText, has_unread_reply: true })
+                           .eq('id', item.id)
+                           .then(({ error }) => {
+                             if (!error) {
+                               Alert.alert('Sent', 'Reply sent to student.');
+                               setReplyText('');
+                               setSelectedId(null);
+                               fetchFeedback();
+                             }
+                           });
+                     }}>
                          <Ionicons name="send" size={24} color="#0288D1" />
                      </TouchableOpacity>
                  </View>

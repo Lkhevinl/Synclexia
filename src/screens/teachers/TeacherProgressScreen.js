@@ -161,21 +161,24 @@ export default function TeacherProgressScreen({ navigation }) {
                 <Text style={{ color: '#999', textAlign: 'center' }}>No activity in this period</Text>
               </View>
             ) : (
-              Object.entries(progress.byActivity).map(([type, stats]) => (
-                <View key={type} style={styles.breakdownRow}>
-                  <Text style={styles.breakdownIcon}>{ACTIVITY_ICONS[type] || '📊'}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.breakdownType}>{type}</Text>
-                    <View style={styles.breakdownBar}>
-                      <View style={[styles.breakdownFill, { width: `${Math.min(stats.avgAccuracy, 100)}%`, backgroundColor: stats.avgAccuracy >= 70 ? '#4CAF50' : stats.avgAccuracy >= 50 ? '#FF9800' : '#F44336' }]} />
+              Object.entries(progress.byActivity).map(([type, stats]) => {
+                const avgAcc = stats.totalItems > 0 ? Math.round((stats.totalScore / stats.totalItems) * 100) : 0;
+                return (
+                  <View key={type} style={styles.breakdownRow}>
+                    <Text style={styles.breakdownIcon}>{ACTIVITY_ICONS[type] || '📊'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.breakdownType}>{type}</Text>
+                      <View style={styles.breakdownBar}>
+                        <View style={[styles.breakdownFill, { width: `${Math.min(avgAcc, 100)}%`, backgroundColor: avgAcc >= 70 ? '#4CAF50' : avgAcc >= 50 ? '#FF9800' : '#F44336' }]} />
+                      </View>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.breakdownSessions}>{stats.count} sessions</Text>
+                      <Text style={styles.breakdownAccuracy}>{avgAcc}% avg</Text>
                     </View>
                   </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.breakdownSessions}>{stats.count} sessions</Text>
-                    <Text style={styles.breakdownAccuracy}>{stats.avgAccuracy}% avg</Text>
-                  </View>
-                </View>
-              ))
+                );
+              })
             )}
 
             {/* Recent Sessions */}

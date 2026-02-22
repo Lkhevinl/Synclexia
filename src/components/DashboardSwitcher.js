@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import DashboardScreen from '../screens/students/DashboardScreen';
 import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
+import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 
 export default function DashboardSwitcher(props) {
   const { profile, dashboardMode, loading, profileLoaded } = useAuth();
@@ -20,10 +21,13 @@ export default function DashboardSwitcher(props) {
   // Manual override takes priority
   if (dashboardMode === 'student') return <DashboardScreen {...props} />;
   if (dashboardMode === 'teacher') return <TeacherDashboardScreen {...props} />;
+  if (dashboardMode === 'admin')   return <AdminDashboardScreen {...props} />;
+  if (dashboardMode === 'parent')  return <ParentDashboardScreen {...props} />;
 
   // Role-based routing
-  if (profile.role === 'parent')               return <ParentDashboardScreen {...props} />;
-  if (profile.role === 'teacher' || profile.role === 'admin') return <TeacherDashboardScreen {...props} />;
+  if (profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;
+  if (profile?.role === 'admin')   return <AdminDashboardScreen {...props} />;
+  if (profile?.role === 'teacher') return <TeacherDashboardScreen {...props} />;
 
   // Default: student
   return <DashboardScreen {...props} />;
