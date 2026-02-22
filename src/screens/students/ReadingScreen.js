@@ -6,6 +6,7 @@ import * as Speech from 'expo-speech';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
 
@@ -15,6 +16,7 @@ const storyColor = (level) => LEVEL_COLORS[((parseInt(level) || 1) - 1) % LEVEL_
 
 export default function ReadingScreen() {
   const { profile } = useAuth();
+  const { getDyslexiaTextStyle } = useTheme();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -119,7 +121,7 @@ export default function ReadingScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.readerContent}>
-              <Text style={styles.storyText}>{selectedStory?.content}</Text>
+              <Text style={[styles.storyText, getDyslexiaTextStyle()]}>{selectedStory?.content}</Text>
             </ScrollView>
             <View style={styles.readerControls}>
               <TouchableOpacity style={styles.speakBtn} onPress={handleSpeak}>

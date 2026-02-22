@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { xpToLevel } from '../../lib/userUtils';
 
 const DAILY_TIPS = [
   "Tip: Engage your students with interactive lessons!",
@@ -107,170 +108,117 @@ export default function TeacherDashboardScreen({ navigation }) {
     }
   };
 
-  const TeacherCard = ({ title, subtitle, icon, color, onPress }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={[styles.iconBox, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={32} color="#fff" />
+  // Grid card for 2-column layout
+  const GridCard = ({ title, icon, color, onPress }) => (
+    <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.85}>
+      <LinearGradient colors={[color, color + 'CC']} style={styles.gridCardGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <View style={styles.gridIconCircle}>
+          <Ionicons name={icon} size={28} color="#fff" />
+        </View>
+        <Text style={styles.gridCardTitle}>{title}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+
+  // Full-width row card
+  const RowCard = ({ title, subtitle, icon, color, onPress }) => (
+    <TouchableOpacity style={styles.rowCard} onPress={onPress} activeOpacity={0.85}>
+      <View style={[styles.rowIconBox, { backgroundColor: color + '22' }]}>
+        <Ionicons name={icon} size={26} color={color} />
       </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardSub}>{subtitle}</Text>
+      <View style={styles.rowCardContent}>
+        <Text style={styles.rowCardTitle}>{title}</Text>
+        <Text style={styles.rowCardSub}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={24} color="#CFD8DC" />
+      <View style={[styles.rowChevron, { backgroundColor: color + '22' }]}>
+        <Ionicons name="chevron-forward" size={18} color={color} />
+      </View>
     </TouchableOpacity>
   );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* HEADER */}
-      <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Teacher"}! 👨‍🏫</Text>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* ── HEADER ── */}
+      <LinearGradient colors={['#f9a8c9', '#f7c5a0', '#f9b8d0']} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        {/* Logo + greeting row */}
+        <View style={styles.headerTop}>
+          <View style={styles.logoWrapper}>
+            <Image
+              source={require('../../../assets/icon.png')}
+              style={styles.logoImg}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.appName}>Synclexia</Text>
+            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Teacher'}! 👨‍🏫</Text>
             <Text style={styles.subGreeting}>Manage your students & activities.</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
-              <Ionicons name="notifications-outline" size={24} color="#fff" />
-              {notifications.length > 0 && <View style={styles.redDot} />}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
+            <Ionicons name="notifications-outline" size={24} color="#7B2D52" />
+            {notifications.length > 0 && <View style={styles.redDot} />}
+          </TouchableOpacity>
         </View>
 
-        {/* STATS BAR */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>LEVEL</Text>
-            <Text style={styles.statValue}>{Math.floor((profile?.xp || 0) / 100) + 1}</Text>
+        {/* Stats pills */}
+        <View style={styles.statsPillRow}>
+          <View style={styles.statsPill}>
+            <Ionicons name="ribbon-outline" size={16} color="#C06080" />
+            <Text style={styles.statsPillLabel}>Level</Text>
+            <Text style={styles.statsPillValue}>{xpToLevel(profile?.xp)}</Text>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>STUDENTS</Text>
-            <Text style={[styles.statValue, { color: '#4CAF50' }]}>{enrolledCount}</Text>
+          <View style={styles.statsPillDivider} />
+          <View style={styles.statsPill}>
+            <Ionicons name="people-outline" size={16} color="#C06080" />
+            <Text style={styles.statsPillLabel}>Students</Text>
+            <Text style={[styles.statsPillValue, { color: '#C06080' }]}>{enrolledCount}</Text>
+          </View>
+          <View style={styles.statsPillDivider} />
+          <View style={styles.statsPill}>
+            <Ionicons name="star-outline" size={16} color="#C06080" />
+            <Text style={styles.statsPillLabel}>XP</Text>
+            <Text style={[styles.statsPillValue, { color: '#C06080' }]}>{profile?.xp || 0}</Text>
           </View>
         </View>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={{ height: 40 }} />
 
         {/* DAILY TIP */}
-        <View style={styles.tipBox}>
-          <Ionicons name="sparkles" size={20} color="#FFD700" style={{ marginRight: 10 }} />
+        <LinearGradient colors={['#1a1a2e', '#16213e']} style={styles.tipBox} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+          <Ionicons name="sparkles" size={18} color="#FFD700" />
           <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
+        </LinearGradient>
+
+        {/* ── CLASS MANAGEMENT (2-col grid) ── */}
+        <Text style={styles.sectionTitle}>Class Management</Text>
+        <View style={styles.grid}>
+          <GridCard title="Student List"     icon="people"      color="#4CAF50" onPress={() => navigation.push('TeacherUsers')} />
+          <GridCard title="Assign Tasks"     icon="checkbox"    color="#2196F3" onPress={() => navigation.push('TeacherAssignActivities')} />
+          <GridCard title="Give Rewards"     icon="star"        color="#FF9800" onPress={() => navigation.push('TeacherUsers')} />
+          <GridCard title="Monitor Progress" icon="trending-up" color="#E91E63" onPress={() => navigation.push('TeacherProgress')} />
         </View>
 
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Class Management</Text>
+        {/* ── CONTENT MANAGEMENT (row cards) ── */}
+        <Text style={styles.sectionTitle}>Content Management</Text>
+        <RowCard title="Writing Practice" subtitle="Create & manage tracing words"       icon="pencil"        color="#9C27B0" onPress={() => navigation.push('TeacherAddStory')} />
+        <RowCard title="Phonics Audio"    subtitle="Add sounds & letters for lessons"    icon="volume-high"   color="#00BCD4" onPress={() => navigation.push('TeacherPhonics')} />
+        <RowCard title="Spelling Words"   subtitle="Add and manage spelling word bank"   icon="text"          color="#2196F3" onPress={() => navigation.push('TeacherSpelling')} />
+        <RowCard title="Phonics Activity" subtitle="Manage blend, rhyme & segment games" icon="musical-notes" color="#FF9800" onPress={() => navigation.push('TeacherPhonicsActivity')} />
+        <RowCard title="Phonological"     subtitle="Manage syllable, rime & phoneme tasks" icon="ear"         color="#673AB7" onPress={() => navigation.push('TeacherPhonological')} />
 
-        {/* ✅ FIXED NAVIGATION NAMES BELOW */}
-        <TeacherCard
-          title="Student List"
-          subtitle="View all your enrolled students"
-          icon="people"
-          color="#4CAF50"
-          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
-        />
+        {/* ── COMMUNICATION & ENROLLMENT (row cards) ── */}
+        <Text style={styles.sectionTitle}>Communication & Enrollment</Text>
+        <RowCard title="Feedback & Replies" subtitle="Read student feedback & respond"    icon="chatbubbles" color="#E91E63" onPress={() => navigation.push('TeacherFeedback')} />
+        <RowCard title="Announcements"      subtitle="Send notifications to students"     icon="megaphone"   color="#FF5722" onPress={() => navigation.push('TeacherNotifications')} />
+        <RowCard title="Class QR Code"      subtitle="Generate QR code for enrollment"   icon="qr-code"     color="#009688" onPress={() => navigation.push('TeacherEnrollment')} />
 
-        <TeacherCard
-          title="Assign Activities"
-          subtitle="Give learning tasks to students"
-          icon="checkbox"
-          color="#2196F3"
-          onPress={() => navigation.push('TeacherAssignActivities')} // Fixed: AdminAssignActivities -> TeacherAssignActivities
-        />
-
-        <TeacherCard
-          title="Give Rewards"
-          subtitle="Award coins & XP to students"
-          icon="star"
-          color="#FFD700"
-          onPress={() => navigation.push('TeacherUsers')} // Fixed: AdminUsers -> TeacherUsers
-        />
-
-        <TeacherCard
-          title="Monitor Progress"
-          subtitle="Track student comprehension & XP"
-          icon="trending-up"
-          color="#FF9800"
-          onPress={() => navigation.push('TeacherProgress')}
-        />
-
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
-
-        <TeacherCard
-          title="Writing Practice"
-          subtitle="Create & manage tracing words"
-          icon="pencil"
-          color="#9C27B0"
-          onPress={() => navigation.push('TeacherAddStory')} // Fixed: AdminAddStory -> TeacherAddStory
-        />
-
-        <TeacherCard
-          title="Phonics Audio"
-          subtitle="Add sounds & letters for lessons"
-          icon="volume-high"
-          color="#00BCD4"
-          onPress={() => navigation.push('TeacherPhonics')} // Fixed: AdminPhonics -> TeacherPhonics
-        />
-
-        <TeacherCard
-          title="Spelling Words"
-          subtitle="Add and manage spelling word bank"
-          icon="text"
-          color="#2196F3"
-          onPress={() => navigation.push('TeacherSpelling')}
-        />
-
-        <TeacherCard
-          title="Phonics Activity"
-          subtitle="Manage blend, rhyme & segment games"
-          icon="musical-notes"
-          color="#FF9800"
-          onPress={() => navigation.push('TeacherPhonicsActivity')}
-        />
-
-        <TeacherCard
-          title="Phonological"
-          subtitle="Manage syllable, rime & phoneme tasks"
-          icon="ear"
-          color="#9C27B0"
-          onPress={() => navigation.push('TeacherPhonological')}
-        />
-
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Communication</Text>
-
-        <TeacherCard
-          title="Feedback & Replies"
-          subtitle="Read student feedback & respond"
-          icon="chatbubbles"
-          color="#E91E63"
-          onPress={() => navigation.push('TeacherFeedback')} // Fixed: AdminFeedback -> TeacherFeedback
-        />
-
-        <TeacherCard
-          title="Announcements"
-          subtitle="Send notifications to students"
-          icon="megaphone"
-          color="#FF5722"
-          onPress={() => navigation.push('TeacherNotifications')} // Fixed: AdminNotifications -> TeacherNotifications
-        />
-
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Enrollment</Text>
-
-        <TeacherCard
-          title="Class Code"
-          subtitle="Generate QR code for students"
-          icon="qr-code"
-          color="#009688"
-          onPress={() => navigation.push('TeacherEnrollment')}
-        />
-
-        {/* LIVE ACTIVITY FEED */}
+        {/* ── LIVE ACTIVITY FEED ── */}
         {activityFeed.length > 0 && (
           <>
-            <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Recent Student Activity</Text>
+            <Text style={styles.sectionTitle}>Recent Student Activity</Text>
             {activityFeed.slice(0, 5).map((log, idx) => (
               <View key={log.id || idx} style={styles.feedItem}>
                 <View style={[styles.feedDot, { backgroundColor: log.accuracy >= 80 ? '#4CAF50' : log.accuracy >= 50 ? '#FF9800' : '#F44336' }]} />
@@ -286,21 +234,18 @@ export default function TeacherDashboardScreen({ navigation }) {
               </View>
             ))}
             {activityFeed.length > 5 && (
-              <TouchableOpacity 
-                style={{ alignItems: 'center', paddingVertical: 10 }}
-                onPress={() => navigation.push('TeacherProgress')}
-              >
-                <Text style={{ color: '#3b5998', fontWeight: 'bold' }}>View All Activity →</Text>
+              <TouchableOpacity style={styles.viewAllBtn} onPress={() => navigation.push('TeacherProgress')}>
+                <Text style={styles.viewAllText}>View All Activity →</Text>
               </TouchableOpacity>
             )}
           </>
         )}
 
-        <View style={{ height: 20 }} />
+        <View style={{ height: 30 }} />
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
-      <Modal visible={notifVisible} transparent={true} animationType="fade" onRequestClose={() => setNotifVisible(false)}>
+      <Modal visible={notifVisible} transparent animationType="fade" onRequestClose={() => setNotifVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Notifications 🔔</Text>
@@ -313,7 +258,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                   <Text style={styles.notifBody}>{item.content}</Text>
                 </View>
               )}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999' }}>No notifications</Text>}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999' }}>No notifications yet.</Text>}
             />
             <TouchableOpacity style={styles.closeBtn} onPress={() => setNotifVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
@@ -327,44 +272,66 @@ export default function TeacherDashboardScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingTop: 80, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  subGreeting: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
-  headerIcons: { flexDirection: 'row', gap: 15 },
-  iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
-  redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, position: 'absolute', bottom: -30, left: 20, right: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
-  statItem: { alignItems: 'center' },
-  statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
+  // ── Header ──
+  header: { paddingTop: 55, paddingBottom: 24, paddingHorizontal: 20, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
+  logoWrapper: { width: 52, height: 52, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  logoImg: { width: 46, height: 46, borderRadius: 12 },
+  appName: { fontSize: 11, fontWeight: '800', color: 'rgba(100,30,60,0.6)', letterSpacing: 2, textTransform: 'uppercase' },
+  greeting: { fontSize: 20, fontWeight: 'bold', color: '#7B2D52', marginTop: 1 },
+  subGreeting: { color: '#9E5070', fontSize: 12, marginTop: 2 },
+  iconBtn: { padding: 10, backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 14 },
+  redDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
 
-  scrollContent: { paddingTop: 20, paddingHorizontal: 20 },
-  tipBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#333', borderRadius: 15, padding: 15, marginBottom: 25 },
+  // Stats pills inside header
+  statsPillRow: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 10, justifyContent: 'space-around', alignItems: 'center' },
+  statsPill: { alignItems: 'center', gap: 3 },
+  statsPillLabel: { fontSize: 10, color: '#9E5070', fontWeight: '600', letterSpacing: 0.5 },
+  statsPillValue: { fontSize: 18, fontWeight: 'bold', color: '#7B2D52' },
+  statsPillDivider: { width: 1, height: 30, backgroundColor: 'rgba(180,80,120,0.2)' },
+
+  // ── Scroll content ──
+  scrollContent: { paddingHorizontal: 18, paddingTop: 20 },
+
+  // Tip box
+  tipBox: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, padding: 14, marginBottom: 24 },
   tipText: { color: '#fff', flex: 1, lineHeight: 20 },
-  sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
-  card: { flexDirection: 'row', backgroundColor: '#fff', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 15, elevation: 2 },
-  iconBox: { width: 60, height: 60, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  cardContent: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
-  cardSub: { fontSize: 13, color: '#90A4AE', marginTop: 4 },
+  // Section title
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#37474F', marginBottom: 14, marginTop: 6, letterSpacing: 0.3 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 25, maxHeight: '60%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center', color: '#333' },
-  notifItem: { marginBottom: 15, borderBottomWidth: 1, borderColor: '#f0f0f0', paddingBottom: 10 },
-  notifTitle: { fontWeight: 'bold', color: '#1976D2', marginBottom: 4 },
-  notifBody: { color: '#555', fontSize: 13 },
-  closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 10 },
-  closeText: { color: '#fff', fontWeight: 'bold' },
+  // 2-col grid cards
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 8 },
+  gridCard: { width: '48%', marginBottom: 14, borderRadius: 20, elevation: 4 },
+  gridCardGradient: { borderRadius: 20, padding: 20, height: 120, justifyContent: 'space-between' },
+  gridIconCircle: { width: 48, height: 48, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center' },
+  gridCardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 14, marginTop: 4 },
 
-  // Activity Feed
-  feedItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 15, marginBottom: 10, elevation: 1 },
+  // Row cards
+  rowCard: { flexDirection: 'row', backgroundColor: '#fff', padding: 16, borderRadius: 18, alignItems: 'center', marginBottom: 12, elevation: 2 },
+  rowIconBox: { width: 50, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  rowCardContent: { flex: 1 },
+  rowCardTitle: { fontSize: 15, fontWeight: 'bold', color: '#263238' },
+  rowCardSub: { fontSize: 12, color: '#90A4AE', marginTop: 3 },
+  rowChevron: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+
+  // Activity feed
+  feedItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 16, marginBottom: 10, elevation: 1 },
   feedDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
   feedName: { fontSize: 14, fontWeight: 'bold', color: '#333' },
   feedDetail: { fontSize: 12, color: '#666', marginTop: 2 },
   feedTime: { fontSize: 11, color: '#999' },
+  viewAllBtn: { alignItems: 'center', paddingVertical: 12, backgroundColor: '#EEF2FF', borderRadius: 14, marginBottom: 8 },
+  viewAllText: { color: '#3b5998', fontWeight: 'bold', fontSize: 14 },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '88%', backgroundColor: '#fff', borderRadius: 24, padding: 24, maxHeight: '60%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, textAlign: 'center', color: '#333' },
+  notifItem: { marginBottom: 15, borderBottomWidth: 1, borderColor: '#f0f0f0', paddingBottom: 10 },
+  notifTitle: { fontWeight: 'bold', color: '#1976D2', marginBottom: 4 },
+  notifBody: { color: '#555', fontSize: 13 },
+  closeBtn: { backgroundColor: '#C06080', paddingVertical: 13, borderRadius: 16, alignItems: 'center', marginTop: 10 },
+  closeText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });

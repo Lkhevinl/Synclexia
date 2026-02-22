@@ -2,52 +2,47 @@ import { supabase } from './supabase';
 
 export const checkQuestProgress = async (userId, actionType, metadata = {}) => {
   try {
-    // 1. Get all quests
-    const { data: quests } = await supabase.from('quests').select('*');
-    if (!quests) return;
+    // 1. Only fetch quests whose title contains the actionType keyword (case-insensitive)
+    const { data: quests } = await supabase
+      .from('quests')
+      .select('*')
+      .ilike('title', `%${actionType}%`);
+
+    if (!quests || quests.length === 0) return;
+
+    const hour = new Date().getHours();
 
     for (const quest of quests) {
-      let shouldUpdate = false;
-
-      // --- LOGIC MATCHING ---
-      
-      // Standard Matching (e.g., "Read" matches "Read 1 Story")
-      if (quest.title.toLowerCase().includes(actionType.toLowerCase())) {
-        shouldUpdate = true;
-      }
+      let shouldUpdate = true;
 
       // Special Case: "Level 2 Stories"
       if (quest.title.includes("Level 2") && metadata.level < 2) {
-        shouldUpdate = false; // Don't count if story was too easy
+        shouldUpdate = false;
       }
 
-      // Special Case: "Night Owl"
-      if (quest.title.includes("Night Owl")) {
-        const hour = new Date().getHours();
-        if (hour < 20) shouldUpdate = false; // Only counts after 8 PM (20:00)
+      // Special Case: "Night Owl" — only counts after 8 PM (20:00)
+      if (quest.title.includes("Night Owl") && hour < 20) {
+        shouldUpdate = false;
       }
 
-      // --- UPDATE DB IF MATCHED ---
-      if (shouldUpdate) {
-        // Get current progress
-        const { data: progressData } = await supabase
-          .from('user_quests')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('quest_id', quest.id)
-          .single();
+      if (!shouldUpdate) continue;
 
-        let current = progressData ? progressData.progress : 0;
-        let claimed = progressData ? progressData.is_claimed : false;
+      // Get current progress for this quest
+      const { data: progressData } = await supabase
+        .from('user_quests')
+        .select('progress, is_claimed')
+        .eq('user_id', userId)
+        .eq('quest_id', quest.id)
+        .maybeSingle();
 
-        if (!claimed && current < quest.target_count) {
-          const newProgress = Math.min(current + 1, quest.target_count);
-          
-          await supabase.from('user_quests').upsert(
-            { user_id: userId, quest_id: quest.id, progress: newProgress },
-            { onConflict: 'user_id, quest_id' }
-          );
-        }
+      const current = progressData?.progress ?? 0;
+      const claimed = progressData?.is_claimed ?? false;
+
+      if (!claimed && current < quest.target_count) {
+        await supabase.from('user_quests').upsert(
+          { user_id: userId, quest_id: quest.id, progress: Math.min(current + 1, quest.target_count) },
+          { onConflict: 'user_id,quest_id' }
+        );
       }
     }
   } catch (error) {

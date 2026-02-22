@@ -13,10 +13,14 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f9a8c9"
     },
+    "scheme": "synclexia",
+    "plugins": [
+      "expo-speech-recognition"
+    ],
     "ios": {
       "bundleIdentifier": "com.synclexia.app",
       "supportsTablet": true
@@ -24,8 +28,8 @@
     "android": {
       "package": "com.synclexia.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#f9a8c9"
       },
       "edgeToEdgeEnabled": true
     },

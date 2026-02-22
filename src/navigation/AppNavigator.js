@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import LoadingScreen from '../screens/LoadingScreen';
+import DashboardSwitcher from '../components/DashboardSwitcher';
 
 // Standard Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -85,7 +86,7 @@ function AppTabs() {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Dashboard" component={require('../components/DashboardSwitcher').default} />
+      <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );

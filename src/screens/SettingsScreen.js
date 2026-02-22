@@ -5,9 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import GoBackBtn from '../components/GoBackBtn';
+import { xpToLevel } from '../lib/userUtils';
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, updateTheme } = useTheme(); 
+  const { theme, updateTheme, a11yTextStyle } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
@@ -29,7 +30,7 @@ export default function SettingsScreen({ navigation }) {
       style={[styles.optionBtn, theme.letterSpacing === value && styles.optionBtnActive]}
       onPress={() => updateTheme({ letterSpacing: value })}
     >
-      <Text style={[styles.optionText, theme.letterSpacing === value && styles.optionTextActive]}>{label}</Text>
+      <Text style={[styles.optionText, theme.letterSpacing === value && styles.optionTextActive, a11yTextStyle]}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -60,14 +61,14 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <Ionicons name="accessibility" size={24} color="#5C6BC0" />
-              <Text style={[styles.sectionTitle, { color: '#5C6BC0' }]}>Dyslexia Accessibility</Text>
+              <Text style={[styles.sectionTitle, { color: '#5C6BC0' }, a11yTextStyle]}>Dyslexia Accessibility</Text>
             </View>
 
             {/* Dyslexia-Friendly Mode toggle */}
             <View style={styles.accessRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Dyslexia-Friendly Mode</Text>
-                <Text style={styles.accessDesc}>Larger letter size and extra weight for easier reading</Text>
+                <Text style={[styles.label, a11yTextStyle]}>Dyslexia-Friendly Mode</Text>
+                <Text style={[styles.accessDesc, a11yTextStyle]}>Larger letter size and extra weight for easier reading</Text>
               </View>
               <TouchableOpacity
                 style={[styles.toggleBtn, theme.dyslexiaFont && styles.toggleBtnOn]}
@@ -82,7 +83,7 @@ export default function SettingsScreen({ navigation }) {
             <View style={styles.divider} />
 
             {/* Letter Spacing */}
-            <Text style={styles.label}>Letter Spacing</Text>
+            <Text style={[styles.label, a11yTextStyle]}>Letter Spacing</Text>
             <View style={styles.row}>
               <SpacingBtn label="Normal" value="normal" />
               <SpacingBtn label="Wide"   value="wide"   />
@@ -90,8 +91,8 @@ export default function SettingsScreen({ navigation }) {
             </View>
 
             {/* Color Overlay */}
-            <Text style={styles.label}>Screen Color Tint</Text>
-            <Text style={styles.accessDesc}>A colored tint can reduce visual stress when reading</Text>
+            <Text style={[styles.label, a11yTextStyle]}>Screen Color Tint</Text>
+            <Text style={[styles.accessDesc, a11yTextStyle]}>A colored tint can reduce visual stress when reading</Text>
             <View style={styles.overlayRow}>
               {OVERLAY_OPTIONS.map(opt => (
                 <TouchableOpacity
@@ -112,16 +113,16 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
                   <Ionicons name="person" size={24} color="#607D8B" />
-                  <Text style={styles.sectionTitle}>Account</Text>
+                  <Text style={[styles.sectionTitle, a11yTextStyle]}>Account</Text>
               </View>
               <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Name</Text>
-                  <Text style={styles.infoValue}>{profile?.full_name || "Student"}</Text>
+                  <Text style={[styles.infoLabel, a11yTextStyle]}>Name</Text>
+                  <Text style={[styles.infoValue, a11yTextStyle]}>{profile?.full_name || "Student"}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Level</Text>
-                  <Text style={styles.infoValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
+                  <Text style={[styles.infoLabel, a11yTextStyle]}>Level</Text>
+                  <Text style={[styles.infoValue, a11yTextStyle]}>{xpToLevel(profile?.xp)}</Text>
               </View>
           </View>
 

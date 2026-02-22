@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import { LinearGradient } from 'expo-linear-gradient'; 
 import { useTheme } from '../../context/ThemeContext'; // <--- Connects to Settings
 import { useAuth } from '../../context/AuthContext'; 
 import { supabase } from '../../lib/supabase';
-import { useFocusEffect } from '@react-navigation/native'; 
+import { useFocusEffect } from '@react-navigation/native';
+import { xpToLevel } from '../../lib/userUtils';
 
 const DAILY_TIPS = [
   "Tip: Reading out loud helps you remember better!",
@@ -17,7 +18,7 @@ const DAILY_TIPS = [
 
 export default function DashboardScreen({ navigation }) {
   // 1. Get the dynamic theme from Context
-  const { theme } = useTheme(); 
+  const { theme, a11yTextStyle } = useTheme();
   const { profile } = useAuth(); 
   
   const [notifVisible, setNotifVisible] = useState(false);
@@ -166,6 +167,7 @@ export default function DashboardScreen({ navigation }) {
   }
 
   const MenuCard = ({ title, icon, color, route, badge, activityType }) => {
+    const { a11yTextStyle: cardA11y } = useTheme();
     const isLocked = isStudent && !enrollment;
     const isNotAssigned = isStudent && enrollment && activityType && !assignments.includes(activityType);
     
@@ -196,7 +198,7 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.iconCircle}>
                 <Text style={{fontSize: 32}}>{icon}</Text>
             </View>
-            <Text style={styles.cardTitle}>{title}</Text>
+            <Text style={[styles.cardTitle, cardA11y]}>{title}</Text>
             {badge && (
                 <View style={styles.badge}>
                     <Text style={styles.badgeText}>!</Text>
@@ -220,13 +222,24 @@ export default function DashboardScreen({ navigation }) {
       
       {/* HEADER */}
       <LinearGradient
-        colors={['#4c669f', '#3b5998', '#192f6a']}
+        colors={['#f9a8c9', '#f7c5a0', '#f9b8d0']}
         style={styles.headerGradient}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
-            <View>
-                <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Learner"}! 👋</Text>
-                <Text style={styles.subGreeting}>Let's learn something new.</Text>
+            <View style={styles.headerLeft}>
+                <View style={styles.headerLogoWrapper}>
+                  <Image
+                    source={require('../../../assets/icon.png')}
+                    style={styles.headerLogoImg}
+                    resizeMode="contain"
+                  />
+                </View>
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={styles.headerAppName}>Synclexia</Text>
+                  <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Learner"}! 👋</Text>
+                  <Text style={styles.subGreeting}>Let's learn something new.</Text>
+                </View>
             </View>
             <View style={styles.headerIcons}>
                 <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
@@ -241,7 +254,7 @@ export default function DashboardScreen({ navigation }) {
       <View style={styles.statsContainer}>
           <View style={styles.statItem}>
               <Text style={styles.statLabel}>LEVEL</Text>
-              <Text style={styles.statValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
+              <Text style={styles.statValue}>{xpToLevel(profile?.xp)}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
@@ -293,54 +306,26 @@ export default function DashboardScreen({ navigation }) {
             </View>
           )}
           
-          {/* OLD ENROLLMENT BANNER - KEPT FOR REFERENCE */}
-          {false && isStudent && !enrollment && !checkingEnrollment && (
-            <TouchableOpacity 
-              style={styles.enrollBanner}
-              onPress={() => navigation.navigate('StudentEnroll')}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="warning" size={24} color="#FF9800" />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.enrollBannerTitle}>Enroll to Start Learning</Text>
-                <Text style={styles.enrollBannerText}>Ask your teacher for the QR code to unlock activities</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={20} color="#FF9800" />
-            </TouchableOpacity>
-          )}
-
-          {/* TEACHER INFO CARD - REMOVED, NOW IN ENROLLMENT STATUS */}
-          {false && isStudent && enrollment && (
-            <View style={styles.teacherCard}>
-              <Ionicons name="person-circle" size={30} color="#4CAF50" />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.teacherLabel}>Your Teacher</Text>
-                <Text style={styles.teacherName}>{enrollment.profiles?.full_name || 'Teacher'}</Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-            </View>
-          )}
-          
           {/* DAILY TIP */}
           <View style={styles.tipBox}>
               <Ionicons name="sparkles" size={20} color="#FFD700" style={{marginRight: 10}} />
-              <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
+              <Text style={[styles.tipText, { fontSize: theme.fontSize }, a11yTextStyle]}>{dailyTip}</Text>
           </View>
 
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Learning Tools</Text>
+          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Learning Tools</Text>
           
           {/* MENU GRID */}
           <View style={styles.grid}>
               <MenuCard title="Phonics"        icon="🗣️" color="#FF9800" route="Phonics"                  activityType="phonics" />
               <MenuCard title="Writing"        icon="✍️" color="#4CAF50" route="Writing"                  activityType="writing" />
               <MenuCard title="Reading"        icon="📖" color="#2196F3" route="Reading"                  activityType="reading" />
-              <MenuCard title="Spelling"       icon="🔤" color="#E91E63" route="Spelling"                 activityType="phonics" />
+              <MenuCard title="Spelling"       icon="🔤" color="#E91E63" route="Spelling"                 activityType="spelling" />
               <MenuCard title="Activities"     icon="🎮" color="#00897B" route="PhonicsActivity"          activityType="phonics" />
               <MenuCard title="Scan"           icon="📷" color="#9C27B0" route="Scan"                     activityType="scan" />
               <MenuCard title="Awareness"      icon="🎧" color="#6A1B9A" route="PhonologicalAwareness"    activityType="phonological_awareness" />
           </View>
 
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Gamification</Text>
+          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Gamification</Text>
           <View style={styles.grid}>
               <MenuCard title="Quests"   icon="📜" color="#F44336" route="Quests" badge={true} />
               <MenuCard title="Top 10"   icon="🏆" color="#FFC107" route="Leaderboard" />
@@ -419,14 +404,18 @@ const styles = StyleSheet.create({
   enrollNowBtn: { flexDirection: 'row', backgroundColor: '#FFF3E0', borderRadius: 15, padding: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFD8A8' },
   enrollNowText: { flex: 1, marginLeft: 10, fontSize: 14, fontWeight: 'bold', color: '#F57C00' },
   
-  headerGradient: { paddingTop: 80, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  headerGradient: { paddingTop: 55, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  subGreeting: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  headerLogoWrapper: { width: 48, height: 48, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  headerLogoImg: { width: 44, height: 44, borderRadius: 11 },
+  headerAppName: { fontSize: 10, fontWeight: '800', color: 'rgba(100,30,60,0.6)', letterSpacing: 2, textTransform: 'uppercase' },
+  greeting: { fontSize: 18, fontWeight: 'bold', color: '#7B2D52', marginTop: 1 },
+  subGreeting: { color: '#9E5070', fontSize: 12, marginTop: 1 },
   headerIcons: { flexDirection: 'row', gap: 15 },
-  iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
+  iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
-
+  
   statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, boxShadow: '0px 4px 8px rgba(0,0,0,0.1)', elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },

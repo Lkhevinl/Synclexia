@@ -77,11 +77,11 @@ const ms = StyleSheet.create({
 
 // ─── Core Spelling Game ───────────────────────────────────────────────────────
 
-function SpellingGame({ mode, onBack, userId, wordBank }) {
+function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
   // Shuffle words fetched from DB for this session
   const [wordList] = useState(() => shuffle(wordBank).slice(0, Math.min(10, wordBank.length)));
   const [wordIdx, setWordIdx] = useState(0);
-  const [tiles, setTiles] = useState(() => buildTiles(wordBank[0]?.word || 'cat'));
+  const [tiles, setTiles] = useState(() => wordBank[0] ? buildTiles(wordBank[0].word) : []);
   const [answer, setAnswer] = useState([]);   // Tiles the user has placed
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState(false);
@@ -208,7 +208,7 @@ function SpellingGame({ mode, onBack, userId, wordBank }) {
           
           {/* Hint text */}
           {mode === 'hint' && (
-            <Text style={game.hintText}>{current.hint}</Text>
+            <Text style={[game.hintText, dyslexiaTextStyle]}>{current.hint}</Text>
           )}
 
           {/* Speak button */}
@@ -374,7 +374,7 @@ const fin = StyleSheet.create({
 
 export default function SpellingScreen({ navigation }) {
   const { profile } = useAuth();
-  const { getOverlayColor } = useTheme();
+  const { getOverlayColor, getDyslexiaTextStyle } = useTheme();
   const [mode, setMode] = useState(null);
   const [wordBank, setWordBank] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -405,7 +405,7 @@ export default function SpellingScreen({ navigation }) {
             <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask your teacher!</Text>
           </View>
         ) : mode ? (
-          <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} />
+          <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />
         ) : (
           <ModeSelector onSelect={setMode} />
         )}

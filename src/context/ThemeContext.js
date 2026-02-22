@@ -1,26 +1,45 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_STORAGE_KEY = '@synclexia_theme';
 
 // 1. Create the Context
 const ThemeContext = createContext();
 
+const DEFAULT_THEME = {
+  fontSize: 14,            // Default Text Size
+  bgColor: '#FFF0F5',      // Default Background — pastel blush
+  fontStyle: 'System',     // Default Font
+  primaryColor: '#C06080', // Default Accent — rose
+
+  // ── Dyslexia Accessibility Settings ──────────────────────────────────
+  dyslexiaFont: false,     // Enables wider letter spacing + bolder weight for readability
+  letterSpacing: 'normal', // 'normal' | 'wide' | 'wider'
+  colorOverlay: 'none',    // 'none' | 'yellow' | 'blue' | 'green' | 'pink' | 'orange'
+  audioInstructions: true, // Speak screen instructions on entry
+};
+
 export const ThemeProvider = ({ children }) => {
-  // Default Settings
-  const [theme, setTheme] = useState({
-    fontSize: 14,            // Default Text Size
-    bgColor: '#F5F7FA',      // Default Background
-    fontStyle: 'System',     // Default Font
-    primaryColor: '#4c669f', // Default Accent
+  const [theme, setTheme] = useState(DEFAULT_THEME);
 
-    // ── Dyslexia Accessibility Settings ──────────────────────────────────
-    dyslexiaFont: false,     // Enables wider letter spacing + bolder weight for readability
-    letterSpacing: 'normal', // 'normal' | 'wide' | 'wider'
-    colorOverlay: 'none',    // 'none' | 'yellow' | 'blue' | 'green' | 'pink' | 'orange'
-    audioInstructions: true, // Speak screen instructions on entry
-  });
+  // Load persisted theme on mount
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_STORAGE_KEY).then((stored) => {
+      if (stored) {
+        try {
+          setTheme((prev) => ({ ...prev, ...JSON.parse(stored) }));
+        } catch (_) {}
+      }
+    });
+  }, []);
 
-  // 2. Function to update settings
+  // 2. Function to update settings — persists to AsyncStorage
   const updateTheme = (newSettings) => {
-    setTheme((prev) => ({ ...prev, ...newSettings }));
+    setTheme((prev) => {
+      const updated = { ...prev, ...newSettings };
+      AsyncStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
   };
 
   // 3. Computed helpers consumed throughout the app
@@ -41,8 +60,37 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Returns a text style object to apply dyslexia-friendly rendering.
+   * Spread this into any Text or TextInput style when dyslexiaFont is on.
+   * Usage: <Text style={[styles.myText, getDyslexiaTextStyle()]}>...</Text>
+   */
+  const getDyslexiaTextStyle = () => {
+    if (!theme.dyslexiaFont) return {};
+    return {
+      fontWeight: '700',
+      letterSpacing: 1.5,
+      lineHeight: 26,
+      fontSize: (theme.fontSize || 14) + 2,
+    };
+  };
+
+  // Pre-computed style objects — spread directly onto any Text style
+  const dyslexiaStyle = theme.dyslexiaFont
+    ? { fontWeight: '700', lineHeight: 28, fontSize: (theme.fontSize || 14) + 2 }
+    : {};
+
+  const letterSpacingStyle = (() => {
+    if (theme.letterSpacing === 'wide')  return { letterSpacing: 2 };
+    if (theme.letterSpacing === 'wider') return { letterSpacing: 4 };
+    return {};
+  })();
+
+  // Combined — use this on any Text that should respect both settings
+  const a11yTextStyle = { ...dyslexiaStyle, ...letterSpacingStyle };
+
   return (
-    <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor }}>
+    <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor, getDyslexiaTextStyle, dyslexiaStyle, letterSpacingStyle, a11yTextStyle }}>
       {children}
     </ThemeContext.Provider>
   );

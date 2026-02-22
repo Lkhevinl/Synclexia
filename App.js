@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -21,16 +21,35 @@ function GlobalOverlay() {
   );
 }
 
+function AppWithTheme() {
+  const { theme, a11yTextStyle } = useTheme();
+
+  // Apply synchronously during render so every Text that mounts
+  // in this render cycle already has the correct defaultProps.
+  Text.defaultProps = Text.defaultProps ?? {};
+  Text.defaultProps.style = Object.keys(a11yTextStyle).length > 0 ? a11yTextStyle : undefined;
+
+  // Key forces NavigationContainer + all children to remount when
+  // accessibility settings change, picking up the new defaultProps.
+  const a11yKey = `${theme.dyslexiaFont}-${theme.letterSpacing}`;
+
+  return (
+    <>
+      <NavigationContainer key={a11yKey}>
+        <AppNavigator />
+      </NavigationContainer>
+      <GlobalOverlay />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
         <AdaptiveProvider>
           <ThemeProvider>
-            <NavigationContainer>
-              <AppNavigator />
-            </NavigationContainer>
-            <GlobalOverlay />
+            <AppWithTheme />
           </ThemeProvider>
         </AdaptiveProvider>
       </AuthProvider>

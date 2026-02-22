@@ -1,14 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Share, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import GoBackBtn from '../components/GoBackBtn';
+import GoBackBtn from '../../components/GoBackBtn';
 
 export default function TextToSpeechScreen() {
   const [text, setText] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  const speak = () => {
-    if(text) Speech.speak(text);
+  const speak = async () => {
+    if (!text.trim()) {
+      Alert.alert("Nothing to speak", "Type some text first.");
+      return;
+    }
+    if (isSpeaking) {
+      await Speech.stop();
+      setIsSpeaking(false);
+      return;
+    }
+    setIsSpeaking(true);
+    Speech.speak(text, {
+      rate: 0.85,
+      onDone: () => setIsSpeaking(false),
+      onStopped: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
+
+  const handleShare = async () => {
+    if (!text.trim()) {
+      Alert.alert("Nothing to share", "Type some text first.");
+      return;
+    }
+    try {
+      await Share.share({ message: text });
+    } catch (e) {
+      Alert.alert("Error", "Could not share text.");
+    }
   };
 
   return (
@@ -16,7 +44,7 @@ export default function TextToSpeechScreen() {
        <View style={styles.topRow}>
           <GoBackBtn />
           <Text style={styles.header}>Text-to-Speech</Text>
-          <Ionicons name="notifications" size={24} color="#333" />
+          <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.textBox}>
@@ -30,12 +58,12 @@ export default function TextToSpeechScreen() {
       </View>
 
       <View style={styles.controls}>
-          <TouchableOpacity style={styles.actionBtn}>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
               <Ionicons name="share-outline" size={24} color="#333" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.playBtn} onPress={speak}>
-              <Ionicons name="play" size={32} color="#fff" />
+          <TouchableOpacity style={[styles.playBtn, isSpeaking && styles.stopBtn]} onPress={speak}>
+              <Ionicons name={isSpeaking ? "stop" : "play"} size={32} color="#fff" />
           </TouchableOpacity>
       </View>
     </View>
@@ -50,5 +78,6 @@ const styles = StyleSheet.create({
   input: { fontSize: 18, color: '#333', lineHeight: 28 },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },
   actionBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#FFE082', justifyContent: 'center', alignItems: 'center' },
-  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#01579B', justifyContent: 'center', alignItems: 'center', elevation: 5 }
+  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#01579B', justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  stopBtn: { backgroundColor: '#C62828' },
 });

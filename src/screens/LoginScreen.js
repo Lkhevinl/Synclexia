@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -45,7 +45,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <LinearGradient
-      colors={['#4c669f', '#3b5998', '#192f6a']}
+      colors={['#f9a8c9', '#f7c5a0', '#f9a8c9']}
       style={styles.container}
     >
       <KeyboardAvoidingView 
@@ -57,7 +57,11 @@ export default function LoginScreen({ navigation }) {
             {/* 1. THE LOGO SECTION */}
             <View style={styles.logoContainer}>
               <View style={styles.logoCircle}>
-                 <Ionicons name="school" size={60} color="#fff" />
+                <Image
+                  source={require('../../assets/icon.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.appName}>SYNCLEXIA</Text>
               <Text style={styles.tagline}>Learning made accessible.</Text>
@@ -130,14 +134,16 @@ const styles = StyleSheet.create({
   // Logo Styles
   logoContainer: { alignItems: 'center', marginBottom: 40, marginTop: 40 },
   logoCircle: {
-      width: 100, height: 100, borderRadius: 50,
-      backgroundColor: 'rgba(255,255,255,0.2)', // Glassy circle
+      width: 110, height: 110, borderRadius: 28,
+      backgroundColor: 'rgba(255,255,255,0.5)',
       justifyContent: 'center', alignItems: 'center',
-      borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
-      marginBottom: 15
+      borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)',
+      marginBottom: 15,
+      overflow: 'hidden',
   },
-  appName: { fontSize: 32, fontWeight: 'bold', color: '#fff', letterSpacing: 2 },
-  tagline: { fontSize: 14, color: '#cfd8dc', letterSpacing: 0.5 },
+  logoImage: { width: 100, height: 100, borderRadius: 24 },
+  appName: { fontSize: 32, fontWeight: 'bold', color: '#7B2D52', letterSpacing: 2 },
+  tagline: { fontSize: 14, color: '#9E5070', letterSpacing: 0.5 },
 
   // Card Styles
   card: {
@@ -164,13 +170,13 @@ const styles = StyleSheet.create({
   forgotText: { color: '#666', fontSize: 13, fontWeight: '600' },
 
   loginBtn: {
-      backgroundColor: '#192f6a',
+      backgroundColor: '#C06080',
       borderRadius: 12,
       height: 55,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 20,
-      boxShadow: '0px 4px 5px rgba(25,47,106,0.3)',
+      boxShadow: '0px 4px 5px rgba(192,96,128,0.3)',
       elevation: 5
   },
   loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
@@ -178,5 +184,5 @@ const styles = StyleSheet.create({
   // Footer
   footer: { flexDirection: 'row', justifyContent: 'center' },
   footerText: { color: '#666' },
-  signupText: { color: '#192f6a', fontWeight: 'bold' }
+  signupText: { color: '#C06080', fontWeight: 'bold' }
 });
