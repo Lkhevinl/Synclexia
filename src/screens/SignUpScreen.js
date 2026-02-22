@@ -18,30 +18,61 @@ export default function SignUpScreen({ navigation }) {
   };
 
   const handleSignUp = async () => {
-    if (!email || !password || !fullName) {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = fullName.trim();
+
+    if (!trimmedEmail || !password || !trimmedName) {
       Alert.alert('Missing Info', 'Please fill in all the boxes!');
       return;
     }
-    setLoading(true);
 
-    // 1. Create Auth User
-    const { data: { user }, error } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
-
-    if (error) {
-      Alert.alert('Error', error.message);
-      setLoading(false);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
-    // 2. Create Profile in Database
-    if (user) {
+    // Supabase requires at least 6 characters
+    if (password.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+      return;
+    }
+
+    // Guard against multiple rapid taps
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      // 1. Create Auth User
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password: password,
+      });
+
+      if (error) {
+        Alert.alert('Sign Up Error', error.message);
+        setLoading(false);
+        return;
+      }
+
+      const user = data?.user;
+
+      // Supabase may return a fake user (no identities) if the email is already taken
+      if (!user || (user.identities && user.identities.length === 0)) {
+        Alert.alert(
+          'Email Already Registered',
+          'An account with this email already exists. Please log in instead.'
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 2. Create Profile in Database
       const profileData = { 
         id: user.id, 
-        full_name: fullName,
-        email: email.trim().toLowerCase(),
+        full_name: trimmedName,
+        email: trimmedEmail,
         xp: 0,
         coins: 0,
         role,
@@ -59,8 +90,11 @@ export default function SignUpScreen({ navigation }) {
         Alert.alert('Success!', 'Account created. Please log in.');
         navigation.goBack();
       }
+    } catch (e) {
+      Alert.alert('Unexpected Error', e.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

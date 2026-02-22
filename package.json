@@ -11,6 +11,7 @@
     "seed:phonological": "node seeders/seed_phonological_content.js",
     "seed:spelling": "node seeders/seed_spelling_words.js",
     "seed:phonics-activity": "node seeders/seed_phonics_activity_content.js",
+    "migrate:parent-rpc": "node seeders/migrate_parent_rpc.js",
     "build:staging:android": "eas build --platform android --profile staging",
     "build:staging:ios": "eas build --platform ios --profile staging",
     "build:prod:android": "eas build --platform android --profile production",

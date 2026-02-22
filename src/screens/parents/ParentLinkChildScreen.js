@@ -31,16 +31,18 @@ export default function ParentLinkChildScreen({ navigation }) {
     setFound(null);
     setLooking(true);
 
-    const { data, error: dbErr } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, xp, level, unique_code')
-      .eq('role', 'student')
-      .eq('unique_code', trimmed)
-      .maybeSingle();
+    const { data: rows, error: dbErr } = await supabase
+      .rpc('find_student_by_code', { lookup_code: trimmed });
 
     setLooking(false);
 
-    if (dbErr || !data) {
+    if (dbErr) {
+      console.warn('Parent link lookup error:', dbErr.message, dbErr.code);
+      setError('Something went wrong while searching. Please try again.');
+      return;
+    }
+    const data = rows?.[0] ?? null;
+    if (!data) {
       setError('No student found with that code. Ask your child to check their code in the app.');
       return;
     }
@@ -51,32 +53,27 @@ export default function ParentLinkChildScreen({ navigation }) {
     if (!found) return;
     setLinking(true);
 
-    // Check duplicate
-    const { data: existing } = await supabase
-      .from('parent_links')
-      .select('id')
-      .eq('parent_id', profile?.id)
-      .eq('student_id', found.id)
-      .maybeSingle();
+    const { data: result, error: linkErr } = await supabase
+      .rpc('link_child', { p_parent_id: profile?.id, p_student_id: found.id });
 
-    if (existing) {
-      setLinking(false);
+    setLinking(false);
+
+    if (linkErr) {
+      console.warn('Parent link RPC error:', linkErr.message, linkErr.code);
+      Alert.alert('Error', linkErr.message || 'Could not link child. Please try again.');
+      return;
+    }
+    if (result?.error === 'already_linked') {
       Alert.alert('Already Linked', `${found.full_name} is already linked to your account.`, [
         { text: 'Go to Dashboard', onPress: () => navigation.goBack() },
       ]);
       return;
     }
-
-    const { error: linkErr } = await supabase.from('parent_links').insert({
-      parent_id: profile?.id,
-      student_id: found.id,
-    });
-
-    setLinking(false);
-
-    if (linkErr) {
-      Alert.alert('Error', linkErr.message || 'Could not link child.');
-    } else {
+    if (result?.error) {
+      Alert.alert('Error', result.error);
+      return;
+    }
+    if (result?.success) {
       Alert.alert(
         '🎉 Child Linked!',
         `${found.full_name} has been linked to your account. You can now monitor their progress.`,
