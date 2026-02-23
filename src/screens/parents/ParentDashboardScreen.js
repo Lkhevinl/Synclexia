@@ -38,10 +38,24 @@ export default function ParentDashboardScreen({ navigation }) {
 
   // ── Fetch linked children ──────────────────────────────────────────────────
   const fetchChildren = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('parent_links')
-      .select('*, profiles:student_id(id, full_name, email, xp, coins, level, streak)')
-      .eq('parent_id', profile?.id);
+      .select(`
+        student_id,
+        profiles!parent_links_student_id_fkey (
+          id,
+          full_name,
+          email,
+          xp,
+          coins
+        )
+      `)
+      .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
+
+    console.log('Link data:', data);
+    console.log('Error:', error);
+    console.log('Parent profile.id:', profile.id);
+
     return data || [];
   };
 
@@ -53,7 +67,7 @@ export default function ParentDashboardScreen({ navigation }) {
     const [{ data: cp }, prog, { data: assign }, { data: msgs }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
       getStudentProgress(sid, 14),
-      supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false).order('created_at', { ascending: false }),
+      supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false).order('assigned_at', { ascending: false }),
       supabase.from('parent_messages').select('id').eq('receiver_id', profile?.id).eq('is_read', false),
     ]);
 
@@ -106,7 +120,7 @@ export default function ParentDashboardScreen({ navigation }) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments', filter: `student_id=eq.${sid}` },
         () => {
           supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false)
-            .order('created_at', { ascending: false })
+            .order('assigned_at', { ascending: false })
             .then(({ data }) => setAssignments(data || []));
         })
       .subscribe();

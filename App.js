@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -15,8 +16,7 @@ function GlobalOverlay() {
   if (!overlayColor) return null;
   return (
     <View
-      style={[StyleSheet.absoluteFill, { backgroundColor: overlayColor, zIndex: 9999 }]}
-      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { backgroundColor: overlayColor, zIndex: 9999, pointerEvents: 'none' }]}
     />
   );
 }
@@ -45,6 +45,7 @@ function AppWithTheme() {
 
 export default function App() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>
       <AuthProvider>
         <AdaptiveProvider>
@@ -54,5 +55,6 @@ export default function App() {
         </AdaptiveProvider>
       </AuthProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

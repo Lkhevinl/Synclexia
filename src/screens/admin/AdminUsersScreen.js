@@ -33,7 +33,7 @@ export default function AdminUsersScreen() {
       .from('profiles')
       .select('*')
       .in('role', ['student', 'user'])
-      .order('created_at', {ascending: false});
+      .order('full_name', { ascending: true });
     if (data) {
         setUsers(data);
         setFilteredUsers(data);
