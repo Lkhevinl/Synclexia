@@ -10,13 +10,13 @@ import { supabase } from './supabase';
  * Returns array of enrollment objects with a `profiles` property.
  *
  * @param {string} teacherId
- * @param {string[]} profileFields - columns to select from profiles (default: id, full_name, email, xp, created_at, role)
+ * @param {string[]} profileFields - columns to select from profiles (default: id, full_name, email, xp, role)
  * @returns {Promise<Array>}
  */
 export const fetchEnrollmentsWithProfiles = async (teacherId, profileFields) => {
   if (!teacherId) return [];
 
-  const fields = profileFields || ['id', 'full_name', 'email', 'xp', 'created_at', 'role'];
+  const fields = profileFields || ['id', 'full_name', 'email', 'xp', 'role'];
 
   // Step 1: Get enrollment rows
   const { data: enrollments, error: enrollErr } = await supabase

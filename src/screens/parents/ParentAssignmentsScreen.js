@@ -31,7 +31,7 @@ export default function ParentAssignmentsScreen({ route }) {
       .from('assignments')
       .select('*')
       .eq('student_id', sid)
-      .order('created_at', { ascending: false });
+      .order('assigned_at', { ascending: false });
     setAssignments(data || []);
     setLoading(false);
     setRefreshing(false);

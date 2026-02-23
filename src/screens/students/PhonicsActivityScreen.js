@@ -495,7 +495,7 @@ export default function PhonicsActivityScreen({ navigation }) {
         ) : mode ? renderGame() : <ModeSelector onSelect={setMode} />}
       </SafeAreaView>
       {overlayColor && (
-        <View style={[styles.overlay, { backgroundColor: overlayColor }]} pointerEvents="none" />
+        <View style={[styles.overlay, { backgroundColor: overlayColor, pointerEvents: 'none' }]} />
       )}
     </View>
   );

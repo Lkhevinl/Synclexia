@@ -411,7 +411,7 @@ export default function SpellingScreen({ navigation }) {
         )}
       </SafeAreaView>
       {overlayColor && (
-        <View style={[root.overlay, { backgroundColor: overlayColor }]} pointerEvents="none" />
+        <View style={[root.overlay, { backgroundColor: overlayColor, pointerEvents: 'none' }]} />
       )}
     </View>
   );

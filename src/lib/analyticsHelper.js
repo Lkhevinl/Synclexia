@@ -134,12 +134,18 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
     const since = new Date();
     since.setDate(since.getDate() - daysBack);
 
-    const { data: sessions } = await supabase
+    const { data: sessions, error: sessErr } = await supabase
       .from('session_logs')
       .select('*')
       .eq('student_id', studentId)
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
+
+    if (sessErr) {
+      // Likely an RLS policy missing for the caller's role (e.g. parent)
+      // Run fix_parent_session_logs_rls.sql in Supabase to resolve.
+      return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
+    }
 
     if (!sessions || sessions.length === 0) {
       return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
