@@ -86,11 +86,15 @@ export const ThemeProvider = ({ children }) => {
     return {};
   })();
 
-  // Combined — use this on any Text that should respect both settings
-  const a11yTextStyle = { ...dyslexiaStyle, ...letterSpacingStyle };
+  // Font family helper — 'System' means device default (undefined)
+  const getFontFamily = () => (theme.fontStyle && theme.fontStyle !== 'System' ? theme.fontStyle : undefined);
+  const fontFamilyStyle = getFontFamily() ? { fontFamily: getFontFamily() } : {};
+
+  // Combined — use this on any Text that should respect accessibility settings
+  const a11yTextStyle = { ...dyslexiaStyle, ...letterSpacingStyle, ...fontFamilyStyle };
 
   return (
-    <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor, getDyslexiaTextStyle, dyslexiaStyle, letterSpacingStyle, a11yTextStyle }}>
+    <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor, getDyslexiaTextStyle, dyslexiaStyle, letterSpacingStyle, getFontFamily, fontFamilyStyle, a11yTextStyle }}>
       {children}
     </ThemeContext.Provider>
   );

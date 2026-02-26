@@ -68,7 +68,10 @@ export default function SignUpScreen({ navigation }) {
         return;
       }
 
-      // 2. Create Profile in Database
+      // 2. Create / overwrite Profile in Database.
+      // We use UPSERT (onConflict: 'id') because some Supabase setups have a
+      // trigger that auto-creates a profile with the default role='student'.
+      // Upserting guarantees the role the user selected is always persisted.
       const profileData = { 
         id: user.id, 
         full_name: trimmedName,
@@ -77,16 +80,22 @@ export default function SignUpScreen({ navigation }) {
         coins: 0,
         role,
       };
+      // Every student must have a unique_code for parent-linking.
+      // Always generate one so even trigger-created profiles get updated.
       if (role === 'student') {
         profileData.unique_code = generateUniqueCode();
       }
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([profileData]);
+        .upsert([profileData], { onConflict: 'id' });
 
       if (profileError) {
         Alert.alert('Profile Error', profileError.message || 'Could not create profile.');
       } else {
+        // Sign out immediately so the auto-session from signUp doesn't
+        // cause a race condition where AuthContext fetches a null profile.
+        // The user must log in fresh to get their profile loaded correctly.
+        await supabase.auth.signOut();
         Alert.alert('Success!', 'Account created. Please log in.');
         navigation.goBack();
       }
