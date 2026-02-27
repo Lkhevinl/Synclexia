@@ -6,7 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { xpToLevel } from '../../lib/userUtils';
-import GoBackBtn from '../../components/GoBackBtn';
+
 
 const DAILY_TIPS = [
   "Tip: Engage your students with interactive lessons!",
@@ -143,7 +143,6 @@ export default function TeacherDashboardScreen({ navigation }) {
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#f9a8c9', '#f7c5a0', '#f9b8d0']} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <GoBackBtn />
         {/* Logo + greeting row */}
         <View style={styles.headerTop}>
           <View style={styles.logoWrapper}>
