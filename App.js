@@ -31,7 +31,7 @@ function AppWithTheme() {
 
   // Key forces NavigationContainer + all children to remount when
   // accessibility settings change, picking up the new defaultProps.
-  const a11yKey = `${theme.dyslexiaFont}-${theme.letterSpacing}`;
+  const a11yKey = `${theme.dyslexiaFont}-${theme.letterSpacing}-${theme.fontStyle}`;
 
   return (
     <>

@@ -370,7 +370,7 @@ const g = StyleSheet.create({
 
 // ─── Root Screen ──────────────────────────────────────────────────────────────
 
-export default function PhonologicalAwarenessScreen({ navigation }) {
+export default function PhonologicalAwarenessScreen() {
   const { profile } = useAuth();
   const { refreshLevel, getLevel } = useAdaptive();
   const [mode, setMode] = useState(null);

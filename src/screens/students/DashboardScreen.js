@@ -18,7 +18,12 @@ const DAILY_TIPS = [
 
 export default function DashboardScreen({ navigation }) {
   const { theme, a11yTextStyle } = useTheme();
-  const { profile } = useAuth(); 
+  const { profile, fetchProfile } = useAuth();
+
+  const generateUniqueCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  };
   
   const [notifVisible, setNotifVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -29,6 +34,17 @@ export default function DashboardScreen({ navigation }) {
   const [unreadReplyCount, setUnreadReplyCount] = useState(0);
 
   const isStudent = profile?.role === 'student';
+
+  // Auto-generate unique_code for students who were created before the sign-up fix
+  useEffect(() => {
+    if (!isStudent || !profile?.id || profile?.unique_code) return;
+    const assignCode = async () => {
+      const code = generateUniqueCode();
+      await supabase.from('profiles').update({ unique_code: code }).eq('id', profile.id);
+      await fetchProfile(profile.id);
+    };
+    assignCode();
+  }, [profile?.id]);
 
   useEffect(() => {
     fetchNotifications();
@@ -123,14 +139,14 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.blockSubText}>
             To access learning activities, you need to be enrolled by a teacher. Ask your teacher for their class code!
           </Text>
-          {isStudent && profile?.unique_code && (
+          {isStudent && (
             <View style={styles.linkCodeCardBlock}>
               <Ionicons name="people" size={18} color="#7B1FA2" />
               <View style={{ marginLeft: 8, flex: 1 }}>
                 <Text style={styles.linkCodeLabel}>Your Parent Link Code</Text>
                 <Text style={styles.linkCodeHint}>Share this with your parent</Text>
               </View>
-              <Text style={styles.linkCodeValue}>{profile.unique_code}</Text>
+              <Text style={styles.linkCodeValue}>{profile?.unique_code ?? '...'}</Text>
             </View>
           )}
           <TouchableOpacity 
@@ -299,7 +315,7 @@ export default function DashboardScreen({ navigation }) {
         )}
 
         {/* PARENT LINK CODE */}
-        {isStudent && profile?.unique_code && (
+        {isStudent && (
           <View style={styles.linkCodeCard}>
             <View style={styles.linkCodeLeft}>
               <Ionicons name="people" size={22} color="#7B1FA2" />
@@ -308,7 +324,7 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.linkCodeHint}>Share this with your parent</Text>
               </View>
             </View>
-            <Text style={styles.linkCodeValue}>{profile.unique_code}</Text>
+            <Text style={styles.linkCodeValue}>{profile?.unique_code ?? '...'}</Text>
           </View>
         )}
 
@@ -326,9 +342,11 @@ export default function DashboardScreen({ navigation }) {
           <MenuCard title="Writing"     icon="✍️" color="#4CAF50" route="Writing"               activityType="writing" />
           <MenuCard title="Reading"     icon="📖" color="#2196F3" route="Reading"               activityType="reading" />
           <MenuCard title="Spelling"    icon="🔤" color="#E91E63" route="Spelling"              activityType="spelling" />
-          <MenuCard title="Activities"  icon="🎮" color="#00897B" route="PhonicsActivity"       activityType="phonics" />
+          <MenuCard title="Activities"  icon="🎮" color="#00897B" route="PhonicsActivity"       activityType="phonics_activity" />
           <MenuCard title="Scan"        icon="📷" color="#9C27B0" route="Scan"                  activityType="scan" />
           <MenuCard title="Awareness"   icon="🎧" color="#6A1B9A" route="PhonologicalAwareness" activityType="phonological_awareness" />
+          <MenuCard title="Speech"      icon="🎤" color="#F44336" route="SpeechToText"          activityType="speech_to_text" />
+          <MenuCard title="Read Aloud"  icon="🔊" color="#0288D1" route="TextToSpeech"          activityType="text_to_speech" />
         </View>
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Gamification</Text>

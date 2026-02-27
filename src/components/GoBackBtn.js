@@ -13,10 +13,10 @@ export default function GoBackBtn() {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      // 2. Fallback to Dashboard if history is lost
+      // 2. Fallback to Home (AppTabs) if history is lost
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Dashboard' }], 
+        routes: [{ name: 'Home' }], 
       });
     }
   };

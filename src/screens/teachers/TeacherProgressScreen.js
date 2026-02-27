@@ -20,7 +20,7 @@ const ACTIVITY_ICONS = {
   phonological_awareness:   '🎧',
 };
 
-export default function TeacherProgressScreen({ navigation }) {
+export default function TeacherProgressScreen() {
   const { profile } = useAuth();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);

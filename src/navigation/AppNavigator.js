@@ -49,7 +49,6 @@ import ParentLinkChildScreen from '../screens/parents/ParentLinkChildScreen';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
@@ -157,7 +156,6 @@ export default function AppNavigator() {
             {isAdmin && (
               <>
                 <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-                <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
                 <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
                 <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
                 <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />

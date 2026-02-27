@@ -64,13 +64,21 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, retryCount = 0) => {
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (error) {
         console.warn('fetchProfile error:', error.message, '| code:', error.code);
       }
-      if (data) setProfile(data);
+      if (data) {
+        setProfile(data);
+      } else if (retryCount < 3) {
+        // Profile may not exist yet (e.g. signup race condition).
+        // Retry after a short delay to give the insert time to complete.
+        console.log(`fetchProfile: profile not found, retry ${retryCount + 1}/3...`);
+        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+        return fetchProfile(userId, retryCount + 1);
+      }
       return data ?? null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);

@@ -107,14 +107,19 @@ export default function AdminParentLinksScreen({ navigation }) {
     }
 
     setLinking(true);
-    const { error } = await supabase.from('parent_links').insert({
-      parent_id: selectedParent.id,
-      student_id: selectedStudent.id,
-    });
+    const { data: result, error } = await supabase
+      .rpc('admin_link_child', {
+        p_parent_id: selectedParent.id,
+        p_student_id: selectedStudent.id,
+      });
     setLinking(false);
 
     if (error) {
       Alert.alert('Error', error.message);
+    } else if (result?.error === 'already_linked') {
+      Alert.alert('Already Linked', 'This parent is already linked to this student.');
+    } else if (result?.error) {
+      Alert.alert('Error', result.error);
     } else {
       Alert.alert('Linked!', `${selectedParent.full_name} is now linked to ${selectedStudent.full_name}`);
       setLinkVisible(false);
@@ -135,12 +140,13 @@ export default function AdminParentLinksScreen({ navigation }) {
         {
           text: 'Remove', style: 'destructive',
           onPress: async () => {
-            const { error } = await supabase
-              .from('parent_links')
-              .delete()
-              .eq('id', link.id);
-            if (!error) {
+            // Use admin RPC to bypass RLS on DELETE
+            const { data: result, error } = await supabase
+              .rpc('admin_unlink_child', { p_link_id: link.id });
+            if (!error && result?.success) {
               setLinks(prev => prev.filter(l => l.id !== link.id));
+            } else {
+              Alert.alert('Error', error?.message || result?.error || 'Could not remove link.');
             }
           },
         },

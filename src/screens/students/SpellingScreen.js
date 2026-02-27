@@ -372,7 +372,7 @@ const fin = StyleSheet.create({
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
-export default function SpellingScreen({ navigation }) {
+export default function SpellingScreen() {
   const { profile } = useAuth();
   const { getOverlayColor, getDyslexiaTextStyle } = useTheme();
   const [mode, setMode] = useState(null);

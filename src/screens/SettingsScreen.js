@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -10,9 +10,25 @@ import { xpToLevel } from '../lib/userUtils';
 export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme, a11yTextStyle } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
+  const [fontModalVisible, setFontModalVisible] = React.useState(false);
 
   const isTeacher = profile?.role === 'teacher';
   const isStudent = profile?.role === 'student';
+
+  // Font style options (name shown in UI → fontFamily value)
+  const FONT_STYLES = [
+    { label: 'System',          value: 'System'          },
+    { label: 'Arial',           value: 'Arial'           },
+    { label: 'Open Dyslexic',   value: 'OpenDyslexic'    },
+    { label: 'Verdana',         value: 'Verdana'         },
+    { label: 'Tahoma',          value: 'Tahoma'          },
+    { label: 'Century Gothic',  value: 'Century Gothic'  },
+    { label: 'Trebuchet',       value: 'Trebuchet MS'    },
+    { label: 'Calibri',         value: 'Calibri'         },
+    { label: 'Open Sans',       value: 'Open Sans'       },
+  ];
+
+  const currentFont = FONT_STYLES.find(f => f.value === theme.fontStyle) || FONT_STYLES[0];
 
   const handleLogout = async () => {
     try {
@@ -108,6 +124,52 @@ export default function SettingsScreen({ navigation }) {
               ))}
             </View>
           </View>
+
+          {/* ── FONT STYLE ─────────────────────────────────── */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="text" size={24} color="#7B1FA2" />
+              <Text style={[styles.sectionTitle, { color: '#7B1FA2' }, a11yTextStyle]}>Font Style</Text>
+            </View>
+
+            <TouchableOpacity style={styles.fontPickerBtn} onPress={() => setFontModalVisible(true)}>
+              <Text style={[styles.fontPickerLabel, { fontFamily: theme.fontStyle !== 'System' ? theme.fontStyle : undefined }]}>
+                {currentFont.label}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#7B1FA2" />
+            </TouchableOpacity>
+
+            <Text style={[styles.accessDesc, a11yTextStyle]}>
+              Changes the text font across the whole app.
+            </Text>
+          </View>
+
+          {/* Font Style Modal */}
+          <Modal visible={fontModalVisible} transparent animationType="slide" onRequestClose={() => setFontModalVisible(false)}>
+            <TouchableOpacity style={styles.fontModalOverlay} activeOpacity={1} onPress={() => setFontModalVisible(false)}>
+              <View style={styles.fontModalCard}>
+                <Text style={styles.fontModalTitle}>Font Style</Text>
+                {FONT_STYLES.map(f => (
+                  <TouchableOpacity
+                    key={f.value}
+                    style={[styles.fontOption, theme.fontStyle === f.value && styles.fontOptionActive]}
+                    onPress={() => { updateTheme({ fontStyle: f.value }); setFontModalVisible(false); }}
+                  >
+                    <Text style={[
+                      styles.fontOptionText,
+                      { fontFamily: f.value !== 'System' ? f.value : undefined },
+                      theme.fontStyle === f.value && styles.fontOptionTextActive,
+                    ]}>
+                      {f.label}
+                    </Text>
+                    {theme.fontStyle === f.value && (
+                      <Ionicons name="checkmark" size={18} color="#7B1FA2" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
 
           {/* ACCOUNT */}
           <View style={styles.sectionCard}>
@@ -268,5 +330,16 @@ const styles = StyleSheet.create({
   currentModeText: { fontSize: 12, color: '#90A4AE', marginLeft: 5 },
   
   enrollBtn: { flexDirection: 'row', backgroundColor: '#E3F2FD', borderRadius: 15, padding: 15, justifyContent: 'center', alignItems: 'center', marginTop: 15, marginBottom: 20, borderWidth: 1, borderColor: '#90CAF9' },
-  enrollText: { color: '#0288D1', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }
+  enrollText: { color: '#0288D1', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
+
+  // Font style picker
+  fontPickerBtn: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F3E5F5', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8 },
+  fontPickerLabel: { fontSize: 16, fontWeight: '600', color: '#4A148C' },
+  fontModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  fontModalCard: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  fontModalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', textAlign: 'center', marginBottom: 18 },
+  fontOption: { paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, marginBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  fontOptionActive: { backgroundColor: '#EDE7F6' },
+  fontOptionText: { fontSize: 16, color: '#555' },
+  fontOptionTextActive: { color: '#7B1FA2', fontWeight: 'bold' },
 });
