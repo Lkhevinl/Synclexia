@@ -9,7 +9,8 @@ export default function AdminNotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [editingId, setEditingId] = useState(null); // Track which item is being edited
+  const [targetRole, setTargetRole] = useState('all'); // 'all' | 'student' | 'teacher' | 'parent'
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -35,28 +36,26 @@ export default function AdminNotificationsScreen() {
 
     try {
       if (editingId) {
-        // UPDATE EXISTING NOTIFICATION
         const { error } = await supabase
           .from('notifications')
-          .update({ title, content, is_draft: asDraft })
+          .update({ title, content, is_draft: asDraft, target_role: targetRole })
           .eq('id', editingId);
 
         if (error) throw error;
         Alert.alert("Success", "Notification updated!");
         setEditingId(null);
       } else {
-        // CREATE NEW NOTIFICATION
         const { error } = await supabase
           .from('notifications')
-          .insert([{ title, content, is_draft: asDraft }]);
+          .insert([{ title, content, is_draft: asDraft, target_role: targetRole }]);
 
         if (error) throw error;
         Alert.alert("Success", asDraft ? "Saved to Drafts" : "Posted!");
       }
 
-      // Reset Form
-      setTitle(''); 
+      setTitle('');
       setContent('');
+      setTargetRole('all');
       fetchNotifications();
 
     } catch (error) {
@@ -67,8 +66,8 @@ export default function AdminNotificationsScreen() {
   const handleEdit = (item) => {
     setTitle(item.title);
     setContent(item.content);
+    setTargetRole(item.target_role || 'all');
     setEditingId(item.id);
-    // Switch tabs if we are editing a draft vs posted item
     setActiveTab(item.is_draft ? 'Drafts' : 'Posted');
   };
 
@@ -77,6 +76,10 @@ export default function AdminNotificationsScreen() {
       { text: "Cancel" },
       { text: "Delete", style: 'destructive', onPress: async () => {
           await supabase.from('notifications').delete().eq('id', id);
+          setTitle('');
+          setContent('');
+          setTargetRole('all');
+          setEditingId(null);
           fetchNotifications();
       }}
     ]);
@@ -114,6 +117,24 @@ export default function AdminNotificationsScreen() {
             style={[styles.input, {height: 80, textAlignVertical: 'top'}]} 
         />
         
+        <Text style={styles.inputLabel}>Target Audience</Text>
+        <View style={styles.roleContainer}>
+          {[
+            { key: 'all', label: 'All Users' },
+            { key: 'student', label: 'Students' },
+            { key: 'teacher', label: 'Teachers' },
+            { key: 'parent', label: 'Parents' }
+          ].map(({ key, label }) => (
+            <TouchableOpacity 
+              key={key}
+              style={[styles.roleBtn, targetRole === key && styles.roleBtnActive]}
+              onPress={() => setTargetRole(key)}
+            >
+              <Text style={[styles.roleText, targetRole === key && styles.roleTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        
         <View style={styles.actionRow}>
             <TouchableOpacity onPress={() => handlePost(false)} style={styles.postBtn}>
                 <Text style={styles.btnText}>{editingId ? "Update Post" : "Post Now"}</Text>
@@ -125,7 +146,7 @@ export default function AdminNotificationsScreen() {
         </View>
 
         {editingId && (
-            <TouchableOpacity onPress={() => { setEditingId(null); setTitle(''); setContent(''); }} style={{marginTop: 10, alignItems: 'center'}}>
+            <TouchableOpacity onPress={() => { setEditingId(null); setTitle(''); setContent(''); setTargetRole('all'); }} style={{marginTop: 10, alignItems: 'center'}}>
                 <Text style={{color: 'red'}}>Cancel Editing</Text>
             </TouchableOpacity>
         )}
@@ -141,7 +162,10 @@ export default function AdminNotificationsScreen() {
                 <View style={{flex: 1}}>
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     <Text style={styles.cardBody}>{item.content}</Text>
-                    <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    <View style={styles.metaRow}>
+                      <Text style={styles.targetBadge}>{item.target_role === 'all' ? 'All Users' : item.target_role}</Text>
+                      <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    </View>
                 </View>
                 
                 <View style={styles.cardActions}>
@@ -185,5 +209,13 @@ const styles = StyleSheet.create({
   cardBody: { color: '#555', marginTop: 4 },
   date: { fontSize: 10, color: '#999', marginTop: 5 },
   cardActions: { justifyContent: 'space-around', paddingLeft: 10 },
-  iconBtn: { padding: 5 }
+  iconBtn: { padding: 5 },
+  
+  roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  roleBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#eee' },
+  roleBtnActive: { backgroundColor: '#0288D1' },
+  roleText: { color: '#666', fontSize: 12 },
+  roleTextActive: { color: '#fff', fontSize: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  targetBadge: { backgroundColor: '#E1F5FE', color: '#0277BD', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, fontSize: 10, fontWeight: 'bold' },
 });

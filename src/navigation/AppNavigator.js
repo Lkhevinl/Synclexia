@@ -60,6 +60,7 @@ import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
 import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
 import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
 import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
+import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
 import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
 import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen';
 import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen';
@@ -167,6 +168,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
                 <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
                 <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
+                <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
               </>
             )}
         </>

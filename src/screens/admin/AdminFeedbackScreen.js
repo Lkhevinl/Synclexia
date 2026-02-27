@@ -43,6 +43,18 @@ export default function AdminFeedbackScreen() {
     }
   };
 
+  const markResolved = async (id) => {
+    const { error } = await supabase
+      .from('feedback')
+      .update({ status: 'resolved' })
+      .eq('id', id);
+    
+    if (!error) {
+      Alert.alert("Success", "Feedback marked as resolved");
+      fetchFeedback();
+    }
+  };
+
   return (
     <View style={styles.container}>
       <GoBackBtn />
@@ -69,6 +81,16 @@ export default function AdminFeedbackScreen() {
              </View>
 
              <Text style={styles.message}>{item.message}</Text>
+
+          {item.status === 'resolved' ? (
+                 <View style={styles.resolvedBadge}>
+                     <Text style={styles.resolvedText}>Resolved</Text>
+                 </View>
+             ) : (
+                 <TouchableOpacity style={styles.resolveBtn} onPress={() => markResolved(item.id)}>
+                     <Text style={styles.resolveBtnText}>Mark as Resolved</Text>
+                 </TouchableOpacity>
+             )}
 
              {/* REPLY SECTION */}
              {item.reply ? (
@@ -112,5 +134,9 @@ const styles = StyleSheet.create({
   replyLabel: { fontSize: 10, fontWeight: 'bold', color: '#0277BD' },
   replyText: { color: '#01579B' },
   replyBox: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 }
+  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 },
+  resolvedBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 10 },
+  resolvedText: { color: '#2E7D32', fontSize: 11, fontWeight: 'bold' },
+  resolveBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 10 },
+  resolveBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
 });

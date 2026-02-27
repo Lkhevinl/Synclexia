@@ -178,6 +178,14 @@ export default function AdminDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate('AdminParentLinks')} 
         />
 
+        <AdminCard 
+          title="Reports & Analytics" 
+          subtitle="Export user data and view activity"
+          icon="bar-chart" 
+          color="#673AB7"
+          onPress={() => navigation.navigate('AdminReports')} 
+        />
+
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
 
         <AdminCard

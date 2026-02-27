@@ -1,15 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
-import EmptyState from '../../components/EmptyState'; // <--- NEW
+import EmptyState from '../../components/EmptyState';
 
 export default function AdminUsersScreen() {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0, coins: 0 });
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -32,7 +35,7 @@ export default function AdminUsersScreen() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .in('role', ['student', 'user'])
+      .in('role', ['student', 'user', 'teacher', 'parent'])
       .order('full_name', { ascending: true });
     if (data) {
         setUsers(data);
@@ -41,12 +44,48 @@ export default function AdminUsersScreen() {
     setRefreshing(false);
   };
 
+  const openEditModal = (user) => {
+    setSelectedUser(user);
+    setEditForm({
+      full_name: user.full_name || '',
+      email: user.email || '',
+      role: user.role || 'student',
+      xp: user.xp || 0,
+      coins: user.coins || 0
+    });
+    setEditModalVisible(true);
+  };
+
+  const saveUserEdit = async () => {
+    if (!selectedUser) return;
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: editForm.full_name,
+        email: editForm.email,
+        role: editForm.role,
+        xp: parseInt(editForm.xp) || 0,
+        coins: parseInt(editForm.coins) || 0
+      })
+      .eq('id', selectedUser.id);
+    
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      Alert.alert("Success", "User updated successfully");
+      setEditModalVisible(false);
+      fetchUsers();
+    }
+  };
+
   const deleteUser = (id) => {
     Alert.alert("Ban User", "This will block their access. Continue?", [
         { text: "Cancel" },
         { text: "Ban", style: 'destructive', onPress: async () => {
-             // In real app: await supabase.auth.admin.deleteUser(id);
-             Alert.alert("Info", "User banned (Simulation for safety).");
+             await supabase.from('profiles').update({ is_banned: true }).eq('id', id);
+             Alert.alert("Info", "User banned successfully.");
+             fetchUsers();
         }}
     ]);
   };
@@ -99,14 +138,80 @@ export default function AdminUsersScreen() {
                         <Text style={styles.lvlText}>{Math.floor((item.xp || 0)/100) + 1}</Text>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => deleteUser(item.id)} style={{flex:1, alignItems: 'flex-end'}}>
-                    <View style={styles.trashBtn}>
-                        <Ionicons name="ban" size={16} color="white" />
+                <TouchableOpacity onPress={() => openEditModal(item)} style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
+                    <View style={styles.editBtn}>
+                        <Ionicons name="pencil" size={16} color="white" />
                     </View>
+                    <TouchableOpacity onPress={() => deleteUser(item.id)}>
+                        <View style={styles.trashBtn}>
+                            <Ionicons name="ban" size={16} color="white" />
+                        </View>
+                    </TouchableOpacity>
                 </TouchableOpacity>
             </View>
         )}
       />
+      <Modal visible={editModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit User</Text>
+            <ScrollView>
+              <Text style={styles.inputLabel}>Full Name</Text>
+              <TextInput 
+                style={styles.input} 
+                value={editForm.full_name} 
+                onChangeText={(t) => setEditForm({...editForm, full_name: t})}
+              />
+              
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput 
+                style={styles.input} 
+                value={editForm.email} 
+                onChangeText={(t) => setEditForm({...editForm, email: t})}
+                keyboardType="email-address"
+              />
+              
+              <Text style={styles.inputLabel}>Role</Text>
+              <View style={styles.roleContainer}>
+                {['student', 'teacher', 'parent', 'user'].map(role => (
+                  <TouchableOpacity 
+                    key={role}
+                    style={[styles.roleBtn, editForm.role === role && styles.roleBtnActive]}
+                    onPress={() => setEditForm({...editForm, role})}
+                  >
+                    <Text style={[styles.roleText, editForm.role === role && styles.roleTextActive]}>{role}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
+              <Text style={styles.inputLabel}>XP</Text>
+              <TextInput 
+                style={styles.input} 
+                value={String(editForm.xp)} 
+                onChangeText={(t) => setEditForm({...editForm, xp: t})}
+                keyboardType="numeric"
+              />
+              
+              <Text style={styles.inputLabel}>Coins</Text>
+              <TextInput 
+                style={styles.input} 
+                value={String(editForm.coins)} 
+                onChangeText={(t) => setEditForm({...editForm, coins: t})}
+                keyboardType="numeric"
+              />
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.saveBtn} onPress={saveUserEdit}>
+                  <Text style={styles.saveBtnText}>Save Changes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModalVisible(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -128,5 +233,22 @@ const styles = StyleSheet.create({
   lvlBadge: { backgroundColor: '#E3F2FD', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   lvlText: { fontSize: 12, fontWeight: 'bold', color: '#1565C0' },
   
-  trashBtn: { backgroundColor: '#FFEBEE', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EF5350' }
+  trashBtn: { backgroundColor: '#EF5350', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  editBtn: { backgroundColor: '#0288D1', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 20, maxHeight: '80%' },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+  inputLabel: { fontSize: 12, fontWeight: 'bold', color: '#666', marginBottom: 5, marginTop: 10 },
+  input: { backgroundColor: '#f5f5f5', borderRadius: 10, padding: 12, fontSize: 16 },
+  roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  roleBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#eee' },
+  roleBtnActive: { backgroundColor: '#0288D1' },
+  roleText: { color: '#666' },
+  roleTextActive: { color: '#fff' },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  saveBtn: { flex: 1, backgroundColor: '#0288D1', padding: 15, borderRadius: 10, marginRight: 10 },
+  saveBtnText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' },
+  cancelBtn: { flex: 1, backgroundColor: '#f5f5f5', padding: 15, borderRadius: 10 },
+  cancelBtnText: { color: '#666', textAlign: 'center' }
 });
