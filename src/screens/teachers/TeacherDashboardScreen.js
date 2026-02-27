@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { xpToLevel } from '../../lib/userUtils';
+import GoBackBtn from '../../components/GoBackBtn';
 
 const DAILY_TIPS = [
   "Tip: Engage your students with interactive lessons!",
@@ -142,6 +143,7 @@ export default function TeacherDashboardScreen({ navigation }) {
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#f9a8c9', '#f7c5a0', '#f9b8d0']} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <GoBackBtn />
         {/* Logo + greeting row */}
         <View style={styles.headerTop}>
           <View style={styles.logoWrapper}>
@@ -195,25 +197,25 @@ export default function TeacherDashboardScreen({ navigation }) {
         {/* ── CLASS MANAGEMENT (2-col grid) ── */}
         <Text style={styles.sectionTitle}>Class Management</Text>
         <View style={styles.grid}>
-          <GridCard title="Student List"     icon="people"      color="#4CAF50" onPress={() => navigation.push('TeacherUsers')} />
-          <GridCard title="Assign Tasks"     icon="checkbox"    color="#2196F3" onPress={() => navigation.push('TeacherAssignActivities')} />
-          <GridCard title="Give Rewards"     icon="star"        color="#FF9800" onPress={() => navigation.push('TeacherUsers')} />
-          <GridCard title="Monitor Progress" icon="trending-up" color="#E91E63" onPress={() => navigation.push('TeacherProgress')} />
+          <GridCard title="Student List"     icon="people"      color="#4CAF50" onPress={() => navigation.navigate('TeacherUsers')} />
+          <GridCard title="Assign Tasks"     icon="checkbox"    color="#2196F3" onPress={() => navigation.navigate('TeacherAssignActivities')} />
+          <GridCard title="Give Rewards"     icon="star"        color="#FF9800" onPress={() => navigation.navigate('TeacherUsers')} />
+          <GridCard title="Monitor Progress" icon="trending-up" color="#E91E63" onPress={() => navigation.navigate('TeacherProgress')} />
         </View>
 
         {/* ── CONTENT MANAGEMENT (row cards) ── */}
         <Text style={styles.sectionTitle}>Content Management</Text>
-        <RowCard title="Writing Practice" subtitle="Create & manage tracing words"       icon="pencil"        color="#9C27B0" onPress={() => navigation.push('TeacherAddStory')} />
-        <RowCard title="Phonics Audio"    subtitle="Add sounds & letters for lessons"    icon="volume-high"   color="#00BCD4" onPress={() => navigation.push('TeacherPhonics')} />
-        <RowCard title="Spelling Words"   subtitle="Add and manage spelling word bank"   icon="text"          color="#2196F3" onPress={() => navigation.push('TeacherSpelling')} />
-        <RowCard title="Phonics Activity" subtitle="Manage blend, rhyme & segment games" icon="musical-notes" color="#FF9800" onPress={() => navigation.push('TeacherPhonicsActivity')} />
-        <RowCard title="Phonological"     subtitle="Manage syllable, rime & phoneme tasks" icon="ear"         color="#673AB7" onPress={() => navigation.push('TeacherPhonological')} />
+        <RowCard title="Writing Practice" subtitle="Create & manage tracing words"       icon="pencil"        color="#9C27B0" onPress={() => navigation.navigate('TeacherAddStory')} />
+        <RowCard title="Phonics Audio"    subtitle="Add sounds & letters for lessons"    icon="volume-high"   color="#00BCD4" onPress={() => navigation.navigate('TeacherPhonics')} />
+        <RowCard title="Spelling Words"   subtitle="Add and manage spelling word bank"   icon="text"          color="#2196F3" onPress={() => navigation.navigate('TeacherSpelling')} />
+        <RowCard title="Phonics Activity" subtitle="Manage blend, rhyme & segment games" icon="musical-notes" color="#FF9800" onPress={() => navigation.navigate('TeacherPhonicsActivity')} />
+        <RowCard title="Phonological"     subtitle="Manage syllable, rime & phoneme tasks" icon="ear"         color="#673AB7" onPress={() => navigation.navigate('TeacherPhonological')} />
 
         {/* ── COMMUNICATION & ENROLLMENT (row cards) ── */}
         <Text style={styles.sectionTitle}>Communication & Enrollment</Text>
-        <RowCard title="Feedback & Replies" subtitle="Read student feedback & respond"    icon="chatbubbles" color="#E91E63" onPress={() => navigation.push('TeacherFeedback')} />
-        <RowCard title="Announcements"      subtitle="Send notifications to students"     icon="megaphone"   color="#FF5722" onPress={() => navigation.push('TeacherNotifications')} />
-        <RowCard title="Class QR Code"      subtitle="Generate QR code for enrollment"   icon="qr-code"     color="#009688" onPress={() => navigation.push('TeacherEnrollment')} />
+        <RowCard title="Feedback & Replies" subtitle="Read student feedback & respond"    icon="chatbubbles" color="#E91E63" onPress={() => navigation.navigate('TeacherFeedback')} />
+        <RowCard title="Announcements"      subtitle="Send notifications to students"     icon="megaphone"   color="#FF5722" onPress={() => navigation.navigate('TeacherNotifications')} />
+        <RowCard title="Class QR Code"      subtitle="Generate QR code for enrollment"   icon="qr-code"     color="#009688" onPress={() => navigation.navigate('TeacherEnrollment')} />
 
         {/* ── LIVE ACTIVITY FEED ── */}
         {activityFeed.length > 0 && (
@@ -234,7 +236,7 @@ export default function TeacherDashboardScreen({ navigation }) {
               </View>
             ))}
             {activityFeed.length > 5 && (
-              <TouchableOpacity style={styles.viewAllBtn} onPress={() => navigation.push('TeacherProgress')}>
+              <TouchableOpacity style={styles.viewAllBtn} onPress={() => navigation.navigate('TeacherProgress')}>
                 <Text style={styles.viewAllText}>View All Activity →</Text>
               </TouchableOpacity>
             )}

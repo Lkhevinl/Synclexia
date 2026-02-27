@@ -12,9 +12,8 @@ export default function AdminSettingsScreen({ navigation }) {
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin = profile?.role === 'admin';
-  const isStudent = profile?.role === 'student';
 
-  // ✅ New Logic: Check if they are allowed to see the tools
+  // Check if they are allowed to see the tools
   const canAccessTools = isTeacher || isAdmin;
 
   const handleLogout = async () => {
@@ -192,17 +191,6 @@ export default function AdminSettingsScreen({ navigation }) {
               <Ionicons name="log-out-outline" size={24} color="#fff" />
               <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
-
-          {/* STUDENT ENROLLMENT */}
-          {isStudent && (
-            <TouchableOpacity 
-              style={styles.enrollBtn} 
-              onPress={() => navigation.navigate('StudentEnroll')}
-            >
-                <Ionicons name="qr-code" size={24} color="#0288D1" />
-                <Text style={styles.enrollText}>Enroll in Class</Text>
-            </TouchableOpacity>
-          )}
 
           <View style={{height: 150}} /> 
       </ScrollView>

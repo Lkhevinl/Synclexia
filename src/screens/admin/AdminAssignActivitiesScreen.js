@@ -8,9 +8,18 @@ import { supabase } from '../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
 
 const ACTIVITIES = [
-  { id: 'phonics', name: 'Phonics', icon: '🗣️', color: '#FF9800' },
-  { id: 'writing', name: 'Writing', icon: '✍️', color: '#4CAF50' },
-  { id: 'reading', name: 'Reading', icon: '📖', color: '#2196F3' },
+  { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },
+  { id: 'phonics_activity',      name: 'Activities',         icon: '🎮', color: '#00897B' },
+  { id: 'phonics_blend',         name: 'Blending',           icon: '🔗', color: '#00BCD4' },
+  { id: 'phonics_rhyme',         name: 'Rhyme',              icon: '🎵', color: '#E91E63' },
+  { id: 'phonics_segment',       name: 'Segmenting',         icon: '✂️', color: '#795548' },
+  { id: 'spelling',              name: 'Spelling',           icon: '🔤', color: '#3F51B5' },
+  { id: 'writing',               name: 'Writing',            icon: '✍️', color: '#4CAF50' },
+  { id: 'reading',               name: 'Reading',            icon: '📖', color: '#2196F3' },
+  { id: 'scan',                  name: 'Scan',               icon: '📷', color: '#9C27B0' },
+  { id: 'phonological_awareness',name: 'Awareness',          icon: '🎧', color: '#607D8B' },
+  { id: 'speech_to_text',        name: 'Speech',             icon: '🎤', color: '#F44336' },
+  { id: 'text_to_speech',        name: 'Read Aloud',         icon: '🔊', color: '#0288D1' },
 ];
 
 export default function AdminAssignActivitiesScreen({ navigation }) {

@@ -454,7 +454,7 @@ const ss = StyleSheet.create({
 
 // ─── Main Screen ───────────────────────────────────────────────────────────────
 
-export default function PhonicsActivityScreen({ navigation }) {
+export default function PhonicsActivityScreen() {
   const { profile } = useAuth();
   const { getOverlayColor } = useTheme();
   const [mode, setMode] = useState(null);
