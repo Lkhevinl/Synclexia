@@ -66,8 +66,8 @@ export default function SettingsScreen({ navigation }) {
       <LinearGradient colors={['#607D8B', '#455A64']} style={styles.header}>
           <GoBackBtn />
           <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Settings ⚙️</Text>
-              <Text style={styles.headerSub}>Customize your experience</Text>
+              <Text style={[styles.headerTitle, a11yTextStyle]}>Settings ⚙️</Text>
+              <Text style={[styles.headerSub, a11yTextStyle]}>Customize your experience</Text>
           </View>
       </LinearGradient>
 
@@ -133,7 +133,7 @@ export default function SettingsScreen({ navigation }) {
             </View>
 
             <TouchableOpacity style={styles.fontPickerBtn} onPress={() => setFontModalVisible(true)}>
-              <Text style={[styles.fontPickerLabel, { fontFamily: theme.fontStyle !== 'System' ? theme.fontStyle : undefined }]}>
+              <Text style={[styles.fontPickerLabel, a11yTextStyle]}>
                 {currentFont.label}
               </Text>
               <Ionicons name="chevron-down" size={18} color="#7B1FA2" />
@@ -148,7 +148,7 @@ export default function SettingsScreen({ navigation }) {
           <Modal visible={fontModalVisible} transparent animationType="slide" onRequestClose={() => setFontModalVisible(false)}>
             <TouchableOpacity style={styles.fontModalOverlay} activeOpacity={1} onPress={() => setFontModalVisible(false)}>
               <View style={styles.fontModalCard}>
-                <Text style={styles.fontModalTitle}>Font Style</Text>
+                <Text style={[styles.fontModalTitle, a11yTextStyle]}>Font Style</Text>
                 {FONT_STYLES.map(f => (
                   <TouchableOpacity
                     key={f.value}
@@ -200,7 +200,7 @@ export default function SettingsScreen({ navigation }) {
                 onPress={() => navigation.navigate('Support')}
               >
                 <Ionicons name="chatbubbles-outline" size={20} color="#607D8B" />
-                <Text style={styles.supportText}>Send Feedback</Text>
+                <Text style={[styles.supportText, a11yTextStyle]}>Send Feedback</Text>
                 <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
               </TouchableOpacity>
 
@@ -211,7 +211,7 @@ export default function SettingsScreen({ navigation }) {
                 onPress={() => navigation.navigate('About')}
               >
                 <Ionicons name="information-circle-outline" size={20} color="#607D8B" />
-                <Text style={styles.supportText}>About Us</Text>
+                <Text style={[styles.supportText, a11yTextStyle]}>About Us</Text>
                 <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
               </TouchableOpacity>
           </View>
@@ -219,7 +219,7 @@ export default function SettingsScreen({ navigation }) {
           {/* LOGOUT */}
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={24} color="#fff" />
-              <Text style={styles.logoutText}>Log Out</Text>
+              <Text style={[styles.logoutText, a11yTextStyle]}>Log Out</Text>
           </TouchableOpacity>
 
           {/* VIEW MODE SWITCHER: Only for Admin */}
@@ -240,8 +240,8 @@ export default function SettingsScreen({ navigation }) {
                   }}
                 >
                   <Ionicons name="swap-horizontal" size={24} color="#607D8B" />
-                  <Text style={styles.adminText}>Switch to Teacher View</Text>
-                  <Text style={styles.currentModeText}>(Current: Student)</Text>
+                  <Text style={[styles.adminText, a11yTextStyle]}>Switch to Teacher View</Text>
+                  <Text style={[styles.currentModeText, a11yTextStyle]}>(Current: Student)</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity 
@@ -257,8 +257,8 @@ export default function SettingsScreen({ navigation }) {
                   }}
                 >
                   <Ionicons name="swap-horizontal" size={24} color="#607D8B" />
-                  <Text style={styles.adminText}>Switch to Student View</Text>
-                  <Text style={styles.currentModeText}>(Current: {dashboardMode === 'teacher' ? 'Teacher' : 'Auto'})</Text>
+                  <Text style={[styles.adminText, a11yTextStyle]}>Switch to Student View</Text>
+                  <Text style={[styles.currentModeText, a11yTextStyle]}>(Current: {dashboardMode === 'teacher' ? 'Teacher' : 'Auto'})</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -271,7 +271,7 @@ export default function SettingsScreen({ navigation }) {
               onPress={() => navigation.navigate('StudentEnroll')}
             >
                 <Ionicons name="qr-code" size={24} color="#0288D1" />
-                <Text style={styles.enrollText}>Enroll in Class</Text>
+                <Text style={[styles.enrollText, a11yTextStyle]}>Enroll in Class</Text>
             </TouchableOpacity>
           )}
 
@@ -285,7 +285,7 @@ export default function SettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: '#ECEFF1' },
   header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerContent: { alignItems: 'center', marginTop: 10 },
+  headerContent: { alignItems: 'center', marginTop: 30 },
   headerTitle: { fontSize: 26, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: '#CFD8DC', fontSize: 14 },
   scrollContent: { padding: 20 },
