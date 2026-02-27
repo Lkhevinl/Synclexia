@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal,
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
-import GoBackBtn from '../../components/GoBackBtn';
+
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
