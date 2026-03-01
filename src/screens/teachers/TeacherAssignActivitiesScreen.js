@@ -6,6 +6,7 @@ import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
+import { scheduleDeadlineReminder } from '../../lib/pushNotificationHelper';
 
 const ACTIVITIES = [
   { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },
@@ -34,7 +35,7 @@ export default function TeacherAssignActivitiesScreen() {
   const [configModal, setConfigModal] = useState(null); // Which activity is being configured
   const [configDifficulty, setConfigDifficulty] = useState(1);
   const [configTarget, setConfigTarget] = useState('1');
-  const [configNotes, setConfigNotes] = useState('');
+  const [configDeadline, setConfigDeadline] = useState('');
 
   useEffect(() => {
     fetchEnrolledStudents();
@@ -91,6 +92,7 @@ export default function TeacherAssignActivitiesScreen() {
       setConfigDifficulty(1);
       setConfigTarget('1');
       setConfigNotes('');
+      setConfigDeadline('');
     }
   };
 
@@ -108,6 +110,7 @@ export default function TeacherAssignActivitiesScreen() {
         difficulty_level: configDifficulty,
         target_count: targetNum,
         notes: configNotes || null,
+        deadline: configDeadline || null,
       })
       .select()
       .single();
@@ -118,6 +121,10 @@ export default function TeacherAssignActivitiesScreen() {
       setAssignments(prev => ({ ...prev, [configModal]: true }));
       if (data) setDetailedAssignments(prev => [...prev, data]);
       Alert.alert('Assigned!', `${configModal} assigned with ${DIFFICULTY_LABELS[configDifficulty]} difficulty, target: ${targetNum}`);
+      // Schedule deadline reminders if deadline is set
+      if (configDeadline && data?.id) {
+        scheduleDeadlineReminder(data.id, configDeadline, configModal);
+      }
     }
     setConfigModal(null);
   };
@@ -163,7 +170,11 @@ export default function TeacherAssignActivitiesScreen() {
             <View style={styles.detailsRow}>
               <Text style={styles.detailTag}>{DIFFICULTY_LABELS[details.difficulty_level] || 'Easy'}</Text>
               <Text style={styles.detailTag}>Target: {details.target_count || 1}</Text>
-              {details.is_completed && <Text style={[styles.detailTag, styles.completedTag]}>✓ Done</Text>}
+            {details.deadline && (
+              <Text style={[styles.detailTag, { backgroundColor: '#FFF3E0', color: '#F57C00' }]}>
+                Due: {new Date(details.deadline).toLocaleDateString()}
+              </Text>
+            )}
             </View>
           ) : (
             <Text style={styles.activityDesc}>Assign to student</Text>
@@ -280,6 +291,14 @@ export default function TeacherAssignActivitiesScreen() {
               value={configNotes}
               onChangeText={setConfigNotes}
               placeholder="e.g. Focus on Level 3 words"
+            />
+
+            <Text style={styles.configLabel}>Deadline (optional)</Text>
+            <TextInput
+              style={styles.configInput}
+              value={configDeadline}
+              onChangeText={setConfigDeadline}
+              placeholder="YYYY-MM-DD (e.g. 2026-03-15)"
             />
 
             <View style={styles.modalActions}>

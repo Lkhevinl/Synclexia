@@ -29,17 +29,19 @@ export default function AdminFeedbackScreen() {
   };
 
   const sendReply = async () => {
-    if (!replyText) return;
+    if (!replyText.trim()) return;
     const { error } = await supabase
       .from('feedback')
-      .update({ reply: replyText })
+      .update({ reply: replyText.trim(), has_unread_reply: true })
       .eq('id', selectedId);
     
     if (!error) {
-      Alert.alert("Sent", "Reply sent to user.");
-      setReplyText("");
+      Alert.alert('Sent ✓', 'Reply sent to user.');
+      setReplyText('');
       setSelectedId(null);
       fetchFeedback();
+    } else {
+      Alert.alert('Error', error.message);
     }
   };
 

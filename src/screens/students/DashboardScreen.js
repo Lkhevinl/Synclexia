@@ -96,9 +96,10 @@ export default function DashboardScreen({ navigation }) {
   const fetchAssignments = async (studentId) => {
     const { data } = await supabase
       .from('assignments')
-      .select('activity_type')
-      .eq('student_id', studentId);
-    if (data) setAssignments(data.map(a => a.activity_type));
+      .select('*, deadline')
+      .eq('student_id', studentId)
+      .order('deadline', { ascending: true });
+    if (data) setAssignments(data);
   };
 
   const fetchNotifications = async (teacherId = enrollment?.teacher_id) => {
@@ -181,7 +182,10 @@ export default function DashboardScreen({ navigation }) {
   const MenuCard = ({ title, icon, color, route, badge, activityType }) => {
     const { a11yTextStyle: cardA11y } = useTheme();
     const isLocked = isStudent && !enrollment;
-    const isNotAssigned = isStudent && enrollment && activityType && !assignments.includes(activityType);
+    const assignedActivity = assignments.find(a => a.activity_type === activityType);
+    const isNotAssigned = isStudent && enrollment && activityType && !assignedActivity;
+    const hasDeadline = assignedActivity?.deadline && !assignedActivity?.is_completed;
+    const isOverdue = hasDeadline && new Date(assignedActivity.deadline) < new Date();
     return (
       <TouchableOpacity 
         style={[styles.cardContainer, (isLocked || isNotAssigned) && styles.cardLocked]} 
@@ -201,6 +205,14 @@ export default function DashboardScreen({ navigation }) {
           style={styles.cardGradient}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         >
+          {hasDeadline && (
+            <View style={[styles.deadlineBadge, isOverdue && styles.deadlineOverdue]}>
+              <Ionicons name="time-outline" size={12} color={isOverdue ? '#D32F2F' : '#F57C00'} />
+              <Text style={[styles.deadlineText, isOverdue && styles.deadlineOverdueText]}>
+                {isOverdue ? 'Overdue' : new Date(assignedActivity.deadline).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
           {isNotAssigned && (
             <View style={styles.notAssignedBadge}>
               <Ionicons name="lock-closed" size={16} color="#fff" />
@@ -463,7 +475,10 @@ const styles = StyleSheet.create({
   badge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FF5252', width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
   cardLocked: { opacity: 0.6 },
-  notAssignedBadge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FF5252', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  deadlineBadge: { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF3E0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  deadlineOverdue: { backgroundColor: '#FFEBEE' },
+  deadlineText: { fontSize: 10, color: '#F57C00', marginLeft: 4, fontWeight: 'bold' },
+  deadlineOverdueText: { color: '#D32F2F' },
   lockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 20 },
 
   enrollBanner: { flexDirection: 'row', backgroundColor: '#FFF3E0', padding: 15, marginHorizontal: 20, marginTop: 15, borderRadius: 12, alignItems: 'center', borderLeftWidth: 4, borderLeftColor: '#FF9800', elevation: 2 },

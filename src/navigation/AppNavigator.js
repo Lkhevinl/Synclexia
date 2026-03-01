@@ -38,6 +38,8 @@ import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarene
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
@@ -127,6 +129,8 @@ export default function AppNavigator() {
             <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
             <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
             <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             {/* Parent routes */}
             {profile?.role === 'parent' && (
               <>

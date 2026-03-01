@@ -1,26 +1,38 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView,
+  Platform, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 
-const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800'];
-const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+const AVATAR_COLORS = ['#E91E63', '#9C27B0', '#3F51B5', '#2196F3', '#009688', '#FF9800'];
+const avatarColor = (name) =>
+  AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 export default function ParentLinkChildScreen({ navigation }) {
   const { profile } = useAuth();
+  const { theme, a11yTextStyle, getOverlayColor } = useTheme();
 
-  const [code, setCode] = useState('');
-  const [found, setFound] = useState(null);   // student profile if code matched
+  const [code, setCode]       = useState('');
+  const [found, setFound]     = useState(null);
   const [looking, setLooking] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]     = useState('');
 
+  // ── Base font size driven by theme ──────────────────────────────────
+  const fs = theme.fontSize || 14;
+  const overlayColor = getOverlayColor();
+
+  // ── text helper: merge a11yTextStyle with local style ───────────────
+  const tx = (extra) => [a11yTextStyle, extra];
+
+  // ── Lookup ───────────────────────────────────────────────────────────
   const lookupCode = async () => {
     const trimmed = code.trim().toUpperCase();
     if (trimmed.length !== 6) {
@@ -37,18 +49,20 @@ export default function ParentLinkChildScreen({ navigation }) {
     setLooking(false);
 
     if (dbErr) {
-      console.warn('Parent link lookup error:', dbErr.message, dbErr.code);
       setError('Something went wrong while searching. Please try again.');
       return;
     }
     const data = rows?.[0] ?? null;
     if (!data) {
-      setError('No student found with that code. Ask your child to check their code in the app.');
+      setError(
+        'No student found with that code. Ask your child to check their code in the app.'
+      );
       return;
     }
     setFound(data);
   };
 
+  // ── Link ─────────────────────────────────────────────────────────────
   const confirmLink = async () => {
     if (!found) return;
     setLinking(true);
@@ -59,14 +73,15 @@ export default function ParentLinkChildScreen({ navigation }) {
     setLinking(false);
 
     if (linkErr) {
-      console.warn('Parent link RPC error:', linkErr.message, linkErr.code);
       Alert.alert('Error', linkErr.message || 'Could not link child. Please try again.');
       return;
     }
     if (result?.error === 'already_linked') {
-      Alert.alert('Already Linked', `${found.full_name} is already linked to your account.`, [
-        { text: 'Go to Dashboard', onPress: () => navigation.goBack() },
-      ]);
+      Alert.alert(
+        'Already Linked',
+        `${found.full_name} is already linked to your account.`,
+        [{ text: 'Go to Dashboard', onPress: () => navigation.goBack() }]
+      );
       return;
     }
     if (result?.error) {
@@ -77,134 +92,323 @@ export default function ParentLinkChildScreen({ navigation }) {
       Alert.alert(
         '🎉 Child Linked!',
         `${found.full_name} has been linked to your account. You can now monitor their progress.`,
-        [{ text: 'Go to Dashboard', onPress: () => navigation.goBack() },
-         { text: 'Link Another', onPress: () => { setCode(''); setFound(null); } }]
+        [
+          { text: 'Go to Dashboard', onPress: () => navigation.goBack() },
+          { text: 'Link Another',    onPress: () => { setCode(''); setFound(null); } },
+        ]
       );
     }
   };
 
-  const level = found?.level ?? Math.floor((found?.xp || 0) / 100) + 1;
+  const level     = found?.level ?? Math.floor((found?.xp || 0) / 100) + 1;
+  const firstName = found?.full_name?.split(' ')[0] ?? '';
 
   return (
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={[s.root, { backgroundColor: theme.bgColor || '#F5F0FF' }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <StatusBar barStyle="light-content" />
 
+      {/* ── Colour overlay (dyslexia setting) ── */}
+      {overlayColor && (
+        <View pointerEvents="none" style={[s.overlay, { backgroundColor: overlayColor }]} />
+      )}
+
+      {/* ── Header ── */}
       <LinearGradient colors={['#7B1FA2', '#4A148C']} style={s.header}>
         <GoBackBtn />
-        <Text style={s.headerTitle}>Link a Child</Text>
-        <Text style={s.headerSub}>Enter the 6-character code from your child's app</Text>
+        <Text style={tx(s.headerTitle)}>Link a Child</Text>
+        <Text style={tx([s.headerSub, { fontSize: fs }])}>
+          Enter the 6-character code from your child's app
+        </Text>
       </LinearGradient>
 
-      <View style={s.body}>
+      {/* ── Body ── */}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.body}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* How it works */}
         <View style={s.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#7B1FA2" />
-          <Text style={s.infoText}>
-            Ask your child to open Synclexia and share their <Text style={s.infoBold}>Link Code</Text> shown on their dashboard.
+          <Ionicons name="information-circle" size={22} color="#7B1FA2" style={s.infoIcon} />
+          <Text style={tx([s.infoText, { fontSize: fs }])}>
+            Ask your child to open{' '}
+            <Text style={tx(s.infoBold)}>Synclexia</Text>
+            {' '}and share their{' '}
+            <Text style={tx(s.infoBold)}>Link Code</Text>
+            {' '}shown on their dashboard.
           </Text>
         </View>
 
-        {/* Code Input */}
-        <Text style={s.label}>Child's Link Code</Text>
+        {/* Steps */}
+        <View style={s.stepsCard}>
+          {[
+            { n: '1', t: 'Child opens Synclexia app' },
+            { n: '2', t: 'Tap their Profile → find the 6-letter Link Code' },
+            { n: '3', t: 'Parent enters the code below and taps Find Child' },
+          ].map((step) => (
+            <View key={step.n} style={s.stepRow}>
+              <View style={s.stepBadge}>
+                <Text style={tx(s.stepNum)}>{step.n}</Text>
+              </View>
+              <Text style={tx([s.stepTxt, { fontSize: fs }])}>{step.t}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Divider */}
+        <View style={s.divider} />
+
+        {/* Label */}
+        <Text style={tx([s.label, { fontSize: fs }])}>Child's Link Code</Text>
+
+        {/* Code input */}
         <View style={[s.codeBox, error ? s.codeBoxError : null]}>
           <TextInput
-            style={s.codeInput}
+            style={[s.codeInput, a11yTextStyle, { fontSize: Math.max(fs + 14, 28) }]}
             value={code}
-            onChangeText={(t) => { setCode(t.toUpperCase()); setError(''); setFound(null); }}
-            placeholder="e.g. AB12CD"
-            placeholderTextColor="#ccc"
+            onChangeText={(t) => {
+              setCode(t.toUpperCase());
+              setError('');
+              setFound(null);
+            }}
+            placeholder="AB12CD"
+            placeholderTextColor="#C9B8DC"
             autoCapitalize="characters"
             maxLength={6}
             autoFocus
           />
           {code.length > 0 && (
-            <TouchableOpacity onPress={() => { setCode(''); setFound(null); setError(''); }}>
-              <Ionicons name="close-circle" size={22} color="#ccc" />
+            <TouchableOpacity
+              onPress={() => { setCode(''); setFound(null); setError(''); }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close-circle" size={24} color="#B0A0C8" />
             </TouchableOpacity>
           )}
         </View>
-        {error ? <Text style={s.errorText}>{error}</Text> : null}
 
-        {/* Lookup Button */}
+        {/* Character-count dots */}
+        <View style={s.hintRow}>
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <View
+              key={i}
+              style={[s.hintDot, i < code.trim().length && s.hintDotFilled]}
+            />
+          ))}
+        </View>
+
+        {/* Error */}
+        {error ? (
+          <View style={s.errorRow}>
+            <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+            <Text style={tx([s.errorText, { fontSize: fs - 1 }])}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Find button */}
         <TouchableOpacity
           style={[s.lookupBtn, (looking || code.trim().length !== 6) && s.lookupBtnDisabled]}
           onPress={lookupCode}
           disabled={looking || code.trim().length !== 6}
+          activeOpacity={0.82}
         >
-          {looking
-            ? <ActivityIndicator color="#fff" />
-            : <><Ionicons name="search" size={18} color="#fff" /><Text style={s.lookupBtnText}>Find Child</Text></>
-          }
+          {looking ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="search" size={20} color="#fff" />
+              <Text style={tx([s.lookupBtnText, { fontSize: fs + 2 }])}>Find Child</Text>
+            </>
+          )}
         </TouchableOpacity>
 
-        {/* Found Student Card */}
+        {/* ── Found student card ── */}
         {found && (
           <View style={s.foundCard}>
-            <View style={s.foundRow}>
-              <View style={[s.avatar, { backgroundColor: avatarColor(found.full_name) }]}>
-                <Text style={s.avatarText}>{found.full_name?.[0]?.toUpperCase()}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.foundName}>{found.full_name}</Text>
-                <Text style={s.foundEmail}>{found.email || 'Student account'}</Text>
-                <View style={s.levelRow}>
-                  <Ionicons name="star" size={12} color="#FF9800" />
-                  <Text style={s.levelText}>Level {level}</Text>
-                </View>
-              </View>
-              <Ionicons name="checkmark-circle" size={28} color="#4CAF50" />
+
+            {/* Verified badge */}
+            <View style={s.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+              <Text style={tx([s.verifiedText, { fontSize: fs - 1 }])}>Student found!</Text>
             </View>
 
+            {/* Avatar + info */}
+            <View style={s.foundRow}>
+              <View style={[s.avatar, { backgroundColor: avatarColor(found.full_name) }]}>
+                <Text style={tx(s.avatarText)}>{found.full_name?.[0]?.toUpperCase()}</Text>
+              </View>
+
+              <View style={s.foundInfo}>
+                <Text style={tx([s.foundName, { fontSize: fs + 4 }])}>{found.full_name}</Text>
+                <Text style={tx([s.foundEmail, { fontSize: fs - 1 }])}>
+                  {found.email || 'Student account'}
+                </Text>
+                <View style={s.levelRow}>
+                  <Ionicons name="star" size={14} color="#FF9800" />
+                  <Text style={tx([s.levelText, { fontSize: fs - 1 }])}>Level {level}</Text>
+                  <View style={s.xpBadge}>
+                    <Text style={tx([s.xpText, { fontSize: fs - 2 }])}>{found.xp ?? 0} XP</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Confirm link button */}
             <TouchableOpacity
               style={[s.confirmBtn, linking && s.confirmBtnDisabled]}
               onPress={confirmLink}
               disabled={linking}
+              activeOpacity={0.82}
             >
-              {linking
-                ? <ActivityIndicator color="#fff" />
-                : <><Ionicons name="link" size={18} color="#fff" /><Text style={s.confirmBtnText}>Link {found.full_name.split(' ')[0]}</Text></>
-              }
+              {linking ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="link" size={20} color="#fff" />
+                  <Text style={tx([s.confirmBtnText, { fontSize: fs + 2 }])}>
+                    Link {firstName}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Not the right child */}
+            <TouchableOpacity
+              style={s.cancelLink}
+              onPress={() => { setFound(null); setCode(''); setError(''); }}
+            >
+              <Text style={tx([s.cancelLinkText, { fontSize: fs - 1 }])}>
+                Not the right child? Try again
+              </Text>
             </TouchableOpacity>
           </View>
         )}
-      </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: '#F5F0FF' },
-  header:           { paddingTop: 55, paddingBottom: 24, paddingHorizontal: 20 },
-  headerTitle:      { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 12 },
-  headerSub:        { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  root:               { flex: 1 },
+  overlay:            { ...StyleSheet.absoluteFillObject, zIndex: 10 },
 
-  body:             { flex: 1, padding: 20 },
+  // Header
+  header:             { paddingTop: 55, paddingBottom: 28, paddingHorizontal: 22 },
+  headerTitle:        { fontSize: 24, fontWeight: '900', color: '#fff', marginTop: 14, letterSpacing: 0.5 },
+  headerSub:          { color: 'rgba(255,255,255,0.85)', marginTop: 6, lineHeight: 22 },
 
-  infoCard:         { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#EDE7F6', borderRadius: 14, padding: 14, marginBottom: 24 },
-  infoText:         { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
-  infoBold:         { fontWeight: 'bold', color: '#7B1FA2' },
+  // Scroll / body
+  scroll:             { flex: 1 },
+  body:               { padding: 22, paddingBottom: 10 },
 
-  label:            { fontSize: 13, fontWeight: 'bold', color: '#555', marginBottom: 8 },
-  codeBox:          { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 16, borderWidth: 2, borderColor: '#E0D0F5', paddingHorizontal: 16, paddingVertical: 4, marginBottom: 6 },
-  codeBoxError:     { borderColor: '#F44336' },
-  codeInput:        { flex: 1, fontSize: 28, fontWeight: 'bold', color: '#7B1FA2', letterSpacing: 8, paddingVertical: 14, textAlign: 'center' },
-  errorText:        { fontSize: 12, color: '#F44336', marginBottom: 12, marginLeft: 4 },
+  // Info card
+  infoCard:           {
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: '#EDE7F6', borderRadius: 16,
+    padding: 16, marginBottom: 16,
+    borderLeftWidth: 4, borderLeftColor: '#7B1FA2',
+  },
+  infoIcon:           { marginTop: 2, marginRight: 10 },
+  infoText:           { flex: 1, color: '#4A148C', lineHeight: 22 },
+  infoBold:           { fontWeight: '800', color: '#6A1B9A' },
 
-  lookupBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#7B1FA2', borderRadius: 16, paddingVertical: 16, marginTop: 8, elevation: 3 },
-  lookupBtnDisabled:{ backgroundColor: '#CE93D8', elevation: 0 },
-  lookupBtnText:    { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  // Steps
+  stepsCard:          {
+    backgroundColor: '#F3E5F5', borderRadius: 16,
+    padding: 16, marginBottom: 24, gap: 14,
+  },
+  stepRow:            { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  stepBadge:          {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: '#7B1FA2', justifyContent: 'center', alignItems: 'center',
+  },
+  stepNum:            { color: '#fff', fontWeight: '900', fontSize: 14 },
+  stepTxt:            { flex: 1, color: '#4A148C', lineHeight: 22, paddingTop: 4 },
 
-  foundCard:        { backgroundColor: '#fff', borderRadius: 20, padding: 18, marginTop: 24, elevation: 4, borderWidth: 2, borderColor: '#4CAF50' },
-  foundRow:         { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
-  avatar:           { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center' },
-  avatarText:       { color: '#fff', fontSize: 22, fontWeight: 'bold' },
-  foundName:        { fontSize: 17, fontWeight: 'bold', color: '#333' },
-  foundEmail:       { fontSize: 12, color: '#999', marginTop: 2 },
-  levelRow:         { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  levelText:        { fontSize: 12, color: '#FF9800', fontWeight: 'bold' },
+  // Divider
+  divider:            { height: 1, backgroundColor: '#E0D0F5', marginBottom: 24 },
 
-  confirmBtn:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#4CAF50', borderRadius: 14, paddingVertical: 14, elevation: 2 },
-  confirmBtnDisabled:{ backgroundColor: '#A5D6A7' },
-  confirmBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  // Input section
+  label:              { fontWeight: '800', color: '#4A148C', marginBottom: 10, letterSpacing: 0.4 },
+  codeBox:            {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 18,
+    borderWidth: 2.5, borderColor: '#CE93D8',
+    paddingHorizontal: 20, paddingVertical: 6,
+    elevation: 2,
+  },
+  codeBoxError:       { borderColor: '#D32F2F' },
+  codeInput:          {
+    flex: 1, fontWeight: '900', color: '#6A1B9A',
+    letterSpacing: 10, paddingVertical: 16, textAlign: 'center',
+  },
+
+  // Dot indicators
+  hintRow:            { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 10, marginBottom: 6 },
+  hintDot:            { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E0D0F5' },
+  hintDotFilled:      { backgroundColor: '#7B1FA2' },
+
+  // Error
+  errorRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, marginTop: 4 },
+  errorText:          { color: '#D32F2F', flex: 1, lineHeight: 20 },
+
+  // Find button
+  lookupBtn:          {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: '#7B1FA2', borderRadius: 18,
+    paddingVertical: 18, marginTop: 10, elevation: 4,
+  },
+  lookupBtnDisabled:  { backgroundColor: '#CE93D8', elevation: 0 },
+  lookupBtnText:      { color: '#fff', fontWeight: '900', letterSpacing: 0.5 },
+
+  // Found card
+  foundCard:          {
+    backgroundColor: '#fff', borderRadius: 22,
+    padding: 20, marginTop: 28, elevation: 5,
+    borderWidth: 2.5, borderColor: '#4CAF50',
+  },
+
+  // Verified badge
+  verifiedBadge:      {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#E8F5E9', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 5,
+    alignSelf: 'flex-start', marginBottom: 16,
+  },
+  verifiedText:       { color: '#2E7D32', fontWeight: '700' },
+
+  // Avatar row
+  foundRow:           { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  avatar:             { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  avatarText:         { color: '#fff', fontSize: 26, fontWeight: '900' },
+
+  // Student info
+  foundInfo:          { flex: 1 },
+  foundName:          { fontWeight: '900', color: '#1A1A2E', lineHeight: 28 },
+  foundEmail:         { color: '#888', marginTop: 2, lineHeight: 20 },
+  levelRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  levelText:          { color: '#E65100', fontWeight: '700' },
+  xpBadge:            { backgroundColor: '#FFF3E0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  xpText:             { color: '#E65100', fontWeight: '700' },
+
+  // Confirm button
+  confirmBtn:         {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: '#388E3C', borderRadius: 16,
+    paddingVertical: 16, elevation: 3,
+  },
+  confirmBtnDisabled: { backgroundColor: '#A5D6A7', elevation: 0 },
+  confirmBtnText:     { color: '#fff', fontWeight: '900', letterSpacing: 0.5 },
+
+  // Cancel
+  cancelLink:         { alignItems: 'center', marginTop: 14, paddingVertical: 6 },
+  cancelLinkText:     { color: '#9E9E9E', textDecorationLine: 'underline', lineHeight: 22 },
 });

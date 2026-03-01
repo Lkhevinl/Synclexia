@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 
 const AuthContext = createContext({});
 
@@ -72,6 +73,8 @@ export const AuthProvider = ({ children }) => {
       }
       if (data) {
         setProfile(data);
+        // Register for push notifications
+        registerForPushNotificationsAsync(data.id).catch(() => {});
       } else if (retryCount < 3) {
         // Profile may not exist yet (e.g. signup race condition).
         // Retry after a short delay to give the insert time to complete.

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar,
+  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,6 +28,9 @@ export default function ParentDashboardScreen({ navigation }) {
   const [progress, setProgress] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
+  const [notifModalVisible, setNotifModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -35,6 +38,19 @@ export default function ParentDashboardScreen({ navigation }) {
   const profileSubRef = useRef(null);
   const assignSubRef = useRef(null);
   const msgSubRef = useRef(null);
+
+  // ── Fetch system notifications for parents ────────────────────────────────
+  const fetchNotifications = async () => {
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .in('target_audience', ['All', 'Parents', 'parents'])
+      .eq('is_draft', false)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setNotifications(data || []);
+    setNotifCount(data?.length ?? 0);
+  };
 
   // ── Fetch linked children ──────────────────────────────────────────────────
   const fetchChildren = async () => {
@@ -84,7 +100,7 @@ export default function ParentDashboardScreen({ navigation }) {
     setChildren(kids);
     const idx = Math.min(selectedIdx, Math.max(kids.length - 1, 0));
     setSelectedIdx(idx);
-    await loadChild(kids[idx]);
+    await Promise.all([loadChild(kids[idx]), fetchNotifications()]);
     setLoading(false);
     setRefreshing(false);
   }, [profile?.id, selectedIdx]);
@@ -205,6 +221,13 @@ export default function ParentDashboardScreen({ navigation }) {
           <View style={s.headerActions}>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
               <Ionicons name="person-add" size={22} color="#fff" />
+            </TouchableOpacity>
+            {/* Notifications bell */}
+            <TouchableOpacity style={s.notifBadgeBtn} onPress={() => setNotifModalVisible(true)}>
+              <Ionicons name="notifications" size={24} color="#fff" />
+              {notifCount > 0 && (
+                <View style={s.badge}><Text style={s.badgeText}>{notifCount > 9 ? '9+' : notifCount}</Text></View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={s.msgBadgeBtn} onPress={() => navigation.navigate('ParentMessages', navParams)}>
               <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
@@ -371,6 +394,37 @@ export default function ParentDashboardScreen({ navigation }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Notifications Modal ── */}
+      <Modal visible={notifModalVisible} transparent animationType="slide" onRequestClose={() => setNotifModalVisible(false)}>
+        <View style={s.notifOverlay}>
+          <View style={s.notifCard}>
+            <View style={s.notifHeader}>
+              <Text style={s.notifTitle}>📢 Announcements</Text>
+              <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={notifications}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              ListEmptyComponent={
+                <Text style={{ textAlign: 'center', color: '#999', padding: 30 }}>
+                  No announcements yet.
+                </Text>
+              }
+              renderItem={({ item }) => (
+                <View style={s.notifItem}>
+                  <Text style={s.notifItemTitle}>{item.title}</Text>
+                  <Text style={s.notifItemBody}>{item.content}</Text>
+                  <Text style={s.notifItemDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -452,4 +506,17 @@ const s = StyleSheet.create({
   assignNote:         { fontSize: 11, color: '#999', marginTop: 2 },
   diffBadge:          { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   diffText:           { fontSize: 11, fontWeight: 'bold' },
+
+  // Notification bell
+  notifBadgeBtn:      { position: 'relative', padding: 4 },
+
+  // Notification modal
+  notifOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '75%' },
+  notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 12 },
+  notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#7B1FA2' },
+  notifItem:          { backgroundColor: '#F5F0FF', borderRadius: 14, padding: 14, marginBottom: 10 },
+  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#4A148C' },
+  notifItemBody:      { fontSize: 13, color: '#555', marginTop: 4, lineHeight: 18 },
+  notifItemDate:      { fontSize: 11, color: '#aaa', marginTop: 6 },
 });

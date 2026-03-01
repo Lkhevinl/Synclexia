@@ -76,6 +76,13 @@ export default function ParentAssignmentsScreen({ route }) {
             <View style={s.tag}>
               <Text style={s.tagText}>Target: {item.target_count || 1}</Text>
             </View>
+            {item.deadline && !item.is_completed && (
+            <View style={[s.tag, { backgroundColor: '#FFF3E0', borderColor: '#F57C00' }]}>
+              <Text style={[s.tagText, { color: '#F57C00' }]}>
+                Due: {new Date(item.deadline).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
             {item.is_completed && (
               <View style={[s.tag, { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' }]}>
                 <Text style={[s.tagText, { color: '#2E7D32' }]}>✓ Done</Text>

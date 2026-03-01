@@ -1,27 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Share, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import GoBackBtn from '../../components/GoBackBtn';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TextToSpeechScreen() {
-  const [text, setText] = useState("");
+  const { profile } = useAuth();
+  const [text, setText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const startTimeRef = useRef(null);
+
+  const logSession = async (spokenText, durationSeconds) => {
+    if (!profile?.id) return;
+    try {
+      await supabase.from('session_logs').insert({
+        student_id: profile.id,
+        activity_type: 'text_to_speech',
+        details: {
+          word_count: spokenText.trim().split(/\s+/).filter(Boolean).length,
+          char_count: spokenText.length,
+          duration_seconds: durationSeconds,
+        },
+        xp_earned: 5,
+      });
+    } catch (_) {}
+  };
 
   const speak = async () => {
     if (!text.trim()) {
-      Alert.alert("Nothing to speak", "Type some text first.");
+      Alert.alert('Nothing to Speak', 'Type some text first.');
       return;
     }
     if (isSpeaking) {
       await Speech.stop();
       setIsSpeaking(false);
+      const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
+      logSession(text, elapsed);
       return;
     }
     setIsSpeaking(true);
-    Speech.speak(text, {
+    startTimeRef.current = Date.now();
+    const capturedText = text;
+    Speech.speak(capturedText, {
       rate: 0.85,
-      onDone: () => setIsSpeaking(false),
+      onDone: () => {
+        setIsSpeaking(false);
+        const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
+        logSession(capturedText, elapsed);
+      },
       onStopped: () => setIsSpeaking(false),
       onError: () => setIsSpeaking(false),
     });

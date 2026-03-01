@@ -32,13 +32,22 @@ export default function AdminReportsScreen() {
 
   const fetchUserActivity = async (userId) => {
     setLoadingLogs(true);
-    const { data } = await supabase
-      .from('session_logs')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(50);
-    setActivityLogs(data || []);
+    // session_logs may use student_id (for students) or user_id (legacy) — try both
+    const [{ data: byStudent }, { data: byUser }] = await Promise.all([
+      supabase.from('session_logs').select('*').eq('student_id', userId)
+        .order('created_at', { ascending: false }).limit(50),
+      supabase.from('session_logs').select('*').eq('user_id', userId)
+        .order('created_at', { ascending: false }).limit(50),
+    ]);
+    // Merge & deduplicate by id
+    const merged = [...(byStudent || []), ...(byUser || [])];
+    const seen = new Set();
+    const unique = merged.filter(l => {
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50);
+    setActivityLogs(unique);
     setLoadingLogs(false);
   };
 
