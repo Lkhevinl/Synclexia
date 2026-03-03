@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -18,6 +19,7 @@ const avatarColor = (name) =>
 export default function ParentLinkChildScreen({ navigation }) {
   const { profile } = useAuth();
   const { theme, a11yTextStyle, getOverlayColor } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [code, setCode]       = useState('');
   const [found, setFound]     = useState(null);
@@ -127,7 +129,7 @@ export default function ParentLinkChildScreen({ navigation }) {
       {/* ── Body ── */}
       <ScrollView
         style={s.scroll}
-        contentContainerStyle={s.body}
+        contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 20 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

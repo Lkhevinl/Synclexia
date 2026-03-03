@@ -1,6 +1,6 @@
 // lib/analyticsHelper.js
 // Session logging for all activity attempts — records every session to
-// session_logs, awards XP/coins, marks assignments complete, and
+// session_logs, awards XP, marks assignments complete, and
 // provides aggregated progress data for the Teacher Progress screen.
 import { supabase } from './supabase';
 
@@ -72,15 +72,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
       await supabase.rpc('add_xp', { amount: xpEarned });
     }
 
-    // 3. Award small coin bonus for high accuracy
-    if (accuracy >= 80) {
-      const coinBonus = Math.round(xpEarned / 5);
-      if (coinBonus > 0) {
-        await supabase.rpc('add_coins', { amount: coinBonus });
-      }
-    }
-
-    // 4. Mark matching assignments as completed
+    // 3. Mark matching assignments as completed
     await markAssignmentComplete(studentId, activityType);
 
     return { success: true, xpEarned, session };

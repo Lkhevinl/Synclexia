@@ -35,6 +35,7 @@ export default function TeacherAssignActivitiesScreen() {
   const [configModal, setConfigModal] = useState(null); // Which activity is being configured
   const [configDifficulty, setConfigDifficulty] = useState(1);
   const [configTarget, setConfigTarget] = useState('1');
+  const [configNotes, setConfigNotes] = useState('');
   const [configDeadline, setConfigDeadline] = useState('');
 
   useEffect(() => {

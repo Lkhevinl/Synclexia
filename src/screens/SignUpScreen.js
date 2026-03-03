@@ -77,7 +77,6 @@ export default function SignUpScreen({ navigation }) {
         full_name: trimmedName,
         email: trimmedEmail,
         xp: 0,
-        coins: 0,
         role,
       };
       // Every student must have a unique_code for parent-linking.

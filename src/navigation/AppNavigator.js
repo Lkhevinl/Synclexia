@@ -2,6 +2,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
@@ -16,7 +17,6 @@ import ReadingScreen from '../screens/students/ReadingScreen';
 import ScanScreen from '../screens/students/ScanScreen';
 import QuestsScreen from '../screens/students/QuestScreen';
 import LeaderboardScreen from '../screens/students/LeaderboardScreen';
-import ShopScreen from '../screens/students/ShopScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
@@ -71,14 +71,15 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function AppTabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: { 
             backgroundColor: '#fff', 
-            height: 60, 
-            paddingBottom: 8, 
+            height: 60 + insets.bottom, 
+            paddingBottom: 8 + insets.bottom, 
             borderTopLeftRadius: 20, 
             borderTopRightRadius: 20,
             elevation: 5
@@ -120,7 +121,6 @@ export default function AppNavigator() {
             <Stack.Screen name="Scan" component={ScanScreen} />
             <Stack.Screen name="Quests" component={QuestsScreen} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="Support" component={SupportScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />

@@ -46,8 +46,6 @@ export default function QuestScreen() {
     if (quest.current < quest.target_count) return;
 
     const { error } = await supabase.rpc('add_xp', { amount: quest.xp_reward });
-    
-    await supabase.rpc('add_coins', { amount: quest.coin_reward });
 
     if (!error) {
       if (quest.progressId) {
@@ -56,7 +54,7 @@ export default function QuestScreen() {
         await supabase.from('user_quests').insert([{ user_id: profile.id, quest_id: quest.id, progress: quest.target_count, is_claimed: true }]);
       }
       
-      Alert.alert("QUEST COMPLETE!", `You earned ${quest.xp_reward} XP and ${quest.coin_reward} Coins!`);
+      Alert.alert("QUEST COMPLETE!", `You earned ${quest.xp_reward} XP!`);
       fetchProfile(profile.id);
       loadQuests();
     }
@@ -67,9 +65,6 @@ export default function QuestScreen() {
       <GoBackBtn />
       <View style={styles.header}>
         <Text style={styles.title}>Quest Board 📜</Text>
-        <View style={styles.coinBadge}>
-           <Text style={styles.coinText}>💰 {profile?.coins || 0}</Text>
-        </View>
       </View>
 
       <FlatList
@@ -90,7 +85,6 @@ export default function QuestScreen() {
                  
                  <View style={styles.rewards}>
                     <Text style={styles.rewardTag}>⚡ {item.xp_reward} XP</Text>
-                    <Text style={styles.rewardTag}>💰 {item.coin_reward}</Text>
                  </View>
 
                  <View style={styles.barBg}>
@@ -122,8 +116,6 @@ export default function QuestScreen() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
   title: { fontSize: 28, fontWeight: 'bold', color: '#E65100' },
-  coinBadge: { backgroundColor: '#FFD700', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 20, borderWidth: 2, borderColor: '#FFA000' },
-  coinText: { fontWeight: 'bold', color: '#333' },
   
   card: { flexDirection: 'row', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#FFE0B2' },
   cardClaimed: { opacity: 0.6, backgroundColor: '#eee', borderColor: '#ccc' },

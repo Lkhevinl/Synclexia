@@ -12,7 +12,7 @@ export default function AdminUsersScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0, coins: 0 });
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -51,7 +51,6 @@ export default function AdminUsersScreen() {
       email: user.email || '',
       role: user.role || 'student',
       xp: user.xp || 0,
-      coins: user.coins || 0
     });
     setEditModalVisible(true);
   };
@@ -66,7 +65,6 @@ export default function AdminUsersScreen() {
         email: editForm.email,
         role: editForm.role,
         xp: parseInt(editForm.xp) || 0,
-        coins: parseInt(editForm.coins) || 0
       })
       .eq('id', selectedUser.id);
     
@@ -189,14 +187,6 @@ export default function AdminUsersScreen() {
                 style={styles.input} 
                 value={String(editForm.xp)} 
                 onChangeText={(t) => setEditForm({...editForm, xp: t})}
-                keyboardType="numeric"
-              />
-              
-              <Text style={styles.inputLabel}>Coins</Text>
-              <TextInput 
-                style={styles.input} 
-                value={String(editForm.coins)} 
-                onChangeText={(t) => setEditForm({...editForm, coins: t})}
                 keyboardType="numeric"
               />
               

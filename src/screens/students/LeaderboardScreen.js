@@ -29,7 +29,7 @@ export default function LeaderboardScreen() {
       // All-time: top 10 by total XP in profiles
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, xp, coins')
+        .select('id, full_name, xp')
         .eq('role', 'student')
         .order('xp', { ascending: false })
         .limit(10);
@@ -75,14 +75,14 @@ export default function LeaderboardScreen() {
       const ids = sorted.map(([id]) => id);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, xp, coins')
+        .select('id, full_name, xp')
         .in('id', ids);
 
       const profMap = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
 
       const result = sorted.map(([id, periodXp]) => ({
-        ...(profMap[id] || { id, full_name: 'Unknown', xp: 0, coins: 0 }),
+        ...(profMap[id] || { id, full_name: 'Unknown', xp: 0 }),
         periodXp,
       }));
 
@@ -146,10 +146,6 @@ export default function LeaderboardScreen() {
                     : `${item.periodXp} XP earned`}
                 </Text>
               </View>
-
-              <View style={styles.coinCol}>
-                <Text>💰 {item.coins || 0}</Text>
-              </View>
             </View>
           )}
         />
@@ -185,6 +181,4 @@ const styles = StyleSheet.create({
   infoCol: { flex: 1 },
   name: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   xpText: { fontSize: 12, color: '#1976D2', fontWeight: 'bold' },
-
-  coinCol: { backgroundColor: '#f0f0f0', padding: 5, borderRadius: 5 },
 });

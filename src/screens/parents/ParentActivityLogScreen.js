@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -16,6 +17,7 @@ export default function ParentActivityLogScreen({ route }) {
   const { child } = route.params || {};
   const sid = child?.profiles?.id ?? child?.student_id;
   const name = child?.profiles?.full_name ?? 'Child';
+  const insets = useSafeAreaInsets();
 
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -142,7 +144,7 @@ export default function ParentActivityLogScreen({ route }) {
           keyExtractor={item => item.date}
           renderItem={renderGroup}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchSessions(daysBack)} colors={['#7B1FA2']} />}
-          contentContainerStyle={s.list}
+          contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 20 }]}
           ListEmptyComponent={
             <View style={s.emptyBox}>
               <Ionicons name="time-outline" size={60} color="#ddd" />

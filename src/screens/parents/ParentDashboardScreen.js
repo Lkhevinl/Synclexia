@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,6 +22,7 @@ const ACTIVITY_LABELS = {
 
 export default function ParentDashboardScreen({ navigation }) {
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [children, setChildren] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -62,8 +64,7 @@ export default function ParentDashboardScreen({ navigation }) {
           id,
           full_name,
           email,
-          xp,
-          coins
+          xp
         )
       `)
       .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
@@ -123,7 +124,7 @@ export default function ParentDashboardScreen({ navigation }) {
     assignSubRef.current?.unsubscribe();
     msgSubRef.current?.unsubscribe();
 
-    // Child profile changes (XP, coins, level, streak)
+    // Child profile changes (XP, level, streak)
     profileSubRef.current = supabase
       .channel(`parent-child-profile-${sid}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${sid}` },
@@ -172,7 +173,6 @@ export default function ParentDashboardScreen({ navigation }) {
   const name = cp?.full_name ?? child?.profiles?.full_name ?? 'Child';
   const xp = cp?.xp ?? 0;
   const level = cp?.level ?? Math.floor(xp / 100) + 1;
-  const coins = cp?.coins ?? 0;
   const streak = cp?.streak ?? 0;
   const xpInLevel = xp % 100;
   const pendingCount = assignments.length;
@@ -194,7 +194,7 @@ export default function ParentDashboardScreen({ navigation }) {
         <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.emptyHeader}>
           <Text style={s.emptyHeaderTitle}>Parent Dashboard</Text>
         </LinearGradient>
-        <View style={s.emptyBody}>
+        <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
           <Ionicons name="people-outline" size={80} color="#ddd" />
           <Text style={s.emptyTitle}>No children linked yet</Text>
           <Text style={s.emptyHint}>Search for your child's account to start monitoring their progress.</Text>
@@ -254,7 +254,7 @@ export default function ParentDashboardScreen({ navigation }) {
       </LinearGradient>
 
       <ScrollView
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#7B1FA2']} />}
       >
         {/* ── Child Hero Card ── */}
@@ -276,7 +276,6 @@ export default function ParentDashboardScreen({ navigation }) {
         <View style={s.statsRow}>
           {[
             { icon: 'trophy', color: '#FF9800', val: xp, lbl: 'Total XP' },
-            { icon: 'logo-bitcoin', color: '#FFC107', val: coins, lbl: 'Coins' },
             { icon: 'flame', color: '#F44336', val: streak, lbl: 'Day Streak' },
             { icon: 'clipboard', color: '#7B1FA2', val: pendingCount, lbl: 'Pending' },
           ].map((stat, i) => (

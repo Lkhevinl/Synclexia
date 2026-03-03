@@ -58,15 +58,14 @@ export default function AdminReportsScreen() {
         email: u.email || '',
         role: u.role || 'user',
         xp: u.xp || 0,
-        coins: u.coins || 0,
         level: Math.floor((u.xp || 0) / 100) + 1,
         status: u.is_banned ? 'Banned' : 'Active',
         joined: new Date(u.created_at).toLocaleDateString()
       }));
 
       const csvContent = [
-        ['Name', 'Email', 'Role', 'XP', 'Coins', 'Level', 'Status', 'Joined Date'],
-        ...reportData.map(r => [r.name, r.email, r.role, r.xp, r.coins, r.level, r.status, r.joined])
+        ['Name', 'Email', 'Role', 'XP', 'Level', 'Status', 'Joined Date'],
+        ...reportData.map(r => [r.name, r.email, r.role, r.xp, r.level, r.status, r.joined])
       ].map(row => row.join(',')).join('\n');
 
       await Share.share({
@@ -161,10 +160,6 @@ export default function AdminReportsScreen() {
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{Math.floor((item.xp || 0)/100) + 1}</Text>
                 <Text style={styles.statTitle}>Lvl</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{item.coins || 0}</Text>
-                <Text style={styles.statTitle}>Coins</Text>
               </View>
             </View>
           </TouchableOpacity>

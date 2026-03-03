@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
@@ -17,8 +17,6 @@ export default function TeacherUsersScreen() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [rewardModal, setRewardModal] = useState(null); // student object
-  const [rewardCoins, setRewardCoins] = useState('10');
 
   useEffect(() => { if (profile?.id) fetchUsers(); }, [profile?.id]);
 
@@ -63,23 +61,6 @@ export default function TeacherUsersScreen() {
     ]);
   };
 
-  const giveReward = async () => {
-    if (!rewardModal) return;
-    const coins = parseInt(rewardCoins) || 0;
-    if (coins <= 0) return Alert.alert('Invalid', 'Enter a positive coin amount.');
-    const { error } = await supabase.rpc('add_coins_to_user', {
-      target_user_id: rewardModal.studentId,
-      amount: coins,
-    });
-    if (error) {
-      // Fallback: direct update if RPC doesn't exist
-      await supabase.from('profiles').update({ coins: (rewardModal.coins || 0) + coins }).eq('id', rewardModal.studentId);
-    }
-    Alert.alert('Reward Sent! 🎉', `${coins} coins given to ${rewardModal.full_name}.`);
-    setRewardModal(null);
-    setRewardCoins('10');
-    fetchUsers();
-  };
 
   const StudentCard = ({ item }) => {
     const level = Math.floor((item.xp || 0) / 100) + 1;
@@ -100,9 +81,6 @@ export default function TeacherUsersScreen() {
           </View>
           <Text style={styles.xpText}>{item.xp} XP</Text>
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.rewardBtn} onPress={() => { setRewardModal(item); setRewardCoins('10'); }}>
-              <Ionicons name="star" size={14} color="#FF9800" />
-            </TouchableOpacity>
             <TouchableOpacity style={styles.trashBtn} onPress={() => removeStudent(item.enrollmentId, item.full_name)}>
               <Ionicons name="person-remove" size={14} color="#fff" />
             </TouchableOpacity>
@@ -161,42 +139,6 @@ export default function TeacherUsersScreen() {
         />
       )}
 
-      {/* Reward Modal */}
-      <Modal visible={!!rewardModal} transparent animationType="fade" onRequestClose={() => setRewardModal(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Give Reward 🌟</Text>
-            <Text style={styles.modalSub}>Reward {rewardModal?.full_name} with coins</Text>
-            <View style={styles.coinRow}>
-              {[5, 10, 25, 50].map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.coinBtn, rewardCoins === String(c) && styles.coinBtnActive]}
-                  onPress={() => setRewardCoins(String(c))}
-                >
-                  <Text style={[styles.coinBtnText, rewardCoins === String(c) && { color: '#fff' }]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.coinInput}
-              keyboardType="number-pad"
-              value={rewardCoins}
-              onChangeText={setRewardCoins}
-              placeholder="Custom amount"
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setRewardModal(null)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.giveBtn} onPress={giveReward}>
-                <Ionicons name="star" size={16} color="#fff" />
-                <Text style={styles.giveBtnText}>Give Coins</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -229,22 +171,5 @@ const styles = StyleSheet.create({
   lvlText: { fontSize: 11, fontWeight: 'bold', color: '#7B1FA2' },
   xpText: { fontSize: 10, color: '#999', fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
-  rewardBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFF8E1', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFE082' },
   trashBtn: { width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EF5350' },
-
-  // Reward Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalCard: { width: '88%', backgroundColor: '#fff', borderRadius: 24, padding: 24 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', textAlign: 'center' },
-  modalSub: { fontSize: 13, color: '#999', textAlign: 'center', marginBottom: 20, marginTop: 4 },
-  coinRow: { flexDirection: 'row', gap: 10, marginBottom: 14, justifyContent: 'center' },
-  coinBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 2, borderColor: '#E0E0E0', backgroundColor: '#F5F5F5' },
-  coinBtnActive: { backgroundColor: '#C06080', borderColor: '#C06080' },
-  coinBtnText: { fontWeight: 'bold', color: '#666', fontSize: 15 },
-  coinInput: { backgroundColor: '#F5F5F5', borderRadius: 12, padding: 12, fontSize: 15, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, textAlign: 'center' },
-  modalActions: { flexDirection: 'row', gap: 12 },
-  cancelBtn: { flex: 1, padding: 14, borderRadius: 14, borderWidth: 2, borderColor: '#E0E0E0', alignItems: 'center' },
-  cancelText: { fontWeight: 'bold', color: '#999' },
-  giveBtn: { flex: 2, padding: 14, borderRadius: 14, backgroundColor: '#C06080', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  giveBtnText: { fontWeight: 'bold', color: '#fff', fontSize: 15 },
 });

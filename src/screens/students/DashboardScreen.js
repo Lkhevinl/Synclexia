@@ -13,7 +13,7 @@ const DAILY_TIPS = [
   "Fact: 'A' is the most common letter used in English.",
   "Goal: Try to earn 50 XP today!",
   "Tip: Take a break if your eyes get tired.",
-  "Fun: Buy a cool sticker in the shop with your coins!"
+  "Fun: Can you complete all quests this week?"
 ];
 
 export default function DashboardScreen({ navigation }) {
@@ -282,11 +282,6 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.statLabel}>XP</Text>
           <Text style={[styles.statValue, { color: '#4CAF50' }]}>{profile?.xp || 0}</Text>
         </View>
-        <View style={styles.divider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>COINS</Text>
-          <Text style={[styles.statValue, { color: '#FFD700' }]}>{profile?.coins || 0}</Text>
-        </View>
       </View>
 
       {/* SCROLLABLE CONTENT */}
@@ -365,7 +360,6 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.grid}>
           <MenuCard title="Quests" icon="📜" color="#F44336" route="Quests" badge={true} />
           <MenuCard title="Top 10" icon="🏆" color="#FFC107" route="Leaderboard" />
-          <MenuCard title="Shop"   icon="🛍️" color="#00BCD4" route="Shop" />
         </View>
 
         <View style={{ height: 20 }} /> 

@@ -124,7 +124,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
         <AdminCard 
           title="Give Rewards" 
-          subtitle="Award coins & XP to students"
+          subtitle="Award XP to students"
           icon="star" 
           color="#FFD700"
           onPress={() => navigation.navigate('AdminUsers')} 
