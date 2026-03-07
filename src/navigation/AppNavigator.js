@@ -40,6 +40,7 @@ import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import PendingApprovalScreen from '../screens/PendingApprovalScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
@@ -108,6 +109,15 @@ export default function AppNavigator() {
   const isParent  = profile?.role === 'parent';
 
   if (loading) return <LoadingScreen />;
+
+  // Teacher account awaiting admin approval — show holding screen
+  if (session && profile?.role === 'teacher' && profile?.status === 'pending') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

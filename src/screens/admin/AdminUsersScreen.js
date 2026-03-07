@@ -13,22 +13,27 @@ export default function AdminUsersScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => { fetchUsers(); }, []);
 
   // Search Logic
   useEffect(() => {
+    let base = users;
+    if (activeTab === 'pending') {
+      base = users.filter(u => u.role === 'teacher' && u.status === 'pending');
+    }
     if (search.trim() === '') {
-        setFilteredUsers(users);
+        setFilteredUsers(base);
     } else {
         const lowerSearch = search.toLowerCase();
-        const filtered = users.filter(u => 
+        const filtered = base.filter(u => 
             (u.full_name && u.full_name.toLowerCase().includes(lowerSearch)) || 
             (u.email && u.email.toLowerCase().includes(lowerSearch))
         );
         setFilteredUsers(filtered);
     }
-  }, [search, users]);
+  }, [search, users, activeTab]);
 
   const fetchUsers = async () => {
     setRefreshing(true);
@@ -77,6 +82,24 @@ export default function AdminUsersScreen() {
     }
   };
 
+  const approveTeacher = (id) => {
+    Alert.alert('Approve Teacher', 'Grant this user full teacher access?', [
+      { text: 'Cancel' },
+      { text: 'Approve', onPress: async () => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ status: 'active' })
+          .eq('id', id);
+        if (error) {
+          Alert.alert('Error', error.message);
+        } else {
+          Alert.alert('Approved', 'Teacher account has been activated.');
+          fetchUsers();
+        }
+      }}
+    ]);
+  };
+
   const deleteUser = (id) => {
     Alert.alert("Ban User", "This will block their access. Continue?", [
         { text: "Cancel" },
@@ -93,6 +116,27 @@ export default function AdminUsersScreen() {
       <View style={{flexDirection:'row', alignItems:'center', marginBottom:15}}>
           <GoBackBtn />
           <Text style={styles.headerTitle}>Student Management</Text>
+      </View>
+
+      {/* TABS */}
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'all' && styles.tabActive]}
+          onPress={() => setActiveTab('all')}
+        >
+          <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>All Users</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'pending' && styles.tabActive]}
+          onPress={() => setActiveTab('pending')}
+        >
+          <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
+            {'Pending Teachers'}
+            {users.filter(u => u.role === 'teacher' && u.status === 'pending').length > 0
+              ? ` (${users.filter(u => u.role === 'teacher' && u.status === 'pending').length})`
+              : ''}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* SEARCH BAR */}
@@ -129,6 +173,11 @@ export default function AdminUsersScreen() {
                 <View style={{flex: 2}}>
                     <Text style={styles.cellName}>{item.full_name || "Unknown"}</Text>
                     <Text style={styles.cellDate}>Joined: {new Date(item.created_at).toLocaleDateString()}</Text>
+                    {item.role === 'teacher' && item.status === 'pending' && (
+                      <View style={styles.pendingBadge}>
+                        <Text style={styles.pendingBadgeText}>PENDING</Text>
+                      </View>
+                    )}
                 </View>
                 <Text style={[styles.cell, {flex: 3, fontSize: 11, color: '#666'}]} numberOfLines={1}>{item.email}</Text>
                 <View style={{flex: 1, alignItems: 'center'}}>
@@ -140,11 +189,19 @@ export default function AdminUsersScreen() {
                     <View style={styles.editBtn}>
                         <Ionicons name="pencil" size={16} color="white" />
                     </View>
-                    <TouchableOpacity onPress={() => deleteUser(item.id)}>
-                        <View style={styles.trashBtn}>
-                            <Ionicons name="ban" size={16} color="white" />
+                    {item.role === 'teacher' && item.status === 'pending' ? (
+                      <TouchableOpacity onPress={() => approveTeacher(item.id)}>
+                        <View style={styles.approveBtn}>
+                          <Ionicons name="checkmark" size={16} color="white" />
                         </View>
-                    </TouchableOpacity>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity onPress={() => deleteUser(item.id)}>
+                          <View style={styles.trashBtn}>
+                              <Ionicons name="ban" size={16} color="white" />
+                          </View>
+                      </TouchableOpacity>
+                    )}
                 </TouchableOpacity>
             </View>
         )}
@@ -225,6 +282,14 @@ const styles = StyleSheet.create({
   
   trashBtn: { backgroundColor: '#EF5350', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   editBtn: { backgroundColor: '#0288D1', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  approveBtn: { backgroundColor: '#4CAF50', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  tabRow: { flexDirection: 'row', marginBottom: 15, gap: 10 },
+  tab: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center' },
+  tabActive: { backgroundColor: '#0288D1' },
+  tabText: { fontWeight: 'bold', color: '#666', fontSize: 12 },
+  tabTextActive: { color: '#fff' },
+  pendingBadge: { backgroundColor: '#FFF3E0', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2, alignSelf: 'flex-start' },
+  pendingBadgeText: { fontSize: 10, color: '#E65100', fontWeight: 'bold' },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 20, maxHeight: '80%' },
