@@ -124,7 +124,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
         <AdminCard 
           title="Give Rewards" 
-          subtitle="Award coins & XP to students"
+          subtitle="Award XP to students"
           icon="star" 
           color="#FFD700"
           onPress={() => navigation.navigate('AdminUsers')} 
@@ -135,7 +135,7 @@ export default function AdminDashboardScreen({ navigation }) {
           subtitle="Give learning tasks to students"
           icon="checkbox" 
           color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')} 
+          onPress={() => navigation.navigate('AdminAssignActivities')} 
         />
 
         <AdminCard 
@@ -143,7 +143,7 @@ export default function AdminDashboardScreen({ navigation }) {
           subtitle="Track student comprehension"
           icon="trending-up" 
           color="#2196F3"
-          onPress={() => navigation.navigate('AdminUsers')} 
+          onPress={() => navigation.navigate('AdminReports')} 
         />
 
         <AdminCard 
@@ -176,6 +176,14 @@ export default function AdminDashboardScreen({ navigation }) {
           icon="people-circle" 
           color="#6A1B9A"
           onPress={() => navigation.navigate('AdminParentLinks')} 
+        />
+
+        <AdminCard 
+          title="Reports & Analytics" 
+          subtitle="Export user data and view activity"
+          icon="bar-chart" 
+          color="#673AB7"
+          onPress={() => navigation.navigate('AdminReports')} 
         />
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>

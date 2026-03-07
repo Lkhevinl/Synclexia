@@ -16,7 +16,7 @@ export default function ScanScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedText, setScannedText] = useState("");
   const navigation = useNavigation();
-  const API_KEY = 'K85307563288957'; 
+  const API_KEY = process.env.EXPO_PUBLIC_OCR_API_KEY || '';
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => Speech.stop());

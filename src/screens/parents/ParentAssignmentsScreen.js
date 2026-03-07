@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -18,6 +19,7 @@ export default function ParentAssignmentsScreen({ route }) {
   const { child } = route.params || {};
   const sid = child?.profiles?.id ?? child?.student_id;
   const name = child?.profiles?.full_name ?? 'Child';
+  const insets = useSafeAreaInsets();
 
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,13 @@ export default function ParentAssignmentsScreen({ route }) {
             <View style={s.tag}>
               <Text style={s.tagText}>Target: {item.target_count || 1}</Text>
             </View>
+            {item.deadline && !item.is_completed && (
+            <View style={[s.tag, { backgroundColor: '#FFF3E0', borderColor: '#F57C00' }]}>
+              <Text style={[s.tagText, { color: '#F57C00' }]}>
+                Due: {new Date(item.deadline).toLocaleDateString()}
+              </Text>
+            </View>
+          )}
             {item.is_completed && (
               <View style={[s.tag, { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' }]}>
                 <Text style={[s.tagText, { color: '#2E7D32' }]}>✓ Done</Text>
@@ -121,8 +130,8 @@ export default function ParentAssignmentsScreen({ route }) {
           data={shown}
           keyExtractor={item => item.id}
           renderItem={renderItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetch} colors={['#7B1FA2']} />}
-          contentContainerStyle={s.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAssignments} colors={['#7B1FA2']} />}
+          contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 20 }]}
           ListEmptyComponent={
             <View style={s.emptyBox}>
               <Ionicons name="clipboard-outline" size={60} color="#ddd" />

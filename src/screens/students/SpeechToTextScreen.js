@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
+import { useAuth } from '../../context/AuthContext';
+import { logSession } from '../../lib/analyticsHelper';
 
 // expo-speech-recognition requires a dev/production build (not Expo Go).
 // Install with: npx expo install expo-speech-recognition
@@ -20,17 +22,44 @@ try {
 const AVAILABLE = !!ExpoSpeechRecognitionModule;
 
 export default function SpeechToTextScreen() {
+  const { profile } = useAuth();
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
+  const startTimeRef = useRef(null);
+  // Ref mirrors transcript state so event-handler closures always see latest value
+  const transcriptRef = useRef('');
+
+  const doLogSession = (finalTranscript) => {
+    if (!profile?.id) return;
+    const wordCount = finalTranscript.trim().split(/\s+/).filter(Boolean).length;
+    const duration = startTimeRef.current
+      ? Math.round((Date.now() - startTimeRef.current) / 1000)
+      : 0;
+    logSession({
+      studentId: profile.id,
+      activityType: 'speech_to_text',
+      score: wordCount > 0 ? 1 : 0,
+      total: 1,
+      durationSeconds: duration,
+      details: { word_count: wordCount, char_count: finalTranscript.length },
+    });
+  };
 
   // Register event listeners if module is available
   useSpeechRecognitionEvent('result', (event) => {
     if (event?.results?.[0]) {
-      setTranscript(event.results[0].transcript ?? '');
+      const text = event.results[0].transcript ?? '';
+      transcriptRef.current = text;   // keep ref in sync
+      setTranscript(text);
     }
   });
-  useSpeechRecognitionEvent('end', () => setIsListening(false));
+  useSpeechRecognitionEvent('end', () => {
+    setIsListening(false);
+    // Use ref so we always have the latest transcript, not stale closure state
+    const final = transcriptRef.current;
+    if (final.trim()) doLogSession(final);
+  });
   useSpeechRecognitionEvent('error', (event) => {
     setError(event?.message ?? 'Recognition error');
     setIsListening(false);
@@ -51,16 +80,18 @@ export default function SpeechToTextScreen() {
     }
     setError(null);
     setTranscript('');
+    transcriptRef.current = '';
     const { granted } = await ExpoSpeechRecognitionModule.requestSpeechRecognizerPermissionsAsync();
     if (!granted) {
       Alert.alert('Permission Denied', 'Microphone permission is required for speech recognition.');
       return;
     }
     setIsListening(true);
+    startTimeRef.current = Date.now();
     ExpoSpeechRecognitionModule.start({ lang: 'en-US', interimResults: true, continuous: false });
   };
 
-  const handleClear = () => { setTranscript(''); setError(null); };
+  const handleClear = () => { transcriptRef.current = ''; setTranscript(''); setError(null); };
 
   return (
     <View style={styles.container}>

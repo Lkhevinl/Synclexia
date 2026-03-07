@@ -10,6 +10,7 @@ export default function SignUpScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const generateUniqueCode = () => {
@@ -33,9 +34,14 @@ export default function SignUpScreen({ navigation }) {
       return;
     }
 
-    // Supabase requires at least 6 characters
-    if (password.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters long.');
+    // Require at least 8 characters
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
       return;
     }
 
@@ -77,17 +83,30 @@ export default function SignUpScreen({ navigation }) {
         full_name: trimmedName,
         email: trimmedEmail,
         xp: 0,
-        coins: 0,
         role,
+        // Teachers require admin approval before they can access the app
+        ...(role === 'teacher' && { status: 'pending' }),
       };
+
       // Every student must have a unique_code for parent-linking.
-      // Always generate one so even trigger-created profiles get updated.
+      // Retry up to 5 times to handle rare collisions on the UNIQUE constraint.
+      let profileError = null;
       if (role === 'student') {
-        profileData.unique_code = generateUniqueCode();
+        for (let attempt = 0; attempt < 5; attempt++) {
+          profileData.unique_code = generateUniqueCode();
+          const result = await supabase
+            .from('profiles')
+            .upsert([profileData], { onConflict: 'id' });
+          profileError = result.error;
+          // '23505' = unique_violation on unique_code; retry with a new code
+          if (!profileError || profileError.code !== '23505') break;
+        }
+      } else {
+        const result = await supabase
+          .from('profiles')
+          .upsert([profileData], { onConflict: 'id' });
+        profileError = result.error;
       }
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert([profileData], { onConflict: 'id' });
 
       if (profileError) {
         Alert.alert('Profile Error', profileError.message || 'Could not create profile.');
@@ -96,7 +115,17 @@ export default function SignUpScreen({ navigation }) {
         // cause a race condition where AuthContext fetches a null profile.
         // The user must log in fresh to get their profile loaded correctly.
         await supabase.auth.signOut();
-        Alert.alert('Success!', 'Account created. Please log in.');
+        if (role === 'teacher') {
+          Alert.alert(
+            'Account Submitted!',
+            'Your teacher account is pending admin approval. You will be notified once it is activated.'
+          );
+        } else {
+          Alert.alert(
+            'Account Created!',
+            'Please check your email to verify your account, then log in.'
+          );
+        }
         navigation.goBack();
       }
     } catch (e) {
@@ -169,6 +198,20 @@ export default function SignUpScreen({ navigation }) {
                         placeholderTextColor="#999"
                         value={password}
                         onChangeText={setPassword}
+                        secureTextEntry
+                    />
+                </View>
+
+                {/* Confirm Password Input */}
+                <Text style={styles.label}>Confirm Password</Text>
+                <View style={styles.inputContainer}>
+                    <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Re-enter your password"
+                        placeholderTextColor="#999"
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
                         secureTextEntry
                     />
                 </View>

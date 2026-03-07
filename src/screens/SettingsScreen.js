@@ -179,13 +179,36 @@ export default function SettingsScreen({ navigation }) {
               </View>
               <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, a11yTextStyle]}>Name</Text>
-                  <Text style={[styles.infoValue, a11yTextStyle]}>{profile?.full_name || "Student"}</Text>
+                  <Text style={[styles.infoValue, a11yTextStyle]}>{profile?.full_name || 'User'}</Text>
+              </View>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                  <Text style={[styles.infoLabel, a11yTextStyle]}>Email</Text>
+                  <Text style={[styles.infoValue, a11yTextStyle]} numberOfLines={1}>{profile?.email || '—'}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.infoRow}>
                   <Text style={[styles.infoLabel, a11yTextStyle]}>Level</Text>
                   <Text style={[styles.infoValue, a11yTextStyle]}>{xpToLevel(profile?.xp)}</Text>
               </View>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.supportItem}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <Ionicons name="create-outline" size={20} color="#607D8B" />
+                <Text style={[styles.supportText, a11yTextStyle]}>Edit Profile</Text>
+                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
+              </TouchableOpacity>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.supportItem}
+                onPress={() => navigation.navigate('ChangePassword')}
+              >
+                <Ionicons name="lock-closed-outline" size={20} color="#607D8B" />
+                <Text style={[styles.supportText, a11yTextStyle]}>Change Password</Text>
+                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
+              </TouchableOpacity>
           </View>
 
           {/* SUPPORT */}

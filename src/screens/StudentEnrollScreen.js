@@ -92,8 +92,8 @@ export default function StudentEnrollScreen({ navigation }) {
 
     const isPrimary = (count || 0) === 0;
 
-    // Enroll student (is_primary may not exist if migrations haven't run)
-    const insertRow = { student_id: profile?.id, teacher_id: teacherId };
+    // Enroll student
+    const insertRow = { student_id: profile?.id, teacher_id: teacherId, is_primary: isPrimary };
     const { error } = await supabase
       .from('enrollments')
       .insert([insertRow]);

@@ -77,7 +77,6 @@ async function seedAdmin() {
       full_name: ADMIN_FULL_NAME,
       role:      'admin',
       xp:        0,
-      coins:     0,
     }]);
 
   if (profileError) {

@@ -8,6 +8,7 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
+import { checkQuestProgress } from '../../lib/questHelper';
 import { supabase } from '../../lib/supabase';
 
 // Color palette — cycled by level number
@@ -41,6 +42,7 @@ export default function ReadingScreen() {
 
   const handleSpeak = () => {
     if (selectedStory) {
+      Speech.stop();
       Speech.speak(selectedStory.content, { rate: 0.8, pitch: 1.1 });
     }
   };
@@ -57,6 +59,7 @@ export default function ReadingScreen() {
         durationSeconds: duration,
         details: { storyId: selectedStory.id, storyTitle: selectedStory.title, level: selectedStory.level },
       });
+      checkQuestProgress(profile.id, 'Reading');
     }
     setSelectedStory(null);
   };

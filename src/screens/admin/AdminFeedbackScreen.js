@@ -6,8 +6,7 @@ import GoBackBtn from '../../components/GoBackBtn';
 
 export default function AdminFeedbackScreen() {
   const [feedbacks, setFeedbacks] = useState([]);
-  const [replyText, setReplyText] = useState("");
-  const [selectedId, setSelectedId] = useState(null);
+  const [replyTexts, setReplyTexts] = useState({}); // { [feedbackId]: string }
 
   useEffect(() => { fetchFeedback(); }, []);
 
@@ -28,17 +27,31 @@ export default function AdminFeedbackScreen() {
     }
   };
 
-  const sendReply = async () => {
-    if (!replyText) return;
+  const sendReply = async (id) => {
+    const text = (replyTexts[id] || '').trim();
+    if (!text) return;
     const { error } = await supabase
       .from('feedback')
-      .update({ reply: replyText })
-      .eq('id', selectedId);
+      .update({ reply: text, has_unread_reply: true })
+      .eq('id', id);
     
     if (!error) {
-      Alert.alert("Sent", "Reply sent to user.");
-      setReplyText("");
-      setSelectedId(null);
+      Alert.alert('Sent ✓', 'Reply sent to user.');
+      setReplyTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
+      fetchFeedback();
+    } else {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  const markResolved = async (id) => {
+    const { error } = await supabase
+      .from('feedback')
+      .update({ status: 'resolved' })
+      .eq('id', id);
+    
+    if (!error) {
+      Alert.alert("Success", "Feedback marked as resolved");
       fetchFeedback();
     }
   };
@@ -62,13 +75,26 @@ export default function AdminFeedbackScreen() {
                  <View style={{flex: 1, marginLeft: 10}}>
                      <Text style={styles.name}>{item.profiles?.full_name || "Unknown"}</Text>
                      <View style={{flexDirection:'row'}}>
-                        {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)}
+                        {item.rating !== null && item.rating !== undefined
+                          ? [...Array(item.rating || 0)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)
+                          : [...Array(5)].map((_,i)=><Ionicons key={i} name="star-outline" size={12} color="#ccc"/>)
+                        }
                      </View>
                  </View>
                  <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
              </View>
 
              <Text style={styles.message}>{item.message}</Text>
+
+          {item.status === 'resolved' ? (
+                 <View style={styles.resolvedBadge}>
+                     <Text style={styles.resolvedText}>Resolved</Text>
+                 </View>
+             ) : (
+                 <TouchableOpacity style={styles.resolveBtn} onPress={() => markResolved(item.id)}>
+                     <Text style={styles.resolveBtnText}>Mark as Resolved</Text>
+                 </TouchableOpacity>
+             )}
 
              {/* REPLY SECTION */}
              {item.reply ? (
@@ -81,13 +107,10 @@ export default function AdminFeedbackScreen() {
                      <TextInput 
                         placeholder="Write a reply..." 
                         style={styles.input}
-                        value={selectedId === item.id ? replyText : ""}
-                        onChangeText={(t) => {
-                            setSelectedId(item.id);
-                            setReplyText(t);
-                        }}
+                        value={replyTexts[item.id] || ""}
+                        onChangeText={(t) => setReplyTexts(prev => ({ ...prev, [item.id]: t }))}
                      />
-                     <TouchableOpacity onPress={sendReply}>
+                     <TouchableOpacity onPress={() => sendReply(item.id)}>
                          <Ionicons name="send" size={24} color="#0288D1" />
                      </TouchableOpacity>
                  </View>
@@ -112,5 +135,9 @@ const styles = StyleSheet.create({
   replyLabel: { fontSize: 10, fontWeight: 'bold', color: '#0277BD' },
   replyText: { color: '#01579B' },
   replyBox: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 }
+  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 },
+  resolvedBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 10 },
+  resolvedText: { color: '#2E7D32', fontSize: 11, fontWeight: 'bold' },
+  resolveBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 10 },
+  resolveBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
 });

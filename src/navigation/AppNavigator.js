@@ -2,6 +2,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
@@ -16,7 +17,6 @@ import ReadingScreen from '../screens/students/ReadingScreen';
 import ScanScreen from '../screens/students/ScanScreen';
 import QuestsScreen from '../screens/students/QuestScreen';
 import LeaderboardScreen from '../screens/students/LeaderboardScreen';
-import ShopScreen from '../screens/students/ShopScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
@@ -38,6 +38,9 @@ import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarene
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import PendingApprovalScreen from '../screens/PendingApprovalScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
@@ -60,6 +63,7 @@ import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
 import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
 import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
 import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
+import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
 import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
 import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen';
 import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen';
@@ -68,14 +72,15 @@ const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function AppTabs() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: { 
             backgroundColor: '#fff', 
-            height: 60, 
-            paddingBottom: 8, 
+            height: 60 + insets.bottom, 
+            paddingBottom: 8 + insets.bottom, 
             borderTopLeftRadius: 20, 
             borderTopRightRadius: 20,
             elevation: 5
@@ -97,13 +102,23 @@ function AppTabs() {
 }
 
 export default function AppNavigator() {
-  const { session, loading, profile } = useAuth();
+  const { session, loading, profile, profileLoaded } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin   = profile?.role === 'admin';
   const isParent  = profile?.role === 'parent';
 
-  if (loading) return <LoadingScreen />;
+  // Wait until auth state AND profile are both resolved before rendering
+  if (loading || (session && !profileLoaded)) return <LoadingScreen />;
+
+  // Teacher account awaiting admin approval — show holding screen
+  if (session && profile?.role === 'teacher' && profile?.status === 'pending') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -117,7 +132,6 @@ export default function AppNavigator() {
             <Stack.Screen name="Scan" component={ScanScreen} />
             <Stack.Screen name="Quests" component={QuestsScreen} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Shop" component={ShopScreen} />
             <Stack.Screen name="Support" component={SupportScreen} />
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
@@ -126,6 +140,8 @@ export default function AppNavigator() {
             <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
             <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
             <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             {/* Parent routes */}
             {profile?.role === 'parent' && (
               <>
@@ -167,6 +183,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
                 <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
                 <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
+                <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
               </>
             )}
         </>

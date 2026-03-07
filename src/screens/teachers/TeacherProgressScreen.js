@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -66,6 +66,48 @@ export default function TeacherProgressScreen() {
       const data = await getStudentProgress(sid, days);
       setProgress(data);
       setProgressLoading(false);
+    }
+  };
+
+  const exportReport = async () => {
+    if (!progress || !selectedStudent) {
+      Alert.alert('No Data', 'Please select a student with progress data to export.');
+      return;
+    }
+
+    const studentName = getStudentName(selectedStudent);
+    const dateStr = new Date().toLocaleDateString();
+    
+    // Build CSV content
+    let csv = `Synclexia Progress Report\n`;
+    csv += `Student: ${studentName}\n`;
+    csv += `Generated: ${dateStr}\n`;
+    csv += `Period: Last ${daysBack} days\n\n`;
+    csv += `Summary\n`;
+    csv += `Total Sessions,${progress.totalSessions}\n`;
+    csv += `Total XP Earned,${progress.totalXP}\n`;
+    csv += `Average Accuracy,${progress.avgAccuracy}%\n\n`;
+    csv += `Activity Breakdown\n`;
+    csv += `Activity Type,Sessions,Average Accuracy\n`;
+    
+    Object.entries(progress.byActivity).forEach(([type, stats]) => {
+      const avgAcc = stats.totalItems > 0 ? Math.round((stats.totalScore / stats.totalItems) * 100) : 0;
+      csv += `${type},${stats.count},${avgAcc}%\n`;
+    });
+    
+    csv += `\nRecent Sessions\n`;
+    csv += `Date,Activity,Score,Total,Accuracy,XP\n`;
+    progress.recentSessions.forEach(session => {
+      csv += `${new Date(session.created_at).toLocaleDateString()},${session.activity_type},${session.score},${session.total},${session.accuracy}%,${session.xp_earned || 0}\n`;
+    });
+
+    try {
+      await Share.share({
+        message: csv,
+        title: `Progress Report - ${studentName}`,
+      });
+    } catch (error) {
+      Alert.alert('Export Error', error.message);
     }
   };
 
@@ -171,6 +213,12 @@ export default function TeacherProgressScreen() {
               </View>
             </View>
 
+            {/* Export Button */}
+            <TouchableOpacity style={styles.exportBtn} onPress={exportReport}>
+              <Ionicons name="download-outline" size={18} color="#fff" />
+              <Text style={styles.exportText}>Export Report</Text>
+            </TouchableOpacity>
+
             {/* Activity Breakdown */}
             <Text style={styles.sectionLabel}>Activity Breakdown</Text>
             {Object.entries(progress.byActivity).length === 0 ? (
@@ -254,6 +302,10 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 18, alignItems: 'center', elevation: 2 },
   summaryValue: { fontSize: 24, fontWeight: 'bold', color: '#333' },
   summaryLabel: { fontSize: 11, color: '#999', fontWeight: 'bold', marginTop: 5, textTransform: 'uppercase' },
+
+  // Export Button
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#3b5998', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12, marginTop: 15, marginBottom: 5, elevation: 2 },
+  exportText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 14 },
 
   // Breakdown
   emptyBreakdown: { backgroundColor: '#fff', borderRadius: 16, padding: 30, elevation: 1 },

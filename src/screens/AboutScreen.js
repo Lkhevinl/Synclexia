@@ -40,7 +40,7 @@ export default function AboutScreen() {
           <Ionicons name="school" size={40} color="#4CAF50" style={{ marginBottom: 15 }} />
           <Text style={styles.sectionTitle}>How It Works</Text>
           <Text style={styles.description}>
-            Teachers create assignments and track student progress. Students complete activities, earn XP and coins, and unlock new challenges. Real-time feedback helps everyone improve.
+            Teachers create assignments and track student progress. Students complete activities, earn XP, and unlock new challenges. Real-time feedback helps everyone improve.
           </Text>
         </View>
 
@@ -49,7 +49,7 @@ export default function AboutScreen() {
           <Text style={styles.sectionTitle}>For Students</Text>
           <Text style={styles.description}>
             • Interactive learning modules (Phonics, Writing, Reading, Scanning)
-            • Earn XP and coins
+            • Earn XP
             • Complete quests and challenges
             • Track your progress
             • Customize your experience

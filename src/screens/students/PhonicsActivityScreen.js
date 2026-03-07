@@ -97,10 +97,10 @@ function BlendGame({ onBack, userId, items }) {
 
   const current = words[idx];
 
-  const speakPhoneme = (ph) => {
+  const speakPhoneme = (ph, idx) => {
     Speech.speak(ph, { rate: 0.8, pitch: 1.1 });
-    if (!tappedPhonemes.includes(ph)) {
-      setTappedPhonemes(prev => [...prev, ph]);
+    if (!tappedPhonemes.includes(idx)) {
+      setTappedPhonemes(prev => [...prev, idx]);
     }
   };
 
@@ -136,11 +136,20 @@ function BlendGame({ onBack, userId, items }) {
   if (!words.length) return <EmptyContent label="Blend It!" color="#FF9800" onBack={onBack} />;
   if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Blend It!" color="#FF9800" />;
 
+  const speakInstruction = () => {
+    Speech.speak('Tap each sound, then BLEND!', { rate: 0.85 });
+  };
+
   return (
     <View style={bg.container}>
       <LinearGradient colors={['#FF9800', '#F57C00']} style={bg.header}>
         <Text style={bg.headerTitle}>Blend It! 🔗</Text>
-        <Text style={bg.headerSub}>{idx + 1} / {words.length}</Text>
+        <View style={bg.headerRow}>
+          <Text style={bg.headerSub}>{idx + 1} / {words.length}</Text>
+          <TouchableOpacity onPress={speakInstruction} style={bg.helpBtn}>
+            <Ionicons name="help-circle" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <View style={bg.card}>
@@ -149,9 +158,9 @@ function BlendGame({ onBack, userId, items }) {
 
         <View style={bg.phonemeRow}>
           {current.phonemes.map((ph, i) => {
-            const tapped = tappedPhonemes.includes(ph);
+            const tapped = tappedPhonemes.includes(i);
             return (
-              <TouchableOpacity key={i} style={[bg.phonemeTile, tapped && bg.phonemeTileTapped]} onPress={() => speakPhoneme(ph)} activeOpacity={0.7}>
+              <TouchableOpacity key={i} style={[bg.phonemeTile, tapped && bg.phonemeTileTapped]} onPress={() => speakPhoneme(ph, i)} activeOpacity={0.7}>
                 <Text style={[bg.phonemeText, tapped && bg.phonemeTextTapped]}>/{ph}/</Text>
               </TouchableOpacity>
             );
@@ -173,6 +182,8 @@ const bg = StyleSheet.create({
   header: { paddingTop: 70, paddingBottom: 20, paddingHorizontal: 20, alignItems: 'center' },
   headerTitle: { fontSize: 26, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: 'rgba(255,255,255,0.8)', marginTop: 4 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 4 },
+  helpBtn: { padding: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 },
   card: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 4 },
   emoji: { fontSize: 80, marginBottom: 16 },
   instruction: { fontSize: 16, color: '#78909C', marginBottom: 24 },
@@ -198,6 +209,10 @@ function RhymeGame({ onBack, userId, items }) {
   const current = rounds[idx];
 
   const speak = (word) => Speech.speak(word, { rate: 0.8, pitch: 1.1 });
+
+  const speakInstruction = () => {
+    Speech.speak('Listen to the word. Then find the word that rhymes with it!', { rate: 0.85 });
+  };
 
   const handleSelect = (option) => {
     if (selected) return;
@@ -229,7 +244,12 @@ function RhymeGame({ onBack, userId, items }) {
     <View style={rg.container}>
       <LinearGradient colors={['#E91E63', '#C2185B']} style={rg.header}>
         <Text style={rg.headerTitle}>Rhyme Time! 🎵</Text>
-        <Text style={rg.headerSub}>{idx + 1} / {rounds.length}</Text>
+        <View style={rg.headerRow}>
+          <Text style={rg.headerSub}>{idx + 1} / {rounds.length}</Text>
+          <TouchableOpacity onPress={speakInstruction} style={rg.helpBtn}>
+            <Ionicons name="help-circle" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </LinearGradient>
 
       <View style={rg.card}>

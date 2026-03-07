@@ -52,9 +52,9 @@ export default function Sidebar({ visible, onClose }) {
              <View style={styles.row}>
                  <Text style={styles.label}>Size</Text>
                  <View style={styles.toggleBox}>
-                    <TouchableOpacity onPress={() => updateTheme('fontSize', Math.max(12, theme.fontSize - 2))} style={styles.tinyBtn}><Text>-</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => updateTheme({ fontSize: Math.max(12, theme.fontSize - 2) })} style={styles.tinyBtn}><Text>-</Text></TouchableOpacity>
                     <Text>{theme.fontSize}</Text>
-                    <TouchableOpacity onPress={() => updateTheme('fontSize', Math.min(30, theme.fontSize + 2))} style={styles.tinyBtn}><Text>+</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={() => updateTheme({ fontSize: Math.min(30, theme.fontSize + 2) })} style={styles.tinyBtn}><Text>+</Text></TouchableOpacity>
                  </View>
              </View>
 
@@ -66,7 +66,7 @@ export default function Sidebar({ visible, onClose }) {
                         <TouchableOpacity 
                             key={c} 
                             style={[styles.colorDot, {backgroundColor: c, borderWidth: theme.bgColor === c ? 2 : 0}]} 
-                            onPress={() => updateTheme('bgColor', c)}
+                            onPress={() => updateTheme({ bgColor: c })}
                         />
                     ))}
                  </View>

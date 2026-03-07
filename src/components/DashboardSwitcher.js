@@ -18,11 +18,11 @@ export default function DashboardSwitcher(props) {
     );
   }
 
-  // Manual override takes priority
-  if (dashboardMode === 'student') return <DashboardScreen {...props} />;
-  if (dashboardMode === 'teacher') return <TeacherDashboardScreen {...props} />;
-  if (dashboardMode === 'admin')   return <AdminDashboardScreen {...props} />;
-  if (dashboardMode === 'parent')  return <ParentDashboardScreen {...props} />;
+  // Manual override — only allow if the profile role matches (prevents role escalation)
+  if (dashboardMode === 'student' && profile?.role === 'student') return <DashboardScreen {...props} />;
+  if (dashboardMode === 'teacher' && profile?.role === 'teacher') return <TeacherDashboardScreen {...props} />;
+  if (dashboardMode === 'admin'   && profile?.role === 'admin')   return <AdminDashboardScreen {...props} />;
+  if (dashboardMode === 'parent'  && profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;
 
   // Role-based routing
   if (profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;

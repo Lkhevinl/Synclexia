@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -18,6 +19,7 @@ export default function ParentProgressScreen({ route }) {
   const { child } = route.params || {};
   const sid = child?.profiles?.id ?? child?.student_id;
   const name = child?.profiles?.full_name ?? 'Child';
+  const insets = useSafeAreaInsets();
 
   const [daysBack, setDaysBack] = useState(14);
   const [progress, setProgress] = useState(null);
@@ -36,10 +38,12 @@ export default function ParentProgressScreen({ route }) {
     setLoading(false);
   }, [sid]);
 
-  // Re-fetch every time screen comes into focus
+  // Re-fetch every time screen comes into focus or daysBack changes
   useFocusEffect(
-    useCallback(() => { load(daysBack); }, [daysBack])
+    useCallback(() => { load(daysBack); }, [daysBack, load])
   );
+
+  const changeDays = (d) => { setDaysBack(d); };
 
   // Real-time: re-fetch when child logs a new session
   useEffect(() => {
@@ -52,8 +56,6 @@ export default function ParentProgressScreen({ route }) {
       .subscribe();
     return () => subRef.current?.unsubscribe();
   }, [sid, daysBack]);
-
-  const changeDays = (d) => { setDaysBack(d); load(d); };
 
   return (
     <View style={s.container}>
@@ -75,7 +77,7 @@ export default function ParentProgressScreen({ route }) {
       {loading ? (
         <View style={s.centered}><ActivityIndicator size="large" color="#7B1FA2" /></View>
       ) : (
-        <ScrollView contentContainerStyle={s.scroll}>
+        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}>
           {/* Summary */}
           <View style={s.card}>
             <Text style={s.cardTitle}>📊 Summary</Text>

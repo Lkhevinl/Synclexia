@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
+import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 
 const AuthContext = createContext({});
 
@@ -71,7 +72,21 @@ export const AuthProvider = ({ children }) => {
         console.warn('fetchProfile error:', error.message, '| code:', error.code);
       }
       if (data) {
+        // Enforce ban at the app level
+        if (data.is_banned) {
+          await supabase.auth.signOut();
+          setSession(null);
+          setProfile(null);
+          setProfileLoaded(true);
+          setDashboardMode('auto');
+          Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
+          return null;
+        }
         setProfile(data);
+        // Register for push notifications
+        registerForPushNotificationsAsync(data.id).catch(() => {});
+        setProfileLoaded(true);
+        return data;
       } else if (retryCount < 3) {
         // Profile may not exist yet (e.g. signup race condition).
         // Retry after a short delay to give the insert time to complete.
@@ -79,13 +94,13 @@ export const AuthProvider = ({ children }) => {
         await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
         return fetchProfile(userId, retryCount + 1);
       }
-      return data ?? null;
+      setProfileLoaded(true);
+      return null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);
-    } finally {
       setProfileLoaded(true);
+      return null;
     }
-    return null;
   };
 
   // 3. THE NEW LOGOUT FUNCTION
@@ -93,15 +108,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+    } catch (_) {
+      // Clear state locally even if Supabase logout fails
+    } finally {
       setSession(null);
       setProfile(null);
-      return true;
-    } catch (e) {
-      // Still clear state locally even if Supabase logout fails
-      setSession(null);
-      setProfile(null);
-      return false;
+      setProfileLoaded(false);
+      setDashboardMode('auto');
     }
+    return true;
   };
 
   return (
