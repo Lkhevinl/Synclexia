@@ -21,16 +21,27 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
 
     try {
-        // 1. Attempt Login with Supabase
+        // 1. Attempt Login with Supabase (trim + lowercase email to prevent mismatches)
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: email,
+          email: email.trim().toLowerCase(),
           password: password,
         });
 
         if (error) {
           Alert.alert('Login Failed', error.message);
         } else {
-          // 2. Force App Context to Update
+          // 2. Check ban status before letting the user in
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('is_banned')
+            .eq('id', data.session.user.id)
+            .single();
+          if (profileData?.is_banned) {
+            await supabase.auth.signOut();
+            Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
+            return;
+          }
+          // 3. Force App Context to Update
           if (setSession) {
              setSession(data.session);
           }

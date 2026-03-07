@@ -6,8 +6,7 @@ import GoBackBtn from '../../components/GoBackBtn';
 
 export default function AdminFeedbackScreen() {
   const [feedbacks, setFeedbacks] = useState([]);
-  const [replyText, setReplyText] = useState("");
-  const [selectedId, setSelectedId] = useState(null);
+  const [replyTexts, setReplyTexts] = useState({}); // { [feedbackId]: string }
 
   useEffect(() => { fetchFeedback(); }, []);
 
@@ -28,17 +27,17 @@ export default function AdminFeedbackScreen() {
     }
   };
 
-  const sendReply = async () => {
-    if (!replyText.trim()) return;
+  const sendReply = async (id) => {
+    const text = (replyTexts[id] || '').trim();
+    if (!text) return;
     const { error } = await supabase
       .from('feedback')
-      .update({ reply: replyText.trim(), has_unread_reply: true })
-      .eq('id', selectedId);
+      .update({ reply: text, has_unread_reply: true })
+      .eq('id', id);
     
     if (!error) {
       Alert.alert('Sent ✓', 'Reply sent to user.');
-      setReplyText('');
-      setSelectedId(null);
+      setReplyTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
       fetchFeedback();
     } else {
       Alert.alert('Error', error.message);
@@ -76,7 +75,10 @@ export default function AdminFeedbackScreen() {
                  <View style={{flex: 1, marginLeft: 10}}>
                      <Text style={styles.name}>{item.profiles?.full_name || "Unknown"}</Text>
                      <View style={{flexDirection:'row'}}>
-                        {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)}
+                        {item.rating !== null && item.rating !== undefined
+                          ? [...Array(item.rating || 0)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)
+                          : [...Array(5)].map((_,i)=><Ionicons key={i} name="star-outline" size={12} color="#ccc"/>)
+                        }
                      </View>
                  </View>
                  <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
@@ -105,13 +107,10 @@ export default function AdminFeedbackScreen() {
                      <TextInput 
                         placeholder="Write a reply..." 
                         style={styles.input}
-                        value={selectedId === item.id ? replyText : ""}
-                        onChangeText={(t) => {
-                            setSelectedId(item.id);
-                            setReplyText(t);
-                        }}
+                        value={replyTexts[item.id] || ""}
+                        onChangeText={(t) => setReplyTexts(prev => ({ ...prev, [item.id]: t }))}
                      />
-                     <TouchableOpacity onPress={sendReply}>
+                     <TouchableOpacity onPress={() => sendReply(item.id)}>
                          <Ionicons name="send" size={24} color="#0288D1" />
                      </TouchableOpacity>
                  </View>

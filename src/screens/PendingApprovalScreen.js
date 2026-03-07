@@ -1,12 +1,26 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 export default function PendingApprovalScreen() {
+  const { signOut, fetchProfile, session } = useAuth();
+  const pollRef = useRef(null);
+
+  // Poll every 15 seconds — if admin approves, app will re-route automatically
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    pollRef.current = setInterval(() => {
+      fetchProfile(session.user.id);
+    }, 15000);
+    return () => clearInterval(pollRef.current);
+  }, [session]);
+
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    clearInterval(pollRef.current);
+    await signOut();
   };
 
   return (

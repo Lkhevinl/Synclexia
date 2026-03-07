@@ -328,7 +328,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
 // ─── Finish Screen ────────────────────────────────────────────────────────────
 
 function FinishScreen({ score, total, onBack, color }) {
-  const pct = Math.round((score / total) * 100);
+  const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   return (
     <LinearGradient colors={[color, color + 'AA']} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
       <Text style={{ fontSize: 64 }}>{pct >= 70 ? '🏆' : pct >= 40 ? '👍' : '💪'}</Text>

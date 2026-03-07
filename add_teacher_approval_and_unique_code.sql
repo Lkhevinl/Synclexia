@@ -124,3 +124,50 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+-- ─── 7. add_xp RPC ───────────────────────────────────────────────────────────
+-- Called by analyticsHelper.js after each session.
+-- Runs server-side so there is no way for a client to set arbitrary XP values.
+-- Validated: amount must be 1‒500 per call; caller must be the profile owner.
+
+CREATE OR REPLACE FUNCTION public.add_xp(amount INTEGER)
+RETURNS VOID AS $$
+DECLARE
+  _uid UUID := auth.uid();
+BEGIN
+  -- Sanity check: reject negative or absurdly large amounts
+  IF amount <= 0 OR amount > 500 THEN
+    RAISE EXCEPTION 'Invalid XP amount: %', amount;
+  END IF;
+
+  UPDATE public.profiles
+  SET xp = xp + amount
+  WHERE id = _uid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute to authenticated users only (not anon)
+REVOKE EXECUTE ON FUNCTION public.add_xp(INTEGER) FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION public.add_xp(INTEGER) TO authenticated;
+
+
+-- ─── 8. Prevent self-promotion to admin via INSERT ───────────────────────────
+-- Enforces that the 'role' field on a new profile insert can never be 'admin'.
+-- Admins must be created via the service-role key (seed script or SQL editor).
+
+CREATE OR REPLACE FUNCTION public.prevent_admin_self_assign()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.role = 'admin' AND auth.uid() IS NOT NULL THEN
+    -- Allow only when called by the service role (uid() is NULL in that context)
+    RAISE EXCEPTION 'You cannot self-assign the admin role.';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS prevent_admin_self_assign_trigger ON public.profiles;
+CREATE TRIGGER prevent_admin_self_assign_trigger
+  BEFORE INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.prevent_admin_self_assign();

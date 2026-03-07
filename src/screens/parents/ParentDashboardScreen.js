@@ -46,12 +46,14 @@ export default function ParentDashboardScreen({ navigation }) {
     const { data } = await supabase
       .from('notifications')
       .select('*')
-      .in('target_audience', ['All', 'Parents', 'parents'])
+      .in('target_role', ['all', 'parent'])
       .eq('is_draft', false)
       .order('created_at', { ascending: false })
       .limit(20);
     setNotifications(data || []);
-    setNotifCount(data?.length ?? 0);
+    // Badge shows only notifications posted in the last 7 days as "new"
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    setNotifCount((data || []).filter(n => n.created_at >= sevenDaysAgo).length);
   };
 
   // ── Fetch linked children ──────────────────────────────────────────────────
@@ -68,10 +70,6 @@ export default function ParentDashboardScreen({ navigation }) {
         )
       `)
       .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
-
-    console.log('Link data:', data);
-    console.log('Error:', error);
-    console.log('Parent profile.id:', profile.id);
 
     return data || [];
   };

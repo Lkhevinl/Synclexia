@@ -30,6 +30,9 @@ export default function PhonicsScreen({ navigation }) {
   const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Throttle logging — at most one session every 60 s to prevent XP farming
+  const lastLogRef = React.useRef(0);
+  const tapCountRef = React.useRef(0);
 
   useEffect(() => {
     fetchPhonics();
@@ -51,7 +54,14 @@ export default function PhonicsScreen({ navigation }) {
     if (profile?.id) {
         checkQuestProgress(profile.id, 'Phonics');
         checkQuestProgress(profile.id, 'Practice');
-        logSession({ studentId: profile.id, activityType: 'phonics', score: 1, total: 1, details: { label: text } });
+        tapCountRef.current += 1;
+        const now = Date.now();
+        // Log a batch session every 60 seconds (score = taps since last log)
+        if (now - lastLogRef.current >= 60000) {
+          logSession({ studentId: profile.id, activityType: 'phonics', score: tapCountRef.current, total: tapCountRef.current, details: { label: text } });
+          lastLogRef.current = now;
+          tapCountRef.current = 0;
+        }
     }
   };
 

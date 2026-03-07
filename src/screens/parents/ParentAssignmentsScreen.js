@@ -130,7 +130,7 @@ export default function ParentAssignmentsScreen({ route }) {
           data={shown}
           keyExtractor={item => item.id}
           renderItem={renderItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetch} colors={['#7B1FA2']} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchAssignments} colors={['#7B1FA2']} />}
           contentContainerStyle={[s.list, { paddingBottom: insets.bottom + 20 }]}
           ListEmptyComponent={
             <View style={s.emptyBox}>

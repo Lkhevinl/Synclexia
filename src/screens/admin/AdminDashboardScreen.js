@@ -135,7 +135,7 @@ export default function AdminDashboardScreen({ navigation }) {
           subtitle="Give learning tasks to students"
           icon="checkbox" 
           color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')} 
+          onPress={() => navigation.navigate('AdminAssignActivities')} 
         />
 
         <AdminCard 
@@ -143,7 +143,7 @@ export default function AdminDashboardScreen({ navigation }) {
           subtitle="Track student comprehension"
           icon="trending-up" 
           color="#2196F3"
-          onPress={() => navigation.navigate('AdminUsers')} 
+          onPress={() => navigation.navigate('AdminReports')} 
         />
 
         <AdminCard 

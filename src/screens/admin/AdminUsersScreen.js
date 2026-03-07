@@ -185,10 +185,12 @@ export default function AdminUsersScreen() {
                         <Text style={styles.lvlText}>{Math.floor((item.xp || 0)/100) + 1}</Text>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => openEditModal(item)} style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
-                    <View style={styles.editBtn}>
-                        <Ionicons name="pencil" size={16} color="white" />
-                    </View>
+                <View style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
+                    <TouchableOpacity onPress={() => openEditModal(item)}>
+                        <View style={styles.editBtn}>
+                            <Ionicons name="pencil" size={16} color="white" />
+                        </View>
+                    </TouchableOpacity>
                     {item.role === 'teacher' && item.status === 'pending' ? (
                       <TouchableOpacity onPress={() => approveTeacher(item.id)}>
                         <View style={styles.approveBtn}>
@@ -202,7 +204,7 @@ export default function AdminUsersScreen() {
                           </View>
                       </TouchableOpacity>
                     )}
-                </TouchableOpacity>
+                </View>
             </View>
         )}
       />

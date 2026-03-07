@@ -97,10 +97,10 @@ function BlendGame({ onBack, userId, items }) {
 
   const current = words[idx];
 
-  const speakPhoneme = (ph) => {
+  const speakPhoneme = (ph, idx) => {
     Speech.speak(ph, { rate: 0.8, pitch: 1.1 });
-    if (!tappedPhonemes.includes(ph)) {
-      setTappedPhonemes(prev => [...prev, ph]);
+    if (!tappedPhonemes.includes(idx)) {
+      setTappedPhonemes(prev => [...prev, idx]);
     }
   };
 
@@ -158,9 +158,9 @@ function BlendGame({ onBack, userId, items }) {
 
         <View style={bg.phonemeRow}>
           {current.phonemes.map((ph, i) => {
-            const tapped = tappedPhonemes.includes(ph);
+            const tapped = tappedPhonemes.includes(i);
             return (
-              <TouchableOpacity key={i} style={[bg.phonemeTile, tapped && bg.phonemeTileTapped]} onPress={() => speakPhoneme(ph)} activeOpacity={0.7}>
+              <TouchableOpacity key={i} style={[bg.phonemeTile, tapped && bg.phonemeTileTapped]} onPress={() => speakPhoneme(ph, i)} activeOpacity={0.7}>
                 <Text style={[bg.phonemeText, tapped && bg.phonemeTextTapped]}>/{ph}/</Text>
               </TouchableOpacity>
             );

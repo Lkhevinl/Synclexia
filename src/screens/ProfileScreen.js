@@ -108,6 +108,8 @@ export default function ProfileScreen({ navigation }) {
           [{ text: 'OK', onPress: finishSave }],
         );
       } else {
+        // Also update profiles table so email stays in sync (auth email change requires confirmation)
+        await supabase.from('profiles').update({ email: trimmedEmail }).eq('id', profile.id);
         Alert.alert(
           'Check Your Email',
           'Profile saved! A confirmation link was sent to the new email address. Changes will apply once confirmed.',

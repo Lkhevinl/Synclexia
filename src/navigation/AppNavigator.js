@@ -102,13 +102,14 @@ function AppTabs() {
 }
 
 export default function AppNavigator() {
-  const { session, loading, profile } = useAuth();
+  const { session, loading, profile, profileLoaded } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin   = profile?.role === 'admin';
   const isParent  = profile?.role === 'parent';
 
-  if (loading) return <LoadingScreen />;
+  // Wait until auth state AND profile are both resolved before rendering
+  if (loading || (session && !profileLoaded)) return <LoadingScreen />;
 
   // Teacher account awaiting admin approval — show holding screen
   if (session && profile?.role === 'teacher' && profile?.status === 'pending') {

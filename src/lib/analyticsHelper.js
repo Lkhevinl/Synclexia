@@ -40,9 +40,9 @@ export const logSession = async ({ studentId, activityType, score, total, durati
 
     const accuracy = total > 0 ? Math.round((score / total) * 10000) / 100 : 0;
     
-    // Calculate XP: base rate * score + accuracy bonus
+    // Calculate XP: base rate * score (no XP for zero score)
     const baseRate = XP_RATES[activityType] || 5;
-    const baseXP = baseRate * Math.max(score, 1);
+    const baseXP = baseRate * score;
     const accuracyBonus = accuracy >= 80 ? Math.round(baseXP * 0.5) : accuracy >= 50 ? Math.round(baseXP * 0.2) : 0;
     const xpEarned = baseXP + accuracyBonus;
 

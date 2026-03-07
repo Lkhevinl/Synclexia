@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Share, Alert } fro
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import GoBackBtn from '../../components/GoBackBtn';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { logSession } from '../../lib/analyticsHelper';
 
 export default function TextToSpeechScreen() {
   const { profile } = useAuth();
@@ -12,20 +12,19 @@ export default function TextToSpeechScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const startTimeRef = useRef(null);
 
-  const logSession = async (spokenText, durationSeconds) => {
+  const doLogSession = (spokenText, durationSeconds) => {
     if (!profile?.id) return;
-    try {
-      await supabase.from('session_logs').insert({
-        student_id: profile.id,
-        activity_type: 'text_to_speech',
-        details: {
-          word_count: spokenText.trim().split(/\s+/).filter(Boolean).length,
-          char_count: spokenText.length,
-          duration_seconds: durationSeconds,
-        },
-        xp_earned: 5,
-      });
-    } catch (_) {}
+    logSession({
+      studentId: profile.id,
+      activityType: 'text_to_speech',
+      score: spokenText.trim().length > 0 ? 1 : 0,
+      total: 1,
+      durationSeconds,
+      details: {
+        word_count: spokenText.trim().split(/\s+/).filter(Boolean).length,
+        char_count: spokenText.length,
+      },
+    });
   };
 
   const speak = async () => {
@@ -37,7 +36,7 @@ export default function TextToSpeechScreen() {
       await Speech.stop();
       setIsSpeaking(false);
       const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
-      logSession(text, elapsed);
+      doLogSession(text, elapsed);
       return;
     }
     setIsSpeaking(true);
@@ -48,7 +47,7 @@ export default function TextToSpeechScreen() {
       onDone: () => {
         setIsSpeaking(false);
         const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
-        logSession(capturedText, elapsed);
+        doLogSession(capturedText, elapsed);
       },
       onStopped: () => setIsSpeaking(false),
       onError: () => setIsSpeaking(false),

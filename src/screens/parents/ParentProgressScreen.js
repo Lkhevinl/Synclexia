@@ -38,10 +38,12 @@ export default function ParentProgressScreen({ route }) {
     setLoading(false);
   }, [sid]);
 
-  // Re-fetch every time screen comes into focus
+  // Re-fetch every time screen comes into focus or daysBack changes
   useFocusEffect(
-    useCallback(() => { load(daysBack); }, [daysBack])
+    useCallback(() => { load(daysBack); }, [daysBack, load])
   );
+
+  const changeDays = (d) => { setDaysBack(d); };
 
   // Real-time: re-fetch when child logs a new session
   useEffect(() => {
@@ -54,8 +56,6 @@ export default function ParentProgressScreen({ route }) {
       .subscribe();
     return () => subRef.current?.unsubscribe();
   }, [sid, daysBack]);
-
-  const changeDays = (d) => { setDaysBack(d); load(d); };
 
   return (
     <View style={s.container}>

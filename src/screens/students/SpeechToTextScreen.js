@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
-import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { logSession } from '../../lib/analyticsHelper';
 
 // expo-speech-recognition requires a dev/production build (not Expo Go).
 // Install with: npx expo install expo-speech-recognition
@@ -30,22 +30,20 @@ export default function SpeechToTextScreen() {
   // Ref mirrors transcript state so event-handler closures always see latest value
   const transcriptRef = useRef('');
 
-  const logSession = async (finalTranscript) => {
+  const doLogSession = (finalTranscript) => {
     if (!profile?.id) return;
-    try {
-      await supabase.from('session_logs').insert({
-        student_id: profile.id,
-        activity_type: 'speech_to_text',
-        details: {
-          word_count: finalTranscript.trim().split(/\s+/).filter(Boolean).length,
-          char_count: finalTranscript.length,
-          duration_seconds: startTimeRef.current
-            ? Math.round((Date.now() - startTimeRef.current) / 1000)
-            : null,
-        },
-        xp_earned: 5,
-      });
-    } catch (_) {}
+    const wordCount = finalTranscript.trim().split(/\s+/).filter(Boolean).length;
+    const duration = startTimeRef.current
+      ? Math.round((Date.now() - startTimeRef.current) / 1000)
+      : 0;
+    logSession({
+      studentId: profile.id,
+      activityType: 'speech_to_text',
+      score: wordCount > 0 ? 1 : 0,
+      total: 1,
+      durationSeconds: duration,
+      details: { word_count: wordCount, char_count: finalTranscript.length },
+    });
   };
 
   // Register event listeners if module is available
@@ -60,7 +58,7 @@ export default function SpeechToTextScreen() {
     setIsListening(false);
     // Use ref so we always have the latest transcript, not stale closure state
     const final = transcriptRef.current;
-    if (final.trim()) logSession(final);
+    if (final.trim()) doLogSession(final);
   });
   useSpeechRecognitionEvent('error', (event) => {
     setError(event?.message ?? 'Recognition error');

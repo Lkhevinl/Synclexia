@@ -14,13 +14,13 @@ export default function AdminReportsScreen() {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(selectedRole); }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (role = selectedRole) => {
     setRefreshing(true);
     let query = supabase.from('profiles').select('*');
-    if (selectedRole !== 'all') {
-      query = query.eq('role', selectedRole);
+    if (role !== 'all') {
+      query = query.eq('role', role);
     }
     const { data } = await query.order('full_name', { ascending: true });
     if (data) {
@@ -79,11 +79,7 @@ export default function AdminReportsScreen() {
 
   const filterByRole = (role) => {
     setSelectedRole(role);
-    if (role === 'all') {
-      setFilteredUsers(users);
-    } else {
-      setFilteredUsers(users.filter(u => u.role === role));
-    }
+    fetchUsers(role);
   };
 
   const showUserDetails = (user) => {
