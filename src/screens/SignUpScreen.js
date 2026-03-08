@@ -51,13 +51,42 @@ export default function SignUpScreen({ navigation }) {
 
     try {
       // 1. Create Auth User
+      // Pass role in metadata so the DB trigger can set the correct
+      // role and status (pending for teachers) on the auto-created profile.
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
         password: password,
+        options: {
+          data: { role, full_name: trimmedName },
+        },
       });
 
       if (error) {
-        Alert.alert('Sign Up Error', error.message);
+        console.error('[SignUp] Auth error:', JSON.stringify(error, null, 2));
+
+        // Map known error codes / messages to friendly text
+        let title = 'Sign Up Failed';
+        let message = error.message || 'An unknown error occurred.';
+
+        if (error.status === 500 || message.toLowerCase().includes('internal server error')) {
+          title = 'Server Error (500)';
+          message =
+            'Supabase returned an internal server error.\n\n' +
+            'Possible causes:\n' +
+            '• A database trigger on auth.users is failing\n' +
+            '• Email provider is not configured in Supabase\n' +
+            '• The profiles table is missing required columns\n\n' +
+            `Raw: ${error.message}`;
+        } else if (error.status === 422 || message.toLowerCase().includes('already registered')) {
+          title = 'Email Already In Use';
+          message = 'An account with this email already exists. Please log in instead.';
+        } else if (message.toLowerCase().includes('password')) {
+          title = 'Weak Password';
+        } else if (message.toLowerCase().includes('email')) {
+          title = 'Invalid Email';
+        }
+
+        Alert.alert(title, message);
         setLoading(false);
         return;
       }
@@ -109,7 +138,11 @@ export default function SignUpScreen({ navigation }) {
       }
 
       if (profileError) {
-        Alert.alert('Profile Error', profileError.message || 'Could not create profile.');
+        console.error('[SignUp] Profile upsert error:', JSON.stringify(profileError, null, 2));
+        Alert.alert(
+          'Profile Save Failed',
+          `Could not save your profile.\n\nError [${profileError.code}]: ${profileError.message}\n\nHint: ${profileError.hint || 'Check Supabase logs for details.'}`
+        );
       } else {
         // Sign out immediately so the auto-session from signUp doesn't
         // cause a race condition where AuthContext fetches a null profile.
@@ -129,7 +162,11 @@ export default function SignUpScreen({ navigation }) {
         navigation.goBack();
       }
     } catch (e) {
-      Alert.alert('Unexpected Error', e.message || 'Something went wrong. Please try again.');
+      console.error('[SignUp] Unexpected error:', e);
+      Alert.alert(
+        'Unexpected Error',
+        `Something went wrong.\n\n${e.message || String(e)}\n\nCheck the console for more details.`
+      );
     } finally {
       setLoading(false);
     }
