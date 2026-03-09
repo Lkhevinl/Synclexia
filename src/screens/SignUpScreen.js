@@ -159,7 +159,6 @@ export default function SignUpScreen({ navigation }) {
             'Please check your email to verify your account, then log in.'
           );
         }
-        navigation.goBack();
       }
     } catch (e) {
       console.error('[SignUp] Unexpected error:', e);

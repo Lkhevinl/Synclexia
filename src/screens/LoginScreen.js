@@ -30,16 +30,22 @@ export default function LoginScreen({ navigation }) {
         if (error) {
           Alert.alert('Login Failed', error.message);
         } else {
-          // 2. Check ban status before letting the user in
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('is_banned')
-            .eq('id', data.session.user.id)
-            .single();
-          if (profileData?.is_banned) {
-            await supabase.auth.signOut();
-            Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
-            return;
+          // 2. Check ban status before letting the user in.
+          // Wrap in try/catch — if the DB has an error (e.g. RLS misconfiguration),
+          // don't block the login. AuthContext will enforce ban on profile load.
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('is_banned')
+              .eq('id', data.session.user.id)
+              .single();
+            if (profileData?.is_banned) {
+              await supabase.auth.signOut();
+              Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
+              return;
+            }
+          } catch (_) {
+            // DB error during ban check — let the user in, AuthContext handles it
           }
           // 3. Force App Context to Update
           if (setSession) {

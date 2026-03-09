@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileError, setProfileError] = useState(null); // null | 'server_error' | 'not_found'
   const [dashboardMode, setDashboardMode] = useState('auto'); // 'auto', 'student', 'teacher'
 
   const clearStaleSession = async () => {
@@ -70,6 +71,16 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (error) {
         console.warn('fetchProfile error:', error.message, '| code:', error.code);
+        // Server errors (500, infinite recursion 42P17) should not be retried —
+        // they require a DB fix, not a timing fix.
+        const isServerError = error.code === '42P17' ||
+          error.message?.toLowerCase().includes('infinite recursion') ||
+          error.status === 500;
+        if (isServerError) {
+          setProfileError('server_error');
+          setProfileLoaded(true);
+          return null;
+        }
       }
       if (data) {
         // Enforce ban at the app level
@@ -78,26 +89,29 @@ export const AuthProvider = ({ children }) => {
           setSession(null);
           setProfile(null);
           setProfileLoaded(true);
+          setProfileError(null);
           setDashboardMode('auto');
           Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
           return null;
         }
         setProfile(data);
+        setProfileError(null);
         // Register for push notifications
         registerForPushNotificationsAsync(data.id).catch(() => {});
         setProfileLoaded(true);
         return data;
       } else if (retryCount < 3) {
-        // Profile may not exist yet (e.g. signup race condition).
-        // Retry after a short delay to give the insert time to complete.
+        // Profile may not exist yet (signup race condition) — retry with delay.
         console.log(`fetchProfile: profile not found, retry ${retryCount + 1}/3...`);
         await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
         return fetchProfile(userId, retryCount + 1);
       }
+      setProfileError('not_found');
       setProfileLoaded(true);
       return null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);
+      setProfileError('server_error');
       setProfileLoaded(true);
       return null;
     }
@@ -125,6 +139,7 @@ export const AuthProvider = ({ children }) => {
         profile, 
         loading,
         profileLoaded,
+        profileError,
         setSession, 
         fetchProfile,
         signOut,

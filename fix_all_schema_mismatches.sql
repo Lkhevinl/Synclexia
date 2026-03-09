@@ -94,12 +94,7 @@ CREATE POLICY "Teachers can view enrolled student logs" ON public.session_logs
   );
 
 CREATE POLICY "Admins can view all session logs" ON public.session_logs
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  FOR SELECT USING (public.get_my_role() = 'admin');
 
 CREATE POLICY "Parents can view their linked child logs" ON public.session_logs
   FOR SELECT USING (
@@ -113,9 +108,43 @@ CREATE POLICY "Parents can view their linked child logs" ON public.session_logs
 
 -- ═══════════════════════════════════════════════════════════
 -- 3. PROFILES — cross-role read policies
+--    NOTE: Run fix_infinite_recursion.sql FIRST if you see
+--    error 42P17 (infinite recursion in profiles policy).
+--    That script creates get_my_role() and wipes recursive
+--    pre-existing policies before adding these safe ones.
 -- ═══════════════════════════════════════════════════════════
 
+-- Safety: create the SECURITY DEFINER function if not yet done
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT role FROM public.profiles WHERE id = auth.uid();
+$$;
+
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
+CREATE POLICY "Users can read own profile"
+  ON public.profiles FOR SELECT
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+CREATE POLICY "Users can insert own profile"
+  ON public.profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile"
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins can manage all profiles" ON public.profiles;
+CREATE POLICY "Admins can manage all profiles"
+  ON public.profiles FOR ALL
+  USING (public.get_my_role() = 'admin');
 
 DROP POLICY IF EXISTS "Teachers can read enrolled student profiles" ON public.profiles;
 CREATE POLICY "Teachers can read enrolled student profiles"
@@ -163,12 +192,7 @@ CREATE POLICY "Anyone authenticated can view writing puzzles"
 
 CREATE POLICY "Admins can manage writing puzzles"
   ON public.writing_puzzles FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.get_my_role() = 'admin');
 
 
 -- ═══════════════════════════════════════════════════════════
@@ -228,12 +252,7 @@ CREATE POLICY "Students can update own feedback"
 -- Admins: full access
 CREATE POLICY "Admins can manage all feedback"
   ON public.feedback FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.get_my_role() = 'admin');
 
 
 -- ═══════════════════════════════════════════════════════════
@@ -265,12 +284,7 @@ CREATE POLICY "Teachers can view enrolled student states"
 
 CREATE POLICY "Admins can view all adaptive states"
   ON public.adaptive_state FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.get_my_role() = 'admin');
 
 
 -- ═══════════════════════════════════════════════════════════
