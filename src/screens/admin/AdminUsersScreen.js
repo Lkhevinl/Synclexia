@@ -14,6 +14,7 @@ export default function AdminUsersScreen() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
   const [activeTab, setActiveTab] = useState('all');
+  const [approvingId, setApprovingId] = useState(null);
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -82,22 +83,27 @@ export default function AdminUsersScreen() {
     }
   };
 
-  const approveTeacher = (id) => {
-    Alert.alert('Approve Teacher', 'Grant this user full teacher access?', [
-      { text: 'Cancel' },
-      { text: 'Approve', onPress: async () => {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ status: 'active' })
-          .eq('id', id);
-        if (error) {
-          Alert.alert('Error', error.message);
-        } else {
-          Alert.alert('Approved', 'Teacher account has been activated.');
-          fetchUsers();
-        }
-      }}
-    ]);
+  const approveTeacher = async (id) => {
+    if (approvingId) return; // prevent double-tap
+    setApprovingId(id);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'active' })
+        .eq('id', id);
+      if (error) {
+        console.error('approveTeacher error:', error);
+        Alert.alert('Error', error.message || 'Failed to approve teacher.');
+      } else {
+        await fetchUsers();
+        Alert.alert('Approved', 'Teacher account has been activated.');
+      }
+    } catch (e) {
+      console.error('approveTeacher exception:', e);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    } finally {
+      setApprovingId(null);
+    }
   };
 
   const deleteUser = (id) => {
@@ -192,9 +198,12 @@ export default function AdminUsersScreen() {
                         </View>
                     </TouchableOpacity>
                     {item.role === 'teacher' && item.status === 'pending' ? (
-                      <TouchableOpacity onPress={() => approveTeacher(item.id)}>
-                        <View style={styles.approveBtn}>
-                          <Ionicons name="checkmark" size={16} color="white" />
+                      <TouchableOpacity
+                        onPress={() => approveTeacher(item.id)}
+                        disabled={approvingId === item.id}
+                      >
+                        <View style={[styles.approveBtn, approvingId === item.id && { opacity: 0.5 }]}>
+                          <Ionicons name={approvingId === item.id ? 'time' : 'checkmark'} size={16} color="white" />
                         </View>
                       </TouchableOpacity>
                     ) : (
