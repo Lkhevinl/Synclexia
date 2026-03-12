@@ -265,8 +265,7 @@ const styles = StyleSheet.create({
   // Cards
   card: {
     backgroundColor: '#fff', borderRadius: 16, marginBottom: 20,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+    boxShadow: '0px 1px 6px rgba(0, 0, 0, 0.06)', elevation: 2,
     overflow: 'hidden',
   },
 
@@ -274,8 +273,7 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: '#fff', borderRadius: 16, padding: 16,
     flexDirection: 'row', alignItems: 'center', marginBottom: 24,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    boxShadow: '0px 1px 8px rgba(0, 0, 0, 0.07)', elevation: 3,
   },
   profileAvatar: {
     width: 52, height: 52, borderRadius: 26,
@@ -319,7 +317,7 @@ const styles = StyleSheet.create({
   toggleThumb: {
     width: 20, height: 20, borderRadius: 10,
     backgroundColor: '#fff', alignSelf: 'flex-start',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.2)', elevation: 2,
   },
   toggleThumbOn: { alignSelf: 'flex-end' },
 
@@ -351,8 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: '#fff', borderRadius: 14, paddingVertical: 15,
     marginBottom: 12, borderWidth: 1.5, borderColor: '#90CAF9',
-    shadowColor: '#0288D1', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 6, elevation: 1,
+    boxShadow: '0px 2px 6px rgba(2, 136, 209, 0.08)', elevation: 1,
   },
   enrollText: { fontSize: 15, fontWeight: '700', color: '#0288D1' },
 
@@ -361,8 +358,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: '#fff', borderRadius: 14, paddingVertical: 15,
     marginBottom: 12, borderWidth: 1.5, borderColor: '#FFCDD2',
-    shadowColor: '#EF5350', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 6, elevation: 1,
+    boxShadow: '0px 2px 6px rgba(239, 83, 80, 0.08)', elevation: 1,
   },
   logoutText: { fontSize: 15, fontWeight: '700', color: '#EF5350' },
 

@@ -66,6 +66,8 @@ export default function ForgotPasswordScreen({ navigation }) {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              nativeID="forgot-email"
+              autoComplete="email"
             />
           </View>
 
@@ -127,10 +129,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     elevation: 6,
-    shadowColor: '#C06080',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    boxShadow: '0px 4px 10px rgba(192, 96, 128, 0.15)',
   },
 
   inputLabel: { fontSize: 12, fontWeight: '700', color: '#9E5070', marginBottom: 8, letterSpacing: 0.5, textTransform: 'uppercase' },

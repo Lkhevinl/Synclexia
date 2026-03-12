@@ -43,7 +43,7 @@ export default function Sidebar({ visible, onClose }) {
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: async () => { onClose(); await signOut(); } },
+      { text: 'Log Out', style: 'destructive', onPress: () => { onClose(); setTimeout(() => signOut(), 50); } },
     ]);
   };
 
@@ -280,7 +280,7 @@ const s = StyleSheet.create({
 
   groupLabel: { fontSize: 11, fontWeight: '700', color: '#90A4AE', letterSpacing: 1, marginBottom: 8, marginLeft: 4, marginTop: 4 },
 
-  card: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 16, overflow: 'hidden', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6 },
+  card: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 16, overflow: 'hidden', elevation: 2, boxShadow: '0px 1px 6px rgba(0, 0, 0, 0.06)' },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 10 },
   iconWrap: { width: 32, height: 32, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },

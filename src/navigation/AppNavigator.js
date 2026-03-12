@@ -77,10 +77,7 @@ const TAB_BAR_STYLE = {
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   elevation: 5,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: -2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
+  boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.06)',
 };
 
 function StudentTabs() {
@@ -170,7 +167,8 @@ export function AuthNavigator() {
   );
 }
 
-export default function AppNavigator() {
+// Renamed — internal screens, not exported
+function AppScreens() {
   const { loading, profile, profileLoaded } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
@@ -253,6 +251,31 @@ export default function AppNavigator() {
           <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
         </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+// ── Root Navigator ────────────────────────────────────────────────────────────
+// Uses React Navigation's recommended conditional auth flow pattern:
+// auth screens and app screens live in ONE Stack. When session becomes null
+// React Navigation instantly replaces the stack with Login — no NavigationContainer
+// remounting, no race conditions, no manual navigation calls needed.
+export default function RootNavigator() {
+  const { session, loading } = useAuth();
+
+  if (loading) return <LoadingScreen />;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
+      {!session ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        </>
+      ) : (
+        <Stack.Screen name="AppRoot" component={AppScreens} />
       )}
     </Stack.Navigator>
   );

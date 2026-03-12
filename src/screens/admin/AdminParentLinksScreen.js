@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },
 
-  statsBar: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 20, marginTop: -20, paddingVertical: 14, paddingHorizontal: 20, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, justifyContent: 'space-around', alignItems: 'center' },
+  statsBar: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 20, marginTop: -20, paddingVertical: 14, paddingHorizontal: 20, elevation: 4, boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.08)', justifyContent: 'space-around', alignItems: 'center' },
   statBox: { alignItems: 'center' },
   statNum: { fontSize: 22, fontWeight: 'bold', color: '#333' },
   statLbl: { fontSize: 10, color: '#999', fontWeight: 'bold', textTransform: 'uppercase', marginTop: 2 },

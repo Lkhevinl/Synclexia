@@ -80,7 +80,9 @@ export default function TextToSpeechScreen() {
             placeholder="Type something here..." 
             style={styles.input} 
             value={text} 
-            onChangeText={setText} 
+            onChangeText={setText}
+            nativeID="tts-input"
+            textAlignVertical="top"
           />
       </View>
 
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#333' },
   textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
-  input: { fontSize: 18, color: '#333', lineHeight: 28 },
+  input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28, textAlignVertical: 'top' },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },
   actionBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#FFE082', justifyContent: 'center', alignItems: 'center' },
   playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#01579B', justifyContent: 'center', alignItems: 'center', elevation: 5 },

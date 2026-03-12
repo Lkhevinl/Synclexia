@@ -129,27 +129,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT: Clear React state first — this immediately changes the
-  // NavigationContainer key (via !!session in App.js) which remounts it
-  // cleanly on the Login screen. No manual navigation needed.
-  const signOut = async () => {
+  // LOGOUT: Immediately clear session so App.js switches to AuthNavigator (Login).
+  // Never set loading=true here — that would show LoadingScreen and block the transition
+  // if the background cleanup hangs. UI must respond instantly.
+  // signingOutRef stays TRUE until the user explicitly logs in (via resetSigningOut),
+  // blocking any spurious SIGNED_IN events from Supabase autoRefreshToken.
+  const signOut = () => {
     signingOutRef.current = true;
+    // 1. Immediately clear all state — App.js sees !session → mounts AuthNavigator
     setSession(null);
     setProfile(null);
     setProfileLoaded(false);
     setDashboardMode('auto');
     setLoading(false);
-    // Background cleanup — don't await, UI is already on Login
+    // 2. Background cleanup — fire-and-forget, UI is already on Login
     supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
-      if (authKeys.length) await AsyncStorage.multiRemove(authKeys);
-    } catch (_) {}
-    setTimeout(() => { signingOutRef.current = false; }, 2000);
+    AsyncStorage.getAllKeys()
+      .then(keys => {
+        const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
+        if (authKeys.length) AsyncStorage.multiRemove(authKeys).catch(() => {});
+      })
+      .catch(() => {});
+    // signingOutRef.current remains true — reset only via resetSigningOut() on next login
   };
 
-  const resetSigningOut = () => {};
+  // Called by LoginScreen after a successful explicit login so that future
+  // autoRefreshToken SIGNED_IN events are processed normally.
+  const resetSigningOut = () => {
+    signingOutRef.current = false;
+  };
 
   return (
     <AuthContext.Provider value={{

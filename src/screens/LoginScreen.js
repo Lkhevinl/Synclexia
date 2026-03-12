@@ -12,7 +12,7 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   
   // Get setSession to force update the app state immediately upon success
-  const { setSession } = useAuth(); 
+  const { setSession, resetSigningOut } = useAuth(); 
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -43,6 +43,7 @@ export default function LoginScreen({ navigation }) {
             return;
           }
           // 3. Force App Context to Update
+          if (resetSigningOut) resetSigningOut(); // re-enable SIGNED_IN events for token refresh
           if (setSession) {
              setSession(data.session);
           }
@@ -94,6 +95,8 @@ export default function LoginScreen({ navigation }) {
                         onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
+                        nativeID="login-email"
+                        autoComplete="email"
                     />
                 </View>
 
@@ -107,6 +110,8 @@ export default function LoginScreen({ navigation }) {
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
+                        nativeID="login-password"
+                        autoComplete="current-password"
                     />
                     <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
                         <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />

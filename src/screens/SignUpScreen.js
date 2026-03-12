@@ -262,6 +262,8 @@ export default function SignUpScreen({ navigation }) {
                         placeholderTextColor="#999"
                         value={fullName}
                         onChangeText={setFullName}
+                        nativeID="signup-name"
+                        autoComplete="name"
                     />
                 </View>
 
@@ -277,6 +279,8 @@ export default function SignUpScreen({ navigation }) {
                         onChangeText={setEmail}
                         autoCapitalize="none"
                         keyboardType="email-address"
+                        nativeID="signup-email"
+                        autoComplete="email"
                     />
                 </View>
 
@@ -291,6 +295,8 @@ export default function SignUpScreen({ navigation }) {
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry
+                        nativeID="signup-password"
+                        autoComplete="new-password"
                     />
                 </View>
 
@@ -305,6 +311,8 @@ export default function SignUpScreen({ navigation }) {
                         value={confirmPassword}
                         onChangeText={setConfirmPassword}
                         secureTextEntry
+                        nativeID="signup-confirm-password"
+                        autoComplete="new-password"
                     />
                 </View>
 
