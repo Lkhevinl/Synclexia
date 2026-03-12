@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Alert, ScrollView, Image, ActivityIndicator,
+  Alert, ScrollView, Image, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+
+const showAlert = (title, message, onOk) => {
+  if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); onOk?.(); }
+  else { Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]); }
+};
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
@@ -35,7 +40,6 @@ export default function ParentEditChildScreen({ route, navigation }) {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
-      base64: true,
     });
     if (!result.canceled && result.assets?.[0]) {
       uploadAvatar(result.assets[0]);
@@ -45,32 +49,37 @@ export default function ParentEditChildScreen({ route, navigation }) {
   const uploadAvatar = async (asset) => {
     setUploading(true);
     try {
-      const ext      = (asset.uri.split('.').pop() || 'jpg').toLowerCase();
-      const mimeType = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
-      const fileName = `avatars/${studentId}.${ext}`;
+      const mimeType = asset.mimeType || 'image/jpeg';
+      const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+      const fileName = `${studentId}.${ext}`;
 
-      const binary = atob(asset.base64);
-      const bytes  = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      let blob;
+      if (asset.file) {
+        blob = asset.file;
+      } else {
+        const response = await fetch(asset.uri);
+        blob = await response.blob();
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, bytes.buffer, { contentType: mimeType, upsert: true });
+        .upload(fileName, blob, { contentType: mimeType, upsert: true });
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       setAvatarUrl(`${urlData.publicUrl}?t=${Date.now()}`);
     } catch (e) {
-      Alert.alert('Upload Failed', e.message);
+      showAlert('Upload Failed', e.message);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Alert.alert('Validation', "Child's name cannot be empty.");
+      showAlert('Validation', "Child's name cannot be empty.");
       return;
     }
     setSaving(true);
@@ -88,11 +97,9 @@ export default function ParentEditChildScreen({ route, navigation }) {
     setSaving(false);
 
     if (error) {
-      Alert.alert('Error', error.message);
+      showAlert('Error', error.message);
     } else {
-      Alert.alert('Saved ✓', "Your child's profile has been updated!", [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      showAlert('Saved ✓', "Your child's profile has been updated!", () => navigation.goBack());
     }
   };
 

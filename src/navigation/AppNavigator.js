@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,10 +90,11 @@ function StudentTabs() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === 'Dashboard')   iconName = focused ? 'home'             : 'home-outline';
-          else if (route.name === 'TTS')    iconName = focused ? 'volume-high'      : 'volume-high-outline';
-          else if (route.name === 'STT')    iconName = focused ? 'mic'              : 'mic-outline';
-          else if (route.name === 'Scan')   iconName = focused ? 'camera'           : 'camera-outline';
+          if (route.name === 'Dashboard')   iconName = focused ? 'home'        : 'home-outline';
+          else if (route.name === 'TTS')    iconName = focused ? 'volume-high' : 'volume-high-outline';
+          else if (route.name === 'STT')    iconName = focused ? 'mic'         : 'mic-outline';
+          else if (route.name === 'Scan')   iconName = focused ? 'camera'      : 'camera-outline';
+          else                              iconName = 'ellipse-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FF9800',
@@ -107,26 +109,9 @@ function StudentTabs() {
   );
 }
 
-function AppTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: TAB_BAR_STYLE,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
-          else if (route.name === 'Settings') iconName = focused ? 'settings' : 'settings-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#FF9800',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
-      <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
-    </Tab.Navigator>
-  );
+// AppTabs (parent/admin) — Settings removed; Sidebar handles all settings
+function AppTabs(props) {
+  return <DashboardSwitcher {...props} />;
 }
 
 function TeacherTabs() {
@@ -137,11 +122,11 @@ function TeacherTabs() {
         tabBarStyle: TAB_BAR_STYLE,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === 'Dashboard')   iconName = focused ? 'home'          : 'home-outline';
-          else if (route.name === 'Students')    iconName = focused ? 'people'        : 'people-outline';
-          else if (route.name === 'Activities')  iconName = focused ? 'book'          : 'book-outline';
-          else if (route.name === 'Progress')    iconName = focused ? 'bar-chart'     : 'bar-chart-outline';
-          else if (route.name === 'Settings')    iconName = focused ? 'settings'      : 'settings-outline';
+          if (route.name === 'Dashboard')       iconName = focused ? 'home'      : 'home-outline';
+          else if (route.name === 'Students')   iconName = focused ? 'people'    : 'people-outline';
+          else if (route.name === 'Activities') iconName = focused ? 'book'      : 'book-outline';
+          else if (route.name === 'Progress')   iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+          else                                  iconName = 'ellipse-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FF9800',
@@ -152,7 +137,6 @@ function TeacherTabs() {
       <Tab.Screen name="Students"   component={TeacherUsersScreen} />
       <Tab.Screen name="Activities" component={TeacherAssignActivitiesScreen} />
       <Tab.Screen name="Progress"   component={TeacherProgressScreen} />
-      <Tab.Screen name="Settings"   component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
@@ -169,7 +153,7 @@ export function AuthNavigator() {
 
 // Renamed — internal screens, not exported
 function AppScreens() {
-  const { loading, profile, profileLoaded } = useAuth();
+  const { loading, profile, profileLoaded, profileError, fetchProfile, signOut, session } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin   = profile?.role === 'admin';
@@ -177,6 +161,26 @@ function AppScreens() {
 
   // Wait for profile to be loaded before rendering app screens
   if (loading || !profileLoaded) return <LoadingScreen />;
+
+  // Profile failed to load — show error screen instead of silently
+  // falling back to the student dashboard (which hides the real account role)
+  if (profileError && !profile) {
+    return (
+      <View style={navStyles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={64} color="#E53935" />
+        <Text style={navStyles.errorTitle}>Couldn't Load Your Profile</Text>
+        <Text style={navStyles.errorMsg}>
+          There was a problem connecting to the server.{"\n"}Please try again or sign out and back in.
+        </Text>
+        <TouchableOpacity style={navStyles.retryBtn} onPress={() => fetchProfile(session?.user?.id)}>
+          <Text style={navStyles.retryTxt}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={navStyles.signOutBtn} onPress={signOut}>
+          <Text style={navStyles.signOutTxt}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Teacher account awaiting admin approval — show holding screen
   if (profile?.role === 'teacher' && profile?.status === 'pending') {
@@ -261,6 +265,16 @@ function AppScreens() {
 // auth screens and app screens live in ONE Stack. When session becomes null
 // React Navigation instantly replaces the stack with Login — no NavigationContainer
 // remounting, no race conditions, no manual navigation calls needed.
+const navStyles = StyleSheet.create({
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#fff' },
+  errorTitle:     { fontSize: 20, fontWeight: '700', color: '#333', marginTop: 16, textAlign: 'center' },
+  errorMsg:       { fontSize: 14, color: '#666', marginTop: 8, textAlign: 'center', lineHeight: 20 },
+  retryBtn:       { marginTop: 28, backgroundColor: '#4CAF50', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 40 },
+  retryTxt:       { color: '#fff', fontWeight: '700', fontSize: 15 },
+  signOutBtn:     { marginTop: 12, paddingVertical: 10, paddingHorizontal: 40 },
+  signOutTxt:     { color: '#E53935', fontWeight: '600', fontSize: 14 },
+});
+
 export default function RootNavigator() {
   const { session, loading } = useAuth();
 

@@ -38,7 +38,7 @@ export default function StudentEnrollScreen({ navigation }) {
       const teacherIds = [...new Set(data.map(e => e.teacher_id))];
       const { data: teachers } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, status')
         .in('id', teacherIds);
       const teacherMap = {};
       (teachers || []).forEach(t => { teacherMap[t.id] = t; });
@@ -256,7 +256,12 @@ export default function StudentEnrollScreen({ navigation }) {
                 flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'
               }}>
                 <View>
-                  <Text style={styles.teacherName}>{t.profiles?.full_name || 'Teacher'}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Text style={styles.teacherName}>{t.profiles?.full_name || 'Teacher'}</Text>
+                    {t.profiles?.status === 'active' && (
+                      <Ionicons name="checkmark-circle" size={16} color="#1DA1F2" />
+                    )}
+                  </View>
                   <Text style={styles.teacherEmail}>{t.profiles?.email}</Text>
                   {t.is_primary && (
                     <Text style={{ fontSize: 10, color: '#4CAF50', fontWeight: 'bold', marginTop: 4 }}>PRIMARY</Text>

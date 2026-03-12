@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import GoBackBtn from '../../components/GoBackBtn';
+
+const showAlert = (title, msg) => {
+  if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }
+  else { Alert.alert(title, msg); }
+};
 
 export default function TeacherNotificationsScreen() {
   const { profile } = useAuth();
@@ -11,6 +16,7 @@ export default function TeacherNotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [targetRole, setTargetRole] = useState('all');
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,46 +39,54 @@ export default function TeacherNotificationsScreen() {
   };
 
   const handlePost = async (asDraft = false) => {
-    if (!title || !content) return Alert.alert("Error", "Please fill all fields");
+    if (!title || !content) return showAlert("Error", "Please fill all fields");
     try {
       if (editingId) {
         const { error } = await supabase
           .from('notifications')
-          .update({ title, content, is_draft: asDraft })
+          .update({ title, content, is_draft: asDraft, target_role: targetRole })
           .eq('id', editingId);
         if (error) throw error;
-        Alert.alert("Success", "Notification updated!");
+        showAlert("Success", "Notification updated!");
         setEditingId(null);
       } else {
         const { error } = await supabase
           .from('notifications')
-          .insert([{ title, content, is_draft: asDraft, teacher_id: profile?.id }]);
+          .insert([{ title, content, is_draft: asDraft, target_role: targetRole, teacher_id: profile?.id }]);
         if (error) throw error;
-        Alert.alert("Success", asDraft ? "Saved to Drafts" : "Posted!");
+        showAlert("Success", asDraft ? "Saved to Drafts" : "Posted!");
       }
-      setTitle(''); 
+      setTitle('');
       setContent('');
+      setTargetRole('all');
       fetchNotifications();
     } catch (error) {
-      Alert.alert("Error", error.message);
+      showAlert("Error", error.message);
     }
   };
 
   const handleEdit = (item) => {
     setTitle(item.title);
     setContent(item.content);
+    setTargetRole(item.target_role || 'all');
     setEditingId(item.id);
     setActiveTab(item.is_draft ? 'Drafts' : 'Posted');
   };
 
   const handleDelete = async (id) => {
-    Alert.alert("Delete", "Are you sure?", [
-      { text: "Cancel" },
-      { text: "Delete", style: 'destructive', onPress: async () => {
-          await supabase.from('notifications').delete().eq('id', id);
-          fetchNotifications();
-      }}
-    ]);
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Delete this notification?')) return;
+      await supabase.from('notifications').delete().eq('id', id);
+      fetchNotifications();
+    } else {
+      Alert.alert("Delete", "Are you sure?", [
+        { text: "Cancel" },
+        { text: "Delete", style: 'destructive', onPress: async () => {
+            await supabase.from('notifications').delete().eq('id', id);
+            fetchNotifications();
+        }}
+      ]);
+    }
   };
 
   return (
@@ -102,6 +116,22 @@ export default function TeacherNotificationsScreen() {
             multiline 
             style={[styles.input, {height: 80, textAlignVertical: 'top'}]} 
         />
+        <Text style={styles.inputLabel}>Send To</Text>
+        <View style={styles.roleContainer}>
+          {[
+            { key: 'all', label: 'Students & Parents' },
+            { key: 'student', label: 'Students Only' },
+            { key: 'parent', label: 'Parents Only' },
+          ].map(({ key, label }) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.roleBtn, targetRole === key && styles.roleBtnActive]}
+              onPress={() => setTargetRole(key)}
+            >
+              <Text style={[styles.roleText, targetRole === key && styles.roleTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         <View style={styles.actionRow}>
             <TouchableOpacity onPress={() => handlePost(false)} style={styles.postBtn}>
                 <Text style={styles.btnText}>{editingId ? "Update Post" : "Post Now"}</Text>
@@ -111,7 +141,7 @@ export default function TeacherNotificationsScreen() {
             </TouchableOpacity>
         </View>
         {editingId && (
-            <TouchableOpacity onPress={() => { setEditingId(null); setTitle(''); setContent(''); }} style={{marginTop: 10, alignItems: 'center'}}>
+            <TouchableOpacity onPress={() => { setEditingId(null); setTitle(''); setContent(''); setTargetRole('all'); }} style={{marginTop: 10, alignItems: 'center'}}>
                 <Text style={{color: 'red'}}>Cancel Editing</Text>
             </TouchableOpacity>
         )}
@@ -125,7 +155,12 @@ export default function TeacherNotificationsScreen() {
                 <View style={{flex: 1}}>
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     <Text style={styles.cardBody}>{item.content}</Text>
-                    <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    <View style={{flexDirection:'row', alignItems:'center', gap:8, marginTop:5}}>
+                      <Text style={styles.targetBadge}>
+                        {item.target_role === 'all' ? 'Students & Parents' : item.target_role === 'student' ? 'Students Only' : item.target_role === 'parent' ? 'Parents Only' : item.target_role ?? 'All'}
+                      </Text>
+                      <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    </View>
                 </View>
                 <View style={styles.cardActions}>
                     <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
@@ -163,7 +198,13 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#eee', elevation: 1 },
   cardTitle: { fontWeight: 'bold', fontSize: 16, color: '#333' },
   cardBody: { color: '#555', marginTop: 4 },
-  date: { fontSize: 10, color: '#999', marginTop: 5 },
+  date: { fontSize: 10, color: '#999' },
   cardActions: { justifyContent: 'space-around', paddingLeft: 10 },
-  iconBtn: { padding: 5 }
+  iconBtn: { padding: 5 },
+  roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  roleBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#eee' },
+  roleBtnActive: { backgroundColor: '#0288D1' },
+  roleText: { color: '#555', fontSize: 13 },
+  roleTextActive: { color: '#fff', fontWeight: 'bold' },
+  targetBadge: { fontSize: 10, color: '#0288D1', backgroundColor: '#E1F5FE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 },
 });

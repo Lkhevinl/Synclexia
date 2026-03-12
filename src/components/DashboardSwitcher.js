@@ -23,6 +23,8 @@ export default function DashboardSwitcher(props) {
   if (dashboardMode === 'teacher' && profile?.role === 'teacher') return <TeacherDashboardScreen {...props} />;
   if (dashboardMode === 'admin'   && profile?.role === 'admin')   return <AdminDashboardScreen {...props} />;
   if (dashboardMode === 'parent'  && profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;
+  // Admin in teacher-view override
+  if (dashboardMode === 'teacher' && profile?.role === 'admin')   return <TeacherDashboardScreen {...props} />;
 
   // Role-based routing
   if (profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;

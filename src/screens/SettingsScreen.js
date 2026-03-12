@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { useTheme } from '../context/ThemeContext';
@@ -10,6 +10,7 @@ export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme, a11yTextStyle } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const [fontModalVisible, setFontModalVisible] = React.useState(false);
+  const [confirmLogout, setConfirmLogout] = React.useState(false);
 
   const isStudent = profile?.role === 'student';
 
@@ -27,12 +28,7 @@ export default function SettingsScreen({ navigation }) {
 
   const currentFont = FONT_STYLES.find(f => f.value === theme.fontStyle) || FONT_STYLES[0];
 
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => { signOut(); } },
-    ]);
-  };
+  const handleLogout = () => setConfirmLogout(true);
 
   const SpacingBtn = ({ label, value }) => (
     <TouchableOpacity
@@ -215,10 +211,24 @@ export default function SettingsScreen({ navigation }) {
         )}
 
         {/* ── LOG OUT ──────────────────────────────────────── */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="exit-outline" size={20} color="#EF5350" />
-          <Text style={[styles.logoutText, a11yTextStyle]}>Log Out</Text>
-        </TouchableOpacity>
+        {confirmLogout ? (
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmText}>Are you sure you want to log out?</Text>
+            <View style={styles.confirmBtns}>
+              <TouchableOpacity style={styles.confirmCancel} onPress={() => setConfirmLogout(false)}>
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmLogoutBtn} onPress={() => { setConfirmLogout(false); signOut(); }}>
+                <Text style={styles.confirmLogoutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Ionicons name="exit-outline" size={20} color="#EF5350" />
+            <Text style={[styles.logoutText, a11yTextStyle]}>Log Out</Text>
+          </TouchableOpacity>
+        )}
 
       <View style={{ height: 10 }} />
       </ScrollView>
@@ -361,6 +371,24 @@ const styles = StyleSheet.create({
     boxShadow: '0px 2px 6px rgba(239, 83, 80, 0.08)', elevation: 1,
   },
   logoutText: { fontSize: 15, fontWeight: '700', color: '#EF5350' },
+
+  // Inline logout confirm
+  confirmBox: {
+    backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 12,
+    borderWidth: 1.5, borderColor: '#FFCDD2',
+  },
+  confirmText: { fontSize: 14, color: '#263238', marginBottom: 12, textAlign: 'center' },
+  confirmBtns: { flexDirection: 'row', gap: 10 },
+  confirmCancel: {
+    flex: 1, paddingVertical: 10, borderRadius: 10,
+    borderWidth: 1.5, borderColor: '#CFD8DC', alignItems: 'center',
+  },
+  confirmCancelText: { color: '#546E7A', fontWeight: '600' },
+  confirmLogoutBtn: {
+    flex: 1, paddingVertical: 10, borderRadius: 10,
+    backgroundColor: '#EF5350', alignItems: 'center',
+  },
+  confirmLogoutText: { color: '#fff', fontWeight: '700' },
 
   // Font modal
   fontModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

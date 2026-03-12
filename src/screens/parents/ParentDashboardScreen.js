@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList,
+  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -220,8 +220,11 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={s.headerSub}>Monitoring your child's progress</Text>
           </View>
           <View style={s.headerActions}>
-            <TouchableOpacity style={s.headerIconBtn} onPress={() => setSidebarVisible(true)}>
-              <Ionicons name="menu-outline" size={26} color="#fff" />
+            <TouchableOpacity style={s.msgBadgeBtn} onPress={() => navigation.navigate('ParentMessages', navParams)}>
+              <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
+              {unreadCount > 0 && (
+                <View style={s.badge}><Text style={s.badgeText}>{unreadCount}</Text></View>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
               <Ionicons name="person-add" size={22} color="#fff" />
@@ -233,11 +236,8 @@ export default function ParentDashboardScreen({ navigation }) {
                 <View style={s.badge}><Text style={s.badgeText}>{notifCount > 9 ? '9+' : notifCount}</Text></View>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={s.msgBadgeBtn} onPress={() => navigation.navigate('ParentMessages', navParams)}>
-              <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
-              {unreadCount > 0 && (
-                <View style={s.badge}><Text style={s.badgeText}>{unreadCount}</Text></View>
-              )}
+            <TouchableOpacity style={s.headerIconBtn} onPress={() => setSidebarVisible(true)}>
+              <Ionicons name="menu-outline" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -258,14 +258,19 @@ export default function ParentDashboardScreen({ navigation }) {
       </LinearGradient>
 
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#7B1FA2']} />}
       >
         {/* ── Child Hero Card ── */}
         <View style={s.heroCard}>
-          <View style={[s.heroAvatar, { backgroundColor: avatarColor(name) }]}>
-            <Text style={s.heroAvatarText}>{name[0]?.toUpperCase()}</Text>
-          </View>
+          {childProfile?.avatar_url ? (
+            <Image source={{ uri: childProfile.avatar_url }} style={s.heroAvatarImg} />
+          ) : (
+            <View style={[s.heroAvatar, { backgroundColor: avatarColor(name) }]}>
+              <Text style={s.heroAvatarText}>{name[0]?.toUpperCase()}</Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={s.heroName}>{name}</Text>
             <Text style={s.heroLevel}>Level {level}</Text>
@@ -274,6 +279,13 @@ export default function ParentDashboardScreen({ navigation }) {
             </View>
             <Text style={s.xpLabel}>{xpInLevel}/100 XP to next level</Text>
           </View>
+          <TouchableOpacity
+            style={s.editChildBtn}
+            onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
+          >
+            <Ionicons name="create-outline" size={16} color="#7B1FA2" />
+            <Text style={s.editChildBtnText}>Edit</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Stats Row ── */}
@@ -462,10 +474,13 @@ const s = StyleSheet.create({
 
   scroll:             { padding: 16 },
 
-  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3 },
-  heroAvatar:         { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3, gap: 12 },
+  heroAvatar:         { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  heroAvatarImg:      { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#7B1FA2' },
   heroAvatarText:     { color: '#fff', fontSize: 26, fontWeight: 'bold' },
   heroName:           { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3E5F5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
+  editChildBtnText:   { color: '#7B1FA2', fontWeight: '700', fontSize: 13 },
   heroLevel:          { fontSize: 12, color: '#7B1FA2', fontWeight: '600', marginTop: 2 },
   xpBarBg:            { height: 6, backgroundColor: '#F0E6FF', borderRadius: 3, marginTop: 8, overflow: 'hidden' },
   xpBarFill:          { height: '100%', backgroundColor: '#7B1FA2', borderRadius: 3 },

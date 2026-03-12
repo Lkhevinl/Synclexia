@@ -200,7 +200,12 @@ export default function AdminUsersScreen({ route }) {
         renderItem={({item}) => (
             <View style={styles.row}>
                 <View style={{flex: 2}}>
-                    <Text style={styles.cellName}>{item.full_name || "Unknown"}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Text style={styles.cellName}>{item.full_name || "Unknown"}</Text>
+                      {item.role === 'teacher' && item.status === 'active' && (
+                        <Ionicons name="checkmark-circle" size={15} color="#1DA1F2" />
+                      )}
+                    </View>
                     <Text style={styles.cellDate}>Joined: {new Date(item.created_at).toLocaleDateString()}</Text>
                     {item.role === 'teacher' && item.status === 'pending' && (
                       <View style={styles.pendingBadge}>

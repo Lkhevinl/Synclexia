@@ -4,6 +4,11 @@ import {
   ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView,
   Platform, ScrollView,
 } from 'react-native';
+
+const showAlert = (title, message, onOk) => {
+  if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); onOk?.(); }
+  else { Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]); }
+};
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,11 +26,13 @@ export default function ParentLinkChildScreen({ navigation }) {
   const { theme, a11yTextStyle, getOverlayColor } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [code, setCode]       = useState('');
-  const [found, setFound]     = useState(null);
-  const [looking, setLooking] = useState(false);
-  const [linking, setLinking] = useState(false);
-  const [error, setError]     = useState('');
+  const [code, setCode]         = useState('');
+  const [found, setFound]       = useState(null);
+  const [looking, setLooking]   = useState(false);
+  const [linking, setLinking]   = useState(false);
+  const [error, setError]       = useState('');
+  const [linkSuccess, setLinkSuccess] = useState(false);
+  const [linkError, setLinkError]     = useState('');
 
   // ── Base font size driven by theme ──────────────────────────────────
   const fs = theme.fontSize || 14;
@@ -68,37 +75,30 @@ export default function ParentLinkChildScreen({ navigation }) {
   const confirmLink = async () => {
     if (!found) return;
     setLinking(true);
+    setLinkError('');
+    try {
+      const { data: result, error: linkErr } = await supabase
+        .rpc('link_child', { p_parent_id: profile?.id, p_student_id: found.id });
 
-    const { data: result, error: linkErr } = await supabase
-      .rpc('link_child', { p_parent_id: profile?.id, p_student_id: found.id });
-
-    setLinking(false);
-
-    if (linkErr) {
-      Alert.alert('Error', linkErr.message || 'Could not link child. Please try again.');
-      return;
-    }
-    if (result?.error === 'already_linked') {
-      Alert.alert(
-        'Already Linked',
-        `${found.full_name} is already linked to your account.`,
-        [{ text: 'Go to Dashboard', onPress: () => navigation.goBack() }]
-      );
-      return;
-    }
-    if (result?.error) {
-      Alert.alert('Error', result.error);
-      return;
-    }
-    if (result?.success) {
-      Alert.alert(
-        '🎉 Child Linked!',
-        `${found.full_name} has been linked to your account. You can now monitor their progress.`,
-        [
-          { text: 'Go to Dashboard', onPress: () => navigation.goBack() },
-          { text: 'Link Another',    onPress: () => { setCode(''); setFound(null); } },
-        ]
-      );
+      if (linkErr) {
+        setLinkError(linkErr.message || 'Could not link child. Please try again.');
+        return;
+      }
+      if (result?.error === 'already_linked') {
+        setLinkError(`${found.full_name} is already linked to your account.`);
+        return;
+      }
+      if (result?.error) {
+        setLinkError(result.error);
+        return;
+      }
+      // Success — show inline banner then navigate back
+      setLinkSuccess(true);
+      setTimeout(() => navigation.goBack(), 1800);
+    } catch (e) {
+      setLinkError(e.message || 'An unexpected error occurred.');
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -279,10 +279,28 @@ export default function ParentLinkChildScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
+            {/* Inline error */}
+            {linkError ? (
+              <View style={s.linkErrorBox}>
+                <Ionicons name="alert-circle" size={16} color="#C62828" />
+                <Text style={tx([s.linkErrorText, { fontSize: fs - 1 }])}>{linkError}</Text>
+              </View>
+            ) : null}
+
+            {/* Inline success */}
+            {linkSuccess ? (
+              <View style={s.linkSuccessBox}>
+                <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+                <Text style={tx([s.linkSuccessText, { fontSize: fs }])}>
+                  {found?.full_name} linked! Returning to dashboard…
+                </Text>
+              </View>
+            ) : null}
+
             {/* Not the right child */}
             <TouchableOpacity
               style={s.cancelLink}
-              onPress={() => { setFound(null); setCode(''); setError(''); }}
+              onPress={() => { setFound(null); setCode(''); setError(''); setLinkError(''); setLinkSuccess(false); }}
             >
               <Text style={tx([s.cancelLinkText, { fontSize: fs - 1 }])}>
                 Not the right child? Try again
@@ -412,5 +430,10 @@ const s = StyleSheet.create({
 
   // Cancel
   cancelLink:         { alignItems: 'center', marginTop: 14, paddingVertical: 6 },
+
+  linkErrorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFEBEE', borderRadius: 10, padding: 12, marginTop: 10 },
+  linkErrorText: { flex: 1, color: '#C62828', fontWeight: '500' },
+  linkSuccessBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', borderRadius: 10, padding: 12, marginTop: 10 },
+  linkSuccessText: { flex: 1, color: '#2E7D32', fontWeight: '600' },
   cancelLinkText:     { color: '#9E9E9E', textDecorationLine: 'underline', lineHeight: 22 },
 });

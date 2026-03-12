@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+
+const showAlert = (title, message) => {
+  if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); }
+  else { Alert.alert(title, message); }
+};
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -44,25 +49,25 @@ export default function SignUpScreen({ navigation }) {
     const trimmedName = fullName.trim();
 
     if (!trimmedEmail || !password || !trimmedName) {
-      Alert.alert('Missing Info', 'Please fill in all the boxes!');
+      showAlert('Missing Info', 'Please fill in all the boxes!');
       return;
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      showAlert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
     // Require at least 8 characters
     if (password.length < 8) {
-      Alert.alert('Weak Password', 'Password must be at least 8 characters long.');
+      showAlert('Weak Password', 'Password must be at least 8 characters long.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'Passwords do not match. Please try again.');
+      showAlert('Password Mismatch', 'Passwords do not match. Please try again.');
       return;
     }
 
@@ -107,7 +112,7 @@ export default function SignUpScreen({ navigation }) {
           title = 'Invalid Email';
         }
 
-        Alert.alert(title, message);
+        showAlert(title, message);
         setLoading(false);
         return;
       }
@@ -116,10 +121,7 @@ export default function SignUpScreen({ navigation }) {
 
       // Supabase may return a fake user (no identities) if the email is already taken
       if (!user || (user.identities && user.identities.length === 0)) {
-        Alert.alert(
-          'Email Already Registered',
-          'An account with this email already exists. Please log in instead.'
-        );
+        showAlert('Email Already Registered', 'An account with this email already exists. Please log in instead.');
         setLoading(false);
         return;
       }
@@ -195,33 +197,29 @@ export default function SignUpScreen({ navigation }) {
 
       if (profileError) {
         console.error('[SignUp] Profile upsert error:', JSON.stringify(profileError, null, 2));
-        Alert.alert(
-          'Profile Save Failed',
-          `Could not save your profile.\n\nError [${profileError.code}]: ${profileError.message}\n\nHint: ${profileError.hint || 'Check Supabase logs for details.'}`
-        );
+        showAlert('Profile Save Failed', `Could not save your profile.\n\nError [${profileError.code}]: ${profileError.message}`);
       } else {
         // Sign out immediately so the auto-session from signUp doesn't
         // cause a race condition where AuthContext fetches a null profile.
-        // The user must log in fresh to get their profile loaded correctly.
-        await supabase.auth.signOut();
+        // Wrapped in try-catch + timeout so it can never block the UI on web.
+        try {
+          await Promise.race([
+            supabase.auth.signOut(),
+            new Promise(resolve => setTimeout(resolve, 3000)),
+          ]);
+        } catch (_) {}
+
         if (role === 'teacher') {
-          Alert.alert(
-            'Account Submitted!',
-            'Your teacher account is pending admin approval. You will be notified once it is activated.'
-          );
+          showAlert('Account Submitted!', 'Your teacher account is pending admin approval. You will be notified once it is activated.');
         } else {
-          Alert.alert(
-            'Account Created!',
-            'Please check your email to verify your account, then log in.'
-          );
+          showAlert('Account Created!', 'Your account has been created! Please log in.');
         }
+        // Navigate to Login so the user can sign in with their new account
+        navigation.navigate('Login');
       }
     } catch (e) {
       console.error('[SignUp] Unexpected error:', e);
-      Alert.alert(
-        'Unexpected Error',
-        `Something went wrong.\n\n${e.message || String(e)}\n\nCheck the console for more details.`
-      );
+      showAlert('Unexpected Error', `Something went wrong.\n\n${e.message || String(e)}`);
     } finally {
       setLoading(false);
     }

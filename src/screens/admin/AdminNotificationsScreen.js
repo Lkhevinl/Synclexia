@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
+
+const showAlert = (title, msg) => {
+  if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }
+  else { Alert.alert(title, msg); }
+};
 
 export default function AdminNotificationsScreen() {
   const [activeTab, setActiveTab] = useState('Posted'); // 'Posted' | 'Drafts'
@@ -10,6 +15,7 @@ export default function AdminNotificationsScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [targetRole, setTargetRole] = useState('all'); // 'all' | 'student' | 'teacher' | 'parent'
+  // 'all' is used for both "Students & Parents" and "Everyone" options in the UI
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +38,7 @@ export default function AdminNotificationsScreen() {
   };
 
   const handlePost = async (asDraft = false) => {
-    if (!title || !content) return Alert.alert("Error", "Please fill all fields");
+    if (!title || !content) return showAlert("Error", "Please fill all fields");
 
     try {
       if (editingId) {
@@ -42,7 +48,7 @@ export default function AdminNotificationsScreen() {
           .eq('id', editingId);
 
         if (error) throw error;
-        Alert.alert("Success", "Notification updated!");
+        showAlert("Success", "Notification updated!");
         setEditingId(null);
       } else {
         const { error } = await supabase
@@ -50,7 +56,7 @@ export default function AdminNotificationsScreen() {
           .insert([{ title, content, is_draft: asDraft, target_role: targetRole }]);
 
         if (error) throw error;
-        Alert.alert("Success", asDraft ? "Saved to Drafts" : "Posted!");
+        showAlert("Success", asDraft ? "Saved to Drafts" : "Posted!");
       }
 
       setTitle('');
@@ -59,7 +65,7 @@ export default function AdminNotificationsScreen() {
       fetchNotifications();
 
     } catch (error) {
-      Alert.alert("Error", error.message);
+      showAlert("Error", error.message);
     }
   };
 
@@ -72,17 +78,27 @@ export default function AdminNotificationsScreen() {
   };
 
   const handleDelete = async (id) => {
-    Alert.alert("Delete", "Are you sure?", [
-      { text: "Cancel" },
-      { text: "Delete", style: 'destructive', onPress: async () => {
-          await supabase.from('notifications').delete().eq('id', id);
-          setTitle('');
-          setContent('');
-          setTargetRole('all');
-          setEditingId(null);
-          fetchNotifications();
-      }}
-    ]);
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Delete this notification?')) return;
+      await supabase.from('notifications').delete().eq('id', id);
+      setTitle('');
+      setContent('');
+      setTargetRole('all');
+      setEditingId(null);
+      fetchNotifications();
+    } else {
+      Alert.alert("Delete", "Are you sure?", [
+        { text: "Cancel" },
+        { text: "Delete", style: 'destructive', onPress: async () => {
+            await supabase.from('notifications').delete().eq('id', id);
+            setTitle('');
+            setContent('');
+            setTargetRole('all');
+            setEditingId(null);
+            fetchNotifications();
+        }}
+      ]);
+    }
   };
 
   return (
@@ -123,10 +139,10 @@ export default function AdminNotificationsScreen() {
         <Text style={styles.inputLabel}>Target Audience</Text>
         <View style={styles.roleContainer}>
           {[
-            { key: 'all', label: 'All Users' },
-            { key: 'student', label: 'Students' },
+            { key: 'all', label: 'Students & Parents' },
+            { key: 'student', label: 'Students Only' },
+            { key: 'parent', label: 'Parents Only' },
             { key: 'teacher', label: 'Teachers' },
-            { key: 'parent', label: 'Parents' }
           ].map(({ key, label }) => (
             <TouchableOpacity 
               key={key}
@@ -166,7 +182,13 @@ export default function AdminNotificationsScreen() {
                     <Text style={styles.cardTitle}>{item.title}</Text>
                     <Text style={styles.cardBody}>{item.content}</Text>
                     <View style={styles.metaRow}>
-                      <Text style={styles.targetBadge}>{item.target_role === 'all' ? 'All Users' : item.target_role}</Text>
+                      <Text style={styles.targetBadge}>
+                        {item.target_role === 'all' ? 'Students & Parents'
+                          : item.target_role === 'student' ? 'Students Only'
+                          : item.target_role === 'parent' ? 'Parents Only'
+                          : item.target_role === 'teacher' ? 'Teachers'
+                          : item.target_role ?? 'All'}
+                      </Text>
                       <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
                     </View>
                 </View>

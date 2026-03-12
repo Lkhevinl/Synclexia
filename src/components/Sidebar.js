@@ -81,7 +81,12 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.avatarText}>{profile?.full_name?.charAt(0).toUpperCase() || 'U'}</Text>
                 </View>
               )}
-              <Text style={s.name}>{profile?.full_name || 'User'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Text style={s.name}>{profile?.full_name || 'User'}</Text>
+                {profile?.role === 'teacher' && profile?.status === 'active' && (
+                  <Ionicons name="checkmark-circle" size={16} color="#1DA1F2" />
+                )}
+              </View>
               <Text style={s.email}>{profile?.email}</Text>
               <View style={s.badgeRow}>
                 <Ionicons name="star" size={11} color="#F59E0B" />
@@ -208,17 +213,29 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.groupLabel}>ADMIN</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => {
-                      const next = dashboardMode === 'student' ? 'teacher' : 'student';
-                      setDashboardMode(next);
+                      setDashboardMode('admin');
                       onClose();
                       setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 200);
                     }}>
-                      <View style={[s.iconWrap, { backgroundColor: '#FF980018' }]}><Ionicons name="swap-horizontal" size={18} color="#F57C00" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="shield-checkmark-outline" size={18} color="#7B1FA2" /></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>Switch View</Text>
-                        <Text style={s.rowDesc}>Current: {dashboardMode === 'teacher' ? 'Teacher' : 'Student'}</Text>
+                        <Text style={s.rowLabel}>Admin Panel</Text>
+                        <Text style={s.rowDesc}>Full admin dashboard & controls</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      {dashboardMode === 'admin' && <Ionicons name="checkmark-circle" size={18} color="#7B1FA2" />}
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => {
+                      setDashboardMode('teacher');
+                      onClose();
+                      setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 200);
+                    }}>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="school-outline" size={18} color="#0288D1" /></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.rowLabel}>Teacher View</Text>
+                        <Text style={s.rowDesc}>Preview teacher dashboard</Text>
+                      </View>
+                      {dashboardMode === 'teacher' && <Ionicons name="checkmark-circle" size={18} color="#0288D1" />}
                     </TouchableOpacity>
                   </View>
                 </>
