@@ -215,6 +215,7 @@ export default function TeacherDashboardScreen({ navigation }) {
         <RowCard title="Feedback & Replies" subtitle="Read student feedback & respond"    icon="chatbubbles" color="#E91E63" onPress={() => navigation.navigate('TeacherFeedback')} />
         <RowCard title="Announcements"      subtitle="Send notifications to students"     icon="megaphone"   color="#FF5722" onPress={() => navigation.navigate('TeacherNotifications')} />
         <RowCard title="Class QR Code"      subtitle="Generate QR code for enrollment"   icon="qr-code"     color="#009688" onPress={() => navigation.navigate('TeacherEnrollment')} />
+        <RowCard title="Parent Messages"    subtitle="Chat with parents of your students" icon="mail"         color="#6A1B9A" onPress={() => navigation.navigate('TeacherMessages')} />
 
         {/* ── LIVE ACTIVITY FEED ── */}
         {activityFeed.length > 0 && (

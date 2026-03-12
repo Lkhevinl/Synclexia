@@ -268,6 +268,15 @@ export default function ParentDashboardScreen({ navigation }) {
             </View>
             <Text style={s.xpLabel}>{xpInLevel}/100 XP to next level</Text>
           </View>
+          {/* Edit child profile — parents only */}
+          <TouchableOpacity
+            style={s.editChildBtn}
+            onPress={() => navigation.navigate('ParentEditChild', { child })}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="create-outline" size={18} color="#7B1FA2" />
+            <Text style={s.editChildBtnText}>Edit</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Stats Row ── */}
@@ -457,6 +466,8 @@ const s = StyleSheet.create({
   scroll:             { padding: 16 },
 
   heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3 },
+  editChildBtn:       { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3E5F5', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginLeft: 8 },
+  editChildBtnText:   { fontSize: 11, fontWeight: 'bold', color: '#7B1FA2', marginTop: 2 },
   heroAvatar:         { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   heroAvatarText:     { color: '#fff', fontSize: 26, fontWeight: 'bold' },
   heroName:           { fontSize: 18, fontWeight: 'bold', color: '#333' },

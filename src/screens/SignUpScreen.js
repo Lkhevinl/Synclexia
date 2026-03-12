@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import GoBackBtn from '../components/GoBackBtn'; // <--- We keep the back button here
 
@@ -12,6 +13,26 @@ export default function SignUpScreen({ navigation }) {
   const [role, setRole] = useState('student');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [credentialUri, setCredentialUri] = useState(null);
+  const [credentialFileName, setCredentialFileName] = useState('');
+
+  const pickCredential = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photo library to upload a credential.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.length > 0) {
+      const asset = result.assets[0];
+      setCredentialUri(asset.uri);
+      setCredentialFileName(asset.fileName || `credential_${Date.now()}.jpg`);
+    }
+  };
 
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -107,6 +128,30 @@ export default function SignUpScreen({ navigation }) {
       // We use UPSERT (onConflict: 'id') because some Supabase setups have a
       // trigger that auto-creates a profile with the default role='student'.
       // Upserting guarantees the role the user selected is always persisted.
+      // Upload teacher credential if provided
+      let credentialUrl = null;
+      if (role === 'teacher' && credentialUri) {
+        try {
+          const response = await fetch(credentialUri);
+          const blob = await response.blob();
+          const fileExt = credentialFileName.split('.').pop() || 'jpg';
+          const filePath = `${user.id}/credential_${Date.now()}.${fileExt}`;
+          const { error: uploadError } = await supabase.storage
+            .from('teacher-credentials')
+            .upload(filePath, blob, { contentType: `image/${fileExt}`, upsert: true });
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('teacher-credentials')
+              .getPublicUrl(filePath);
+            credentialUrl = urlData?.publicUrl || null;
+          } else {
+            console.warn('[SignUp] Credential upload error:', uploadError.message);
+          }
+        } catch (uploadErr) {
+          console.warn('[SignUp] Credential upload failed:', uploadErr);
+        }
+      }
+
       const profileData = { 
         id: user.id, 
         full_name: trimmedName,
@@ -114,7 +159,7 @@ export default function SignUpScreen({ navigation }) {
         xp: 0,
         role,
         // Teachers require admin approval before they can access the app
-        ...(role === 'teacher' && { status: 'pending' }),
+        ...(role === 'teacher' && { status: 'pending', credential_url: credentialUrl }),
       };
 
       // Students get a unique_code for parent-linking.
@@ -286,6 +331,53 @@ export default function SignUpScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
 
+                {/* Teacher Verification Section */}
+                {role === 'teacher' && (
+                  <View style={styles.teacherVerifyBox}>
+                    {/* School Email Notice */}
+                    <View style={styles.teacherInfoRow}>
+                      <Ionicons name="school-outline" size={20} color="#1565C0" style={{ marginRight: 8, marginTop: 2 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.teacherInfoTitle}>School Email Verification</Text>
+                        <Text style={styles.teacherInfoText}>
+                          Please register using your <Text style={styles.bold}>school-issued email</Text>. A verification link will be sent to it automatically. Once verified, your account goes to admin for final approval.
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={styles.divider} />
+
+                    {/* Credential Upload */}
+                    <View style={styles.teacherInfoRow}>
+                      <Ionicons name="id-card-outline" size={20} color="#1565C0" style={{ marginRight: 8, marginTop: 2 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.teacherInfoTitle}>Upload Teaching Credential <Text style={styles.optionalTag}>(Optional)</Text></Text>
+                        <Text style={styles.teacherInfoText}>
+                          Upload a valid <Text style={styles.bold}>teaching ID, license, or certificate</Text> to speed up admin approval.
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity style={styles.uploadBtn} onPress={pickCredential}>
+                      <Ionicons name="cloud-upload-outline" size={18} color="#1565C0" style={{ marginRight: 6 }} />
+                      <Text style={styles.uploadBtnText}>
+                        {credentialUri ? 'Change Credential' : 'Upload Credential'}
+                      </Text>
+                    </TouchableOpacity>
+                    {credentialUri && (
+                      <View style={styles.credentialPreview}>
+                        <Image source={{ uri: credentialUri }} style={styles.credentialThumb} resizeMode="cover" />
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.credentialName} numberOfLines={1}>{credentialFileName || 'credential.jpg'}</Text>
+                          <TouchableOpacity onPress={() => { setCredentialUri(null); setCredentialFileName(''); }}>
+                            <Text style={styles.removeCredText}>Remove</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* Sign Up Button */}
                 <TouchableOpacity style={styles.signUpBtn} onPress={handleSignUp} disabled={loading}>
                     {loading ? (
@@ -347,7 +439,49 @@ const styles = StyleSheet.create({
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: '#333', fontWeight: '600' },
 
-  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  roleRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+
+  // Teacher Verification
+  teacherVerifyBox: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  teacherInfoRow: { flexDirection: 'row', marginBottom: 8 },
+  teacherInfoTitle: { fontWeight: 'bold', color: '#1565C0', fontSize: 13, marginBottom: 3 },
+  teacherInfoText: { color: '#37474F', fontSize: 12, lineHeight: 18 },
+  bold: { fontWeight: 'bold' },
+  optionalTag: { fontWeight: 'normal', color: '#888', fontSize: 11 },
+  divider: { height: 1, backgroundColor: '#90CAF9', marginVertical: 12 },
+  uploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#1565C0',
+    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  uploadBtnText: { color: '#1565C0', fontWeight: 'bold', fontSize: 13 },
+  credentialPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#90CAF9',
+  },
+  credentialThumb: { width: 48, height: 48, borderRadius: 6 },
+  credentialName: { color: '#333', fontSize: 12, fontWeight: '600' },
+  removeCredText: { color: '#e53935', fontSize: 12, marginTop: 4 },
   roleBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#f5f5f5', alignItems: 'center' },
   roleBtnActive: { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
   roleText: { color: '#666', fontWeight: 'bold' },

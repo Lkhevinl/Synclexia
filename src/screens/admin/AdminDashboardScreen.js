@@ -7,42 +7,40 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
-const DAILY_TIPS = [
-  "Tip: Engage your students with interactive lessons!",
-  "Tip: Monitor student progress regularly.",
-  "Tip: Provide timely feedback to students.",
-  "Tip: Create diverse learning activities."
-];
-
 export default function AdminDashboardScreen({ navigation }) {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
-  const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [studentCount, setStudentCount] = useState(0);
+  const [teacherCount, setTeacherCount] = useState(0);
+  const [parentCount, setParentCount] = useState(0);
+  const [pendingTeachers, setPendingTeachers] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
-    fetchStudentCount();
-    const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
-    setDailyTip(randomTip);
+    fetchUserCounts();
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', {ascending: false});
+    const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
     if (data) setNotifications(data);
   };
 
-  const fetchStudentCount = async () => {
-    const { count } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'student');
-    setStudentCount(count || 0);
+  const fetchUserCounts = async () => {
+    const [s, t, p, pt] = await Promise.all([
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('status', 'active'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('status', 'pending'),
+    ]);
+    setStudentCount(s.count || 0);
+    setTeacherCount(t.count || 0);
+    setParentCount(p.count || 0);
+    setPendingTeachers(pt.count || 0);
   };
 
-  const AdminCard = ({ title, subtitle, icon, color, onPress }) => (
+  const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.iconBox, { backgroundColor: color }]}>
         <Ionicons name={icon} size={32} color="#fff" />
@@ -51,6 +49,11 @@ export default function AdminDashboardScreen({ navigation }) {
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardSub}>{subtitle}</Text>
       </View>
+      {badge > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
+        </View>
+      )}
       <Ionicons name="chevron-forward" size={24} color="#CFD8DC" />
     </TouchableOpacity>
   );
@@ -58,13 +61,13 @@ export default function AdminDashboardScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
       <StatusBar barStyle="light-content" />
-      
+
       {/* HEADER */}
       <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 🧑‍🏫</Text>
-            <Text style={styles.subGreeting}>Manage your students & activities.</Text>
+            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 🛡️</Text>
+            <Text style={styles.subGreeting}>Manage all users on the platform.</Text>
           </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
@@ -75,144 +78,123 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* STATS BAR - floats out of header */}
+      {/* STATS BAR */}
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <Text style={styles.statLabel}>LEVEL</Text>
-          <Text style={styles.statValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.statItem}>
           <Text style={styles.statLabel}>STUDENTS</Text>
-          <Text style={[styles.statValue, {color: '#4CAF50'}]}>{studentCount}</Text>
+          <Text style={[styles.statValue, { color: '#4CAF50' }]}>{studentCount}</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>TEACHERS</Text>
+          <Text style={[styles.statValue, { color: '#2196F3' }]}>{teacherCount}</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>PARENTS</Text>
+          <Text style={[styles.statValue, { color: '#9C27B0' }]}>{parentCount}</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={styles.statLabel}>PENDING</Text>
+          <Text style={[styles.statValue, { color: pendingTeachers > 0 ? '#F44336' : '#90A4AE' }]}>{pendingTeachers}</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* DAILY TIP */}
-        <View style={styles.tipBox}>
-          <Ionicons name="sparkles" size={20} color="#FFD700" style={{marginRight: 10}} />
-          <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
-        </View>
+        {/* USER MANAGEMENT */}
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>User Management</Text>
 
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Student Management</Text>
-        
-        <AdminCard 
-          title="Writing Practice" 
-          subtitle="Add or delete tracing words"
-          icon="pencil" 
-          color="#FF9800"
-          onPress={() => navigation.navigate('AdminAddStory')}
-        />
+        {/* PENDING APPROVALS ALERT */}
+        {pendingTeachers > 0 && (
+          <TouchableOpacity
+            style={styles.pendingAlert}
+            onPress={() => navigation.navigate('AdminUsers', { filterRole: 'pending' })}
+            activeOpacity={0.8}
+          >
+            <View style={styles.pendingAlertIcon}>
+              <Ionicons name="time" size={24} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pendingAlertTitle}>
+                {pendingTeachers} Teacher{pendingTeachers > 1 ? 's' : ''} Awaiting Approval
+              </Text>
+              <Text style={styles.pendingAlertSub}>Tap to review and approve</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
 
-        <AdminCard 
-          title="Phonics Audio" 
-          subtitle="Manage sounds and letters"
-          icon="volume-high" 
-          color="#2196F3"
-          onPress={() => navigation.navigate('AdminPhonics')} 
-        />
-
-        <AdminCard 
-          title="Student List" 
-          subtitle="View progress and XP"
-          icon="people" 
+        <AdminCard
+          title="Learners (Students)"
+          subtitle="View, edit and manage student accounts"
+          icon="school"
           color="#4CAF50"
-          onPress={() => navigation.navigate('AdminUsers')} 
+          onPress={() => navigation.navigate('AdminUsers', { filterRole: 'student' })}
         />
 
-        <AdminCard 
-          title="Give Rewards" 
-          subtitle="Award XP to students"
-          icon="star" 
-          color="#FFD700"
-          onPress={() => navigation.navigate('AdminUsers')} 
-        />
-
-        <AdminCard 
-          title="Assign Activities" 
-          subtitle="Give learning tasks to students"
-          icon="checkbox" 
-          color="#4CAF50"
-          onPress={() => navigation.navigate('AdminAssignActivities')} 
-        />
-
-        <AdminCard 
-          title="Monitor Progress" 
-          subtitle="Track student comprehension"
-          icon="trending-up" 
+        <AdminCard
+          title="Teachers"
+          subtitle="Manage teacher accounts & approvals"
+          icon="person-circle"
           color="#2196F3"
-          onPress={() => navigation.navigate('AdminReports')} 
+          badge={pendingTeachers}
+          onPress={() => navigation.navigate('AdminUsers', { filterRole: 'teacher' })}
         />
 
-        <AdminCard 
-          title="Feedback" 
-          subtitle="Read and reply to users"
-          icon="chatbubbles" 
+        <AdminCard
+          title="Parents"
+          subtitle="View and manage parent accounts"
+          icon="people"
           color="#9C27B0"
-          onPress={() => navigation.navigate('AdminFeedback')} 
+          onPress={() => navigation.navigate('AdminUsers', { filterRole: 'parent' })}
         />
 
-        <AdminCard 
-          title="Notifications" 
-          subtitle="Send announcements"
-          icon="megaphone" 
-          color="#FF5722"
-          onPress={() => navigation.navigate('AdminNotifications')} 
-        />
+        {/* ADMINISTRATION */}
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, marginTop: 10 }]}>Administration</Text>
 
-        <AdminCard 
-          title="Enrollment" 
-          subtitle="Manage student enrollments"
-          icon="qr-code" 
-          color="#009688"
-          onPress={() => navigation.navigate('AdminEnrollment')} 
-        />
-
-        <AdminCard 
-          title="Parent Links" 
-          subtitle="Link parents to students"
-          icon="people-circle" 
+        <AdminCard
+          title="Parent Links"
+          subtitle="Link parents to their children"
+          icon="people-circle"
           color="#6A1B9A"
-          onPress={() => navigation.navigate('AdminParentLinks')} 
-        />
-
-        <AdminCard 
-          title="Reports & Analytics" 
-          subtitle="Export user data and view activity"
-          icon="bar-chart" 
-          color="#673AB7"
-          onPress={() => navigation.navigate('AdminReports')} 
-        />
-
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>Content Management</Text>
-
-        <AdminCard
-          title="Spelling Words"
-          subtitle="Add and manage spelling word bank"
-          icon="text"
-          color="#2196F3"
-          onPress={() => navigation.navigate('AdminSpelling')}
+          onPress={() => navigation.navigate('AdminParentLinks')}
         />
 
         <AdminCard
-          title="Phonics Activity"
-          subtitle="Manage blend, rhyme & segment games"
-          icon="musical-notes"
+          title="Enrollment"
+          subtitle="Oversee student enrollments"
+          icon="qr-code"
+          color="#009688"
+          onPress={() => navigation.navigate('AdminEnrollment')}
+        />
+
+        <AdminCard
+          title="Notifications"
+          subtitle="Send announcements to all users"
+          icon="megaphone"
+          color="#FF5722"
+          onPress={() => navigation.navigate('AdminNotifications')}
+        />
+
+        <AdminCard
+          title="Feedback"
+          subtitle="Read and reply to user feedback"
+          icon="chatbubbles"
           color="#FF9800"
-          onPress={() => navigation.navigate('AdminPhonicsActivity')}
+          onPress={() => navigation.navigate('AdminFeedback')}
         />
 
         <AdminCard
-          title="Phonological"
-          subtitle="Manage syllable, rime & phoneme tasks"
-          icon="ear"
-          color="#9C27B0"
-          onPress={() => navigation.navigate('AdminPhonological')}
+          title="Reports & Analytics"
+          subtitle="View activity data and export reports"
+          icon="bar-chart"
+          color="#673AB7"
+          onPress={() => navigation.navigate('AdminReports')}
         />
 
-        <View style={{height: 20}} /> 
+        <View style={{ height: 20 }} />
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -223,13 +205,13 @@ export default function AdminDashboardScreen({ navigation }) {
             <FlatList
               data={notifications}
               keyExtractor={i => i.id.toString()}
-              renderItem={({item}) => (
+              renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <Text style={styles.notifTitle}>{item.title}</Text>
                   <Text style={styles.notifBody}>{item.content}</Text>
                 </View>
               )}
-              ListEmptyComponent={<Text style={{textAlign:'center', color:'#999'}}>No notifications</Text>}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: '#999' }}>No notifications</Text>}
             />
             <TouchableOpacity style={styles.closeBtn} onPress={() => setNotifVisible(false)}>
               <Text style={styles.closeText}>Close</Text>
@@ -255,11 +237,9 @@ const styles = StyleSheet.create({
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
+  statDivider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
 
   scrollContent: { paddingTop: 30, paddingHorizontal: 20 },
-  tipBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#333', borderRadius: 15, padding: 15, marginBottom: 25 },
-  tipText: { color: '#fff', flex: 1, lineHeight: 20 },
   sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
   card: { flexDirection: 'row', backgroundColor: '#fff', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 15, elevation: 2 },
@@ -267,6 +247,22 @@ const styles = StyleSheet.create({
   cardContent: { flex: 1 },
   cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
   cardSub: { fontSize: 13, color: '#90A4AE', marginTop: 4 },
+  badge: { backgroundColor: '#F44336', borderRadius: 12, minWidth: 24, height: 24, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6, marginRight: 8 },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
+
+  pendingAlert: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F44336', borderRadius: 16,
+    padding: 16, marginBottom: 16,
+    elevation: 4,
+  },
+  pendingAlertIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center', alignItems: 'center', marginRight: 14,
+  },
+  pendingAlertTitle: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  pendingAlertSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 2 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '85%', backgroundColor: '#fff', borderRadius: 20, padding: 25, maxHeight: '60%' },

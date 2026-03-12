@@ -70,13 +70,24 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (error) {
-        console.warn('fetchProfile error:', error.message, '| code:', error.code);
-        // Server errors (500, infinite recursion 42P17) should not be retried —
-        // they require a DB fix, not a timing fix.
-        const isServerError = error.code === '42P17' ||
-          error.message?.toLowerCase().includes('infinite recursion') ||
-          error.status === 500;
-        if (isServerError) {
+        console.warn('fetchProfile error:', error.message, '| code:', error.code, '| status:', error.status);
+        const isInfiniteRecursion = error.code === '42P17' ||
+          error.message?.toLowerCase().includes('infinite recursion');
+        const isTransient500 = error.status === 500 && !isInfiniteRecursion;
+
+        if (isInfiniteRecursion) {
+          // True DB config error — show error screen immediately
+          setProfileError('server_error');
+          setProfileLoaded(true);
+          return null;
+        }
+        if (isTransient500 && retryCount < 2) {
+          // PostgREST schema cache may need a moment — retry up to 2×
+          console.log(`fetchProfile: transient 500, retry ${retryCount + 1}/2…`);
+          await new Promise(r => setTimeout(r, 1500 * (retryCount + 1)));
+          return fetchProfile(userId, retryCount + 1);
+        }
+        if (isTransient500) {
           setProfileError('server_error');
           setProfileLoaded(true);
           return null;
@@ -144,7 +155,10 @@ export const AuthProvider = ({ children }) => {
         fetchProfile,
         signOut,
         dashboardMode,
-        setDashboardMode
+        setDashboardMode,
+        // Exposed so Retry can fully reset stale error state
+        setProfileError,
+        setLoading,
     }}>
       {children}
     </AuthContext.Provider>

@@ -8,7 +8,7 @@ import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 
 export default function DashboardSwitcher(props) {
-  const { profile, dashboardMode, loading, profileLoaded, profileError, session, fetchProfile, signOut } = useAuth();
+  const { profile, dashboardMode, loading, profileLoaded, profileError, setProfileError, setLoading, session, fetchProfile, signOut } = useAuth();
 
   // Show spinner while actively loading
   if (loading || !profileLoaded) {
@@ -36,7 +36,12 @@ export default function DashboardSwitcher(props) {
         {session && (
           <TouchableOpacity
             style={styles.retryBtn}
-            onPress={() => fetchProfile(session.user.id)}
+            onPress={() => {
+              // Reset stale error/loading state first so spinner shows
+              setProfileError(null);
+              setLoading(true);
+              fetchProfile(session.user.id);
+            }}
           >
             <Ionicons name="refresh" size={18} color="#fff" />
             <Text style={styles.retryBtnText}>Retry</Text>
