@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 
 export default function AdminUsersScreen({ route }) {
@@ -128,10 +128,12 @@ export default function AdminUsersScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <View style={{flexDirection:'row', alignItems:'center', marginBottom:15}}>
-          <GoBackBtn />
-          <Text style={styles.headerTitle}>User Management</Text>
-      </View>
+      <AppHeader
+        title="User Management"
+        subtitle="Students · Teachers · Parents"
+        colors={['#4c669f', '#192f6a']}
+      />
+      <View style={styles.innerContent}>
 
       {/* TABS */}
       <View style={styles.tabRow}>
@@ -291,12 +293,14 @@ export default function AdminUsersScreen({ route }) {
           </View>
         </View>
       </Modal>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' }, // Better bg color
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  innerContent: { flex: 1, padding: 16 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
   
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10, marginBottom: 15, elevation: 2 },

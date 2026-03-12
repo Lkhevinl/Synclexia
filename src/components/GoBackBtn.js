@@ -2,58 +2,54 @@ import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function GoBackBtn() {
+/**
+ * GoBackBtn — inline back button, works inside flex rows / gradient headers.
+ * Props:
+ *   color  — icon + border color (default '#333'; pass '#fff' on dark headers)
+ *   style  — additional style overrides
+ */
+export default function GoBackBtn({ color = '#333', style }) {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets(); // <--- Detects Notch/Dynamic Island automatically
 
   const handlePress = () => {
-    // 1. Smart Safety Check
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      // 2. Fallback to Home (AppTabs) if history is lost
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }], 
-      });
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     }
   };
 
+  const isDark = color === '#fff' || color?.startsWith('rgb(255');
+
   return (
-    <TouchableOpacity 
-      onPress={handlePress} 
-      style={[
-        styles.btn, 
-        { top: Math.max(insets.top + 10, 20) } // Dynamic positioning
-      ]}
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[styles.btn, isDark ? styles.btnLight : styles.btnDark, style]}
+      activeOpacity={0.75}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Ionicons name="chevron-back" size={24} color="#333" />
+      <Ionicons name="chevron-back" size={22} color={color} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
-    position: 'absolute',
-    left: 20,
-    zIndex: 100,
-    
-    // Modern "Glass" Look
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', // Slightly transparent
-    width: 45,
-    height: 45,
-    borderRadius: 25, // Perfect Circle
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-
-    // Professional Drop Shadow
-    boxShadow: '0px 4px 8px rgba(0,0,0,0.15)',
-    elevation: 6,
-
-    // Subtle border for contrast on light images
+  },
+  btnDark: {
+    backgroundColor: 'rgba(0,0,0,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
-  }
+    borderColor: 'rgba(0,0,0,0.08)',
+  },
+  btnLight: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
 });

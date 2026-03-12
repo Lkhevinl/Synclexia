@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../components/GoBackBtn';
+import AppHeader from '../components/AppHeader';
 import { supabase } from '../lib/supabase';
 
 export default function SupportScreen() {
@@ -93,7 +93,8 @@ export default function SupportScreen() {
 
   return (
     <View style={styles.container}>
-      <GoBackBtn />
+      <AppHeader title="Help & Support" colors={['#FBC02D', '#F57F17']} backColor="#333" />
+      <View style={styles.innerContent}>
       <View style={styles.tabs}>
           {['Help', 'Rate', 'About'].map(t => (
               <TouchableOpacity key={t} onPress={()=>setTab(t)} style={[styles.tabBtn, tab===t && styles.activeTab]}>
@@ -102,12 +103,14 @@ export default function SupportScreen() {
           ))}
       </View>
       <ScrollView style={styles.contentBox}>{renderContent()}</ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  innerContent: { flex: 1, padding: 20 },
   tabs: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 },
   tabBtn: { padding: 10, borderBottomWidth: 2, borderColor: 'transparent' },
   activeTab: { borderColor: '#FBC02D' },

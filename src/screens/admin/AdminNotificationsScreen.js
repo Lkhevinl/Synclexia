@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 
 export default function AdminNotificationsScreen() {
   const [activeTab, setActiveTab] = useState('Posted'); // 'Posted' | 'Drafts'
@@ -87,9 +87,12 @@ export default function AdminNotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <GoBackBtn />
-      <Text style={styles.headerTitle}>Notification Manager</Text>
-
+      <AppHeader
+        title="Notification Manager"
+        subtitle="Post announcements to users"
+        colors={['#0288D1', '#01579B']}
+      />
+      <View style={styles.innerContent}>
       {/* TABS */}
       <View style={styles.tabContainer}>
         <TouchableOpacity onPress={() => { setActiveTab('Posted'); setEditingId(null); setTitle(''); setContent(''); }} style={[styles.tab, activeTab === 'Posted' && styles.activeTab]}>
@@ -181,13 +184,14 @@ export default function AdminNotificationsScreen() {
             ListEmptyComponent={<Text style={{textAlign:'center', marginTop: 20, color:'#888'}}>No notifications found.</Text>}
         />
       )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#0277BD', marginBottom: 20, textAlign: 'center' },
+  container: { flex: 1, backgroundColor: '#fff' },
+  innerContent: { flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
   tabContainer: { flexDirection: 'row', backgroundColor: '#E1F5FE', borderRadius: 10, padding: 5, marginBottom: 20 },
   tab: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 8 },
   activeTab: { backgroundColor: '#0288D1' },

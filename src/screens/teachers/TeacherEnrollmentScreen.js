@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -125,10 +125,12 @@ export default function TeacherEnrollmentScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <GoBackBtn />
-        <Text style={styles.headerTitle}>Class Enrollment</Text>
-      </View>
+      <AppHeader
+        title="Class Enrollment"
+        subtitle="QR Code & Student Management"
+        colors={['#0288D1', '#01579B']}
+      />
+      <View style={styles.innerContent}>
       <View style={styles.qrCard}>
         <Text style={styles.qrTitle}>Your Class QR Code</Text>
         <Text style={styles.qrSubtitle}>Students scan this to enroll</Text>
@@ -202,14 +204,14 @@ export default function TeacherEnrollmentScreen() {
           ))
         )}
       </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  innerContent: { flex: 1, padding: 20 },
   qrCard: {
     backgroundColor: '#fff',
     borderRadius: 20,

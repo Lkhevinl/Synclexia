@@ -2,7 +2,6 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
@@ -67,26 +66,29 @@ import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalSc
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const TAB_BAR_STYLE = (insets) => ({
+// React Navigation v6 wraps the tab bar in a SafeAreaView that already
+// adds insets.bottom as padding. Do NOT add insets.bottom here too or it
+// doubles the bottom gap and pushes labels off-screen on iPhone.
+const TAB_BAR_STYLE = {
   backgroundColor: '#fff',
-  height: 60 + insets.bottom,
-  paddingBottom: 8 + insets.bottom,
+  height: 64,
+  paddingBottom: 6,
+  paddingTop: 8,
   borderTopLeftRadius: 20,
   borderTopRightRadius: 20,
   elevation: 5,
-});
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: -2 },
+  shadowOpacity: 0.06,
+  shadowRadius: 8,
+};
 
 function StudentTabs() {
-  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: {
-          ...TAB_BAR_STYLE(insets),
-          height: 65 + insets.bottom,
-          paddingBottom: 10 + insets.bottom,
-        },
+        tabBarStyle: TAB_BAR_STYLE,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -113,12 +115,11 @@ function StudentTabs() {
 }
 
 function AppTabs() {
-  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: TAB_BAR_STYLE(insets),
+        tabBarStyle: TAB_BAR_STYLE,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
@@ -136,12 +137,11 @@ function AppTabs() {
 }
 
 function TeacherTabs() {
-  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: TAB_BAR_STYLE(insets),
+        tabBarStyle: TAB_BAR_STYLE,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Dashboard')   iconName = focused ? 'home'          : 'home-outline';

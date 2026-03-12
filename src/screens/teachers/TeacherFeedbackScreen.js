@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert } 
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 
 export default function TeacherFeedbackScreen() {
   const { profile } = useAuth();
@@ -60,11 +60,15 @@ export default function TeacherFeedbackScreen() {
 
   return (
     <View style={styles.container}>
-      <GoBackBtn />
-      <Text style={styles.headerTitle}>Student Feedback</Text>
-      <FlatList 
+      <AppHeader
+        title="Student Feedback"
+        subtitle="Review & reply to student feedback"
+        colors={['#E91E63', '#880E4F']}
+      />
+      <FlatList
         data={feedbacks}
         keyExtractor={item => item.id}
+        contentContainerStyle={{ padding: 16 }}
         renderItem={({item}) => (
           <View style={styles.card}>
              <View style={styles.row}>
@@ -124,8 +128,7 @@ export default function TeacherFeedbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#0277BD', marginBottom: 20, textAlign: 'center' },
+  container: { flex: 1, backgroundColor: '#fff' },
   card: { padding: 15, borderBottomWidth: 1, borderColor: '#eee', marginBottom: 10 },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center' },

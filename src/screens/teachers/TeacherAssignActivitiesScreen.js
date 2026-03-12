@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
@@ -242,10 +241,10 @@ export default function TeacherAssignActivitiesScreen() {
   if (students.length === 0) {
     return (
       <View style={styles.container}>
-        <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
-          <GoBackBtn />
-          <Text style={styles.headerTitle}>Assign Activities</Text>
-        </LinearGradient>
+        <AppHeader
+          title="Assign Activities"
+          colors={['#4c669f', '#3b5998']}
+        />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
           <Ionicons name="people" size={80} color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
@@ -262,11 +261,11 @@ export default function TeacherAssignActivitiesScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
-        <GoBackBtn />
-        <Text style={styles.headerTitle}>Assign Activities</Text>
-        <Text style={styles.headerSub}>Select a student, configure & assign</Text>
-      </LinearGradient>
+      <AppHeader
+        title="Assign Activities"
+        subtitle="Select a student, configure & assign"
+        colors={['#4c669f', '#3b5998']}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.sectionLabel}>Select Student</Text>
         <FlatList
