@@ -11,12 +11,11 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [profileError, setProfileError] = useState(null); // null | 'server_error' | 'not_found'
-  const [dashboardMode, setDashboardMode] = useState('auto'); // 'auto', 'student', 'teacher'
+  const [profileError, setProfileError] = useState(null);
+  const [dashboardMode, setDashboardMode] = useState('auto');
 
   const clearStaleSession = async () => {
     try {
-      // Remove all supabase auth keys from AsyncStorage
       const keys = await AsyncStorage.getAllKeys();
       const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
       if (authKeys.length) await AsyncStorage.multiRemove(authKeys);
@@ -27,24 +26,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // 1. Check active session — await profile before clearing loading flag
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+    // 1. Restore session on mount
+    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
       if (error) {
-        // Invalid / expired refresh token — wipe stored token and sign out
         clearStaleSession();
         supabase.auth.signOut().catch(() => {});
         return;
       }
-      setSession(session);
-      if (session) await fetchProfile(session.user.id);
+      setSession(s);
+      if (s) await fetchProfile(s.user.id);
       else setProfileLoaded(true);
       setLoading(false);
     });
 
-    // 2. Listen for changes (Login OR Logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-        // Covers both manual sign-out and failed token refresh
+    // 2. Auth state listener — only react to explicit sign-in/sign-out events.
+    //    TOKEN_REFRESHED is intentionally ignored: Supabase updates its internal
+    //    token automatically; we don't need to update React state for that.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'SIGNED_OUT') {
         setSession(null);
         setProfile(null);
         setProfileLoaded(false);
@@ -52,15 +51,12 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-      setSession(session);
-      if (session) {
-        await fetchProfile(session.user.id);  // await so profile is set before loading clears
-      } else {
-        setProfile(null);
-        setProfileLoaded(true);
-        setDashboardMode('auto');
+      if (event === 'SIGNED_IN') {
+        if (!s) { setLoading(false); return; }
+        setSession(s);
+        await fetchProfile(s.user.id);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -128,37 +124,40 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 3. THE NEW LOGOUT FUNCTION
+  // LOGOUT: scope:'local' is instant (no network call) and stops the
+  // autoRefreshToken timer before AsyncStorage is cleared, so the timer
+  // cannot write a fresh token after we wipe storage.
   const signOut = async () => {
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (_) {
-      // Clear state locally even if Supabase logout fails
-    } finally {
-      setSession(null);
-      setProfile(null);
-      setProfileLoaded(false);
-      setDashboardMode('auto');
-    }
-    return true;
+      const keys = await AsyncStorage.getAllKeys();
+      const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
+      if (authKeys.length) await AsyncStorage.multiRemove(authKeys);
+    } catch (_) {}
+    setSession(null);
+    setProfile(null);
+    setProfileLoaded(false);
+    setDashboardMode('auto');
+    setLoading(false);
   };
 
+  const resetSigningOut = () => {};
+
   return (
-    <AuthContext.Provider value={{ 
-        session, 
-        profile, 
+    <AuthContext.Provider value={{
+        session,
+        profile,
         loading,
         profileLoaded,
         profileError,
-        setSession, 
+        setSession,
         fetchProfile,
         signOut,
         dashboardMode,
         setDashboardMode,
-        // Exposed so Retry can fully reset stale error state
         setProfileError,
         setLoading,
+        resetSigningOut,
     }}>
       {children}
     </AuthContext.Provider>

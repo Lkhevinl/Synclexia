@@ -30,11 +30,7 @@ export default function SettingsScreen({ navigation }) {
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out', style: 'destructive', onPress: async () => {
-          try { await signOut(); } catch (e) { Alert.alert('Error', e.message); }
-        },
-      },
+      { text: 'Log Out', style: 'destructive', onPress: () => { signOut(); } },
     ]);
   };
 
@@ -80,7 +76,7 @@ export default function SettingsScreen({ navigation }) {
         {/* ── PROFILE CARD ─────────────────────────────────── */}
         <View style={styles.profileCard}>
           <View style={styles.profileAvatar}>
-            <Text style={styles.profileInitial}>
+            <Text style={[styles.profileInitial, a11yTextStyle]}>
               {profile?.full_name?.[0]?.toUpperCase() || '?'}
             </Text>
           </View>
@@ -89,7 +85,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={[styles.profileEmail, a11yTextStyle]} numberOfLines={1}>{profile?.email || '—'}</Text>
             <View style={styles.profileBadge}>
               <Ionicons name="star" size={11} color="#F59E0B" />
-              <Text style={styles.profileBadgeText}>Level {xpToLevel(profile?.xp)}</Text>
+              <Text style={[styles.profileBadgeText, a11yTextStyle]}>Level {xpToLevel(profile?.xp)}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.editAvatarBtn} onPress={() => navigation.navigate('Profile')}>
@@ -98,7 +94,7 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* ── ACCOUNT ──────────────────────────────────────── */}
-        <Text style={styles.groupLabel}>ACCOUNT</Text>
+        <Text style={[styles.groupLabel, a11yTextStyle]}>ACCOUNT</Text>
         <View style={styles.card}>
           <SettingRow icon="create-outline" iconColor="#0288D1" label="Edit Profile"       onPress={() => navigation.navigate('Profile')} />
           <View style={styles.divider} />
@@ -106,7 +102,7 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* ── ACCESSIBILITY ─────────────────────────────────── */}
-        <Text style={styles.groupLabel}>ACCESSIBILITY</Text>
+        <Text style={[styles.groupLabel, a11yTextStyle]}>ACCESSIBILITY</Text>
         <View style={styles.card}>
           {/* Dyslexia toggle */}
           <View style={styles.settingRow}>
@@ -165,7 +161,7 @@ export default function SettingsScreen({ navigation }) {
                   onPress={() => updateTheme({ colorOverlay: opt.value })}
                 >
                   <Text style={styles.overlayEmoji}>{opt.emoji}</Text>
-                  <Text style={[styles.overlayLabel, theme.colorOverlay === opt.value && styles.overlayLabelActive]}>
+                  <Text style={[styles.overlayLabel, theme.colorOverlay === opt.value && styles.overlayLabelActive, a11yTextStyle]}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
@@ -175,7 +171,7 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* ── SUPPORT ──────────────────────────────────────── */}
-        <Text style={styles.groupLabel}>SUPPORT</Text>
+        <Text style={[styles.groupLabel, a11yTextStyle]}>SUPPORT</Text>
         <View style={styles.card}>
           <SettingRow icon="chatbubbles-outline" iconColor="#00897B" label="Send Feedback" onPress={() => navigation.navigate('Support')} />
           <View style={styles.divider} />
@@ -185,7 +181,7 @@ export default function SettingsScreen({ navigation }) {
         {/* ── ADMIN VIEW SWITCH ────────────────────────────── */}
         {profile?.role === 'admin' && (
           <>
-            <Text style={styles.groupLabel}>ADMIN</Text>
+            <Text style={[styles.groupLabel, a11yTextStyle]}>ADMIN</Text>
             <View style={styles.card}>
               <TouchableOpacity
                 style={styles.settingRow}

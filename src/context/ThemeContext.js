@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import a11yStyleRef from '../lib/a11yStyleRef';
 
 const THEME_STORAGE_KEY = '@synclexia_theme';
 
@@ -94,11 +94,10 @@ export const ThemeProvider = ({ children }) => {
   // Combined — use this on any Text that should respect accessibility settings
   const a11yTextStyle = { ...dyslexiaStyle, ...letterSpacingStyle, ...fontFamilyStyle };
 
-  // ── Apply to EVERY <Text> in the app automatically ──────────────────
-  useEffect(() => {
-    if (!Text.defaultProps) Text.defaultProps = {};
-    Text.defaultProps.style = Object.keys(a11yTextStyle).length > 0 ? a11yTextStyle : undefined;
-  }, [theme]);
+  // ── Keep the global ref up to date so the patched Text always reads
+  //    the latest value — updated synchronously during render so it is
+  //    current before any child Text renders.
+  a11yStyleRef.current = a11yTextStyle;
 
   return (
     <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor, getDyslexiaTextStyle, dyslexiaStyle, letterSpacingStyle, getFontFamily, fontFamilyStyle, a11yTextStyle }}>

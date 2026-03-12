@@ -11,7 +11,7 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   
   // Get setSession to force update the app state immediately upon success
-  const { setSession } = useAuth(); 
+  const { setSession, resetSigningOut } = useAuth(); 
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,6 +48,7 @@ export default function LoginScreen({ navigation }) {
             // DB error during ban check — let the user in, AuthContext handles it
           }
           // 3. Force App Context to Update
+          if (resetSigningOut) resetSigningOut(); // re-enable auth listener after logout
           if (setSession) {
              setSession(data.session);
           }
