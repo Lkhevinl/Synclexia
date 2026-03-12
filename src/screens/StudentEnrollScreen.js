@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,8 @@ export default function StudentEnrollScreen({ navigation }) {
   const [enrolling, setEnrolling] = useState(false);
   const [myTeacher, setMyTeacher] = useState(null);
   const [myTeachers, setMyTeachers] = useState([]);
+  const [showManual, setShowManual] = useState(false);
+  const [manualCode, setManualCode] = useState('');
 
   useEffect(() => {
     requestPermission();
@@ -59,61 +61,120 @@ export default function StudentEnrollScreen({ navigation }) {
     setScanned(true);
     setEnrolling(true);
 
-    // Extract teacher ID from QR code format: TEACHER_{teacherId}_{timestamp}
-    const match = data.match(/^TEACHER_([^_]+)_\d+$/);
-    if (!match) {
-      Alert.alert('Invalid QR Code', 'This is not a valid enrollment code.');
+    try {
+      let teacherId = null;
+
+      // New format: TCODE_{teacher_code}
+      const newMatch = data.match(/^TCODE_([A-Z0-9]{6})$/);
+      if (newMatch) {
+        const { data: resolvedId, error: rpcError } = await supabase
+          .rpc('get_teacher_id_by_code', { p_code: newMatch[1] });
+        if (rpcError) throw new Error(rpcError.message);
+        teacherId = resolvedId ?? null;
+      } else {
+        // Legacy format: TEACHER_{uuid}_{timestamp}
+        const oldMatch = data.match(/^TEACHER_([^_]+)_\d+$/);
+        if (oldMatch) teacherId = oldMatch[1];
+      }
+
+      if (!teacherId) {
+        Alert.alert('Invalid QR Code', 'This is not a valid enrollment code.');
+        setScanned(false);
+        setEnrolling(false);
+        return;
+      }
+
+      const enrolled = await enrollWithTeacherId(teacherId);
+      if (enrolled) {
+        navigation.replace('Home');
+      } else {
+        setScanned(false);
+        setEnrolling(false);
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Something went wrong. Please try again.');
       setScanned(false);
       setEnrolling(false);
+    }
+  };
+
+  const handleManualEnroll = async () => {
+    const code = manualCode.trim().toUpperCase();
+    if (code.length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter the 6-character code from your teacher.');
       return;
     }
+    setEnrolling(true);
+    try {
+      console.log('[Enroll] Looking up teacher_code via RPC:', code);
 
-    const teacherId = match[1];
+      // Use a SECURITY DEFINER RPC to bypass RLS — students can't
+      // directly query other profiles rows.
+      const { data: teacherId, error: rpcError } = await supabase
+        .rpc('get_teacher_id_by_code', { p_code: code });
 
-    // Check if already enrolled with this specific teacher
-    const { data: existing } = await supabase
+      console.log('[Enroll] RPC result:', { teacherId, rpcError });
+
+      if (rpcError) throw new Error(rpcError.message || JSON.stringify(rpcError));
+
+      if (!teacherId) {
+        Alert.alert('Code Not Found', 'No teacher was found with that code. Please double-check and try again.');
+        setEnrolling(false);
+        return;
+      }
+
+      const enrolled = await enrollWithTeacherId(teacherId);
+      if (enrolled) {
+        setManualCode('');
+        setShowManual(false);
+        navigation.replace('Home');
+      } else {
+        setEnrolling(false);
+      }
+    } catch (e) {
+      console.error('[Enroll] Error:', e.message);
+      Alert.alert('Enrollment Failed', e.message || 'Something went wrong. Please try again.');
+      setEnrolling(false);
+    }
+  };
+
+  // Returns true on success, false if already enrolled, throws on error
+  const enrollWithTeacherId = async (teacherId) => {
+    console.log('[Enroll] Checking existing enrollment for teacher:', teacherId);
+
+    const { data: existing, error: existingError } = await supabase
       .from('enrollments')
-      .select('*')
+      .select('id')
       .eq('student_id', profile?.id)
       .eq('teacher_id', teacherId)
       .maybeSingle();
 
+    if (existingError) throw new Error(existingError.message || JSON.stringify(existingError));
+
     if (existing) {
       Alert.alert('Already Enrolled', 'You are already enrolled with this teacher.');
-      setEnrolling(false);
-      return;
+      return false;
     }
 
-    // Check if this is the first enrollment (will be primary)
-    const { count } = await supabase
+    console.log('[Enroll] Inserting enrollment...');
+
+    const { count, error: countError } = await supabase
       .from('enrollments')
       .select('*', { count: 'exact', head: true })
       .eq('student_id', profile?.id);
 
+    if (countError) throw new Error(countError.message || JSON.stringify(countError));
+
     const isPrimary = (count || 0) === 0;
 
-    // Enroll student
-    const insertRow = { student_id: profile?.id, teacher_id: teacherId, is_primary: isPrimary };
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('enrollments')
-      .insert([insertRow]);
+      .insert([{ student_id: profile?.id, teacher_id: teacherId, is_primary: isPrimary }]);
 
-    if (error) {
-      Alert.alert('Error', error.message);
-      setScanned(false);
-      setEnrolling(false);
-      return;
-    }
+    if (insertError) throw new Error(insertError.message || JSON.stringify(insertError));
 
-    Alert.alert('Success', 'You have been enrolled!', [
-      {
-        text: 'OK',
-        onPress: () => {
-          checkExistingEnrollment();
-          setEnrolling(false);
-        },
-      },
-    ]);
+    console.log('[Enroll] Enrollment successful!');
+    return true;
   };
 
   const unenroll = (enrollmentId, wasPrimary) => {
@@ -218,33 +279,87 @@ export default function StudentEnrollScreen({ navigation }) {
       ) : (
         <>
           <Text style={styles.instruction}>Scan your teacher's QR code</Text>
-          <View style={styles.cameraContainer}>
-            <CameraView
-              style={styles.camera}
-              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-              barcodeScannerSettings={{
-                barcodeTypes: ['qr'],
-              }}
-            />
-            <View style={styles.overlay}>
-              <View style={styles.scanArea} />
-            </View>
+
+          {/* Toggle: Camera / Manual */}
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[styles.tab, !showManual && styles.tabActive]}
+              onPress={() => setShowManual(false)}
+            >
+              <Ionicons name="qr-code-outline" size={16} color={!showManual ? '#fff' : '#0288D1'} />
+              <Text style={[styles.tabText, !showManual && styles.tabTextActive]}>Scan QR</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, showManual && styles.tabActive]}
+              onPress={() => setShowManual(true)}
+            >
+              <Ionicons name="keypad-outline" size={16} color={showManual ? '#fff' : '#0288D1'} />
+              <Text style={[styles.tabText, showManual && styles.tabTextActive]}>Enter Code</Text>
+            </TouchableOpacity>
           </View>
 
-          {enrolling && (
-            <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color="#fff" />
-              <Text style={styles.loadingText}>Enrolling...</Text>
-            </View>
-          )}
+          {showManual ? (
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+              <View style={styles.manualCard}>
+                <Ionicons name="key-outline" size={48} color="#0288D1" />
+                <Text style={styles.manualTitle}>Enter Enrollment Code</Text>
+                <Text style={styles.manualSubtitle}>
+                  Ask your teacher for their 6-character code
+                </Text>
+                <TextInput
+                  style={styles.codeInput}
+                  value={manualCode}
+                  onChangeText={t => setManualCode(t.toUpperCase())}
+                  placeholder="A B C 1 2 3"
+                  placeholderTextColor="#ccc"
+                  autoCapitalize="characters"
+                  maxLength={6}
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={[styles.rescanBtn, enrolling && { opacity: 0.6 }]}
+                  onPress={handleManualEnroll}
+                  disabled={enrolling}
+                >
+                  {enrolling ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.rescanText}>Enroll</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </KeyboardAvoidingView>
+          ) : (
+            <>
+              <View style={styles.cameraContainer}>
+                <CameraView
+                  style={styles.camera}
+                  onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ['qr'],
+                  }}
+                />
+                <View style={styles.overlay}>
+                  <View style={styles.scanArea} />
+                </View>
+              </View>
 
-          {scanned && !enrolling && (
-            <TouchableOpacity
-              style={styles.rescanBtn}
-              onPress={() => setScanned(false)}
-            >
-              <Text style={styles.rescanText}>Tap to Scan Again</Text>
-            </TouchableOpacity>
+              {enrolling && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color="#fff" />
+                  <Text style={styles.loadingText}>Enrolling...</Text>
+                </View>
+              )}
+
+              {scanned && !enrolling && (
+                <TouchableOpacity
+                  style={styles.rescanBtn}
+                  onPress={() => setScanned(false)}
+                >
+                  <Text style={styles.rescanText}>Tap to Scan Again</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </>
       )}
@@ -333,4 +448,51 @@ const styles = StyleSheet.create({
   },
   errorText: { fontSize: 18, fontWeight: 'bold', color: '#666', marginTop: 15 },
   errorSubtext: { fontSize: 14, color: '#999', marginTop: 5 },
+
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  tabActive: { backgroundColor: '#0288D1' },
+  tabText: { color: '#0288D1', fontWeight: 'bold', fontSize: 14 },
+  tabTextActive: { color: '#fff' },
+
+  manualCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  manualTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 16, marginBottom: 6 },
+  manualSubtitle: { fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 24 },
+  codeInput: {
+    borderWidth: 2,
+    borderColor: '#0288D1',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    fontSize: 28,
+    fontWeight: 'bold',
+    letterSpacing: 8,
+    textAlign: 'center',
+    color: '#222',
+    width: '100%',
+    marginBottom: 20,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
 });

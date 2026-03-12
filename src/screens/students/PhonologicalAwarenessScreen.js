@@ -109,9 +109,12 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   const current = items[idx];
   const options = Array.from({ length: Math.min(4, 4) }, (_, i) => i + 1).filter(n => n <= 5);
 
-  const speak = () => { if (current) Speech.speak(current.word, { rate: 0.6 }); };
+  const speak = () => { if (current) { Speech.stop(); Speech.speak(current.word, { rate: 0.6 }); } };
 
-  useEffect(() => { if (current) speak(); }, [idx]);
+  useEffect(() => {
+    if (current) speak();
+    return () => { Speech.stop(); };
+  }, [idx]);
 
   const handleSelect = (n) => {
     if (feedback) return;
@@ -120,11 +123,11 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
     setFeedback(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
       setScore(s => s + 1);
-      Speech.speak('Correct!', { rate: 0.9 });
+      Speech.stop(); Speech.speak('Correct!', { rate: 0.9 });
       Animated.spring(bounceAnim, { toValue: 1.25, useNativeDriver: true, friction: 4 }).start(() =>
         bounceAnim.setValue(1));
     } else {
-      Speech.speak(`${current.word} has ${current.syllables} syllable${current.syllables > 1 ? 's' : ''}.`, { rate: 0.8 });
+      Speech.stop(); Speech.speak(`${current.word} has ${current.syllables} syllable${current.syllables > 1 ? 's' : ''}.`, { rate: 0.8 });
     }
     setTimeout(() => {
       if (idx + 1 >= items.length) {
@@ -189,8 +192,11 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
   const current = items[idx];
   const choices = current ? shuffleArr([current.correct, ...current.distractors]) : [];
 
-  const speak = (w) => Speech.speak(w, { rate: 0.65 });
-  useEffect(() => { if (current) speak(current.target); }, [idx]);
+  const speak = (w) => { Speech.stop(); Speech.speak(w, { rate: 0.65 }); };
+  useEffect(() => {
+    if (current) speak(current.target);
+    return () => { Speech.stop(); };
+  }, [idx]);
 
   const handleSelect = (choice) => {
     if (feedback) return;
@@ -199,9 +205,9 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
     setFeedback(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
       setScore(s => s + 1);
-      Speech.speak('Yes! They rhyme!', { rate: 0.9 });
+      Speech.stop(); Speech.speak('Yes! They rhyme!', { rate: 0.9 });
     } else {
-      Speech.speak(`${current.target} and ${current.correct} rhyme.`, { rate: 0.8 });
+      Speech.stop(); Speech.speak(`${current.target} and ${current.correct} rhyme.`, { rate: 0.8 });
     }
     setTimeout(() => {
       if (idx + 1 >= items.length) {
@@ -264,13 +270,17 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   const [done, setDone] = useState(false);
 
   const current = items[idx];
-  useEffect(() => { if (current) Speech.speak(current.word, { rate: 0.6 }); }, [idx]);
+  useEffect(() => {
+    if (current) { Speech.stop(); Speech.speak(current.word, { rate: 0.6 }); }
+    return () => { Speech.stop(); };
+  }, [idx]);
 
   const handleSelect = (opt) => {
     if (feedback) return;
     setSelected(opt);
     const isCorrect = opt === current.answer;
     setFeedback(isCorrect ? 'correct' : 'wrong');
+    Speech.stop();
     isCorrect
       ? Speech.speak('Correct!', { rate: 0.9 })
       : Speech.speak(`The ${current.position} sound is ${current.answer}.`, { rate: 0.8 });
@@ -296,7 +306,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
       </LinearGradient>
       <View style={g.body}>
-        <TouchableOpacity style={g.wordCard} onPress={() => Speech.speak(current.word, { rate: 0.6 })}>
+        <TouchableOpacity style={g.wordCard} onPress={() => { Speech.stop(); Speech.speak(current.word, { rate: 0.6 }); }}>
           <Text style={{ fontSize: 40 }}>👂</Text>
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
