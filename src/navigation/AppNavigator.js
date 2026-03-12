@@ -27,6 +27,7 @@ import TeacherAddStoryScreen from '../screens/teachers/TeacherAddStoryScreen';
 import TeacherUsersScreen from '../screens/teachers/TeacherUsersScreen';
 import TeacherNotificationsScreen from '../screens/teachers/TeacherNotificationsScreen';
 import TeacherFeedbackScreen from '../screens/teachers/TeacherFeedbackScreen';
+import TeacherMessagesScreen from '../screens/teachers/TeacherMessagesScreen';
 import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen';
 import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen';
 import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen';
@@ -49,19 +50,14 @@ import ParentMessagesScreen from '../screens/parents/ParentMessagesScreen';
 import ParentAssignmentsScreen from '../screens/parents/ParentAssignmentsScreen';
 import ParentActivityLogScreen from '../screens/parents/ParentActivityLogScreen';
 import ParentLinkChildScreen from '../screens/parents/ParentLinkChildScreen';
+import ParentEditChildScreen from '../screens/parents/ParentEditChildScreen';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
-import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
 import AdminEnrollmentScreen from '../screens/admin/AdminEnrollmentScreen';
-import AdminAssignActivitiesScreen from '../screens/admin/AdminAssignActivitiesScreen';
-import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
-import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
-import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
-import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
 import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
 import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
@@ -71,20 +67,58 @@ import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalSc
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const TAB_BAR_STYLE = (insets) => ({
+  backgroundColor: '#fff',
+  height: 60 + insets.bottom,
+  paddingBottom: 8 + insets.bottom,
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+  elevation: 5,
+});
+
+function StudentTabs() {
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          ...TAB_BAR_STYLE(insets),
+          height: 65 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
+        },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Dashboard')  iconName = focused ? 'home'          : 'home-outline';
+          else if (route.name === 'Reading')   iconName = focused ? 'book'          : 'book-outline';
+          else if (route.name === 'Phonics')   iconName = focused ? 'volume-high'  : 'volume-high-outline';
+          else if (route.name === 'Writing')   iconName = focused ? 'pencil'       : 'pencil-outline';
+          else if (route.name === 'Scan')      iconName = focused ? 'camera'       : 'camera-outline';
+          else if (route.name === 'Settings')  iconName = focused ? 'settings'     : 'settings-outline';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#FF9800',
+        tabBarInactiveTintColor: 'gray',
+      })}
+    >
+      <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
+      <Tab.Screen name="Reading"   component={ReadingScreen} />
+      <Tab.Screen name="Phonics"   component={PhonicsScreen} />
+      <Tab.Screen name="Writing"   component={WritingScreen} />
+      <Tab.Screen name="Scan"      component={ScanScreen} />
+      <Tab.Screen name="Settings"  component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+}
+
 function AppTabs() {
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { 
-            backgroundColor: '#fff', 
-            height: 60 + insets.bottom, 
-            paddingBottom: 8 + insets.bottom, 
-            borderTopLeftRadius: 20, 
-            borderTopRightRadius: 20,
-            elevation: 5
-        },
+        tabBarStyle: TAB_BAR_STYLE(insets),
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
           if (route.name === 'Dashboard') iconName = focused ? 'home' : 'home-outline';
@@ -97,6 +131,35 @@ function AppTabs() {
     >
       <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
+    </Tab.Navigator>
+  );
+}
+
+function TeacherTabs() {
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: TAB_BAR_STYLE(insets),
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          if (route.name === 'Dashboard')   iconName = focused ? 'home'          : 'home-outline';
+          else if (route.name === 'Students')    iconName = focused ? 'people'        : 'people-outline';
+          else if (route.name === 'Activities')  iconName = focused ? 'book'          : 'book-outline';
+          else if (route.name === 'Progress')    iconName = focused ? 'bar-chart'     : 'bar-chart-outline';
+          else if (route.name === 'Settings')    iconName = focused ? 'settings'      : 'settings-outline';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#FF9800',
+        tabBarInactiveTintColor: 'gray',
+      })}
+    >
+      <Tab.Screen name="Dashboard"  component={DashboardSwitcher} />
+      <Tab.Screen name="Students"   component={TeacherUsersScreen} />
+      <Tab.Screen name="Activities" component={TeacherAssignActivitiesScreen} />
+      <Tab.Screen name="Progress"   component={TeacherProgressScreen} />
+      <Tab.Screen name="Settings"   component={SettingsScreen} />
     </Tab.Navigator>
   );
 }
@@ -120,12 +183,17 @@ export default function AppNavigator() {
     );
   }
 
+  // Role-based home tabs
+  const HomeComponent = isTeacher ? TeacherTabs
+                      : (profile?.role === 'student' || (!isTeacher && !isAdmin && !isParent)) ? StudentTabs
+                      : AppTabs;
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {session ? (
         <>
             {/* User App */}
-            <Stack.Screen name="Home" component={AppTabs} />
+            <Stack.Screen name="Home" component={HomeComponent} />
             <Stack.Screen name="Phonics" component={PhonicsScreen} />
             <Stack.Screen name="Writing" component={WritingScreen} />
             <Stack.Screen name="Reading" component={ReadingScreen} />
@@ -151,6 +219,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="ParentAssignments" component={ParentAssignmentsScreen} />
                 <Stack.Screen name="ParentActivityLog" component={ParentActivityLogScreen} />
                 <Stack.Screen name="ParentLinkChild" component={ParentLinkChildScreen} />
+                <Stack.Screen name="ParentEditChild" component={ParentEditChildScreen} />
               </>
             )}
             {(isTeacher || isAdmin) && (
@@ -161,6 +230,7 @@ export default function AppNavigator() {
                 <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
                 <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
                 <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
+                <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
                 <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
                 <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
                 <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
@@ -173,15 +243,9 @@ export default function AppNavigator() {
               <>
                 <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
                 <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-                <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
                 <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
                 <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
                 <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
-                <Stack.Screen name="AdminAssignActivities" component={AdminAssignActivitiesScreen} />
-                <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
-                <Stack.Screen name="AdminSpelling" component={AdminSpellingScreen} />
-                <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
-                <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
                 <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
                 <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
               </>

@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import EmptyState from '../../components/EmptyState';
 
-export default function AdminUsersScreen() {
+export default function AdminUsersScreen({ route }) {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [search, setSearch] = useState('');
@@ -13,39 +13,48 @@ export default function AdminUsersScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState(route?.params?.filterRole || 'student');
   const [approvingId, setApprovingId] = useState(null);
+
+  // Sync tab when navigating here from dashboard with a different filterRole
+  useEffect(() => {
+    if (route?.params?.filterRole) {
+      setActiveTab(route.params.filterRole);
+    }
+  }, [route?.params?.filterRole]);
 
   useEffect(() => { fetchUsers(); }, []);
 
-  // Search Logic
+  // Search + tab filter
   useEffect(() => {
     let base = users;
-    if (activeTab === 'pending') {
-      base = users.filter(u => u.role === 'teacher' && u.status === 'pending');
+    if (activeTab === 'student') base = users.filter(u => u.role === 'student' || u.role === 'user');
+    else if (activeTab === 'teacher') base = users.filter(u => u.role === 'teacher' && u.status !== 'pending');
+    else if (activeTab === 'parent') base = users.filter(u => u.role === 'parent');
+    else if (activeTab === 'pending') base = users.filter(u => u.role === 'teacher' && u.status === 'pending');
+    if (search.trim() !== '') {
+      const lowerSearch = search.toLowerCase();
+      base = base.filter(u =>
+        (u.full_name && u.full_name.toLowerCase().includes(lowerSearch)) ||
+        (u.email && u.email.toLowerCase().includes(lowerSearch))
+      );
     }
-    if (search.trim() === '') {
-        setFilteredUsers(base);
-    } else {
-        const lowerSearch = search.toLowerCase();
-        const filtered = base.filter(u => 
-            (u.full_name && u.full_name.toLowerCase().includes(lowerSearch)) || 
-            (u.email && u.email.toLowerCase().includes(lowerSearch))
-        );
-        setFilteredUsers(filtered);
-    }
+    setFilteredUsers(base);
   }, [search, users, activeTab]);
 
   const fetchUsers = async () => {
     setRefreshing(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .in('role', ['student', 'user', 'teacher', 'parent'])
       .order('full_name', { ascending: true });
-    if (data) {
-        setUsers(data);
-        setFilteredUsers(data);
+    if (error) {
+      console.error('[AdminUsers] fetchUsers error:', JSON.stringify(error, null, 2));
+      Alert.alert('Load Error', `Could not load users.\n\n${error.message}`);
+    } else {
+      setUsers(data ?? []);
+      // Do NOT call setFilteredUsers here — the filter useEffect handles it
     }
     setRefreshing(false);
   };
@@ -121,23 +130,35 @@ export default function AdminUsersScreen() {
     <View style={styles.container}>
       <View style={{flexDirection:'row', alignItems:'center', marginBottom:15}}>
           <GoBackBtn />
-          <Text style={styles.headerTitle}>Student Management</Text>
+          <Text style={styles.headerTitle}>User Management</Text>
       </View>
 
       {/* TABS */}
       <View style={styles.tabRow}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-          onPress={() => setActiveTab('all')}
+          style={[styles.tab, activeTab === 'student' && styles.tabActive]}
+          onPress={() => setActiveTab('student')}
         >
-          <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>All Users</Text>
+          <Text style={[styles.tabText, activeTab === 'student' && styles.tabTextActive]}>Students</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'pending' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'teacher' && styles.tabActive]}
+          onPress={() => setActiveTab('teacher')}
+        >
+          <Text style={[styles.tabText, activeTab === 'teacher' && styles.tabTextActive]}>Teachers</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'parent' && styles.tabActive]}
+          onPress={() => setActiveTab('parent')}
+        >
+          <Text style={[styles.tabText, activeTab === 'parent' && styles.tabTextActive]}>Parents</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'pending' && styles.tabPending]}
           onPress={() => setActiveTab('pending')}
         >
           <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
-            {'Pending Teachers'}
+            {'Pending'}
             {users.filter(u => u.role === 'teacher' && u.status === 'pending').length > 0
               ? ` (${users.filter(u => u.role === 'teacher' && u.status === 'pending').length})`
               : ''}
@@ -173,7 +194,7 @@ export default function AdminUsersScreen() {
         data={filteredUsers}
         keyExtractor={item => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />}
-        ListEmptyComponent={<EmptyState icon="people" message={search ? "No user found." : "No students registered yet."} />}
+        ListEmptyComponent={<EmptyState icon="people" message={search ? "No user found." : `No ${activeTab === 'pending' ? 'pending teachers' : activeTab + 's'} registered yet.`} />}
         renderItem={({item}) => (
             <View style={styles.row}>
                 <View style={{flex: 2}}>
@@ -294,10 +315,11 @@ const styles = StyleSheet.create({
   trashBtn: { backgroundColor: '#EF5350', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   editBtn: { backgroundColor: '#0288D1', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   approveBtn: { backgroundColor: '#4CAF50', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-  tabRow: { flexDirection: 'row', marginBottom: 15, gap: 10 },
+  tabRow: { flexDirection: 'row', marginBottom: 15, gap: 6 },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center' },
   tabActive: { backgroundColor: '#0288D1' },
-  tabText: { fontWeight: 'bold', color: '#666', fontSize: 12 },
+  tabPending: { backgroundColor: '#E65100' },
+  tabText: { fontWeight: 'bold', color: '#666', fontSize: 11 },
   tabTextActive: { color: '#fff' },
   pendingBadge: { backgroundColor: '#FFF3E0', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2, alignSelf: 'flex-start' },
   pendingBadgeText: { fontSize: 10, color: '#E65100', fontWeight: 'bold' },

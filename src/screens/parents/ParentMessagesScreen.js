@@ -28,7 +28,11 @@ export default function ParentMessagesScreen({ route }) {
   useEffect(() => { init(); }, []);
 
   const init = async () => {
-    // Find the teacher linked to this child via enrollments
+    // 1. Try to find the teacher via enrollments (requires parent RLS policy).
+    //    See database/fix_parent_enrollment_rls.sql — run that migration in
+    //    Supabase if the teacher is not found despite the student being enrolled.
+    let tid = null;
+
     const { data: enrollment } = await supabase
       .from('enrollments')
       .select('teacher_id')
@@ -37,7 +41,27 @@ export default function ParentMessagesScreen({ route }) {
       .maybeSingle();
 
     if (enrollment?.teacher_id) {
-      const tid = enrollment.teacher_id;
+      tid = enrollment.teacher_id;
+    } else {
+      // 2. Fallback: look for an existing conversation in parent_messages
+      //    (handles case where teacher already initiated contact, or the
+      //    enrollment RLS policy hasn't been applied yet).
+      const { data: existingMsg } = await supabase
+        .from('parent_messages')
+        .select('sender_id, receiver_id')
+        .or(`and(parent_id.eq.${profile?.id},receiver_id.neq.${profile?.id}),and(parent_id.eq.${profile?.id},sender_id.neq.${profile?.id})`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingMsg) {
+        tid = existingMsg.sender_id === profile?.id
+          ? existingMsg.receiver_id
+          : existingMsg.sender_id;
+      }
+    }
+
+    if (tid) {
       setTeacherId(tid);
       teacherIdRef.current = tid;
       const { data: tp } = await supabase
@@ -157,8 +181,12 @@ export default function ParentMessagesScreen({ route }) {
       ) : !teacherId ? (
         <View style={s.centered}>
           <Ionicons name="school-outline" size={60} color="#ddd" />
-          <Text style={s.emptyTitle}>No teacher found</Text>
-          <Text style={s.emptyHint}>Your child needs to be enrolled in a class first.</Text>
+          <Text style={s.emptyTitle}>No teacher linked yet</Text>
+          <Text style={s.emptyHint}>
+            Your child hasn't been enrolled in a class yet.{'\n'}
+            Ask the teacher to scan the Class QR Code with your child's account,
+            or contact the school admin to complete enrollment.
+          </Text>
         </View>
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
