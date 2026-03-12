@@ -252,13 +252,19 @@ export default function DashboardScreen({ navigation }) {
       >
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <View style={styles.headerLogoWrapper}>
-              <Image
-                source={require('../../../assets/icon.png')}
-                style={styles.headerLogoImg}
-                resizeMode="contain"
-              />
-            </View>
+            <TouchableOpacity style={styles.headerLogoWrapper} onPress={() => navigation.navigate('Profile')} activeOpacity={0.8}>
+              {profile?.avatar_url ? (
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={styles.headerLogoImg}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.headerLogoInitial}>
+                  {profile?.full_name?.[0]?.toUpperCase() || '?'}
+                </Text>
+              )}
+            </TouchableOpacity>
             <View style={{ marginLeft: 10 }}>
               <Text style={styles.headerAppName}>Synclexia</Text>
               <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || "Learner"}! 👋</Text>
@@ -356,10 +362,7 @@ export default function DashboardScreen({ navigation }) {
           <MenuCard title="Reading"     icon="📖" color="#2196F3" route="Reading"               activityType="reading" />
           <MenuCard title="Spelling"    icon="🔤" color="#E91E63" route="Spelling"              activityType="spelling" />
           <MenuCard title="Activities"  icon="🎮" color="#00897B" route="PhonicsActivity"       activityType="phonics_activity" />
-          <MenuCard title="Scan"        icon="📷" color="#9C27B0" route="Scan"                  activityType="scan" />
           <MenuCard title="Awareness"   icon="🎧" color="#6A1B9A" route="PhonologicalAwareness" activityType="phonological_awareness" />
-          <MenuCard title="Speech"      icon="🎤" color="#F44336" route="SpeechToText"          activityType="speech_to_text" />
-          <MenuCard title="Read Aloud"  icon="🔊" color="#0288D1" route="TextToSpeech"          activityType="text_to_speech" />
         </View>
 
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Gamification</Text>
@@ -447,8 +450,9 @@ const styles = StyleSheet.create({
   headerGradient: { paddingTop: 55, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  headerLogoWrapper: { width: 48, height: 48, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.18)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  headerLogoImg: { width: 44, height: 44, borderRadius: 11 },
+  headerLogoWrapper: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.30)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' },
+  headerLogoImg: { width: 48, height: 48, borderRadius: 24 },
+  headerLogoInitial: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   headerAppName: { fontSize: 10, fontWeight: '800', color: 'rgba(100,30,60,0.6)', letterSpacing: 2, textTransform: 'uppercase' },
   greeting: { fontSize: 18, fontWeight: 'bold', color: '#7B2D52', marginTop: 1 },
   subGreeting: { color: '#9E5070', fontSize: 12, marginTop: 1 },

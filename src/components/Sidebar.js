@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -61,20 +61,33 @@ export default function Sidebar({ visible, onClose }) {
           <View style={s.drawer}>
 
             {/* HEADER */}
-            <LinearGradient colors={['#546E7A', '#37474F']} style={s.header}>
+            <View style={s.header}>
+              {/* Background: custom banner or default gradient */}
+              {profile?.banner_url ? (
+                <Image source={{ uri: profile.banner_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : (
+                <LinearGradient colors={['#546E7A', '#37474F']} style={StyleSheet.absoluteFill} />
+              )}
+              {/* Dark overlay for readability over any background */}
+              <View style={s.headerOverlay} />
+
               <TouchableOpacity onPress={onClose} style={s.closeBtn}>
                 <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>{profile?.full_name?.charAt(0).toUpperCase() || 'U'}</Text>
-              </View>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} />
+              ) : (
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>{profile?.full_name?.charAt(0).toUpperCase() || 'U'}</Text>
+                </View>
+              )}
               <Text style={s.name}>{profile?.full_name || 'User'}</Text>
               <Text style={s.email}>{profile?.email}</Text>
               <View style={s.badgeRow}>
                 <Ionicons name="star" size={11} color="#F59E0B" />
                 <Text style={s.badgeText}>Level {xpToLevel(profile?.xp)}</Text>
               </View>
-            </LinearGradient>
+            </View>
 
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -278,9 +291,11 @@ const s = StyleSheet.create({
   drawer: { width: '85%', backgroundColor: '#F0F2F5', elevation: 10 },
 
   // Header
-  header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20 },
+  header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, overflow: 'hidden' },
+  headerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.30)' },
   closeBtn: { alignSelf: 'flex-end', marginBottom: 12 },
   avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  avatarImg: { width: 56, height: 56, borderRadius: 28, marginBottom: 10, borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)' },
   avatarText: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   name: { fontSize: 17, fontWeight: '700', color: '#fff' },
   email: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
