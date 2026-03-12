@@ -114,14 +114,14 @@ export default function AppNavigator() {
   // Teacher account awaiting admin approval — show holding screen
   if (session && profile?.role === 'teacher' && profile?.status === 'pending') {
     return (
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
         <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
       </Stack.Navigator>
     );
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {session ? (
         <>
             {/* User App */}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar,
-  FlatList, Switch, Modal, TextInput, Alert,
+  FlatList, Switch, Modal, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,7 +37,9 @@ export default function AdminAssignActivitiesScreen({ navigation }) {
   const [pendingActivity, setPendingActivity] = useState(null);
   const [configNotes, setConfigNotes] = useState('');
   const [configTarget, setConfigTarget] = useState('1');
-  const [configDeadline, setConfigDeadline] = useState(''); // string MM/DD/YYYY
+  const [configDeadline, setConfigDeadline] = useState('');
+  const [configError, setConfigError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchEnrolledStudents();
@@ -102,46 +104,71 @@ export default function AdminAssignActivitiesScreen({ navigation }) {
   };
 
   const confirmAssignment = async () => {
+    if (saving) return;
+    setConfigError('');
     const targetNum = parseInt(configTarget) || 1;
 
-    // Parse deadline string MM/DD/YYYY
+    // Parse deadline — if blank or unparseable just skip it
     let deadlineISO = null;
     if (configDeadline.trim()) {
-      const parts = configDeadline.trim().split('/');
-      if (parts.length === 3) {
-        const d = new Date(parts[2], parseInt(parts[0]) - 1, parseInt(parts[1]));
-        if (!isNaN(d.getTime()) && d > new Date()) {
-          deadlineISO = d.toISOString();
-        } else {
-          Alert.alert('Invalid Date', 'Please enter a future date in MM/DD/YYYY format, or leave it blank.');
-          return;
-        }
+      // Accept YYYY-MM-DD or MM/DD/YYYY
+      let d = new Date(configDeadline.trim());
+      if (isNaN(d.getTime())) {
+        const parts = configDeadline.trim().split('/');
+        if (parts.length === 3) d = new Date(parts[2], parseInt(parts[0]) - 1, parseInt(parts[1]));
+      }
+      if (!isNaN(d.getTime()) && d > new Date()) {
+        deadlineISO = d.toISOString();
       } else {
-        Alert.alert('Invalid Date', 'Use MM/DD/YYYY format (e.g. 03/15/2026), or leave blank.');
+        setConfigError('Invalid deadline — use YYYY-MM-DD or MM/DD/YYYY, or leave blank.');
         return;
       }
     }
-    const { data, error } = await supabase
-      .from('assignments')
-      .insert({
-        teacher_id: profile?.id,
-        student_id: selectedStudent.profiles.id,
-        activity_type: pendingActivity,
+
+    setSaving(true);
+    try {
+      const payload = {
         notes: configNotes.trim() || null,
         target_count: targetNum,
         deadline: deadlineISO,
-      })
-      .select()
-      .single();
+      };
 
-    if (error) {
-      // Keep modal open so user can retry or cancel
-      Alert.alert('Error', error.message);
-      return;
+      const { data: existing } = await supabase
+        .from('assignments')
+        .select('id')
+        .eq('student_id', selectedStudent.profiles.id)
+        .eq('teacher_id', profile?.id)
+        .eq('activity_type', pendingActivity)
+        .maybeSingle();
+
+      let data, error;
+      if (existing) {
+        ({ data, error } = await supabase
+          .from('assignments')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single());
+      } else {
+        ({ data, error } = await supabase
+          .from('assignments')
+          .insert({ teacher_id: profile?.id, student_id: selectedStudent.profiles.id, activity_type: pendingActivity, ...payload })
+          .select()
+          .single());
+      }
+
+      if (error) {
+        setConfigError(`Failed: ${error.message}${error.details ? ' — ' + error.details : ''}`);
+      } else {
+        setAssignments(prev => ({ ...prev, [pendingActivity]: data }));
+        setConfigModal(false);
+        setPendingActivity(null);
+      }
+    } catch (e) {
+      setConfigError(`Unexpected error: ${e.message}`);
+    } finally {
+      setSaving(false);
     }
-    setAssignments(prev => ({ ...prev, [pendingActivity]: data }));
-    setConfigModal(false);
-    setPendingActivity(null);
   };
 
   const StudentItem = ({ item, isSelected, onPress }) => (
@@ -324,13 +351,20 @@ export default function AdminAssignActivitiesScreen({ navigation }) {
               maxLength={200}
             />
 
+            {!!configError && (
+              <Text style={{ color: '#E53935', fontSize: 12, marginBottom: 8, textAlign: 'center' }}>
+                {configError}
+              </Text>
+            )}
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setConfigModal(false)}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setConfigModal(false); setConfigError(''); }} disabled={saving}>
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalConfirmBtn} onPress={confirmAssignment}>
-                <Ionicons name="checkmark-circle" size={18} color="#fff" />
-                <Text style={styles.modalConfirmText}>Assign</Text>
+              <TouchableOpacity style={[styles.modalConfirmBtn, saving && { opacity: 0.6 }]} onPress={confirmAssignment} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <><Ionicons name="checkmark-circle" size={18} color="#fff" /><Text style={styles.modalConfirmText}>Assign</Text></>
+                }
               </TouchableOpacity>
             </View>
           </View>

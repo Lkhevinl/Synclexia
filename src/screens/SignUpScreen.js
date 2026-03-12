@@ -117,7 +117,8 @@ export default function SignUpScreen({ navigation }) {
         ...(role === 'teacher' && { status: 'pending' }),
       };
 
-      // Every student must have a unique_code for parent-linking.
+      // Students get a unique_code for parent-linking.
+      // Teachers get a teacher_code for student enrollment (manual entry fallback).
       // Retry up to 5 times to handle rare collisions on the UNIQUE constraint.
       let profileError = null;
       if (role === 'student') {
@@ -128,6 +129,16 @@ export default function SignUpScreen({ navigation }) {
             .upsert([profileData], { onConflict: 'id' });
           profileError = result.error;
           // '23505' = unique_violation on unique_code; retry with a new code
+          if (!profileError || profileError.code !== '23505') break;
+        }
+      } else if (role === 'teacher') {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          profileData.teacher_code = generateUniqueCode();
+          const result = await supabase
+            .from('profiles')
+            .upsert([profileData], { onConflict: 'id' });
+          profileError = result.error;
+          // '23505' = unique_violation on teacher_code; retry with a new code
           if (!profileError || profileError.code !== '23505') break;
         }
       } else {

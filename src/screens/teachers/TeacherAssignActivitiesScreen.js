@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
@@ -37,6 +37,8 @@ export default function TeacherAssignActivitiesScreen() {
   const [configTarget, setConfigTarget] = useState('1');
   const [configNotes, setConfigNotes] = useState('');
   const [configDeadline, setConfigDeadline] = useState('');
+  const [configError, setConfigError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchEnrolledStudents();
@@ -98,36 +100,74 @@ export default function TeacherAssignActivitiesScreen() {
   };
 
   const confirmAssignment = async () => {
-    if (!selectedStudent || !configModal) return;
+    if (!selectedStudent || !configModal || saving) return;
+    setConfigError('');
     const targetNum = parseInt(configTarget) || 1;
     const sid = getStudentId(selectedStudent);
 
-    const { data, error } = await supabase
-      .from('assignments')
-      .insert({
-        teacher_id: profile?.id,
-        student_id: sid,
-        activity_type: configModal,
+    // Parse deadline — if blank or invalid just skip it (don't block the assignment)
+    let deadlineISO = null;
+    if (configDeadline.trim()) {
+      const d = new Date(configDeadline.trim());
+      if (!isNaN(d.getTime()) && d > new Date()) {
+        deadlineISO = d.toISOString();
+      } else {
+        setConfigError('Invalid deadline — use YYYY-MM-DD (e.g. 2026-03-15) or leave blank.');
+        return;
+      }
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
         difficulty_level: configDifficulty,
         target_count: targetNum,
         notes: configNotes || null,
-        deadline: configDeadline || null,
-      })
-      .select()
-      .single();
+        deadline: deadlineISO,
+      };
 
-    if (error) {
-      Alert.alert('Error', error.message);
-    } else {
-      setAssignments(prev => ({ ...prev, [configModal]: true }));
-      if (data) setDetailedAssignments(prev => [...prev, data]);
-      Alert.alert('Assigned!', `${configModal} assigned with ${DIFFICULTY_LABELS[configDifficulty]} difficulty, target: ${targetNum}`);
-      // Schedule deadline reminders if deadline is set
-      if (configDeadline && data?.id) {
-        scheduleDeadlineReminder(data.id, configDeadline, configModal);
+      const { data: existing } = await supabase
+        .from('assignments')
+        .select('id')
+        .eq('student_id', sid)
+        .eq('teacher_id', profile?.id)
+        .eq('activity_type', configModal)
+        .maybeSingle();
+
+      let data, error;
+      if (existing) {
+        ({ data, error } = await supabase
+          .from('assignments')
+          .update(payload)
+          .eq('id', existing.id)
+          .select()
+          .single());
+      } else {
+        ({ data, error } = await supabase
+          .from('assignments')
+          .insert({ teacher_id: profile?.id, student_id: sid, activity_type: configModal, ...payload })
+          .select()
+          .single());
       }
+
+      if (error) {
+        setConfigError(`Failed: ${error.message}${error.details ? ' — ' + error.details : ''}`);
+      } else {
+        setAssignments(prev => ({ ...prev, [configModal]: true }));
+        setDetailedAssignments(prev => [
+          ...prev.filter(a => a.activity_type !== configModal),
+          ...(data ? [data] : []),
+        ]);
+        if (deadlineISO && data?.id) {
+          scheduleDeadlineReminder(data.id, deadlineISO, configModal);
+        }
+        setConfigModal(null);
+      }
+    } catch (e) {
+      setConfigError(`Unexpected error: ${e.message}`);
+    } finally {
+      setSaving(false);
     }
-    setConfigModal(null);
   };
 
   const getAssignmentDetails = (activityId) => {
@@ -302,12 +342,20 @@ export default function TeacherAssignActivitiesScreen() {
               placeholder="YYYY-MM-DD (e.g. 2026-03-15)"
             />
 
+            {!!configError && (
+              <Text style={{ color: '#E53935', fontSize: 12, marginBottom: 10, textAlign: 'center' }}>
+                {configError}
+              </Text>
+            )}
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setConfigModal(null)}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setConfigModal(null); setConfigError(''); }} disabled={saving}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.assignBtn} onPress={confirmAssignment}>
-                <Text style={styles.assignText}>Assign</Text>
+              <TouchableOpacity style={[styles.assignBtn, saving && { opacity: 0.6 }]} onPress={confirmAssignment} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.assignText}>Assign</Text>
+                }
               </TouchableOpacity>
             </View>
           </View>
