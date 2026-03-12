@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -33,6 +33,7 @@ export default function Sidebar({ visible, onClose }) {
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const navigation = useNavigation();
   const [fontModalVisible, setFontModalVisible] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   const currentFont = FONT_STYLES.find(f => f.value === theme.fontStyle) || FONT_STYLES[0];
   const isStudent = profile?.role === 'student';
@@ -40,12 +41,8 @@ export default function Sidebar({ visible, onClose }) {
 
   const navigate = (screen, params) => { onClose(); setTimeout(() => navigation.navigate(screen, params), 200); };
 
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: () => { onClose(); setTimeout(() => signOut(), 50); } },
-    ]);
-  };
+  const handleLogout = () => setConfirmLogout(true);
+  const doLogout = () => { setConfirmLogout(false); onClose(); setTimeout(() => signOut(), 50); };
 
   const SpacingBtn = ({ label, value }) => (
     <TouchableOpacity
@@ -223,10 +220,24 @@ export default function Sidebar({ visible, onClose }) {
               )}
 
               {/* LOGOUT */}
-              <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-                <Ionicons name="exit-outline" size={20} color="#EF5350" />
-                <Text style={s.logoutText}>Log Out</Text>
-              </TouchableOpacity>
+              {confirmLogout ? (
+                <View style={s.confirmBox}>
+                  <Text style={s.confirmText}>Are you sure you want to log out?</Text>
+                  <View style={s.confirmBtns}>
+                    <TouchableOpacity style={s.confirmCancel} onPress={() => setConfirmLogout(false)}>
+                      <Text style={s.confirmCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={s.confirmLogout} onPress={doLogout}>
+                      <Text style={s.confirmLogoutText}>Log Out</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
+                  <Ionicons name="exit-outline" size={20} color="#EF5350" />
+                  <Text style={s.logoutText}>Log Out</Text>
+                </TouchableOpacity>
+              )}
 
               <View style={{ height: 20 }} />
             </ScrollView>
@@ -325,6 +336,15 @@ const s = StyleSheet.create({
   // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#FFCDD2' },
   logoutText: { fontSize: 14, fontWeight: '700', color: '#EF5350' },
+
+  // Inline logout confirm (replaces Alert.alert which silently fails on web)
+  confirmBox: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1.5, borderColor: '#FFCDD2' },
+  confirmText: { fontSize: 14, color: '#455A64', fontWeight: '500', textAlign: 'center', marginBottom: 14 },
+  confirmBtns: { flexDirection: 'row', gap: 10 },
+  confirmCancel: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, borderColor: '#CFD8DC', alignItems: 'center' },
+  confirmCancelText: { fontSize: 14, fontWeight: '600', color: '#607D8B' },
+  confirmLogout: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#EF5350', alignItems: 'center' },
+  confirmLogoutText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   // Font modal
   fontOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
