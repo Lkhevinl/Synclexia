@@ -98,7 +98,6 @@ function BlendGame({ onBack, userId, items }) {
   const current = words[idx];
 
   const speakPhoneme = (ph, idx) => {
-    Speech.stop();
     Speech.speak(ph, { rate: 0.8, pitch: 1.1 });
     if (!tappedPhonemes.includes(idx)) {
       setTappedPhonemes(prev => [...prev, idx]);
@@ -116,7 +115,6 @@ function BlendGame({ onBack, userId, items }) {
       Speech.speak('Tap each sound first!', { rate: 0.9 });
       return;
     }
-    Speech.stop();
     Speech.speak(current.word, { rate: 0.75, pitch: 1.1 });
     setBlended(true);
     setScore(s => s + 1);
@@ -210,10 +208,9 @@ function RhymeGame({ onBack, userId, items }) {
 
   const current = rounds[idx];
 
-  const speak = (word) => { Speech.stop(); Speech.speak(word, { rate: 0.8, pitch: 1.1 }); };
+  const speak = (word) => Speech.speak(word, { rate: 0.8, pitch: 1.1 });
 
   const speakInstruction = () => {
-    Speech.stop();
     Speech.speak('Listen to the word. Then find the word that rhymes with it!', { rate: 0.85 });
   };
 
@@ -323,13 +320,12 @@ function SegmentGame({ onBack, userId, items }) {
 
   const current = segWords[idx];
 
-  const speakWord = () => { Speech.stop(); Speech.speak(current.word, { rate: 0.65, pitch: 1.1 }); };
+  const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
 
   const handleTap = () => {
     if (answered) return;
     const next = taps + 1;
     setTaps(next);
-    Speech.stop();
     Speech.speak(current.phonemes[next - 1] || '', { rate: 0.8 });
     // Pulse animation
     Animated.sequence([
@@ -446,9 +442,7 @@ function ScoreScreen({ score, total, onBack, label, color }) {
   const percent = Math.round((score / total) * 100);
   const msg = percent >= 80 ? '🎉 Amazing!' : percent >= 50 ? '👍 Good effort!' : '💪 Keep practising!';
   React.useEffect(() => {
-    Speech.stop();
     Speech.speak(`${msg} You got ${score} out of ${total}.`, { rate: 0.85 });
-    return () => { Speech.stop(); };
   }, []);
   return (
     <View style={[ss.container, { backgroundColor: color + '15' }]}>
@@ -487,9 +481,6 @@ export default function PhonicsActivityScreen() {
   const [contentMap, setContentMap] = useState({ blend: [], rhyme: [], segment: [] });
   const [loading, setLoading] = useState(true);
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
-
-  // Stop all speech when leaving this screen
-  useEffect(() => { return () => { Speech.stop(); }; }, []);
 
   useEffect(() => {
     Promise.all([

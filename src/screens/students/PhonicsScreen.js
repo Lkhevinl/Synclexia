@@ -36,7 +36,6 @@ export default function PhonicsScreen({ navigation }) {
 
   useEffect(() => {
     fetchPhonics();
-    return () => { Speech.stop(); };
   }, []);
 
   const fetchPhonics = async () => {
@@ -51,7 +50,6 @@ export default function PhonicsScreen({ navigation }) {
   };
 
   const handlePlay = (text) => {
-    Speech.stop();
     Speech.speak(text, { rate: 0.9, pitch: 1.1 });
     if (profile?.id) {
         checkQuestProgress(profile.id, 'Phonics');
