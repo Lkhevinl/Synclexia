@@ -153,18 +153,26 @@ export function AuthNavigator() {
 
 // Renamed — internal screens, not exported
 function AppScreens() {
-  const { loading, profile, profileLoaded, profileError, fetchProfile, signOut, session } = useAuth();
+  const { profile, profileLoaded, profileError, fetchProfile, signOut, session } = useAuth();
+  const [timedOut, setTimedOut] = React.useState(false);
+
+  // Safety-net: if profileLoaded never fires (e.g. Supabase hangs after the
+  // 5s fetchProfile timeout), stop showing the loading screen after 6s.
+  React.useEffect(() => {
+    if (profileLoaded) { setTimedOut(false); return; }
+    const t = setTimeout(() => setTimedOut(true), 6000);
+    return () => clearTimeout(t);
+  }, [profileLoaded]);
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin   = profile?.role === 'admin';
   const isParent  = profile?.role === 'parent';
 
-  // Wait for profile to be loaded before rendering app screens
-  if (loading || !profileLoaded) return <LoadingScreen />;
+  if (!profileLoaded && !timedOut) return <LoadingScreen />;
 
-  // Profile failed to load — show error screen instead of silently
-  // falling back to the student dashboard (which hides the real account role)
-  if (profileError && !profile) {
+  // Profile failed to load (or timed out) — show error screen instead of
+  // silently falling back to the student dashboard
+  if ((profileError || timedOut) && !profile) {
     return (
       <View style={navStyles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={64} color="#E53935" />

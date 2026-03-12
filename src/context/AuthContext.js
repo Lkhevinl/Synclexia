@@ -29,16 +29,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // 1. Restore session on mount
-    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
+    supabase.auth.getSession().then(({ data: { session: s }, error }) => {
       if (error) {
         clearStaleSession();
         supabase.auth.signOut().catch(() => {});
         return;
       }
       setSession(s);
-      if (s) await fetchProfile(s.user.id);
-      else setProfileLoaded(true);
+      // Unblock the navigator immediately — profile loads in the background
       setLoading(false);
+      if (s) fetchProfile(s.user.id);
+      else setProfileLoaded(true);
     });
 
     // 2. Auth state listener — only react to explicit sign-in/sign-out events.
@@ -67,7 +68,14 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId, retryCount = 0) => {
+  const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
+    // Hard 5-second timeout — never hang the loading screen indefinitely
+    if (Date.now() - startTime > 5000) {
+      console.warn('fetchProfile: timed out after 5s');
+      setProfileError('server_error');
+      setProfileLoaded(true);
+      return null;
+    }
     try {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
       if (error) {
@@ -77,16 +85,14 @@ export const AuthProvider = ({ children }) => {
         const isTransient500 = error.status === 500 && !isInfiniteRecursion;
 
         if (isInfiniteRecursion) {
-          // True DB config error — show error screen immediately
           setProfileError('server_error');
           setProfileLoaded(true);
           return null;
         }
-        if (isTransient500 && retryCount < 2) {
-          // PostgREST schema cache may need a moment — retry up to 2×
-          console.log(`fetchProfile: transient 500, retry ${retryCount + 1}/2…`);
-          await new Promise(r => setTimeout(r, 1500 * (retryCount + 1)));
-          return fetchProfile(userId, retryCount + 1);
+        if (isTransient500 && retryCount < 1) {
+          console.log('fetchProfile: transient 500, retrying…');
+          await new Promise(r => setTimeout(r, 800));
+          return fetchProfile(userId, retryCount + 1, startTime);
         }
         if (isTransient500) {
           setProfileError('server_error');
@@ -95,7 +101,6 @@ export const AuthProvider = ({ children }) => {
         }
       }
       if (data) {
-        // Enforce ban at the app level
         if (data.is_banned) {
           await supabase.auth.signOut();
           setSession(null);
@@ -108,15 +113,14 @@ export const AuthProvider = ({ children }) => {
         }
         setProfile(data);
         setProfileError(null);
-        // Register for push notifications
         registerForPushNotificationsAsync(data.id).catch(() => {});
         setProfileLoaded(true);
         return data;
-      } else if (retryCount < 3) {
-        // Profile may not exist yet (signup race condition) — retry with delay.
-        console.log(`fetchProfile: profile not found, retry ${retryCount + 1}/3...`);
-        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
-        return fetchProfile(userId, retryCount + 1);
+      } else if (retryCount < 1) {
+        // Profile may not exist yet (signup race) — one quick retry
+        console.log('fetchProfile: profile not found, retrying…');
+        await new Promise(r => setTimeout(r, 500));
+        return fetchProfile(userId, retryCount + 1, startTime);
       }
       setProfileError('not_found');
       setProfileLoaded(true);
