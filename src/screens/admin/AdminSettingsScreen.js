@@ -16,17 +16,11 @@ export default function AdminSettingsScreen({ navigation }) {
   // Check if they are allowed to see the tools
   const canAccessTools = isTeacher || isAdmin;
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      setDashboardMode('auto');
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to logout: " + error.message);
-    }
+  const handleLogout = () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log Out', style: 'destructive', onPress: () => signOut() },
+    ]);
   };
 
   const FontSizeBtn = ({ label, value }) => (

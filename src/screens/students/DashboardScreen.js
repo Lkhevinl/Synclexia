@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { xpToLevel } from '../../lib/userUtils';
+import Sidebar from '../../components/Sidebar';
 
 const DAILY_TIPS = [
   "Tip: Reading out loud helps you remember better!",
@@ -26,6 +27,7 @@ export default function DashboardScreen({ navigation }) {
   };
   
   const [notifVisible, setNotifVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [enrollment, setEnrollment] = useState(null);
@@ -240,6 +242,7 @@ export default function DashboardScreen({ navigation }) {
   return (
     <View style={[styles.mainContainer, { backgroundColor: theme.bgColor }]}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
       
       {/* HEADER */}
       <LinearGradient
@@ -266,6 +269,9 @@ export default function DashboardScreen({ navigation }) {
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
               <Ionicons name="notifications-outline" size={24} color="#fff" />
               {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.redDot} />}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
+              <Ionicons name="menu-outline" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>

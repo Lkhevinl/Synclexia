@@ -1,8 +1,9 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
+import { navigationRef } from '../navigation/navigationRef';
 
 const AuthContext = createContext({});
 
@@ -13,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [dashboardMode, setDashboardMode] = useState('auto');
+  const signingOutRef = useRef(false);
 
   const clearStaleSession = async () => {
     try {
@@ -52,6 +54,9 @@ export const AuthProvider = ({ children }) => {
         return;
       }
       if (event === 'SIGNED_IN') {
+        // Ignore spurious SIGNED_IN events that fire during/after an intentional logout
+        // (e.g. a pending autoRefreshToken call that resolves after signOut)
+        if (signingOutRef.current) return;
         if (!s) { setLoading(false); return; }
         setSession(s);
         await fetchProfile(s.user.id);
@@ -124,21 +129,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // LOGOUT: scope:'local' is instant (no network call) and stops the
-  // autoRefreshToken timer before AsyncStorage is cleared, so the timer
-  // cannot write a fresh token after we wipe storage.
+  // LOGOUT: Clear React state first — this immediately changes the
+  // NavigationContainer key (via !!session in App.js) which remounts it
+  // cleanly on the Login screen. No manual navigation needed.
   const signOut = async () => {
-    try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
-      if (authKeys.length) await AsyncStorage.multiRemove(authKeys);
-    } catch (_) {}
+    signingOutRef.current = true;
     setSession(null);
     setProfile(null);
     setProfileLoaded(false);
     setDashboardMode('auto');
     setLoading(false);
+    // Background cleanup — don't await, UI is already on Login
+    supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
+      if (authKeys.length) await AsyncStorage.multiRemove(authKeys);
+    } catch (_) {}
+    setTimeout(() => { signingOutRef.current = false; }, 2000);
   };
 
   const resetSigningOut = () => {};

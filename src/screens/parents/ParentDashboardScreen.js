@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import Sidebar from '../../components/Sidebar';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800'];
@@ -33,6 +34,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const [notifCount, setNotifCount] = useState(0);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -208,6 +210,7 @@ export default function ParentDashboardScreen({ navigation }) {
   return (
     <View style={s.container}>
       <StatusBar barStyle="light-content" />
+      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── Header ── */}
       <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.header}>
@@ -217,6 +220,9 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={s.headerSub}>Monitoring your child's progress</Text>
           </View>
           <View style={s.headerActions}>
+            <TouchableOpacity style={s.headerIconBtn} onPress={() => setSidebarVisible(true)}>
+              <Ionicons name="menu-outline" size={26} color="#fff" />
+            </TouchableOpacity>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
               <Ionicons name="person-add" size={22} color="#fff" />
             </TouchableOpacity>

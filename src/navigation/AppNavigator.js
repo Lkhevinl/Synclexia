@@ -92,12 +92,10 @@ function StudentTabs() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          if (route.name === 'Dashboard')  iconName = focused ? 'home'          : 'home-outline';
-          else if (route.name === 'Reading')   iconName = focused ? 'book'          : 'book-outline';
-          else if (route.name === 'Phonics')   iconName = focused ? 'volume-high'  : 'volume-high-outline';
-          else if (route.name === 'Writing')   iconName = focused ? 'pencil'       : 'pencil-outline';
-          else if (route.name === 'Scan')      iconName = focused ? 'camera'       : 'camera-outline';
-          else if (route.name === 'Settings')  iconName = focused ? 'settings'     : 'settings-outline';
+          if (route.name === 'Dashboard')   iconName = focused ? 'home'             : 'home-outline';
+          else if (route.name === 'TTS')    iconName = focused ? 'volume-high'      : 'volume-high-outline';
+          else if (route.name === 'STT')    iconName = focused ? 'mic'              : 'mic-outline';
+          else if (route.name === 'Scan')   iconName = focused ? 'camera'           : 'camera-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#FF9800',
@@ -105,11 +103,9 @@ function StudentTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
-      <Tab.Screen name="Reading"   component={ReadingScreen} />
-      <Tab.Screen name="Phonics"   component={PhonicsScreen} />
-      <Tab.Screen name="Writing"   component={WritingScreen} />
+      <Tab.Screen name="TTS"       component={TextToSpeechScreen}  options={{ title: 'Text-to-Speech' }} />
       <Tab.Screen name="Scan"      component={ScanScreen} />
-      <Tab.Screen name="Settings"  component={SettingsScreen} />
+      <Tab.Screen name="STT"       component={SpeechToTextScreen}  options={{ title: 'Speech-to-Text' }} />
     </Tab.Navigator>
   );
 }
@@ -164,18 +160,28 @@ function TeacherTabs() {
   );
 }
 
+export function AuthNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+}
+
 export default function AppNavigator() {
-  const { session, loading, profile, profileLoaded } = useAuth();
+  const { loading, profile, profileLoaded } = useAuth();
 
   const isTeacher = profile?.role === 'teacher';
   const isAdmin   = profile?.role === 'admin';
   const isParent  = profile?.role === 'parent';
 
-  // Wait until auth state AND profile are both resolved before rendering
-  if (loading || (session && !profileLoaded)) return <LoadingScreen />;
+  // Wait for profile to be loaded before rendering app screens
+  if (loading || !profileLoaded) return <LoadingScreen />;
 
   // Teacher account awaiting admin approval — show holding screen
-  if (session && profile?.role === 'teacher' && profile?.status === 'pending') {
+  if (profile?.role === 'teacher' && profile?.status === 'pending') {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
         <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
@@ -190,72 +196,62 @@ export default function AppNavigator() {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
-      {session ? (
+      {/* User App */}
+      <Stack.Screen name="Home" component={HomeComponent} />
+      <Stack.Screen name="Phonics" component={PhonicsScreen} />
+      <Stack.Screen name="Writing" component={WritingScreen} />
+      <Stack.Screen name="Reading" component={ReadingScreen} />
+      <Stack.Screen name="Scan" component={ScanScreen} />
+      <Stack.Screen name="Quests" component={QuestsScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+      <Stack.Screen name="Support" component={SupportScreen} />
+      <Stack.Screen name="About" component={AboutScreen} />
+      <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
+      <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
+      <Stack.Screen name="Spelling" component={SpellingScreen} />
+      <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+      <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
+      <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      {/* Parent routes */}
+      {profile?.role === 'parent' && (
         <>
-            {/* User App */}
-            <Stack.Screen name="Home" component={HomeComponent} />
-            <Stack.Screen name="Phonics" component={PhonicsScreen} />
-            <Stack.Screen name="Writing" component={WritingScreen} />
-            <Stack.Screen name="Reading" component={ReadingScreen} />
-            <Stack.Screen name="Scan" component={ScanScreen} />
-            <Stack.Screen name="Quests" component={QuestsScreen} />
-            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-            <Stack.Screen name="Support" component={SupportScreen} />
-            <Stack.Screen name="About" component={AboutScreen} />
-            <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
-            <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
-            <Stack.Screen name="Spelling" component={SpellingScreen} />
-            <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
-            <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
-            <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-            {/* Parent routes */}
-            {profile?.role === 'parent' && (
-              <>
-                <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
-                <Stack.Screen name="ParentProgress" component={ParentProgressScreen} />
-                <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
-                <Stack.Screen name="ParentAssignments" component={ParentAssignmentsScreen} />
-                <Stack.Screen name="ParentActivityLog" component={ParentActivityLogScreen} />
-                <Stack.Screen name="ParentLinkChild" component={ParentLinkChildScreen} />
-                <Stack.Screen name="ParentEditChild" component={ParentEditChildScreen} />
-              </>
-            )}
-            {(isTeacher || isAdmin) && (
-              <>
-                <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
-                <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
-                <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
-                <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
-                <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
-                <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
-                <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
-                <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
-                <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
-                <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
-                <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
-                <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
-                <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
-              </>
-            )}
-            {isAdmin && (
-              <>
-                <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-                <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
-                <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
-                <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
-                <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
-                <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
-                <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
-              </>
-            )}
+          <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
+          <Stack.Screen name="ParentProgress" component={ParentProgressScreen} />
+          <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
+          <Stack.Screen name="ParentAssignments" component={ParentAssignmentsScreen} />
+          <Stack.Screen name="ParentActivityLog" component={ParentActivityLogScreen} />
+          <Stack.Screen name="ParentLinkChild" component={ParentLinkChildScreen} />
+          <Stack.Screen name="ParentEditChild" component={ParentEditChildScreen} />
         </>
-      ) : (
+      )}
+      {(isTeacher || isAdmin) && (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+          <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
+          <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
+          <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
+          <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
+          <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
+          <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
+          <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
+          <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
+          <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
+          <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
+          <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
+          <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
+          <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
+        </>
+      )}
+      {isAdmin && (
+        <>
+          <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+          <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+          <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
+          <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
+          <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
+          <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
+          <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
         </>
       )}
     </Stack.Navigator>

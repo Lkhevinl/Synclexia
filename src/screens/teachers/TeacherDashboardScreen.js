@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { xpToLevel } from '../../lib/userUtils';
+import Sidebar from '../../components/Sidebar';
 
 
 const DAILY_TIPS = [
@@ -20,6 +21,7 @@ export default function TeacherDashboardScreen({ navigation }) {
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [enrolledCount, setEnrolledCount] = useState(0);
   const [activityFeed, setActivityFeed] = useState([]);
@@ -140,6 +142,7 @@ export default function TeacherDashboardScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#f9a8c9', '#f7c5a0', '#f9b8d0']} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
@@ -160,6 +163,9 @@ export default function TeacherDashboardScreen({ navigation }) {
           <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
             <Ionicons name="notifications-outline" size={24} color="#7B2D52" />
             {notifications.length > 0 && <View style={styles.redDot} />}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
+            <Ionicons name="menu-outline" size={26} color="#7B2D52" />
           </TouchableOpacity>
         </View>
 

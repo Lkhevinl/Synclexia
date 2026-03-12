@@ -6,12 +6,14 @@ import { useTheme } from '../../context/ThemeContext';
 
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import Sidebar from '../../components/Sidebar';
 
 export default function AdminDashboardScreen({ navigation }) {
   const { theme } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
   const [teacherCount, setTeacherCount] = useState(0);
   const [parentCount, setParentCount] = useState(0);
@@ -61,6 +63,7 @@ export default function AdminDashboardScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.bgColor }]}>
       <StatusBar barStyle="light-content" />
+      <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* HEADER */}
       <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.header}>
@@ -73,6 +76,9 @@ export default function AdminDashboardScreen({ navigation }) {
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
               <Ionicons name="notifications-outline" size={24} color="#fff" />
               {notifications.length > 0 && <View style={styles.redDot} />}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
+              <Ionicons name="menu-outline" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
