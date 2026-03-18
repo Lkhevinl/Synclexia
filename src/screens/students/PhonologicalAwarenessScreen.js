@@ -269,11 +269,15 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   const handleSelect = (opt) => {
     if (feedback) return;
     setSelected(opt);
-    const isCorrect = opt === current.answer;
+    const normalize = (v) => String(v ?? '').trim().toLowerCase();
+    const isCorrect = normalize(opt) === normalize(current.answer);
     setFeedback(isCorrect ? 'correct' : 'wrong');
-    isCorrect
-      ? Speech.speak('Correct!', { rate: 0.9 })
-      : Speech.speak(`The ${current.position} sound is ${current.answer}.`, { rate: 0.8 });
+    if (isCorrect) {
+      setScore(s => s + 1);
+      Speech.speak('Correct!', { rate: 0.9 });
+    } else {
+      Speech.speak(`The ${current.position} sound is ${current.answer}.`, { rate: 0.8 });
+    }
     setTimeout(() => {
       if (idx + 1 >= items.length) {
         setDone(true);

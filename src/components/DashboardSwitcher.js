@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { isUserStudent, isUserAdmin, isUserParent, isUserTeacher, canAccessTeacherFeatures } from '../lib/userUtils';
 import DashboardScreen from '../screens/students/DashboardScreen';
-import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
+import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 
 export default function DashboardSwitcher(props) {
   const { profile, dashboardMode, loading, profileLoaded } = useAuth();
@@ -19,17 +20,15 @@ export default function DashboardSwitcher(props) {
   }
 
   // Manual override — only allow if the profile role matches (prevents role escalation)
-  if (dashboardMode === 'student' && profile?.role === 'student') return <DashboardScreen {...props} />;
-  if (dashboardMode === 'teacher' && profile?.role === 'teacher') return <TeacherDashboardScreen {...props} />;
-  if (dashboardMode === 'admin'   && profile?.role === 'admin')   return <AdminDashboardScreen {...props} />;
-  if (dashboardMode === 'parent'  && profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;
-  // Admin in teacher-view override
-  if (dashboardMode === 'teacher' && profile?.role === 'admin')   return <TeacherDashboardScreen {...props} />;
+  if (dashboardMode === 'student' && isUserStudent(profile)) return <DashboardScreen {...props} />;
+  if (dashboardMode === 'admin' && isUserAdmin(profile)) return <AdminDashboardScreen {...props} />;
+  if (dashboardMode === 'parent' && isUserParent(profile)) return <ParentDashboardScreen {...props} />;
+  if (dashboardMode === 'teacher' && canAccessTeacherFeatures(profile)) return <TeacherDashboardScreen {...props} />;
 
   // Role-based routing
-  if (profile?.role === 'parent')  return <ParentDashboardScreen {...props} />;
-  if (profile?.role === 'admin')   return <AdminDashboardScreen {...props} />;
-  if (profile?.role === 'teacher') return <TeacherDashboardScreen {...props} />;
+  if (isUserParent(profile)) return <ParentDashboardScreen {...props} />;
+  if (isUserAdmin(profile)) return <AdminDashboardScreen {...props} />;
+  if (isUserTeacher(profile)) return <TeacherDashboardScreen {...props} />;
 
   // Default: student
   return <DashboardScreen {...props} />;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { logSession } from '../../lib/analyticsHelper';
+import { showAlert } from '../../lib/uiAlert';
 
 export default function ScanScreen() {
   const { profile } = useAuth();
@@ -16,7 +17,7 @@ export default function ScanScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedText, setScannedText] = useState("");
   const navigation = useNavigation();
-  const API_KEY = process.env.EXPO_PUBLIC_OCR_API_KEY || '';
+  const API_KEY = (process.env.EXPO_PUBLIC_OCR_API_KEY || '').trim();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => Speech.stop());
@@ -24,47 +25,99 @@ export default function ScanScreen() {
   }, [navigation]);
 
   const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert('Permission Required', 'Please allow photo library access to scan images.');
+      return null;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true, base64: true, quality: 0.6,
     });
     if (!result.canceled) {
-      setImage(result.assets[0].uri); setScannedText(""); return result.assets[0].base64;
+      const asset = result.assets?.[0];
+      setImage(asset?.uri || null);
+      setScannedText("");
+      return { base64: asset?.base64 || null, mimeType: asset?.mimeType || 'image/jpeg' };
     }
   };
 
   const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      showAlert('Permission Required', 'Please allow camera access to take a photo.');
+      return null;
+    }
+
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true, base64: true, quality: 0.6,
     });
     if (!result.canceled) {
-      setImage(result.assets[0].uri); setScannedText(""); return result.assets[0].base64;
+      const asset = result.assets?.[0];
+      setImage(asset?.uri || null);
+      setScannedText("");
+      return { base64: asset?.base64 || null, mimeType: asset?.mimeType || 'image/jpeg' };
     }
   };
 
-  const handleScan = async (base64Image) => {
-    if (!base64Image) return;
+  const handleScan = async ({ base64, mimeType }) => {
+    if (!API_KEY) {
+      showAlert(
+        'OCR API Key Missing',
+        'Set EXPO_PUBLIC_OCR_API_KEY in your app config (.env / EAS secrets) to enable scanning.',
+      );
+      return;
+    }
+
+    if (!base64) {
+      showAlert('Scan Failed', 'Could not read image data. Please try again.');
+      return;
+    }
+
     setIsScanning(true);
     setScannedText(""); // Clear previous text
     try {
         let formData = new FormData();
-        formData.append("base64Image", "data:image/jpeg;base64," + base64Image);
+        const safeMime = mimeType || 'image/jpeg';
+        formData.append("base64Image", `data:${safeMime};base64,${base64}`);
         formData.append("language", "eng");
         formData.append("OCREngine", "2"); 
         formData.append("scale", "true"); 
         
         const response = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
-            headers: { apikey: API_KEY, "Content-Type": "multipart/form-data" },
+            // IMPORTANT: do NOT set Content-Type manually for multipart/form-data.
+            // fetch will add the correct boundary; setting it breaks uploads.
+            headers: { apikey: API_KEY },
             body: formData
         });
+
+        if (!response.ok) {
+          throw new Error(`OCR request failed (${response.status})`);
+        }
         
         const data = await response.json();
+
+        if (data?.IsErroredOnProcessing) {
+          const msg = Array.isArray(data?.ErrorMessage) ? data.ErrorMessage.join('\n') : (data?.ErrorMessage || 'OCR processing failed.');
+          setScannedText(msg);
+          return;
+        }
         
-        if (data.ParsedResults && data.ParsedResults.length > 0) {
-            const detectedText = data.ParsedResults[0].ParsedText;
+        if (Array.isArray(data?.ParsedResults) && data.ParsedResults.length > 0) {
+            const detectedText = data.ParsedResults
+              .map(r => r?.ParsedText)
+              .filter(Boolean)
+              .join('\n')
+              .trim();
+
+            if (!detectedText) {
+              setScannedText("I couldn't find any text. Try to crop closer or use better lighting.");
+              return;
+            }
+
             setScannedText(detectedText);
-            Speech.speak(detectedText);
             // Log scan session
             if (profile?.id) {
               logSession({
@@ -79,87 +132,96 @@ export default function ScanScreen() {
             setScannedText("I couldn't find any text. Try to crop closer or use better lighting."); 
         }
     } catch (error) { 
-        Alert.alert("Connection Error", "Please check your internet."); 
+        console.warn('[Scan] OCR error:', error?.message || error);
+      showAlert('Scan Error', 'Scanning failed. Please check your internet and API key, then try again.');
     } finally { 
         setIsScanning(false); 
     }
   };
 
   const onScanPress = async (mode) => {
-      let base64 = null;
-      if (mode === 'camera') base64 = await takePhoto();
-      else base64 = await pickImage();
+      let payload = null;
+      if (mode === 'camera') payload = await takePhoto();
+      else payload = await pickImage();
       
-      if (base64) handleScan(base64);
+      if (payload) handleScan(payload);
   };
 
   return (
     <ScreenWrapper style={{ backgroundColor: '#F0F4F8' }}>
       <View style={styles.topBar}>
          <GoBackBtn />
-         <Text style={styles.header}>Magic Scanner ✨</Text>
+         <Text style={styles.header}>Magic Scanner</Text>
          <View style={{width: 40}} />
       </View>
 
-      <ScrollView contentContainerStyle={{paddingBottom: 40}} showsVerticalScrollIndicator={false}>
-          
-          {/* 1. SCANNER VIEWFINDER CARD */}
-          <View style={styles.cardContainer}>
-             <View style={styles.previewBox}>
-                {image ? (
-                    <Image source={{ uri: image }} style={styles.image} resizeMode="contain" />
-                ) : (
-                    <View style={styles.placeholderState}>
-                        <View style={styles.iconCircle}>
-                           <Ionicons name="scan" size={50} color="#0288D1" />
-                        </View>
-                        <Text style={styles.placeholderTitle}>Ready to Scan</Text>
-                        <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
-                    </View>
-                )}
-             </View>
-
-             {/* LOADING OVERLAY */}
-             {isScanning && (
-                 <View style={styles.loadingOverlay}>
-                     <ActivityIndicator size="large" color="#fff" />
-                     <Text style={styles.loadingText}>Reading text...</Text>
-                 </View>
-             )}
-          </View>
-
-          {/* 2. ACTION BUTTONS */}
-          <View style={styles.controls}>
-            <TouchableOpacity style={styles.btnCamera} onPress={() => onScanPress('camera')} disabled={isScanning}>
-                <Ionicons name="camera" size={26} color="#fff" />
-                <Text style={styles.btnTextMain}>Take Photo</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
-                <Ionicons name="images" size={26} color="#0277BD" />
-            </TouchableOpacity>
-          </View>
-
-          {/* 3. RESULT CARD (Only shows if text found) */}
-          {scannedText !== "" && !isScanning && (
-            <View style={styles.resultCard}>
-                <View style={styles.resultHeader}>
-                    <Ionicons name="text-outline" size={20} color="#666" />
-                    <Text style={styles.resultLabel}>Detected Text</Text>
+      <View style={styles.body}>
+        {/* 1. SCANNER VIEWFINDER CARD */}
+        <View style={styles.cardContainer}>
+          <View style={styles.previewBox}>
+            {image ? (
+              <Image source={{ uri: image }} style={styles.image} resizeMode="contain" />
+            ) : (
+              <View style={styles.placeholderState}>
+                <View style={styles.iconCircle}>
+                  <Ionicons name="scan" size={50} color="#0288D1" />
                 </View>
+                <Text style={styles.placeholderTitle}>Ready to Scan</Text>
+                <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
+              </View>
+            )}
+          </View>
 
-                <Text style={styles.resultText}>{scannedText}</Text>
-                
-                <View style={styles.divider} />
-
-                <TouchableOpacity onPress={() => Speech.speak(scannedText)} style={styles.speakBtn}>
-                    <Ionicons name="volume-high" size={24} color="#fff" />
-                    <Text style={styles.speakText}>Listen Now</Text>
-                </TouchableOpacity>
+          {/* LOADING OVERLAY */}
+          {isScanning && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.loadingText}>Reading text...</Text>
             </View>
           )}
+        </View>
 
-      </ScrollView>
+        {/* 2. ACTION BUTTONS */}
+        <View style={styles.controls}>
+          <TouchableOpacity style={styles.btnCamera} onPress={() => onScanPress('camera')} disabled={isScanning}>
+            <Ionicons name="camera" size={26} color="#fff" />
+            <Text style={styles.btnTextMain}>Take Photo</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
+            <Ionicons name="images" size={26} color="#0277BD" />
+          </TouchableOpacity>
+        </View>
+
+        {/* 3. RESULT CARD */}
+        {!isScanning && (
+          <View style={styles.resultCard}>
+            <View style={styles.resultHeader}>
+              <Ionicons name="text-outline" size={20} color="#666" />
+              <Text style={styles.resultLabel}>Detected Text</Text>
+            </View>
+
+            <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.resultText}>{scannedText || 'Scan an image to extract text here.'}</Text>
+            </ScrollView>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity
+              onPress={() => {
+                if (!scannedText.trim()) return;
+                const speakText = scannedText.length > 900 ? scannedText.slice(0, 900) + '…' : scannedText;
+                Speech.speak(speakText);
+              }}
+              style={[styles.speakBtn, !scannedText.trim() && styles.speakBtnDisabled]}
+              disabled={!scannedText.trim()}
+            >
+              <Ionicons name="volume-high" size={24} color="#fff" />
+              <Text style={styles.speakText}>Listen Now</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </ScreenWrapper>
   );
 }
@@ -167,9 +229,11 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
+
+  body: { flex: 1 },
   
-  cardContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, marginBottom: 20, minHeight: 320, justifyContent: 'center' },
-  previewBox: { height: 300, backgroundColor: '#F5F7FA', borderRadius: 15, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
+  cardContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, marginBottom: 16, justifyContent: 'center' },
+  previewBox: { height: 260, backgroundColor: '#F5F7FA', borderRadius: 15, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   
   placeholderState: { alignItems: 'center', padding: 20 },
@@ -180,18 +244,21 @@ const styles = StyleSheet.create({
   loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 20, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   loadingText: { color: '#fff', fontWeight: 'bold', marginTop: 15, fontSize: 16 },
 
-  controls: { flexDirection: 'row', gap: 15, marginBottom: 25 },
+  controls: { flexDirection: 'row', gap: 15, marginBottom: 16 },
   btnCamera: { flex: 1, backgroundColor: '#0288D1', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 15, elevation: 3 },
   btnGallery: { width: 70, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center', borderRadius: 15, borderWidth: 1, borderColor: '#B3E5FC' },
   btnTextMain: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
 
-  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 2, marginBottom: 30 },
+  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, elevation: 2, flex: 1 },
   resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, opacity: 0.7 },
   resultLabel: { fontWeight: 'bold', color: '#555', marginLeft: 8, fontSize: 12, textTransform: 'uppercase' },
-  resultText: { fontSize: 18, color: '#333', lineHeight: 28, fontFamily: 'System' }, // Use 'System' or your font
+  // Do not set fontFamily here so global Font Style can apply.
+  resultText: { fontSize: 18, color: '#333', lineHeight: 28 },
+  resultScroll: { flex: 1 },
   
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
   
   speakBtn: { backgroundColor: '#FF7043', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 12, elevation: 3 },
+  speakBtnDisabled: { backgroundColor: '#FFAB91' },
   speakText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }
 });

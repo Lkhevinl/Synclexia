@@ -18,7 +18,8 @@ const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_
 const ACTIVITY_LABELS = {
   phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
   phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', scan: '📷 Scan', phonological_awareness: '🎧 Phonological',
+  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
+  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
 };
 
 export default function ParentDashboardScreen({ navigation }) {
@@ -29,8 +30,6 @@ export default function ParentDashboardScreen({ navigation }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [childProfile, setChildProfile] = useState(null);
   const [progress, setProgress] = useState(null);
-  const [assignments, setAssignments] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -40,8 +39,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
   // Real-time subscription refs
   const profileSubRef = useRef(null);
-  const assignSubRef = useRef(null);
-  const msgSubRef = useRef(null);
+  const sessionSubRef = useRef(null);
 
   // ── Fetch system notifications for parents ────────────────────────────────
   const fetchNotifications = async () => {
@@ -60,6 +58,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
   // ── Fetch linked children ──────────────────────────────────────────────────
   const fetchChildren = async () => {
+    if (!profile?.id) return [];
     const { data, error } = await supabase
       .from('parent_links')
       .select(`
@@ -81,29 +80,37 @@ export default function ParentDashboardScreen({ navigation }) {
     if (!childLink) return;
     const sid = childLink.profiles?.id ?? childLink.student_id;
 
-    const [{ data: cp }, prog, { data: assign }, { data: msgs }] = await Promise.all([
+    const [{ data: cp }, prog] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
       getStudentProgress(sid, 14),
-      supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false).order('assigned_at', { ascending: false }),
-      supabase.from('parent_messages').select('id').eq('receiver_id', profile?.id).eq('is_read', false),
     ]);
 
     setChildProfile(cp);
     setProgress(prog);
-    setAssignments(assign || []);
-    setUnreadCount(msgs?.length ?? 0);
   };
 
   // ── Full refresh ───────────────────────────────────────────────────────────
   const refresh = useCallback(async (showSpinner = false) => {
+    if (!profile?.id) {
+      // Profile not ready yet; keep spinner minimal and avoid throwing
+      if (showSpinner) setLoading(true);
+      return;
+    }
+
     if (showSpinner) setLoading(true);
-    const kids = await fetchChildren();
-    setChildren(kids);
-    const idx = Math.min(selectedIdx, Math.max(kids.length - 1, 0));
-    setSelectedIdx(idx);
-    await Promise.all([loadChild(kids[idx]), fetchNotifications()]);
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const kids = await fetchChildren();
+      setChildren(kids);
+      const idx = Math.min(selectedIdx, Math.max(kids.length - 1, 0));
+      setSelectedIdx(idx);
+      await Promise.all([loadChild(kids[idx]), fetchNotifications()]);
+    } catch (e) {
+      console.error('[ParentDashboard] refresh exception:', e?.message || e);
+      Alert.alert('Load Error', 'Could not load parent dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [profile?.id, selectedIdx]);
 
   // ── useFocusEffect — re-fetch every time screen comes into focus ───────────
@@ -121,8 +128,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
     // Unsubscribe previous
     profileSubRef.current?.unsubscribe();
-    assignSubRef.current?.unsubscribe();
-    msgSubRef.current?.unsubscribe();
+    sessionSubRef.current?.unsubscribe();
 
     // Child profile changes (XP, level, streak)
     profileSubRef.current = supabase
@@ -131,31 +137,19 @@ export default function ParentDashboardScreen({ navigation }) {
         (payload) => { setChildProfile(prev => ({ ...prev, ...payload.new })); })
       .subscribe();
 
-    // Assignments changes
-    assignSubRef.current = supabase
-      .channel(`parent-assignments-${sid}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'assignments', filter: `student_id=eq.${sid}` },
-        () => {
-          supabase.from('assignments').select('*').eq('student_id', sid).eq('is_completed', false)
-            .order('assigned_at', { ascending: false })
-            .then(({ data }) => setAssignments(data || []));
-        })
-      .subscribe();
-
-    // Unread messages
-    msgSubRef.current = supabase
-      .channel(`parent-msgs-${profile?.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'parent_messages', filter: `receiver_id=eq.${profile?.id}` },
-        () => {
-          supabase.from('parent_messages').select('id').eq('receiver_id', profile?.id).eq('is_read', false)
-            .then(({ data }) => setUnreadCount(data?.length ?? 0));
+    // Progress snapshots depend on session_logs; update when new sessions are logged.
+    sessionSubRef.current = supabase
+      .channel(`parent-sessions-${sid}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_logs', filter: `student_id=eq.${sid}` },
+        async () => {
+          const prog = await getStudentProgress(sid, 14);
+          setProgress(prog);
         })
       .subscribe();
 
     return () => {
       profileSubRef.current?.unsubscribe();
-      assignSubRef.current?.unsubscribe();
-      msgSubRef.current?.unsubscribe();
+      sessionSubRef.current?.unsubscribe();
     };
   }, [selectedIdx, children.length]);
 
@@ -164,7 +158,6 @@ export default function ParentDashboardScreen({ navigation }) {
     setSelectedIdx(idx);
     setChildProfile(null);
     setProgress(null);
-    setAssignments([]);
     await loadChild(children[idx]);
   };
 
@@ -175,7 +168,6 @@ export default function ParentDashboardScreen({ navigation }) {
   const level = cp?.level ?? Math.floor(xp / 100) + 1;
   const streak = cp?.streak ?? 0;
   const xpInLevel = xp % 100;
-  const pendingCount = assignments.length;
 
   const navParams = { child };
 
@@ -220,12 +212,6 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={s.headerSub}>Monitoring your child's progress</Text>
           </View>
           <View style={s.headerActions}>
-            <TouchableOpacity style={s.msgBadgeBtn} onPress={() => navigation.navigate('ParentMessages', navParams)}>
-              <Ionicons name="chatbubble-ellipses" size={24} color="#fff" />
-              {unreadCount > 0 && (
-                <View style={s.badge}><Text style={s.badgeText}>{unreadCount}</Text></View>
-              )}
-            </TouchableOpacity>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
               <Ionicons name="person-add" size={22} color="#fff" />
             </TouchableOpacity>
@@ -293,7 +279,6 @@ export default function ParentDashboardScreen({ navigation }) {
           {[
             { icon: 'trophy', color: '#FF9800', val: xp, lbl: 'Total XP' },
             { icon: 'flame', color: '#F44336', val: streak, lbl: 'Day Streak' },
-            { icon: 'clipboard', color: '#7B1FA2', val: pendingCount, lbl: 'Pending' },
           ].map((stat, i) => (
             <View key={i} style={s.statBox}>
               <Ionicons name={stat.icon} size={20} color={stat.color} />
@@ -308,8 +293,6 @@ export default function ParentDashboardScreen({ navigation }) {
         <View style={s.navGrid}>
           {[
             { icon: 'bar-chart', color: '#7B1FA2', bg: '#F3E5F5', label: 'Progress', screen: 'ParentProgress' },
-            { icon: 'chatbubbles', color: '#2196F3', bg: '#E3F2FD', label: 'Messages', screen: 'ParentMessages', badge: unreadCount },
-            { icon: 'clipboard', color: '#FF9800', bg: '#FFF3E0', label: 'Assignments', screen: 'ParentAssignments', badge: pendingCount },
             { icon: 'time', color: '#4CAF50', bg: '#E8F5E9', label: 'Activity Log', screen: 'ParentActivityLog' },
           ].map((item) => (
             <TouchableOpacity key={item.screen} style={[s.navCard, { backgroundColor: item.bg }]} onPress={() => navigation.navigate(item.screen, navParams)}>
@@ -378,34 +361,6 @@ export default function ParentDashboardScreen({ navigation }) {
             </>
           )}
         </View>
-
-        {/* ── Pending Assignments ── */}
-        {assignments.length > 0 && (
-          <>
-            <Text style={s.sectionTitle}>Pending Assignments</Text>
-            <View style={s.card}>
-              {assignments.slice(0, 3).map((a) => (
-                <View key={a.id} style={s.assignRow}>
-                  <Text style={s.assignIcon}>{ACTIVITY_LABELS[a.activity_type]?.split(' ')[0] || '📋'}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.assignName}>{ACTIVITY_LABELS[a.activity_type] || a.activity_type}</Text>
-                    {a.notes ? <Text style={s.assignNote}>{a.notes}</Text> : null}
-                  </View>
-                  <View style={[s.diffBadge, { backgroundColor: a.difficulty_level === 3 ? '#FFEBEE' : a.difficulty_level === 2 ? '#FFF3E0' : '#E8F5E9' }]}>
-                    <Text style={[s.diffText, { color: a.difficulty_level === 3 ? '#F44336' : a.difficulty_level === 2 ? '#FF9800' : '#4CAF50' }]}>
-                      {a.difficulty_level === 3 ? 'Hard' : a.difficulty_level === 2 ? 'Medium' : 'Easy'}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-              {assignments.length > 3 && (
-                <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentAssignments', navParams)}>
-                  <Text style={s.viewAllText}>+{assignments.length - 3} more assignments →</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </>
-        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

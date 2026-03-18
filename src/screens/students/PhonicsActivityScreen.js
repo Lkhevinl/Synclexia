@@ -78,7 +78,7 @@ function EmptyContent({ label, color, onBack }) {
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
       <Text style={{ fontSize: 60, marginBottom: 16 }}>📭</Text>
       <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 8 }}>{label}</Text>
-      <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>No activities yet. Ask your teacher or admin to add content!</Text>
+      <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>No activities yet. Ask an admin to add content.</Text>
       <TouchableOpacity style={{ backgroundColor: color, borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 }} onPress={onBack}>
         <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>← Back</Text>
       </TouchableOpacity>
@@ -90,17 +90,104 @@ function BlendGame({ onBack, userId, items }) {
   const words = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [tappedPhonemes, setTappedPhonemes] = useState([]);
+  const [activePhonemeIndex, setActivePhonemeIndex] = useState(null);
   const [blended, setBlended] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  const speechRunIdRef = useRef(0);
 
   const current = words[idx];
 
-  const speakPhoneme = (ph, idx) => {
-    Speech.speak(ph, { rate: 0.8, pitch: 1.1 });
-    if (!tappedPhonemes.includes(idx)) {
-      setTappedPhonemes(prev => [...prev, idx]);
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
+
+  const stopSpeech = () => {
+    speechRunIdRef.current += 1;
+    Speech.stop();
+    setActivePhonemeIndex(null);
+  };
+
+  const speakWithHighlight = (phoneme, phonemeIndex, opts = {}) => {
+    stopSpeech();
+    const runId = speechRunIdRef.current;
+    setActivePhonemeIndex(phonemeIndex);
+    Speech.speak(phoneme, {
+      rate: 0.8,
+      pitch: 1.1,
+      ...opts,
+      onDone: () => {
+        if (runId !== speechRunIdRef.current) return;
+        setActivePhonemeIndex(null);
+        opts.onDone?.();
+      },
+      onStopped: () => {
+        if (runId !== speechRunIdRef.current) return;
+        setActivePhonemeIndex(null);
+        opts.onStopped?.();
+      },
+      onError: (e) => {
+        if (runId !== speechRunIdRef.current) return;
+        setActivePhonemeIndex(null);
+        opts.onError?.(e);
+      },
+    });
+  };
+
+  const speakPhonemeSequenceThenWord = (phonemes, word) => {
+    stopSpeech();
+    const runId = speechRunIdRef.current;
+
+    const speakNext = (i) => {
+      if (runId !== speechRunIdRef.current) return;
+      if (i >= phonemes.length) {
+        setActivePhonemeIndex(null);
+        Speech.speak(word, {
+          rate: 0.75,
+          pitch: 1.1,
+          onDone: () => {
+            if (runId !== speechRunIdRef.current) return;
+            setActivePhonemeIndex(null);
+          },
+          onStopped: () => {
+            if (runId !== speechRunIdRef.current) return;
+            setActivePhonemeIndex(null);
+          },
+          onError: () => {
+            if (runId !== speechRunIdRef.current) return;
+            setActivePhonemeIndex(null);
+          },
+        });
+        return;
+      }
+
+      const phoneme = phonemes[i];
+      setActivePhonemeIndex(i);
+      Speech.speak(phoneme, {
+        rate: 0.8,
+        pitch: 1.1,
+        onDone: () => speakNext(i + 1),
+        onStopped: () => {
+          if (runId !== speechRunIdRef.current) return;
+          setActivePhonemeIndex(null);
+        },
+        onError: () => {
+          if (runId !== speechRunIdRef.current) return;
+          setActivePhonemeIndex(null);
+        },
+      });
+    };
+
+    speakNext(0);
+  };
+
+  const speakPhoneme = (ph, phonemeIndex) => {
+    speakWithHighlight(ph, phonemeIndex);
+    if (!tappedPhonemes.includes(phonemeIndex)) {
+      setTappedPhonemes(prev => [...prev, phonemeIndex]);
     }
   };
 
@@ -115,13 +202,15 @@ function BlendGame({ onBack, userId, items }) {
       Speech.speak('Tap each sound first!', { rate: 0.9 });
       return;
     }
-    Speech.speak(current.word, { rate: 0.75, pitch: 1.1 });
+    // Phoneme-synced playback: highlight each phoneme as it is spoken, then speak the whole word.
+    speakPhonemeSequenceThenWord(current.phonemes, current.word);
     setBlended(true);
     setScore(s => s + 1);
     if (userId) checkQuestProgress(userId, 'Phonics');
   };
 
   const handleNext = () => {
+    stopSpeech();
     if (idx + 1 >= words.length) {
       // Log session when game finishes
       if (userId) logSession({ studentId: userId, activityType: 'phonics_blend', score, total: words.length, details: { game: 'Blend It' } });
@@ -130,6 +219,7 @@ function BlendGame({ onBack, userId, items }) {
     }
     setIdx(i => i + 1);
     setTappedPhonemes([]);
+    setActivePhonemeIndex(null);
     setBlended(false);
   };
 
@@ -159,9 +249,15 @@ function BlendGame({ onBack, userId, items }) {
         <View style={bg.phonemeRow}>
           {current.phonemes.map((ph, i) => {
             const tapped = tappedPhonemes.includes(i);
+            const active = activePhonemeIndex === i;
             return (
-              <TouchableOpacity key={i} style={[bg.phonemeTile, tapped && bg.phonemeTileTapped]} onPress={() => speakPhoneme(ph, i)} activeOpacity={0.7}>
-                <Text style={[bg.phonemeText, tapped && bg.phonemeTextTapped]}>/{ph}/</Text>
+              <TouchableOpacity
+                key={i}
+                style={[bg.phonemeTile, active && bg.phonemeTileActive, tapped && bg.phonemeTileTapped, active && tapped && bg.phonemeTileActiveTapped]}
+                onPress={() => speakPhoneme(ph, i)}
+                activeOpacity={0.7}
+              >
+                <Text style={[bg.phonemeText, active && bg.phonemeTextActive, tapped && bg.phonemeTextTapped]}>/{ph}/</Text>
               </TouchableOpacity>
             );
           })}
@@ -189,8 +285,11 @@ const bg = StyleSheet.create({
   instruction: { fontSize: 16, color: '#78909C', marginBottom: 24 },
   phonemeRow: { flexDirection: 'row', gap: 12, marginBottom: 40, flexWrap: 'wrap', justifyContent: 'center' },
   phonemeTile: { backgroundColor: '#FFF3E0', borderWidth: 2, borderColor: '#FF9800', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 16, minWidth: 60, alignItems: 'center' },
+  phonemeTileActive: { borderWidth: 3, borderColor: '#F57C00' },
   phonemeTileTapped: { backgroundColor: '#FF9800', borderColor: '#E65100' },
+  phonemeTileActiveTapped: { borderWidth: 3, borderColor: '#fff' },
   phonemeText: { fontSize: 24, fontWeight: 'bold', color: '#FF9800' },
+  phonemeTextActive: { color: '#F57C00' },
   phonemeTextTapped: { color: '#fff' },
   blendBtn: { backgroundColor: '#FF9800', borderRadius: 16, paddingHorizontal: 40, paddingVertical: 16 },
   blendBtnDone: { backgroundColor: '#4CAF50' },
@@ -313,12 +412,20 @@ function SegmentGame({ onBack, userId, items }) {
   const segWords = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [taps, setTaps] = useState(0);
+  const [activeTapIndex, setActiveTapIndex] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const tapAnim = useRef(new Animated.Value(1)).current;
+  const speechRunIdRef = useRef(0);
 
   const current = segWords[idx];
+
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
 
   const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
 
@@ -326,7 +433,26 @@ function SegmentGame({ onBack, userId, items }) {
     if (answered) return;
     const next = taps + 1;
     setTaps(next);
-    Speech.speak(current.phonemes[next - 1] || '', { rate: 0.8 });
+    speechRunIdRef.current += 1;
+    const runId = speechRunIdRef.current;
+    Speech.stop();
+    const nextIndex = next - 1;
+    setActiveTapIndex(nextIndex);
+    Speech.speak(current.phonemes[nextIndex] || '', {
+      rate: 0.8,
+      onDone: () => {
+        if (runId !== speechRunIdRef.current) return;
+        setActiveTapIndex(null);
+      },
+      onStopped: () => {
+        if (runId !== speechRunIdRef.current) return;
+        setActiveTapIndex(null);
+      },
+      onError: () => {
+        if (runId !== speechRunIdRef.current) return;
+        setActiveTapIndex(null);
+      },
+    });
     // Pulse animation
     Animated.sequence([
       Animated.timing(tapAnim, { toValue: 1.3, duration: 100, useNativeDriver: true }),
@@ -343,6 +469,7 @@ function SegmentGame({ onBack, userId, items }) {
       }
       setIdx(i => i + 1);
       setTaps(0);
+      setActiveTapIndex(null);
       setAnswered(false);
       return;
     }
@@ -388,7 +515,7 @@ function SegmentGame({ onBack, userId, items }) {
         {/* Sound boxes */}
         <View style={sg.boxRow}>
           {Array.from({ length: Math.max(taps, current.count) }).map((_, i) => (
-            <View key={i} style={[sg.soundBox, i < taps && sg.soundBoxFilled]}>
+            <View key={i} style={[sg.soundBox, i < taps && sg.soundBoxFilled, i === activeTapIndex && sg.soundBoxActive]}>
               {answered && i < current.phonemes.length && (
                 <Text style={sg.phonemeInBox}>/{current.phonemes[i]}/</Text>
               )}
@@ -427,6 +554,7 @@ const sg = StyleSheet.create({
   boxRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' },
   soundBox: { width: 44, height: 44, borderWidth: 2, borderColor: '#81C784', borderRadius: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9FBE7' },
   soundBoxFilled: { backgroundColor: '#4CAF50', borderColor: '#2E7D32' },
+  soundBoxActive: { borderColor: '#1B5E20' },
   phonemeInBox: { fontSize: 11, fontWeight: 'bold', color: '#fff' },
   result: { fontSize: 16, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
   resultCorrect: { color: '#2E7D32' },

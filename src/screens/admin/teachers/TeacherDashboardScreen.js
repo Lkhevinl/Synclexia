@@ -210,7 +210,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           <GridCard title="Student List"      icon="people"                color="#4CAF50" onPress={() => navigation.navigate('TeacherUsers')} />
           <GridCard title="Assign Tasks"      icon="checkbox"              color="#2196F3" onPress={() => navigation.navigate('TeacherAssignActivities')} />
           <GridCard title="Monitor Progress"  icon="trending-up"           color="#E91E63" onPress={() => navigation.navigate('TeacherProgress')} />
-          <GridCard title="Parent Messages"   icon="chatbubble-ellipses"   color="#7B1FA2" onPress={() => navigation.navigate('TeacherMessages')} />
+          <GridCard title="Class QR Code"     icon="qr-code"               color="#009688" onPress={() => navigation.navigate('TeacherEnrollment')} />
         </View>
 
         {/* ── CONTENT MANAGEMENT (row cards) ── */}
@@ -223,10 +223,7 @@ export default function TeacherDashboardScreen({ navigation }) {
 
         {/* ── COMMUNICATION & ENROLLMENT (row cards) ── */}
         <Text style={styles.sectionTitle}>Communication & Enrollment</Text>
-        <RowCard title="Feedback & Replies" subtitle="Read student feedback & respond"    icon="chatbubbles" color="#E91E63" onPress={() => navigation.navigate('TeacherFeedback')} />
         <RowCard title="Announcements"      subtitle="Notify students & their parents"     icon="megaphone"   color="#FF5722" onPress={() => navigation.navigate('TeacherNotifications')} />
-        <RowCard title="Class QR Code"      subtitle="Generate QR code for enrollment"   icon="qr-code"     color="#009688" onPress={() => navigation.navigate('TeacherEnrollment')} />
-        <RowCard title="Parent Messages"    subtitle="Chat with parents of your students" icon="mail"         color="#6A1B9A" onPress={() => navigation.navigate('TeacherMessages')} />
 
         {/* ── LIVE ACTIVITY FEED ── */}
         {activityFeed.length > 0 && (

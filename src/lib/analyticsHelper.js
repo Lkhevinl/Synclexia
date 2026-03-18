@@ -1,7 +1,6 @@
 // lib/analyticsHelper.js
 // Session logging for all activity attempts — records every session to
-// session_logs, awards XP, marks assignments complete, and
-// provides aggregated progress data for the Teacher Progress screen.
+// session_logs and awards XP.
 import { supabase } from './supabase';
 
 /**
@@ -46,21 +45,50 @@ export const logSession = async ({ studentId, activityType, score, total, durati
     const accuracyBonus = accuracy >= 80 ? Math.round(baseXP * 0.5) : accuracy >= 50 ? Math.round(baseXP * 0.2) : 0;
     const xpEarned = baseXP + accuracyBonus;
 
-    // 1. Insert session log
-    const { data: session, error: logError } = await supabase
-      .from('session_logs')
-      .insert({
-        student_id: studentId,
-        activity_type: activityType,
-        score,
-        total,
-        accuracy,
-        duration_seconds: durationSeconds,
-        xp_earned: xpEarned,
-        details,
-      })
-      .select()
-      .single();
+    const basePayload = {
+      activity_type: activityType,
+      score,
+      total,
+      accuracy,
+      duration_seconds: durationSeconds,
+      xp_earned: xpEarned,
+      details,
+    };
+
+    const isUndefinedColumn = (err) =>
+      err?.code === '42703' || /column .* does not exist/i.test(err?.message || '');
+
+    const isNotNullViolation = (err) =>
+      err?.code === '23502' || /violates not-null constraint/i.test(err?.message || '');
+
+    // 1) Insert session log
+    // Support both schemas:
+    // - new schema: session_logs.student_id
+    // - legacy schema: session_logs.user_id
+    // - some DBs may temporarily have both (e.g. migrations)
+    const attempts = [
+      { ...basePayload, student_id: studentId, user_id: studentId },
+      { ...basePayload, student_id: studentId },
+      { ...basePayload, user_id: studentId },
+    ];
+
+    let session = null;
+    let logError = null;
+    for (const payload of attempts) {
+      const res = await supabase.from('session_logs').insert(payload).select().single();
+      if (!res.error) {
+        session = res.data;
+        logError = null;
+        break;
+      }
+      logError = res.error;
+
+      // Retry only when the DB schema doesn't match our columns, or when a
+      // required id column wasn't provided.
+      if (!(isUndefinedColumn(logError) || isNotNullViolation(logError))) {
+        break;
+      }
+    }
 
     if (logError) {
       console.warn('Session log insert failed:', logError.message);
@@ -72,9 +100,6 @@ export const logSession = async ({ studentId, activityType, score, total, durati
       await supabase.rpc('add_xp', { amount: xpEarned });
     }
 
-    // 3. Mark matching assignments as completed
-    await markAssignmentComplete(studentId, activityType);
-
     return { success: true, xpEarned, session };
   } catch (error) {
     console.warn('logSession error:', error.message);
@@ -83,39 +108,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
 };
 
 /**
- * Mark an assignment as completed if one exists for this activity type.
- */
-const markAssignmentComplete = async (studentId, activityType) => {
-  try {
-    // Map sub-types back to main assignment types
-    const typeMap = {
-      phonics_blend: 'phonics',
-      phonics_rhyme: 'phonics',
-      phonics_segment: 'phonics',
-    };
-    const assignmentType = typeMap[activityType] || activityType;
-
-    const { data: assignments } = await supabase
-      .from('assignments')
-      .select('id, is_completed')
-      .eq('student_id', studentId)
-      .eq('activity_type', assignmentType)
-      .eq('is_completed', false);
-
-    if (assignments && assignments.length > 0) {
-      // Mark the first uncompleted assignment as done
-      await supabase
-        .from('assignments')
-        .update({ is_completed: true, completed_at: new Date().toISOString() })
-        .eq('id', assignments[0].id);
-    }
-  } catch (error) {
-    // Non-critical — silently fail
-  }
-};
-
-/**
- * Get session log summary for a student (used by teacher progress screen).
+ * Get session log summary for a student.
  * 
  * @param {string} studentId
  * @param {number} [daysBack=7] - How many days of data to include
@@ -126,16 +119,30 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
     const since = new Date();
     since.setDate(since.getDate() - daysBack);
 
-    const { data: sessions, error: sessErr } = await supabase
+    const isUndefinedColumn = (err) =>
+      err?.code === '42703' || /column .* does not exist/i.test(err?.message || '');
+
+    // Support both schemas (student_id vs user_id)
+    let sessions = null;
+    let sessErr = null;
+
+    ({ data: sessions, error: sessErr } = await supabase
       .from('session_logs')
       .select('*')
       .eq('student_id', studentId)
       .gte('created_at', since.toISOString())
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }));
+
+    if (sessErr && isUndefinedColumn(sessErr)) {
+      ({ data: sessions, error: sessErr } = await supabase
+        .from('session_logs')
+        .select('*')
+        .eq('user_id', studentId)
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: false }));
+    }
 
     if (sessErr) {
-      // Likely an RLS policy missing for the caller's role (e.g. parent)
-      // Run fix_parent_session_logs_rls.sql in Supabase to resolve.
       return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
     }
 

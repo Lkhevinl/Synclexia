@@ -89,15 +89,19 @@ export default function ParentEditChildScreen({ route, navigation }) {
       updates.avatar_url = avatarUrl;
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', studentId);
+    const { data: result, error } = await supabase
+      .rpc('parent_update_child_profile', {
+        p_student_id: studentId,
+        p_full_name: updates.full_name,
+        p_avatar_url: updates.avatar_url ?? null,
+      });
 
     setSaving(false);
 
     if (error) {
       showAlert('Error', error.message);
+    } else if (result?.error) {
+      showAlert('Error', result.error);
     } else {
       showAlert('Saved ✓', "Your child's profile has been updated!", () => navigation.goBack());
     }

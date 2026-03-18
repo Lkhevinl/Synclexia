@@ -34,15 +34,27 @@ export default function AdminParentLinksScreen({ navigation }) {
 
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchLinks(), fetchParents(), fetchStudents()]);
-    setLoading(false);
+    try {
+      await Promise.all([fetchLinks(), fetchParents(), fetchStudents()]);
+    } catch (e) {
+      console.error('[AdminParentLinks] fetchAll exception:', e?.message || e);
+      Alert.alert('Load Error', 'Could not load parent links. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchLinks = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('parent_links')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('[AdminParentLinks] fetchLinks error:', error.message);
+      setLinks([]);
+      return;
+    }
 
     if (data && data.length > 0) {
       // Get all unique user IDs for hydration
@@ -50,10 +62,17 @@ export default function AdminParentLinksScreen({ navigation }) {
       const studentIds = [...new Set(data.map(l => l.student_id))];
       const allIds = [...new Set([...parentIds, ...studentIds])];
 
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profErr } = await supabase
         .from('profiles')
         .select('id, full_name, email, role')
         .in('id', allIds);
+
+      if (profErr) {
+        console.error('[AdminParentLinks] hydrate profiles error:', profErr.message);
+        // Still show raw links even if hydration fails
+        setLinks(data.map(l => ({ ...l, parent_profile: null, student_profile: null })));
+        return;
+      }
 
       const profileMap = {};
       (profiles || []).forEach(p => { profileMap[p.id] = p; });
@@ -70,27 +89,40 @@ export default function AdminParentLinksScreen({ navigation }) {
   };
 
   const fetchParents = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, email, role')
       .eq('role', 'parent')
       .order('full_name');
+    if (error) {
+      console.error('[AdminParentLinks] fetchParents error:', error.message);
+      setParents([]);
+      return;
+    }
     setParents(data || []);
   };
 
   const fetchStudents = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, email, role')
       .eq('role', 'student')
       .order('full_name');
+    if (error) {
+      console.error('[AdminParentLinks] fetchStudents error:', error.message);
+      setStudents([]);
+      return;
+    }
     setStudents(data || []);
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchAll();
-    setRefreshing(false);
+    try {
+      await fetchAll();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const createLink = async () => {

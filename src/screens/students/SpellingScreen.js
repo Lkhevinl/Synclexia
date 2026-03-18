@@ -173,7 +173,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
         <Text style={{ fontSize: 60, marginBottom: 16 }}>📭</Text>
         <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: '#37474F' }}>No Words Available</Text>
-        <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>Ask your teacher or admin to add spelling words!</Text>
+        <Text style={{ fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 32 }}>Ask an admin to add spelling words.</Text>
         <TouchableOpacity style={{ backgroundColor: '#9C27B0', borderRadius: 14, paddingHorizontal: 32, paddingVertical: 14 }} onPress={onBack}>
           <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>← Back</Text>
         </TouchableOpacity>
@@ -402,7 +402,7 @@ export default function SpellingScreen() {
         ) : wordBank.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text style={{ fontSize: 40 }}>🔤</Text>
-            <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask your teacher!</Text>
+            <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask an admin to add content.</Text>
           </View>
         ) : mode ? (
           <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />

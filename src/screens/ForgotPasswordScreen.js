@@ -3,15 +3,16 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, Acti
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { showAlert } from '../lib/uiAlert';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleReset = async () => {
-    if (!email) return Alert.alert("Error", "Please enter your email.");
+    if (!email) return showAlert('Missing Info', 'Please enter your email.');
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return Alert.alert("Error", "Please enter a valid email address.");
+    if (!emailRegex.test(email)) return showAlert('Invalid Email', 'Please enter a valid email address.');
     setLoading(true);
     
     try {
@@ -20,16 +21,16 @@ export default function ForgotPasswordScreen({ navigation }) {
       });
 
       if (error) {
-        Alert.alert("Error", error.message);
+        showAlert('Error', error.message);
       } else {
-        Alert.alert(
-          "Check your email ",
-          "We sent a password reset link to " + email.trim().toLowerCase() + ". Check your inbox (and spam folder).",
-          [{ text: "OK", onPress: () => navigation.goBack() }]
+        showAlert(
+          'Check your email',
+          `We sent a password reset link to ${email.trim().toLowerCase()}. Check your inbox (and spam folder).`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }],
         );
       }
     } catch (e) {
-      Alert.alert("Error", "Something went wrong. Check your internet connection.");
+      showAlert('Error', 'Something went wrong. Check your internet connection.');
     } finally {
       setLoading(false);
     }

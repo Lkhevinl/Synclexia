@@ -14,7 +14,7 @@ export default function AdminNotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [targetRole, setTargetRole] = useState('all'); // 'all' | 'student' | 'teacher' | 'parent'
+  const [targetRole, setTargetRole] = useState('all'); // 'all' | 'student' | 'parent'
   // 'all' is used for both "Students & Parents" and "Everyone" options in the UI
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -142,7 +142,6 @@ export default function AdminNotificationsScreen() {
             { key: 'all', label: 'Students & Parents' },
             { key: 'student', label: 'Students Only' },
             { key: 'parent', label: 'Parents Only' },
-            { key: 'teacher', label: 'Teachers' },
           ].map(({ key, label }) => (
             <TouchableOpacity 
               key={key}
@@ -186,7 +185,6 @@ export default function AdminNotificationsScreen() {
                         {item.target_role === 'all' ? 'Students & Parents'
                           : item.target_role === 'student' ? 'Students Only'
                           : item.target_role === 'parent' ? 'Parents Only'
-                          : item.target_role === 'teacher' ? 'Teachers'
                           : item.target_role ?? 'All'}
                       </Text>
                       <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>

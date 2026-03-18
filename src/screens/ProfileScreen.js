@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Platform, ScrollView, Image, ActivityIndicator,
@@ -23,6 +23,19 @@ const showAlert = (title, message, onOk) => {
 
 export default function ProfileScreen({ navigation }) {
   const { profile, fetchProfile } = useAuth();
+  const isStudent = profile?.role === 'student';
+
+  useEffect(() => {
+    if (!isStudent) return;
+    showAlert(
+      'Not Available',
+      'Only a parent can manage a student account profile and password.',
+      () => {
+        if (typeof navigation?.canGoBack === 'function' && navigation.canGoBack()) navigation.goBack();
+        else navigation.reset?.({ index: 0, routes: [{ name: 'Home' }] });
+      },
+    );
+  }, [isStudent, navigation]);
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [email, setEmail] = useState(profile?.email || '');
@@ -118,6 +131,11 @@ export default function ProfileScreen({ navigation }) {
 
   // ─── Save Profile ─────────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (isStudent) {
+      showAlert('View Only', 'Students can view profile details but cannot edit them.');
+      return;
+    }
+
     if (!fullName.trim()) {
       showAlert('Validation', 'Full name cannot be empty.');
       return;
@@ -183,7 +201,7 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {/* ── Banner ── */}
         <View style={styles.bannerWrapper}>
-          <TouchableOpacity onPress={pickBanner} disabled={bannerUploading} activeOpacity={0.85} style={{ flex: 1 }}>
+          <TouchableOpacity onPress={pickBanner} disabled={bannerUploading || isStudent} activeOpacity={0.85} style={{ flex: 1 }}>
             {bannerUrl ? (
               <Image source={{ uri: bannerUrl }} style={styles.bannerImg} />
             ) : (
@@ -193,7 +211,7 @@ export default function ProfileScreen({ navigation }) {
               {bannerUploading
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Ionicons name="image-outline" size={15} color="#fff" />}
-              <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : 'Edit Cover'}</Text>
+              <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : isStudent ? 'View Cover' : 'Edit Cover'}</Text>
             </View>
           </TouchableOpacity>
 
@@ -204,7 +222,7 @@ export default function ProfileScreen({ navigation }) {
 
           {/* Avatar sits at the bottom of the banner */}
           <View style={styles.avatarOnBanner}>
-            <TouchableOpacity onPress={pickImage} disabled={uploading} activeOpacity={0.8} style={styles.avatarWrapper}>
+            <TouchableOpacity onPress={pickImage} disabled={uploading || isStudent} activeOpacity={0.8} style={styles.avatarWrapper}>
               {avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
               ) : (
@@ -224,7 +242,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <Text style={styles.avatarHint}>
-          {uploading ? 'Uploading photo...' : 'Tap photo or cover to change'}
+          {uploading ? 'Uploading photo...' : isStudent ? 'Profile is view-only for student accounts' : 'Tap photo or cover to change'}
         </Text>
 
         {/* ── Form ── */}
@@ -237,6 +255,7 @@ export default function ProfileScreen({ navigation }) {
               value={fullName}
               onChangeText={setFullName}
               placeholder="Your full name"
+              editable={!isStudent}
               returnKeyType="next"
               nativeID="profile-fullname"
               autoComplete="name"
@@ -251,6 +270,7 @@ export default function ProfileScreen({ navigation }) {
               value={email}
               onChangeText={setEmail}
               placeholder="Your email address"
+              editable={!isStudent}
               keyboardType="email-address"
               autoCapitalize="none"
               returnKeyType="done"
@@ -258,35 +278,41 @@ export default function ProfileScreen({ navigation }) {
               autoComplete="email"
             />
           </View>
-          <Text style={styles.emailHint}>
-            ⚠️ Changing email requires confirmation via the new address.
-          </Text>
+          {!isStudent && (
+            <Text style={styles.emailHint}>
+              ⚠️ Changing email requires confirmation via the new address.
+            </Text>
+          )}
 
           {/* Save Button */}
-          <TouchableOpacity
-            style={[styles.saveBtn, (!isChanged || saving || uploading) && styles.saveBtnDisabled]}
-            onPress={handleSave}
-            disabled={!isChanged || saving || uploading}
-          >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.saveBtnText}>Save Changes</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {!isStudent && (
+            <TouchableOpacity
+              style={[styles.saveBtn, (!isChanged || saving || uploading) && styles.saveBtnDisabled]}
+              onPress={handleSave}
+              disabled={!isChanged || saving || uploading}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.saveBtnText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
 
           {/* Change Password shortcut */}
-          <TouchableOpacity
-            style={styles.changePassBtn}
-            onPress={() => navigation.navigate('ChangePassword')}
-          >
-            <Ionicons name="lock-closed-outline" size={20} color="#0288D1" />
-            <Text style={styles.changePassText}>Change Password</Text>
-            <Ionicons name="chevron-forward" size={16} color="#90A4AE" />
-          </TouchableOpacity>
+          {!isStudent && (
+            <TouchableOpacity
+              style={styles.changePassBtn}
+              onPress={() => navigation.navigate('ChangePassword')}
+            >
+              <Ionicons name="lock-closed-outline" size={20} color="#0288D1" />
+              <Text style={styles.changePassText}>Change Password</Text>
+              <Ionicons name="chevron-forward" size={16} color="#90A4AE" />
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>

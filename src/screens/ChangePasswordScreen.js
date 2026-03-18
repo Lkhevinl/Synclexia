@@ -1,12 +1,22 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Alert, ScrollView, ActivityIndicator,
+  Alert, ScrollView, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import GoBackBtn from '../components/GoBackBtn';
+import { useAuth } from '../context/AuthContext';
+
+const showAlert = (title, message, onOk) => {
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+    onOk?.();
+  } else {
+    Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]);
+  }
+};
 
 const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder }) => (
   <View style={styles.fieldGroup}>
@@ -31,11 +41,26 @@ const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder
 );
 
 export default function ChangePasswordScreen({ navigation }) {
+  const { profile } = useAuth();
+  const isStudent = profile?.role === 'student';
+
   const [newPass, setNewPass]       = useState('');
   const [confirm, setConfirm]       = useState('');
   const [showNew, setShowNew]       = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading]       = useState(false);
+
+  React.useEffect(() => {
+    if (!isStudent) return;
+    showAlert(
+      'Not Available',
+      'Only a parent can manage a student account profile and password.',
+      () => {
+        if (typeof navigation?.canGoBack === 'function' && navigation.canGoBack()) navigation.goBack();
+        else navigation.reset?.({ index: 0, routes: [{ name: 'Home' }] });
+      },
+    );
+  }, [isStudent, navigation]);
 
   const passwordStrength = (pw) => {
     if (pw.length === 0) return null;
@@ -48,6 +73,7 @@ export default function ChangePasswordScreen({ navigation }) {
   const strength = passwordStrength(newPass);
 
   const handleChange = async () => {
+    if (isStudent) return;
     if (!newPass || !confirm) {
       Alert.alert('Missing Fields', 'Please fill in both password fields.');
       return;

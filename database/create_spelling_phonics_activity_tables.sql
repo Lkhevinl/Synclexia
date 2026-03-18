@@ -1,7 +1,7 @@
 -- ============================================================
 -- SPELLING WORDS TABLE
 -- Manages words used in SpellingScreen.
--- Admin/Teacher can add, edit, deactivate words.
+-- Admins can add, edit, deactivate words.
 -- difficulty_level: 1=CVC/Easy  2=4-letter/Medium  3=5-letter+/Hard
 -- ============================================================
 
@@ -27,12 +27,12 @@ ALTER TABLE public.spelling_words ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Read active spelling words" ON public.spelling_words
   FOR SELECT USING (is_active = TRUE);
 
--- Admin/Teacher: full management
-CREATE POLICY "Admin teacher manage spelling words" ON public.spelling_words
+-- Admin: full management
+CREATE POLICY "Admins manage spelling words" ON public.spelling_words
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'teacher')
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );
 
@@ -66,10 +66,10 @@ ALTER TABLE public.phonics_activity_content ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Read active phonics activity content" ON public.phonics_activity_content
   FOR SELECT USING (is_active = TRUE);
 
-CREATE POLICY "Admin teacher manage phonics activity content" ON public.phonics_activity_content
+CREATE POLICY "Admins manage phonics activity content" ON public.phonics_activity_content
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.profiles
-      WHERE id = auth.uid() AND role IN ('admin', 'teacher')
+      WHERE id = auth.uid() AND role = 'admin'
     )
   );

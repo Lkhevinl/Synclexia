@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AppHeader from '../../components/AppHeader';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import AppHeader from '../../../components/AppHeader';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
-import { scheduleDeadlineReminder } from '../../lib/pushNotificationHelper';
+import { scheduleDeadlineReminder } from '../../../lib/pushNotificationHelper';
 
 const ACTIVITIES = [
   { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },

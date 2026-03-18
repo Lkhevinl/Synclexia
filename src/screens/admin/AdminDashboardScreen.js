@@ -15,9 +15,7 @@ export default function AdminDashboardScreen({ navigation }) {
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
-  const [teacherCount, setTeacherCount] = useState(0);
   const [parentCount, setParentCount] = useState(0);
-  const [pendingTeachers, setPendingTeachers] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
@@ -30,16 +28,12 @@ export default function AdminDashboardScreen({ navigation }) {
   };
 
   const fetchUserCounts = async () => {
-    const [s, t, p, pt] = await Promise.all([
+    const [s, p] = await Promise.all([
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('status', 'active'),
       supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'teacher').eq('status', 'pending'),
     ]);
     setStudentCount(s.count || 0);
-    setTeacherCount(t.count || 0);
     setParentCount(p.count || 0);
-    setPendingTeachers(pt.count || 0);
   };
 
   const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
@@ -92,18 +86,8 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
-          <Text style={styles.statLabel}>TEACHERS</Text>
-          <Text style={[styles.statValue, { color: '#2196F3' }]}>{teacherCount}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
           <Text style={styles.statLabel}>PARENTS</Text>
           <Text style={[styles.statValue, { color: '#9C27B0' }]}>{parentCount}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>PENDING</Text>
-          <Text style={[styles.statValue, { color: pendingTeachers > 0 ? '#F44336' : '#90A4AE' }]}>{pendingTeachers}</Text>
         </View>
       </View>
 
@@ -112,41 +96,12 @@ export default function AdminDashboardScreen({ navigation }) {
         {/* USER MANAGEMENT */}
         <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4 }]}>User Management</Text>
 
-        {/* PENDING APPROVALS ALERT */}
-        {pendingTeachers > 0 && (
-          <TouchableOpacity
-            style={styles.pendingAlert}
-            onPress={() => navigation.navigate('AdminUsers', { filterRole: 'pending' })}
-            activeOpacity={0.8}
-          >
-            <View style={styles.pendingAlertIcon}>
-              <Ionicons name="time" size={24} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.pendingAlertTitle}>
-                {pendingTeachers} Teacher{pendingTeachers > 1 ? 's' : ''} Awaiting Approval
-              </Text>
-              <Text style={styles.pendingAlertSub}>Tap to review and approve</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </TouchableOpacity>
-        )}
-
         <AdminCard
           title="Learners (Students)"
           subtitle="View, edit and manage student accounts"
           icon="school"
           color="#4CAF50"
           onPress={() => navigation.navigate('AdminUsers', { filterRole: 'student' })}
-        />
-
-        <AdminCard
-          title="Teachers"
-          subtitle="Manage teacher accounts & approvals"
-          icon="person-circle"
-          color="#2196F3"
-          badge={pendingTeachers}
-          onPress={() => navigation.navigate('AdminUsers', { filterRole: 'teacher' })}
         />
 
         <AdminCard
@@ -166,14 +121,6 @@ export default function AdminDashboardScreen({ navigation }) {
           icon="people-circle"
           color="#6A1B9A"
           onPress={() => navigation.navigate('AdminParentLinks')}
-        />
-
-        <AdminCard
-          title="Enrollment"
-          subtitle="Oversee student enrollments"
-          icon="qr-code"
-          color="#009688"
-          onPress={() => navigation.navigate('AdminEnrollment')}
         />
 
         <AdminCard

@@ -10,7 +10,8 @@ import { supabase } from '../../lib/supabase';
 const ACTIVITY_LABELS = {
   phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
   phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', scan: '📷 Scan', phonological_awareness: '🎧 Phonological',
+  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
+  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
 };
 
 export default function ParentActivityLogScreen({ route }) {

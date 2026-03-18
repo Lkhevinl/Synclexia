@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
 
@@ -20,19 +21,6 @@ import LeaderboardScreen from '../screens/students/LeaderboardScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
-
-// ✅ TEACHER SCREENS (now in 'teachers' folder)
-import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
-import TeacherAddStoryScreen from '../screens/teachers/TeacherAddStoryScreen';
-import TeacherUsersScreen from '../screens/teachers/TeacherUsersScreen';
-import TeacherNotificationsScreen from '../screens/teachers/TeacherNotificationsScreen';
-import TeacherFeedbackScreen from '../screens/teachers/TeacherFeedbackScreen';
-import TeacherMessagesScreen from '../screens/teachers/TeacherMessagesScreen';
-import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen';
-import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen';
-import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen';
-import TeacherProgressScreen from '../screens/teachers/TeacherProgressScreen';
-import StudentEnrollScreen from '../screens/StudentEnrollScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
@@ -41,28 +29,34 @@ import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
-import PendingApprovalScreen from '../screens/PendingApprovalScreen';
 
 // PARENT SCREENS
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
 import ParentProgressScreen from '../screens/parents/ParentProgressScreen';
-import ParentMessagesScreen from '../screens/parents/ParentMessagesScreen';
-import ParentAssignmentsScreen from '../screens/parents/ParentAssignmentsScreen';
 import ParentActivityLogScreen from '../screens/parents/ParentActivityLogScreen';
 import ParentLinkChildScreen from '../screens/parents/ParentLinkChildScreen';
 import ParentEditChildScreen from '../screens/parents/ParentEditChildScreen';
+
+// TEACHER SCREENS
+import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
+import TeacherUsersScreen from '../screens/teachers/TeacherUsersScreen.js';
+import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen.js';
+import TeacherProgressScreen from '../screens/teachers/TeacherProgressScreen.js';
+import TeacherAddStoryScreen from '../screens/teachers/TeacherAddStoryScreen.js';
+import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen.js';
+import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen.js';
+import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen.js';
+import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen.js';
+import TeacherNotificationsScreen from '../screens/teachers/TeacherNotificationsScreen.js';
+import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen.js';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/admin/AdminUsersScreen';
 import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen';
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
-import AdminEnrollmentScreen from '../screens/admin/AdminEnrollmentScreen';
 import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
-import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen';
-import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen';
-import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -114,33 +108,6 @@ function AppTabs(props) {
   return <DashboardSwitcher {...props} />;
 }
 
-function TeacherTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: TAB_BAR_STYLE,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-          if (route.name === 'Dashboard')       iconName = focused ? 'home'      : 'home-outline';
-          else if (route.name === 'Students')   iconName = focused ? 'people'    : 'people-outline';
-          else if (route.name === 'Activities') iconName = focused ? 'book'      : 'book-outline';
-          else if (route.name === 'Progress')   iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          else                                  iconName = 'ellipse-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#FF9800',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
-      <Tab.Screen name="Dashboard"  component={DashboardSwitcher} />
-      <Tab.Screen name="Students"   component={TeacherUsersScreen} />
-      <Tab.Screen name="Activities" component={TeacherAssignActivitiesScreen} />
-      <Tab.Screen name="Progress"   component={TeacherProgressScreen} />
-    </Tab.Navigator>
-  );
-}
-
 export function AuthNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
@@ -164,9 +131,9 @@ function AppScreens() {
     return () => clearTimeout(t);
   }, [profileLoaded]);
 
-  const isTeacher = profile?.role === 'teacher';
-  const isAdmin   = profile?.role === 'admin';
-  const isParent  = profile?.role === 'parent';
+  const isAdmin   = isUserAdmin(profile);
+  const isParent  = isUserParent(profile);
+  const isTeacher = isUserTeacher(profile);
 
   if (!profileLoaded && !timedOut) return <LoadingScreen />;
 
@@ -190,19 +157,9 @@ function AppScreens() {
     );
   }
 
-  // Teacher account awaiting admin approval — show holding screen
-  if (profile?.role === 'teacher' && profile?.status === 'pending') {
-    return (
-      <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
-        <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
-      </Stack.Navigator>
-    );
-  }
-
   // Role-based home tabs
-  const HomeComponent = isTeacher ? TeacherTabs
-                      : (profile?.role === 'student' || (!isTeacher && !isAdmin && !isParent)) ? StudentTabs
-                      : AppTabs;
+  // Only students use the learner bottom tabs; parent/admin/teacher use the dashboard switcher.
+  const HomeComponent = profile?.role === 'student' ? StudentTabs : AppTabs;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
@@ -216,7 +173,7 @@ function AppScreens() {
       <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="About" component={AboutScreen} />
-      <Stack.Screen name="StudentEnroll" component={StudentEnrollScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
       <Stack.Screen name="Spelling" component={SpellingScreen} />
       <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
@@ -224,33 +181,30 @@ function AppScreens() {
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      {/* Teacher routes */}
+      {(isTeacher || isAdmin) && (
+        <>
+          <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
+          <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
+          <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
+          <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
+          <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
+          <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
+          <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
+          <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
+          <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
+          <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
+          <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
+        </>
+      )}
       {/* Parent routes */}
       {profile?.role === 'parent' && (
         <>
           <Stack.Screen name="ParentDashboard" component={ParentDashboardScreen} />
           <Stack.Screen name="ParentProgress" component={ParentProgressScreen} />
-          <Stack.Screen name="ParentMessages" component={ParentMessagesScreen} />
-          <Stack.Screen name="ParentAssignments" component={ParentAssignmentsScreen} />
           <Stack.Screen name="ParentActivityLog" component={ParentActivityLogScreen} />
           <Stack.Screen name="ParentLinkChild" component={ParentLinkChildScreen} />
           <Stack.Screen name="ParentEditChild" component={ParentEditChildScreen} />
-        </>
-      )}
-      {(isTeacher || isAdmin) && (
-        <>
-          <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
-          <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
-          <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
-          <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
-          <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
-          <Stack.Screen name="TeacherFeedback" component={TeacherFeedbackScreen} />
-          <Stack.Screen name="TeacherMessages" component={TeacherMessagesScreen} />
-          <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
-          <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
-          <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
-          <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
-          <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
-          <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
         </>
       )}
       {isAdmin && (
@@ -259,7 +213,6 @@ function AppScreens() {
           <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
           <Stack.Screen name="AdminNotifications" component={AdminNotificationsScreen} />
           <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
-          <Stack.Screen name="AdminEnrollment" component={AdminEnrollmentScreen} />
           <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
         </>

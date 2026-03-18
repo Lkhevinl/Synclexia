@@ -1,25 +1,30 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { showAlert } from '../lib/uiAlert';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState('');
   
   // Get setSession to force update the app state immediately upon success
   const { setSession, resetSigningOut } = useAuth(); 
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      const msg = 'Please fill in all fields.';
+      setFormError(msg);
+      showAlert('Missing Info', msg);
       return;
     }
     setLoading(true);
+    setFormError('');
 
     try {
         // 1. Attempt Login with Supabase (trim + lowercase email to prevent mismatches)
@@ -29,19 +34,39 @@ export default function LoginScreen({ navigation }) {
         });
 
         if (error) {
-          Alert.alert('Login Failed', error.message);
+          const raw = (error.message || '').trim();
+          const lower = raw.toLowerCase();
+
+          let title = 'Login Failed';
+          let message = raw || 'Unable to sign in. Please try again.';
+
+          if (lower.includes('invalid login credentials')) {
+            title = 'Incorrect Password';
+            message = 'The email or password is incorrect.';
+          } else if (lower.includes('email not confirmed')) {
+            title = 'Email Not Verified';
+            message = 'Please verify your email first, then try again.';
+          } else if (lower.includes('network') || lower.includes('fetch')) {
+            title = 'Connection Error';
+            message = 'Please check your internet connection and try again.';
+          }
+
+          setFormError(message);
+          showAlert(title, message);
+          return;
         } else {
           // 2. Check ban status before letting the user in
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('is_banned')
+            .select('is_banned, role')
             .eq('id', data.session.user.id)
             .single();
           if (profileData?.is_banned) {
             await supabase.auth.signOut();
-            Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
+            showAlert('Access Denied', 'Your account has been suspended. Please contact support.');
             return;
           }
+
           // 3. Force App Context to Update
           if (resetSigningOut) resetSigningOut(); // re-enable SIGNED_IN events for token refresh
           if (setSession) {
@@ -50,7 +75,9 @@ export default function LoginScreen({ navigation }) {
           // The AppNavigator will automatically detect the session change and switch to Dashboard
         }
     } catch (err) {
-        Alert.alert("Error", "Something went wrong. Check your internet.");
+      const msg = 'Something went wrong. Please check your internet and try again.';
+      setFormError(msg);
+      showAlert('Error', msg);
     } finally {
         setLoading(false);
     }
@@ -92,7 +119,7 @@ export default function LoginScreen({ navigation }) {
                         placeholder="Email Address"
                         placeholderTextColor="#999"
                         value={email}
-                        onChangeText={setEmail}
+                      onChangeText={(v) => { setEmail(v); if (formError) setFormError(''); }}
                         autoCapitalize="none"
                         keyboardType="email-address"
                         nativeID="login-email"
@@ -108,7 +135,7 @@ export default function LoginScreen({ navigation }) {
                         placeholder="Password"
                         placeholderTextColor="#999"
                         value={password}
-                        onChangeText={setPassword}
+                      onChangeText={(v) => { setPassword(v); if (formError) setFormError(''); }}
                         secureTextEntry={!showPassword}
                         nativeID="login-password"
                         autoComplete="current-password"
@@ -117,6 +144,8 @@ export default function LoginScreen({ navigation }) {
                         <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
                     </TouchableOpacity>
                 </View>
+
+                  {!!formError && <Text style={styles.formError}>{formError}</Text>}
 
                 {/* Forgot Password Link */}
                 <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPassword')}>
@@ -184,6 +213,8 @@ const styles = StyleSheet.create({
   },
   inputIcon: { marginRight: 10 },
   input: { flex: 1, color: '#333', fontWeight: '600' },
+
+  formError: { color: '#E53935', fontSize: 13, fontWeight: '600', marginTop: -6, marginBottom: 12 },
 
   // Button Styles
   forgotBtn: { alignSelf: 'flex-end', marginBottom: 20 },

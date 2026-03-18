@@ -5,7 +5,7 @@
 
 -- ─── 1. RPC: admin_link_child ─────────────────────────────────
 -- SECURITY DEFINER so it can bypass RLS.
--- Checks that the caller is an admin or teacher profile.
+-- Checks that the caller is an admin profile.
 -- ─────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public.admin_link_child(uuid, uuid);
 
@@ -18,10 +18,10 @@ AS $$
 DECLARE
   caller_role text;
 BEGIN
-  -- Verify caller is admin or teacher
+  -- Verify caller is admin
   SELECT role INTO caller_role FROM public.profiles WHERE id = auth.uid();
-  IF caller_role NOT IN ('admin', 'teacher') THEN
-    RETURN jsonb_build_object('error', 'Only admins or teachers can use this function');
+  IF caller_role <> 'admin' THEN
+    RETURN jsonb_build_object('error', 'Only admins can use this function');
   END IF;
 
   -- Verify parent exists and has role 'parent'
@@ -54,7 +54,7 @@ GRANT EXECUTE ON FUNCTION public.admin_link_child(uuid, uuid) TO authenticated;
 
 
 -- ─── 2. RPC: admin_unlink_child ───────────────────────────────
--- Allows admin/teacher to delete any parent_link by its ID.
+-- Allows admin to delete any parent_link by its ID.
 -- ─────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public.admin_unlink_child(uuid);
 
@@ -68,7 +68,7 @@ DECLARE
   caller_role text;
 BEGIN
   SELECT role INTO caller_role FROM public.profiles WHERE id = auth.uid();
-  IF caller_role NOT IN ('admin', 'teacher') THEN
+  IF caller_role <> 'admin' THEN
     RETURN jsonb_build_object('error', 'Unauthorized');
   END IF;
 
@@ -81,7 +81,7 @@ REVOKE ALL ON FUNCTION public.admin_unlink_child(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.admin_unlink_child(uuid) TO authenticated;
 
 
--- ─── 3. RLS: Allow admins/teachers to SELECT all parent_links ─
+-- ─── 3. RLS: Allow admins to SELECT all parent_links ─────────
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -94,7 +94,7 @@ BEGIN
         FOR SELECT USING (
           EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role IN ('admin', 'teacher')
+            WHERE id = auth.uid() AND role = 'admin'
           )
         )
     $p$;
@@ -103,7 +103,7 @@ END
 $$;
 
 
--- ─── 4. RLS: Allow admins/teachers to INSERT parent_links ─────
+-- ─── 4. RLS: Allow admins to INSERT parent_links ─────────────
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -116,7 +116,7 @@ BEGIN
         FOR INSERT WITH CHECK (
           EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role IN ('admin', 'teacher')
+            WHERE id = auth.uid() AND role = 'admin'
           )
         )
     $p$;
@@ -125,7 +125,7 @@ END
 $$;
 
 
--- ─── 5. RLS: Allow admins/teachers to DELETE parent_links ─────
+-- ─── 5. RLS: Allow admins to DELETE parent_links ─────────────
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -138,7 +138,7 @@ BEGIN
         FOR DELETE USING (
           EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE id = auth.uid() AND role IN ('admin', 'teacher')
+            WHERE id = auth.uid() AND role = 'admin'
           )
         )
     $p$;

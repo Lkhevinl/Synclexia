@@ -29,7 +29,7 @@ const OVERLAY_OPTIONS = [
 ];
 
 export default function Sidebar({ visible, onClose }) {
-  const { theme, updateTheme } = useTheme();
+  const { theme, updateTheme, resolveFontFamily } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const navigation = useNavigation();
   const [fontModalVisible, setFontModalVisible] = useState(false);
@@ -83,9 +83,6 @@ export default function Sidebar({ visible, onClose }) {
               )}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                 <Text style={s.name}>{profile?.full_name || 'User'}</Text>
-                {profile?.role === 'teacher' && profile?.status === 'active' && (
-                  <Ionicons name="checkmark-circle" size={16} color="#1DA1F2" />
-                )}
               </View>
               <Text style={s.email}>{profile?.email}</Text>
               <View style={s.badgeRow}>
@@ -97,20 +94,24 @@ export default function Sidebar({ visible, onClose }) {
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
               {/* ACCOUNT */}
-              <Text style={s.groupLabel}>ACCOUNT</Text>
-              <View style={s.card}>
-                <TouchableOpacity style={s.row} onPress={() => navigate('Profile')}>
-                  <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="create-outline" size={18} color="#0288D1" /></View>
-                  <Text style={s.rowLabel}>Edit Profile</Text>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                </TouchableOpacity>
-                <View style={s.divider} />
-                <TouchableOpacity style={s.row} onPress={() => navigate('ChangePassword')}>
-                  <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="lock-closed-outline" size={18} color="#7B1FA2" /></View>
-                  <Text style={s.rowLabel}>Change Password</Text>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                </TouchableOpacity>
-              </View>
+              {!isStudent && (
+                <>
+                  <Text style={s.groupLabel}>ACCOUNT</Text>
+                  <View style={s.card}>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Profile')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="create-outline" size={18} color="#0288D1" /></View>
+                      <Text style={s.rowLabel}>Edit Profile</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => navigate('ChangePassword')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="lock-closed-outline" size={18} color="#7B1FA2" /></View>
+                      <Text style={s.rowLabel}>Change Password</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               {/* ACCESSIBILITY */}
               <Text style={s.groupLabel}>ACCESSIBILITY</Text>
@@ -230,23 +231,15 @@ export default function Sidebar({ visible, onClose }) {
                       onClose();
                       setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 200);
                     }}>
-                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="school-outline" size={18} color="#0288D1" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="people-outline" size={18} color="#0288D1" /></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>Teacher View</Text>
-                        <Text style={s.rowDesc}>Preview teacher dashboard</Text>
+                        <Text style={s.rowLabel}>Teacher Dashboard</Text>
+                        <Text style={s.rowDesc}>Announcements to all students</Text>
                       </View>
                       {dashboardMode === 'teacher' && <Ionicons name="checkmark-circle" size={18} color="#0288D1" />}
                     </TouchableOpacity>
                   </View>
                 </>
-              )}
-
-              {/* ENROLL (students) */}
-              {isStudent && (
-                <TouchableOpacity style={s.enrollBtn} onPress={() => navigate('StudentEnroll')}>
-                  <Ionicons name="qr-code-outline" size={20} color="#0288D1" />
-                  <Text style={s.enrollText}>Enroll in Class</Text>
-                </TouchableOpacity>
               )}
 
               {/* LOGOUT */}
@@ -290,7 +283,11 @@ export default function Sidebar({ visible, onClose }) {
                 style={[s.fontOption, theme.fontStyle === f.value && s.fontOptionActive]}
                 onPress={() => { updateTheme({ fontStyle: f.value }); setFontModalVisible(false); }}
               >
-                <Text style={[s.fontOptionText, { fontFamily: f.value !== 'System' ? f.value : undefined }, theme.fontStyle === f.value && s.fontOptionTextActive]}>
+                <Text style={[
+                  s.fontOptionText,
+                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : (f.value !== 'System' ? f.value : undefined) },
+                  theme.fontStyle === f.value && s.fontOptionTextActive,
+                ]}>
                   {f.label}
                 </Text>
                 {theme.fontStyle === f.value && <Ionicons name="checkmark-circle" size={20} color="#546E7A" />}
@@ -304,7 +301,7 @@ export default function Sidebar({ visible, onClose }) {
 }
 
 const s = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row-reverse' },
   drawer: { width: '85%', backgroundColor: '#F0F2F5', elevation: 10 },
 
   // Header
@@ -360,10 +357,6 @@ const s = StyleSheet.create({
   overlayEmoji: { fontSize: 18, marginBottom: 2 },
   overlayLabel: { fontSize: 9, color: '#90A4AE', fontWeight: '600' },
   overlayLabelActive: { color: '#37474F' },
-
-  // Enroll
-  enrollBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#90CAF9' },
-  enrollText: { fontSize: 14, fontWeight: '700', color: '#0288D1' },
 
   // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#FFCDD2' },

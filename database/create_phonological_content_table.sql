@@ -1,7 +1,7 @@
 -- ============================================================
 -- PHONOLOGICAL CONTENT TABLE
 -- Stores all content for PhonologicalAwarenessScreen tasks.
--- Admin/Teacher can add/edit items from the admin panel.
+-- Admins can add/edit items from the admin panel.
 -- task_type: 'syllable' | 'rime' | 'phoneme'
 -- difficulty_level: 1=Easy  2=Medium  3=Hard  NULL=All levels
 --
@@ -33,12 +33,12 @@ ALTER TABLE public.phonological_content ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read active phonological content" ON public.phonological_content
   FOR SELECT USING (is_active = TRUE);
 
--- Only admins and teachers can insert/update/delete
-CREATE POLICY "Admins and teachers can manage phonological content" ON public.phonological_content
+-- Only admins can insert/update/delete
+CREATE POLICY "Admins can manage phonological content" ON public.phonological_content
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.profiles
       WHERE profiles.id = auth.uid()
-        AND profiles.role IN ('admin', 'teacher')
+        AND profiles.role = 'admin'
     )
   );

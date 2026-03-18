@@ -13,13 +13,13 @@ export default function AdminUsersScreen({ route }) {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
-  const [activeTab, setActiveTab] = useState(route?.params?.filterRole || 'student');
-  const [approvingId, setApprovingId] = useState(null);
+  const initialTab = (route?.params?.filterRole === 'parent') ? 'parent' : 'student';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // Sync tab when navigating here from dashboard with a different filterRole
   useEffect(() => {
     if (route?.params?.filterRole) {
-      setActiveTab(route.params.filterRole);
+      setActiveTab(route.params.filterRole === 'parent' ? 'parent' : 'student');
     }
   }, [route?.params?.filterRole]);
 
@@ -29,9 +29,7 @@ export default function AdminUsersScreen({ route }) {
   useEffect(() => {
     let base = users;
     if (activeTab === 'student') base = users.filter(u => u.role === 'student' || u.role === 'user');
-    else if (activeTab === 'teacher') base = users.filter(u => u.role === 'teacher' && u.status !== 'pending');
     else if (activeTab === 'parent') base = users.filter(u => u.role === 'parent');
-    else if (activeTab === 'pending') base = users.filter(u => u.role === 'teacher' && u.status === 'pending');
     if (search.trim() !== '') {
       const lowerSearch = search.toLowerCase();
       base = base.filter(u =>
@@ -47,7 +45,7 @@ export default function AdminUsersScreen({ route }) {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .in('role', ['student', 'user', 'teacher', 'parent'])
+      .in('role', ['student', 'user', 'parent', 'admin'])
       .order('full_name', { ascending: true });
     if (error) {
       console.error('[AdminUsers] fetchUsers error:', JSON.stringify(error, null, 2));
@@ -92,29 +90,6 @@ export default function AdminUsersScreen({ route }) {
     }
   };
 
-  const approveTeacher = async (id) => {
-    if (approvingId) return; // prevent double-tap
-    setApprovingId(id);
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ status: 'active' })
-        .eq('id', id);
-      if (error) {
-        console.error('approveTeacher error:', error);
-        Alert.alert('Error', error.message || 'Failed to approve teacher.');
-      } else {
-        await fetchUsers();
-        Alert.alert('Approved', 'Teacher account has been activated.');
-      }
-    } catch (e) {
-      console.error('approveTeacher exception:', e);
-      Alert.alert('Error', 'An unexpected error occurred.');
-    } finally {
-      setApprovingId(null);
-    }
-  };
-
   const deleteUser = (id) => {
     Alert.alert("Ban User", "This will block their access. Continue?", [
         { text: "Cancel" },
@@ -130,7 +105,7 @@ export default function AdminUsersScreen({ route }) {
     <View style={styles.container}>
       <AppHeader
         title="User Management"
-        subtitle="Students · Teachers · Parents"
+        subtitle="Students · Parents"
         colors={['#4c669f', '#192f6a']}
       />
       <View style={styles.innerContent}>
@@ -144,27 +119,10 @@ export default function AdminUsersScreen({ route }) {
           <Text style={[styles.tabText, activeTab === 'student' && styles.tabTextActive]}>Students</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'teacher' && styles.tabActive]}
-          onPress={() => setActiveTab('teacher')}
-        >
-          <Text style={[styles.tabText, activeTab === 'teacher' && styles.tabTextActive]}>Teachers</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.tab, activeTab === 'parent' && styles.tabActive]}
           onPress={() => setActiveTab('parent')}
         >
           <Text style={[styles.tabText, activeTab === 'parent' && styles.tabTextActive]}>Parents</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'pending' && styles.tabPending]}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
-            {'Pending'}
-            {users.filter(u => u.role === 'teacher' && u.status === 'pending').length > 0
-              ? ` (${users.filter(u => u.role === 'teacher' && u.status === 'pending').length})`
-              : ''}
-          </Text>
         </TouchableOpacity>
       </View>
 
@@ -196,22 +154,14 @@ export default function AdminUsersScreen({ route }) {
         data={filteredUsers}
         keyExtractor={item => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />}
-        ListEmptyComponent={<EmptyState icon="people" message={search ? "No user found." : `No ${activeTab === 'pending' ? 'pending teachers' : activeTab + 's'} registered yet.`} />}
+        ListEmptyComponent={<EmptyState icon="people" message={search ? "No user found." : `No ${activeTab + 's'} registered yet.`} />}
         renderItem={({item}) => (
             <View style={styles.row}>
                 <View style={{flex: 2}}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                       <Text style={styles.cellName}>{item.full_name || "Unknown"}</Text>
-                      {item.role === 'teacher' && item.status === 'active' && (
-                        <Ionicons name="checkmark-circle" size={15} color="#1DA1F2" />
-                      )}
                     </View>
                     <Text style={styles.cellDate}>Joined: {new Date(item.created_at).toLocaleDateString()}</Text>
-                    {item.role === 'teacher' && item.status === 'pending' && (
-                      <View style={styles.pendingBadge}>
-                        <Text style={styles.pendingBadgeText}>PENDING</Text>
-                      </View>
-                    )}
                 </View>
                 <Text style={[styles.cell, {flex: 3, fontSize: 11, color: '#666'}]} numberOfLines={1}>{item.email}</Text>
                 <View style={{flex: 1, alignItems: 'center'}}>
@@ -225,22 +175,11 @@ export default function AdminUsersScreen({ route }) {
                             <Ionicons name="pencil" size={16} color="white" />
                         </View>
                     </TouchableOpacity>
-                    {item.role === 'teacher' && item.status === 'pending' ? (
-                      <TouchableOpacity
-                        onPress={() => approveTeacher(item.id)}
-                        disabled={approvingId === item.id}
-                      >
-                        <View style={[styles.approveBtn, approvingId === item.id && { opacity: 0.5 }]}>
-                          <Ionicons name={approvingId === item.id ? 'time' : 'checkmark'} size={16} color="white" />
+                    <TouchableOpacity onPress={() => deleteUser(item.id)}>
+                        <View style={styles.trashBtn}>
+                            <Ionicons name="ban" size={16} color="white" />
                         </View>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity onPress={() => deleteUser(item.id)}>
-                          <View style={styles.trashBtn}>
-                              <Ionicons name="ban" size={16} color="white" />
-                          </View>
-                      </TouchableOpacity>
-                    )}
+                    </TouchableOpacity>
                 </View>
             </View>
         )}
@@ -267,7 +206,7 @@ export default function AdminUsersScreen({ route }) {
               
               <Text style={styles.inputLabel}>Role</Text>
               <View style={styles.roleContainer}>
-                {['student', 'teacher', 'parent', 'user'].map(role => (
+                {['student', 'parent', 'user'].map(role => (
                   <TouchableOpacity 
                     key={role}
                     style={[styles.roleBtn, editForm.role === role && styles.roleBtnActive]}
@@ -323,15 +262,11 @@ const styles = StyleSheet.create({
   
   trashBtn: { backgroundColor: '#EF5350', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   editBtn: { backgroundColor: '#0288D1', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
-  approveBtn: { backgroundColor: '#4CAF50', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   tabRow: { flexDirection: 'row', marginBottom: 15, gap: 6 },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 8, backgroundColor: '#eee', alignItems: 'center' },
   tabActive: { backgroundColor: '#0288D1' },
-  tabPending: { backgroundColor: '#E65100' },
   tabText: { fontWeight: 'bold', color: '#666', fontSize: 11 },
   tabTextActive: { color: '#fff' },
-  pendingBadge: { backgroundColor: '#FFF3E0', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginTop: 2, alignSelf: 'flex-start' },
-  pendingBadgeText: { fontSize: 10, color: '#E65100', fontWeight: 'bold' },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalContent: { width: '90%', backgroundColor: '#fff', borderRadius: 20, padding: 20, maxHeight: '80%' },

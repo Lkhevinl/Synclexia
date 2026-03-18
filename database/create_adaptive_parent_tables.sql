@@ -24,13 +24,13 @@ ALTER TABLE public.parent_links ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Parents can view their links" ON public.parent_links
   FOR SELECT USING (auth.uid() = parent_id);
 
--- Admins and teachers can insert/manage links
-CREATE POLICY "Admins and teachers can manage parent links" ON public.parent_links
+-- Admins can insert/manage links
+CREATE POLICY "Admins can manage parent links" ON public.parent_links
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.profiles
       WHERE profiles.id = auth.uid()
-        AND profiles.role IN ('admin', 'teacher')
+        AND profiles.role = 'admin'
     )
   );
 
@@ -62,12 +62,9 @@ ALTER TABLE public.adaptive_state ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Students can manage their adaptive state" ON public.adaptive_state
   FOR ALL USING (auth.uid() = student_id);
 
--- Teachers/admins/parents can read (for progress screens)
-CREATE POLICY "Teachers and admins can view adaptive state" ON public.adaptive_state
+-- Admins can read all; parents can read linked child state
+CREATE POLICY "Admins and parents can view adaptive state" ON public.adaptive_state
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-        AND profiles.role IN ('teacher', 'admin', 'parent')
-    )
+    public.get_my_role() = 'admin'
+    OR (public.get_my_role() = 'parent' AND public.is_my_child(student_id))
   );

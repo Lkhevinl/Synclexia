@@ -22,6 +22,9 @@ export default function ReadingScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
   const readStartTime = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const speakRunIdRef = useRef(0);
 
   useEffect(() => {
     supabase
@@ -38,17 +41,80 @@ export default function ReadingScreen() {
   const handleRead = (story) => {
     setSelectedStory(story);
     readStartTime.current = Date.now();
+    setIsSpeaking(false);
+    setActiveWordIndex(-1);
   };
 
-  const handleSpeak = () => {
-    if (selectedStory) {
-      Speech.stop();
-      Speech.speak(selectedStory.content, { rate: 0.8, pitch: 1.1 });
+  const tokenize = (text) => {
+    const parts = String(text || '').match(/(\s+|[^\s]+)/g) || [];
+    const tokens = [];
+    let wordCursor = 0;
+    for (const part of parts) {
+      const isSpace = /^\s+$/.test(part);
+      if (isSpace) {
+        tokens.push({ text: part, isWord: false, wordIndex: null });
+      } else {
+        tokens.push({ text: part, isWord: true, wordIndex: wordCursor });
+        wordCursor += 1;
+      }
     }
+    return { tokens, wordCount: wordCursor };
+  };
+
+  const stopSpeaking = async () => {
+    speakRunIdRef.current += 1; // cancels any pending continuation
+    setIsSpeaking(false);
+    setActiveWordIndex(-1);
+    try { await Speech.stop(); } catch (_) {}
+  };
+
+  const speakWordByIndex = (words, idx, runId) => {
+    if (runId !== speakRunIdRef.current) return;
+    if (!words || idx >= words.length) {
+      setIsSpeaking(false);
+      setActiveWordIndex(-1);
+      return;
+    }
+
+    setActiveWordIndex(idx);
+    Speech.speak(words[idx], {
+      rate: 0.8,
+      pitch: 1.1,
+      onDone: () => speakWordByIndex(words, idx + 1, runId),
+      onStopped: () => {
+        if (runId === speakRunIdRef.current) {
+          setIsSpeaking(false);
+          setActiveWordIndex(-1);
+        }
+      },
+      onError: () => {
+        if (runId === speakRunIdRef.current) {
+          setIsSpeaking(false);
+          setActiveWordIndex(-1);
+        }
+      },
+    });
+  };
+
+  const handleSpeak = async () => {
+    if (!selectedStory?.content) return;
+    if (isSpeaking) {
+      await stopSpeaking();
+      return;
+    }
+
+    const { tokens } = tokenize(selectedStory.content);
+    const words = tokens.filter(t => t.isWord).map(t => t.text);
+    if (words.length === 0) return;
+
+    await Speech.stop();
+    setIsSpeaking(true);
+    const runId = (speakRunIdRef.current += 1);
+    speakWordByIndex(words, 0, runId);
   };
 
   const closeBook = () => {
-    Speech.stop();
+    stopSpeaking();
     if (profile?.id && selectedStory && readStartTime.current) {
       const duration = Math.round((Date.now() - readStartTime.current) / 1000);
       logSession({
@@ -63,6 +129,8 @@ export default function ReadingScreen() {
     }
     setSelectedStory(null);
   };
+
+  const storyTokens = selectedStory?.content ? tokenize(selectedStory.content).tokens : [];
 
   return (
     <View style={styles.mainContainer}>
@@ -86,7 +154,7 @@ export default function ReadingScreen() {
       ) : stories.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 40 }}>📚</Text>
-          <Text style={{ color: '#78909C', marginTop: 10 }}>No stories yet. Ask your teacher!</Text>
+          <Text style={{ color: '#78909C', marginTop: 10 }}>No stories yet. Ask an admin to add content.</Text>
         </View>
       ) : (
         <FlatList
@@ -124,12 +192,26 @@ export default function ReadingScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.readerContent}>
-              <Text style={[styles.storyText, getDyslexiaTextStyle()]}>{selectedStory?.content}</Text>
+              <Text style={[styles.storyText, getDyslexiaTextStyle()]}>
+                {storyTokens.map((t, i) => {
+                  if (!t.isWord) return <Text key={`ws-${i}`}>{t.text}</Text>;
+                  const isActive = isSpeaking && t.wordIndex === activeWordIndex;
+                  return (
+                    <Text
+                      key={`w-${i}`}
+                      onPress={() => Speech.speak(t.text, { rate: 0.8, pitch: 1.1 })}
+                      style={isActive ? styles.activeWord : null}
+                    >
+                      {t.text}
+                    </Text>
+                  );
+                })}
+              </Text>
             </ScrollView>
             <View style={styles.readerControls}>
-              <TouchableOpacity style={styles.speakBtn} onPress={handleSpeak}>
-                <Ionicons name="volume-high" size={24} color="#fff" />
-                <Text style={styles.speakText}>Read to Me</Text>
+              <TouchableOpacity style={[styles.speakBtn, isSpeaking && styles.speakBtnStop]} onPress={handleSpeak}>
+                <Ionicons name={isSpeaking ? 'stop' : 'volume-high'} size={24} color="#fff" />
+                <Text style={styles.speakText}>{isSpeaking ? 'Stop' : 'Read to Me (Highlight)'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -160,5 +242,7 @@ const styles = StyleSheet.create({
   storyText: { fontSize: 24, lineHeight: 40, color: '#333', textAlign: 'center' },
   readerControls: { padding: 20, borderTopWidth: 1, borderColor: '#eee', backgroundColor: '#fafafa' },
   speakBtn: { backgroundColor: '#4CAF50', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 15, borderRadius: 15 },
+  speakBtnStop: { backgroundColor: '#C62828' },
   speakText: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginLeft: 10 },
+  activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
 });

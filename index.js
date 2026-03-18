@@ -1,3 +1,4 @@
+import './src/lib/patchText';
 import { registerRootComponent } from 'expo';
 
 import App from './App';

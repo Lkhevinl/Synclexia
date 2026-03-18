@@ -24,7 +24,7 @@ export default function AboutScreen() {
           <Ionicons name="information-circle" size={40} color="#4c669f" style={{ marginBottom: 15 }} />
           <Text style={styles.sectionTitle}>What is Synclexia?</Text>
           <Text style={styles.description}>
-            Synclexia is an innovative learning platform designed to help students improve their reading and writing skills through interactive, engaging activities.
+            Synclexia is an AI-powered reading and writing assistance system that integrates synthetic phonics to support dyslexic learners. It combines guided learning activities, text-to-speech (TTS), and OCR scanning to make literacy practice more accessible and engaging.
           </Text>
         </View>
 
@@ -32,15 +32,19 @@ export default function AboutScreen() {
           <Ionicons name="star" size={40} color="#FFD700" style={{ marginBottom: 15 }} />
           <Text style={styles.sectionTitle}>Our Mission</Text>
           <Text style={styles.description}>
-            We believe every student can succeed. Our mission is to provide personalized learning experiences that adapt to each student's pace and style, making education accessible and enjoyable.
+            To analyze, design, and develop Synclexia as a literacy support tool that enhances reading and writing skills through synthetic phonics, AI-assisted guidance, and meaningful progress monitoring.
           </Text>
         </View>
 
         <View style={styles.card}>
           <Ionicons name="school" size={40} color="#4CAF50" style={{ marginBottom: 15 }} />
-          <Text style={styles.sectionTitle}>How It Works</Text>
+          <Text style={styles.sectionTitle}>System Flow</Text>
           <Text style={styles.description}>
-            Teachers create assignments and track student progress. Students complete activities, earn XP, and unlock new challenges. Real-time feedback helps everyone improve.
+            1) Register (Student/Parent) → create account
+            {"\n"}2) Login → routed to the correct dashboard
+            {"\n"}3) Admin Dashboard → manages users, learning content, game content, feedback, and reports
+            {"\n"}4) Student Dashboard → completes Phonics/Reading/Writing and Play & Learn activities (with TTS/OCR support)
+            {"\n"}5) Parent Dashboard → links to a student using a Link Code and monitors progress; submits feedback to Admin
           </Text>
         </View>
 
@@ -48,23 +52,44 @@ export default function AboutScreen() {
           <Ionicons name="heart" size={40} color="#FF6B6B" style={{ marginBottom: 15 }} />
           <Text style={styles.sectionTitle}>For Students</Text>
           <Text style={styles.description}>
-            • Interactive learning modules (Phonics, Writing, Reading, Scanning)
-            • Earn XP
-            • Complete quests and challenges
-            • Track your progress
-            • Customize your experience
+            • Learning modules: Phonics, Reading, Writing
+            • AI support: TTS read-aloud and OCR Scan to turn images into readable text
+            • Play & Learn games: Spelling, Fun Activities, Sound Games
+            • Progress tracking: scores, attempts, and learning activity logs
           </Text>
         </View>
 
         <View style={styles.card}>
           <Ionicons name="people" size={40} color="#2196F3" style={{ marginBottom: 15 }} />
-          <Text style={styles.sectionTitle}>For Teachers</Text>
+          <Text style={styles.sectionTitle}>For Admin (Admin-only Management)</Text>
           <Text style={styles.description}>
-            • Create and manage student classes
-            • Assign activities and track progress
-            • Provide feedback and rewards
-            • Monitor comprehension levels
-            • Manage learning materials
+            • Manage users: view, update, deactivate, delete
+            • Manage content: add/edit/deactivate learning lessons and game content
+            • Review feedback and maintain system content
+            • Generate reports on learning progress and engagement
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Ionicons name="person" size={40} color="#8E44AD" style={{ marginBottom: 15 }} />
+          <Text style={styles.sectionTitle}>For Parents</Text>
+          <Text style={styles.description}>
+            • Link to a student using a Student Link Code
+            • Monitor learning progress and activity completion
+            • Send feedback to the Admin about the system and learning experience
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Ionicons name="clipboard" size={40} color="#FF8C00" style={{ marginBottom: 15 }} />
+          <Text style={styles.sectionTitle}>Objectives (Aligned to the System)</Text>
+          <Text style={styles.description}>
+            • Identify limitations of current literacy interventions and learner challenges
+            {"\n"}• Utilize AI-driven phonics with TTS and OCR scanning
+            {"\n"}• Use gamified activities to increase engagement
+            {"\n"}• Enable admin-managed content and activity management
+            {"\n"}• Support parent-child progress tracking and monitoring
+            {"\n"}• Establish system acceptability through usability and feedback
           </Text>
         </View>
 

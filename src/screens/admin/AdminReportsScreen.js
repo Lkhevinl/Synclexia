@@ -18,7 +18,7 @@ export default function AdminReportsScreen() {
 
   const fetchUsers = async (role = selectedRole) => {
     setRefreshing(true);
-    let query = supabase.from('profiles').select('*');
+    let query = supabase.from('profiles').select('*').neq('role', 'teacher');
     if (role !== 'all') {
       query = query.eq('role', role);
     }
@@ -96,7 +96,7 @@ export default function AdminReportsScreen() {
 
       {/* FILTERS */}
       <View style={styles.filterContainer}>
-        {['all', 'student', 'teacher', 'parent'].map(role => (
+        {['all', 'student', 'parent'].map(role => (
           <TouchableOpacity 
             key={role}
             style={[styles.filterBtn, selectedRole === role && styles.filterBtnActive]}
@@ -208,7 +208,6 @@ export default function AdminReportsScreen() {
 const getRoleColor = (role) => {
   switch(role) {
     case 'admin': return '#9C27B0';
-    case 'teacher': return '#2196F3';
     case 'parent': return '#FF9800';
     case 'student': return '#4CAF50';
     default: return '#757575';

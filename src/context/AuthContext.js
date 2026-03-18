@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
           Alert.alert('Access Denied', 'Your account has been suspended. Please contact support.');
           return null;
         }
+
         setProfile(data);
         setProfileError(null);
         registerForPushNotificationsAsync(data.id).catch(() => {});

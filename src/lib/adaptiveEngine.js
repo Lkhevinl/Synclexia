@@ -121,7 +121,7 @@ export const updateAdaptiveState = async (studentId, activityType, accuracy) => 
 };
 
 /**
- * Get all adaptive states for a student (used by TeacherProgressScreen).
+ * Get all adaptive states for a student.
  *
  * @param {string} studentId
  * @returns {Array} adaptive_state rows

@@ -9,12 +9,7 @@ import GoBackBtn from '../../components/GoBackBtn';
 export default function AdminSettingsScreen({ navigation }) {
   const { theme, updateTheme } = useTheme(); 
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
-
-  const isTeacher = profile?.role === 'teacher';
   const isAdmin = profile?.role === 'admin';
-
-  // Check if they are allowed to see the tools
-  const canAccessTools = isTeacher || isAdmin;
 
   const handleLogout = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -102,61 +97,7 @@ export default function AdminSettingsScreen({ navigation }) {
               </View>
           </View>
 
-          {/* ✅ NEW: TEACHER TOOLS BUTTON */}
-          {/* This button opens the specific menu for Writing, Users, etc. */}
-          {canAccessTools && (
-            <TouchableOpacity 
-                style={styles.toolsBtn} 
-                onPress={() => navigation.navigate('TeacherDashboard')}
-            >
-                <LinearGradient 
-                    colors={['#fff', '#F5F5F5']} 
-                    style={styles.toolsGradient}
-                >
-                    <View style={styles.toolsIconBox}>
-                        <Ionicons name="construct" size={24} color="#fff" />
-                    </View>
-                    <View style={{flex: 1}}>
-                        <Text style={styles.toolsTitle}>
-                            {isAdmin ? "Admin Panel" : "Teacher Tools"}
-                        </Text>
-                        <Text style={styles.toolsSub}>Manage content & users</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={24} color="#B0BEC5" />
-                </LinearGradient>
-            </TouchableOpacity>
-          )}
-
-          {/* ADMIN SWITCHER (Your Existing Code) */}
-          {/* This toggles the Home Screen View */}
-          {isAdmin && (
-            <View style={styles.adminSection}>
-                <Text style={styles.sectionLabel}>VIEW MODE</Text>
-                {dashboardMode === 'student' ? (
-                     <TouchableOpacity 
-                        style={styles.switchBtn} 
-                        onPress={() => {
-                            setDashboardMode('teacher');
-                            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                        }}
-                     >
-                        <Ionicons name="swap-horizontal" size={20} color="#607D8B" />
-                        <Text style={styles.switchText}>Switch to Teacher View</Text>
-                     </TouchableOpacity>
-                ) : (
-                     <TouchableOpacity 
-                        style={styles.switchBtn} 
-                        onPress={() => {
-                            setDashboardMode('student');
-                            navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-                        }}
-                     >
-                        <Ionicons name="swap-horizontal" size={20} color="#607D8B" />
-                        <Text style={styles.switchText}>Switch to Student View</Text>
-                     </TouchableOpacity>
-                )}
-            </View>
-          )}
+            {/* (Teacher tools removed) */}
 
           {/* SUPPORT */}
           <View style={styles.sectionCard}>

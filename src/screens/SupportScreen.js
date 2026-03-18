@@ -3,17 +3,33 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Image 
 import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 export default function SupportScreen() {
+  const { profile } = useAuth();
+  // Acceptability testing should include students too.
+  // We still require an authenticated user to submit.
+  const canSendFeedback = !!profile?.id;
   const [tab, setTab] = useState('Help'); // Help | Rate | About
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
 
   const submitFeedback = async () => {
+    if (!canSendFeedback) {
+      alert('Please sign in to send feedback.');
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
-    if(user) {
-        await supabase.from('feedback').insert([{ user_id: user.id, message: feedback, rating: rating }]);
-        alert("Thank you for your feedback!");
+    if (user) {
+      if (!feedback.trim() && !rating) {
+        alert('Please add a rating or a short message.');
+        return;
+      }
+      await supabase.from('feedback').insert([{ user_id: user.id, message: feedback.trim(), rating }]);
+      setFeedback('');
+      setRating(0);
+      alert("Thank you for your feedback!");
     }
   };
 
@@ -96,7 +112,7 @@ export default function SupportScreen() {
       <AppHeader title="Help & Support" colors={['#FBC02D', '#F57F17']} backColor="#333" />
       <View style={styles.innerContent}>
       <View style={styles.tabs}>
-          {['Help', 'Rate', 'About'].map(t => (
+            {(['Help', 'Rate', 'About']).map(t => (
               <TouchableOpacity key={t} onPress={()=>setTab(t)} style={[styles.tabBtn, tab===t && styles.activeTab]}>
                   <Text style={[styles.tabText, tab===t && {color:'#333'}]}>{t}</Text>
               </TouchableOpacity>

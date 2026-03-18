@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { xpToLevel } from '../lib/userUtils';
 
 export default function SettingsScreen({ navigation }) {
-  const { theme, updateTheme, a11yTextStyle } = useTheme();
+  const { theme, updateTheme, a11yTextStyle, resolveFontFamily } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const [fontModalVisible, setFontModalVisible] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
@@ -84,18 +84,24 @@ export default function SettingsScreen({ navigation }) {
               <Text style={[styles.profileBadgeText, a11yTextStyle]}>Level {xpToLevel(profile?.xp)}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editAvatarBtn} onPress={() => navigation.navigate('Profile')}>
-            <Ionicons name="pencil" size={16} color="#546E7A" />
-          </TouchableOpacity>
+          {!isStudent && (
+            <TouchableOpacity style={styles.editAvatarBtn} onPress={() => navigation.navigate('Profile')}>
+              <Ionicons name="pencil" size={16} color="#546E7A" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── ACCOUNT ──────────────────────────────────────── */}
-        <Text style={[styles.groupLabel, a11yTextStyle]}>ACCOUNT</Text>
-        <View style={styles.card}>
-          <SettingRow icon="create-outline" iconColor="#0288D1" label="Edit Profile"       onPress={() => navigation.navigate('Profile')} />
-          <View style={styles.divider} />
-          <SettingRow icon="lock-closed-outline" iconColor="#7B1FA2" label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
-        </View>
+        {!isStudent && (
+          <>
+            <Text style={[styles.groupLabel, a11yTextStyle]}>ACCOUNT</Text>
+            <View style={styles.card}>
+              <SettingRow icon="create-outline" iconColor="#0288D1" label="Edit Profile" onPress={() => navigation.navigate('Profile')} />
+              <View style={styles.divider} />
+              <SettingRow icon="lock-closed-outline" iconColor="#7B1FA2" label="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+            </View>
+          </>
+        )}
 
         {/* ── ACCESSIBILITY ─────────────────────────────────── */}
         <Text style={[styles.groupLabel, a11yTextStyle]}>ACCESSIBILITY</Text>
@@ -182,7 +188,7 @@ export default function SettingsScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.settingRow}
                 onPress={() => {
-                  const next = dashboardMode === 'student' ? 'teacher' : 'student';
+                  const next = dashboardMode === 'admin' ? 'student' : 'admin';
                   setDashboardMode(next);
                   setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 100);
                 }}
@@ -193,21 +199,13 @@ export default function SettingsScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.rowLabel, a11yTextStyle]}>Switch View</Text>
                   <Text style={[styles.rowDesc, a11yTextStyle]}>
-                    Current: {dashboardMode === 'teacher' ? 'Teacher' : 'Student'} — tap to switch
+                    Current: {dashboardMode === 'admin' ? 'Admin' : 'Student'} — tap to switch
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
               </TouchableOpacity>
             </View>
           </>
-        )}
-
-        {/* ── ENROLL IN CLASS (students) ───────────────────── */}
-        {isStudent && (
-          <TouchableOpacity style={styles.enrollBtn} onPress={() => navigation.navigate('StudentEnroll')}>
-            <Ionicons name="qr-code-outline" size={20} color="#0288D1" />
-            <Text style={[styles.enrollText, a11yTextStyle]}>Enroll in Class</Text>
-          </TouchableOpacity>
         )}
 
         {/* ── LOG OUT ──────────────────────────────────────── */}
@@ -247,7 +245,7 @@ export default function SettingsScreen({ navigation }) {
               >
                 <Text style={[
                   styles.fontOptionText,
-                  { fontFamily: f.value !== 'System' ? f.value : undefined },
+                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : (f.value !== 'System' ? f.value : undefined) },
                   theme.fontStyle === f.value && styles.fontOptionTextActive,
                 ]}>
                   {f.label}
@@ -354,14 +352,6 @@ const styles = StyleSheet.create({
   overlayLabel: { fontSize: 10, color: '#90A4AE', fontWeight: '600' },
   overlayLabelActive: { color: '#37474F' },
 
-  // Enroll button
-  enrollBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#fff', borderRadius: 14, paddingVertical: 15,
-    marginBottom: 12, borderWidth: 1.5, borderColor: '#90CAF9',
-    boxShadow: '0px 2px 6px rgba(2, 136, 209, 0.08)', elevation: 1,
-  },
-  enrollText: { fontSize: 15, fontWeight: '700', color: '#0288D1' },
 
   // Logout button
   logoutBtn: {
