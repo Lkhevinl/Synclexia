@@ -175,8 +175,8 @@ export default function Sidebar({ visible, onClose }) {
 
                 {/* Color Overlay */}
                 <View style={s.block}>
-                  <Text style={s.blockLabel}>Screen Color Tint</Text>
-                  <Text style={[s.rowDesc, { marginBottom: 8 }]}>Reduces visual stress while reading</Text>
+                  <Text style={s.blockLabel}>App Theme Color</Text>
+                  <Text style={[s.rowDesc, { marginBottom: 8 }]}>Changes entire app color scheme</Text>
                   <View style={s.overlayRow}>
                     {OVERLAY_OPTIONS.map(opt => (
                       <TouchableOpacity
@@ -208,39 +208,7 @@ export default function Sidebar({ visible, onClose }) {
                 </TouchableOpacity>
               </View>
 
-              {/* ADMIN SWITCH */}
-              {isAdmin && (
-                <>
-                  <Text style={s.groupLabel}>ADMIN</Text>
-                  <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => {
-                      setDashboardMode('admin');
-                      onClose();
-                      setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 200);
-                    }}>
-                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="shield-checkmark-outline" size={18} color="#7B1FA2" /></View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>Admin Panel</Text>
-                        <Text style={s.rowDesc}>Full admin dashboard & controls</Text>
-                      </View>
-                      {dashboardMode === 'admin' && <Ionicons name="checkmark-circle" size={18} color="#7B1FA2" />}
-                    </TouchableOpacity>
-                    <View style={s.divider} />
-                    <TouchableOpacity style={s.row} onPress={() => {
-                      setDashboardMode('teacher');
-                      onClose();
-                      setTimeout(() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }), 200);
-                    }}>
-                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="people-outline" size={18} color="#0288D1" /></View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>Teacher Dashboard</Text>
-                        <Text style={s.rowDesc}>Announcements to all students</Text>
-                      </View>
-                      {dashboardMode === 'teacher' && <Ionicons name="checkmark-circle" size={18} color="#0288D1" />}
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
+              {/* ADMIN SECTION - REMOVED SWITCHER */}
 
               {/* LOGOUT */}
               {confirmLogout ? (

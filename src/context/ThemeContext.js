@@ -5,8 +5,63 @@ import a11yStyleRef from '../lib/a11yStyleRef';
 
 const THEME_STORAGE_KEY = '@synclexia_theme';
 
-// 1. Create the Context
-const ThemeContext = createContext();
+// Color themes based on overlay selection
+const COLOR_THEMES = {
+  none: {
+    bgColor: '#FFF0F5',        // Pastel blush
+    primaryColor: '#C06080',   // Rose
+    cardBg: '#ffffff',
+    headerGradient: ['#4c669f', '#3b5998', '#192f6a'],
+    accentLight: '#FCE4EC',
+    textPrimary: '#333333',
+    textSecondary: '#666666',
+  },
+  yellow: {
+    bgColor: '#FFFDE7',        // Light yellow
+    primaryColor: '#F9A825',   // Amber
+    cardBg: '#FFF9C4',
+    headerGradient: ['#FFB300', '#FF8F00', '#FF6F00'],
+    accentLight: '#FFF59D',
+    textPrimary: '#4E342E',
+    textSecondary: '#6D4C41',
+  },
+  blue: {
+    bgColor: '#E3F2FD',        // Light blue
+    primaryColor: '#1976D2',   // Blue
+    cardBg: '#BBDEFB',
+    headerGradient: ['#42A5F5', '#1E88E5', '#1565C0'],
+    accentLight: '#90CAF9',
+    textPrimary: '#0D47A1',
+    textSecondary: '#1565C0',
+  },
+  green: {
+    bgColor: '#E8F5E9',        // Light green
+    primaryColor: '#388E3C',   // Green
+    cardBg: '#C8E6C9',
+    headerGradient: ['#66BB6A', '#43A047', '#2E7D32'],
+    accentLight: '#A5D6A7',
+    textPrimary: '#1B5E20',
+    textSecondary: '#2E7D32',
+  },
+  pink: {
+    bgColor: '#FCE4EC',        // Light pink
+    primaryColor: '#E91E63',   // Pink
+    cardBg: '#F8BBD9',
+    headerGradient: ['#EC407A', '#D81B60', '#AD1457'],
+    accentLight: '#F48FB1',
+    textPrimary: '#880E4F',
+    textSecondary: '#AD1457',
+  },
+  orange: {
+    bgColor: '#FFF3E0',        // Light orange
+    primaryColor: '#F57C00',   // Orange
+    cardBg: '#FFE0B2',
+    headerGradient: ['#FF9800', '#F57C00', '#E65100'],
+    accentLight: '#FFCC80',
+    textPrimary: '#E65100',
+    textSecondary: '#EF6C00',
+  },
+};
 
 const DEFAULT_THEME = {
   fontSize: 14,            // Default Text Size
@@ -20,6 +75,9 @@ const DEFAULT_THEME = {
   colorOverlay: 'none',    // 'none' | 'yellow' | 'blue' | 'green' | 'pink' | 'orange'
   audioInstructions: true, // Speak screen instructions on entry
 };
+
+// Create the Context
+const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(DEFAULT_THEME);
@@ -35,7 +93,7 @@ export const ThemeProvider = ({ children }) => {
     });
   }, []);
 
-  // 2. Function to update settings — persists to AsyncStorage
+  // Function to update settings — persists to AsyncStorage
   const updateTheme = (newSettings) => {
     setTheme((prev) => {
       const updated = { ...prev, ...newSettings };
@@ -44,22 +102,45 @@ export const ThemeProvider = ({ children }) => {
     });
   };
 
-  // 3. Computed helpers consumed throughout the app
+  // Get the complete color theme based on colorOverlay selection
+  const getThemeColors = () => {
+    return COLOR_THEMES[theme.colorOverlay] || COLOR_THEMES.none;
+  };
+
+  // Computed helpers consumed throughout the app
   const getLetterSpacingValue = () => {
     if (theme.letterSpacing === 'wide') return 2;
     if (theme.letterSpacing === 'wider') return 4;
     return 0;
   };
 
+  // Keep overlay color for backward compatibility (applies a tint on top)
   const getOverlayColor = () => {
-    switch (theme.colorOverlay) {
-      case 'yellow': return 'rgba(255, 243, 150, 0.25)';
-      case 'blue':   return 'rgba(173, 216, 255, 0.25)';
-      case 'green':  return 'rgba(180, 255, 180, 0.25)';
-      case 'pink':   return 'rgba(255, 182, 193, 0.25)';
-      case 'orange': return 'rgba(255, 200, 120, 0.25)';
-      default:       return null;
-    }
+    return null; // No longer using overlay - using full theme colors instead
+  };
+
+  // Dynamic background color based on theme selection
+  const getBgColor = () => {
+    const colors = getThemeColors();
+    return colors.bgColor;
+  };
+
+  // Dynamic primary/accent color based on theme selection
+  const getPrimaryColor = () => {
+    const colors = getThemeColors();
+    return colors.primaryColor;
+  };
+
+  // Get header gradient colors
+  const getHeaderGradient = () => {
+    const colors = getThemeColors();
+    return colors.headerGradient;
+  };
+
+  // Get card background color
+  const getCardBg = () => {
+    const colors = getThemeColors();
+    return colors.cardBg;
   };
 
   /**
@@ -124,7 +205,25 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, updateTheme, getLetterSpacingValue, getOverlayColor, getDyslexiaTextStyle, dyslexiaStyle, letterSpacingStyle, resolveFontFamily, getFontFamily, fontFamilyStyle, a11yTextStyle }}>
+    <ThemeContext.Provider value={{
+      theme,
+      updateTheme,
+      getLetterSpacingValue,
+      getOverlayColor,
+      getDyslexiaTextStyle,
+      dyslexiaStyle,
+      letterSpacingStyle,
+      resolveFontFamily,
+      getFontFamily,
+      fontFamilyStyle,
+      a11yTextStyle,
+      // New theme color helpers
+      getThemeColors,
+      getBgColor,
+      getPrimaryColor,
+      getHeaderGradient,
+      getCardBg,
+    }}>
       {children}
     </ThemeContext.Provider>
   );

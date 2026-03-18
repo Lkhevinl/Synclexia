@@ -6,9 +6,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import GoBackBtn from '../../components/GoBackBtn';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
+import GoBackBtn from '../../../components/GoBackBtn';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabase';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800','#F44336','#FF5722'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];

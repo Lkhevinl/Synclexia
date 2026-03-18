@@ -4,10 +4,10 @@ import {
   FlatList, Modal, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
-import CustomButton from '../../components/CustomButton';
-import CustomInput from '../../components/CustomInput';
+import { supabase } from '../../../lib/supabase';
+import GoBackBtn from '../../../components/GoBackBtn';
+import CustomButton from '../../../components/CustomButton';
+import CustomInput from '../../../components/CustomInput';
 
 const LEVEL_COLORS = ['', '#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'];
 

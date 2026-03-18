@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import GoBackBtn from '../../components/GoBackBtn';
-import { useAuth } from '../../context/AuthContext';
-import { supabase } from '../../lib/supabase';
-import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
-import { getStudentProgress } from '../../lib/analyticsHelper';
+import GoBackBtn from '../../../components/GoBackBtn';
+import { useAuth } from '../../../context/AuthContext';
+import { supabase } from '../../../lib/supabase';
+import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
+import { getStudentProgress } from '../../../lib/analyticsHelper';
 
 const ACTIVITY_ICONS = {
   phonics:                  '🗣️',

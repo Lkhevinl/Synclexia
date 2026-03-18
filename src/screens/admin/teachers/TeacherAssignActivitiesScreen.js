@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../../../components/AppHeader';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
-import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
+import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { scheduleDeadlineReminder } from '../../../lib/pushNotificationHelper';
 
 const ACTIVITIES = [

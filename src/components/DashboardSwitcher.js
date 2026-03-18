@@ -5,7 +5,6 @@ import { isUserStudent, isUserAdmin, isUserParent, isUserTeacher, canAccessTeach
 import DashboardScreen from '../screens/students/DashboardScreen';
 import ParentDashboardScreen from '../screens/parents/ParentDashboardScreen';
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
-import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
 
 export default function DashboardSwitcher(props) {
   const { profile, dashboardMode, loading, profileLoaded } = useAuth();
@@ -23,12 +22,11 @@ export default function DashboardSwitcher(props) {
   if (dashboardMode === 'student' && isUserStudent(profile)) return <DashboardScreen {...props} />;
   if (dashboardMode === 'admin' && isUserAdmin(profile)) return <AdminDashboardScreen {...props} />;
   if (dashboardMode === 'parent' && isUserParent(profile)) return <ParentDashboardScreen {...props} />;
-  if (dashboardMode === 'teacher' && canAccessTeacherFeatures(profile)) return <TeacherDashboardScreen {...props} />;
+  if ((dashboardMode === 'teacher' || dashboardMode === 'admin') && canAccessTeacherFeatures(profile)) return <AdminDashboardScreen {...props} />;
 
   // Role-based routing
   if (isUserParent(profile)) return <ParentDashboardScreen {...props} />;
-  if (isUserAdmin(profile)) return <AdminDashboardScreen {...props} />;
-  if (isUserTeacher(profile)) return <TeacherDashboardScreen {...props} />;
+  if (isUserAdmin(profile) || isUserTeacher(profile)) return <AdminDashboardScreen {...props} />;
 
   // Default: student
   return <DashboardScreen {...props} />;

@@ -37,18 +37,13 @@ import ParentActivityLogScreen from '../screens/parents/ParentActivityLogScreen'
 import ParentLinkChildScreen from '../screens/parents/ParentLinkChildScreen';
 import ParentEditChildScreen from '../screens/parents/ParentEditChildScreen';
 
-// TEACHER SCREENS
-import TeacherDashboardScreen from '../screens/teachers/TeacherDashboardScreen';
-import TeacherUsersScreen from '../screens/teachers/TeacherUsersScreen.js';
-import TeacherAssignActivitiesScreen from '../screens/teachers/TeacherAssignActivitiesScreen.js';
-import TeacherProgressScreen from '../screens/teachers/TeacherProgressScreen.js';
-import TeacherAddStoryScreen from '../screens/teachers/TeacherAddStoryScreen.js';
-import TeacherPhonicsScreen from '../screens/teachers/TeacherPhonicsScreen.js';
-import TeacherSpellingScreen from '../screens/teachers/TeacherSpellingScreen.js';
-import TeacherPhonicsActivityScreen from '../screens/teachers/TeacherPhonicsActivityScreen.js';
-import TeacherPhonologicalScreen from '../screens/teachers/TeacherPhonologicalScreen.js';
-import TeacherNotificationsScreen from '../screens/teachers/TeacherNotificationsScreen.js';
-import TeacherEnrollmentScreen from '../screens/teachers/TeacherEnrollmentScreen.js';
+// TEACHER SCREENS (Content Management only)
+import TeacherDashboardScreen from '../screens/admin/teachers/TeacherDashboardScreen';
+import TeacherAddStoryScreen from '../screens/admin/teachers/TeacherAddStoryScreen.js';
+import TeacherPhonicsScreen from '../screens/admin/teachers/TeacherPhonicsScreen.js';
+import TeacherSpellingScreen from '../screens/admin/teachers/TeacherSpellingScreen.js';
+import TeacherPhonicsActivityScreen from '../screens/admin/teachers/TeacherPhonicsActivityScreen.js';
+import TeacherPhonologicalScreen from '../screens/admin/teachers/TeacherPhonologicalScreen.js';
 
 // ADMIN SCREENS
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
@@ -120,14 +115,14 @@ export function AuthNavigator() {
 
 // Renamed — internal screens, not exported
 function AppScreens() {
-  const { profile, profileLoaded, profileError, fetchProfile, signOut, session } = useAuth();
+  const { profile, profileLoaded, profileError, retryFetchProfile, signOut, session } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
   // Safety-net: if profileLoaded never fires (e.g. Supabase hangs after the
-  // 5s fetchProfile timeout), stop showing the loading screen after 6s.
+  // 8s fetchProfile timeout), stop showing the loading screen after 10s.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
-    const t = setTimeout(() => setTimedOut(true), 6000);
+    const t = setTimeout(() => setTimedOut(true), 10000);
     return () => clearTimeout(t);
   }, [profileLoaded]);
 
@@ -145,9 +140,18 @@ function AppScreens() {
         <Ionicons name="alert-circle-outline" size={64} color="#E53935" />
         <Text style={navStyles.errorTitle}>Couldn't Load Your Profile</Text>
         <Text style={navStyles.errorMsg}>
-          There was a problem connecting to the server.{"\n"}Please try again or sign out and back in.
+          {timedOut
+            ? "The connection is taking longer than expected. Please check your internet connection and try again."
+            : profileError === 'network_error'
+            ? "Network connection failed. Please check your internet connection and try again."
+            : "There was a problem connecting to the server. Please check your internet connection and try again."
+          }
         </Text>
-        <TouchableOpacity style={navStyles.retryBtn} onPress={() => fetchProfile(session?.user?.id)}>
+        <TouchableOpacity style={navStyles.retryBtn} onPress={() => {
+          // Clear the timeout state and retry profile fetch
+          setTimedOut(false);
+          retryFetchProfile(session?.user?.id);
+        }}>
           <Text style={navStyles.retryTxt}>Retry</Text>
         </TouchableOpacity>
         <TouchableOpacity style={navStyles.signOutBtn} onPress={signOut}>
@@ -181,20 +185,15 @@ function AppScreens() {
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-      {/* Teacher routes */}
+      {/* Teacher routes (Content Management only) */}
       {(isTeacher || isAdmin) && (
         <>
           <Stack.Screen name="TeacherDashboard" component={TeacherDashboardScreen} />
-          <Stack.Screen name="TeacherUsers" component={TeacherUsersScreen} />
-          <Stack.Screen name="TeacherAssignActivities" component={TeacherAssignActivitiesScreen} />
-          <Stack.Screen name="TeacherProgress" component={TeacherProgressScreen} />
           <Stack.Screen name="TeacherAddStory" component={TeacherAddStoryScreen} />
           <Stack.Screen name="TeacherPhonics" component={TeacherPhonicsScreen} />
           <Stack.Screen name="TeacherSpelling" component={TeacherSpellingScreen} />
           <Stack.Screen name="TeacherPhonicsActivity" component={TeacherPhonicsActivityScreen} />
           <Stack.Screen name="TeacherPhonological" component={TeacherPhonologicalScreen} />
-          <Stack.Screen name="TeacherNotifications" component={TeacherNotificationsScreen} />
-          <Stack.Screen name="TeacherEnrollment" component={TeacherEnrollmentScreen} />
         </>
       )}
       {/* Parent routes */}

@@ -3,10 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
-import { fetchEnrollmentsWithProfiles } from '../../lib/enrollmentHelper';
-import AppHeader from '../../components/AppHeader';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../context/AuthContext';
+import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
+import AppHeader from '../../../components/AppHeader';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 import Sidebar from '../../components/Sidebar';
 import { getStudentProgress } from '../../lib/analyticsHelper';
@@ -24,6 +25,8 @@ const ACTIVITY_LABELS = {
 
 export default function ParentDashboardScreen({ navigation }) {
   const { profile } = useAuth();
+  const { getBgColor, getHeaderGradient, getThemeColors } = useTheme();
+  const themeColors = getThemeColors();
   const insets = useSafeAreaInsets();
 
   const [children, setChildren] = useState([]);
@@ -173,8 +176,8 @@ export default function ParentDashboardScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={s.loadingContainer}>
-        <ActivityIndicator size="large" color="#7B1FA2" />
+      <View style={[s.loadingContainer, { backgroundColor: getBgColor() }]}>
+        <ActivityIndicator size="large" color={themeColors.primaryColor} />
         <Text style={s.loadingText}>Loading your children's data...</Text>
       </View>
     );
@@ -182,8 +185,8 @@ export default function ParentDashboardScreen({ navigation }) {
 
   if (children.length === 0) {
     return (
-      <View style={s.emptyContainer}>
-        <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.emptyHeader}>
+      <View style={[s.emptyContainer, { backgroundColor: getBgColor() }]}>
+        <LinearGradient colors={getHeaderGradient()} style={s.emptyHeader}>
           <Text style={s.emptyHeaderTitle}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
@@ -200,12 +203,12 @@ export default function ParentDashboardScreen({ navigation }) {
   }
 
   return (
-    <View style={s.container}>
+    <View style={[s.container, { backgroundColor: getBgColor() }]}>
       <StatusBar barStyle="light-content" />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── Header ── */}
-      <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.header}>
+      <LinearGradient colors={getHeaderGradient()} style={s.header}>
         <View style={s.headerTop}>
           <View>
             <Text style={s.greeting}>Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'} 👋</Text>
@@ -380,16 +383,24 @@ export default function ParentDashboardScreen({ navigation }) {
               keyExtractor={item => item.id}
               contentContainerStyle={{ paddingBottom: 20 }}
               ListEmptyComponent={
-                <Text style={{ textAlign: 'center', color: '#999', padding: 30 }}>
-                  No announcements yet.
-                </Text>
+                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                  <Ionicons name="notifications-off-outline" size={48} color="#ddd" />
+                  <Text style={{ textAlign: 'center', color: '#999', padding: 30, fontSize: 14 }}>
+                    No announcements yet.
+                  </Text>
+                </View>
               }
               renderItem={({ item }) => (
-                <View style={s.notifItem}>
-                  <Text style={s.notifItemTitle}>{item.title}</Text>
-                  <Text style={s.notifItemBody}>{item.content}</Text>
-                  <Text style={s.notifItemDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
-                </View>
+                <TouchableOpacity style={s.notifItem} activeOpacity={0.7}>
+                  <View style={s.notifItemIconBox}>
+                    <Ionicons name="megaphone" size={18} color="#7B1FA2" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.notifItemTitle}>{item.title}</Text>
+                    <Text style={s.notifItemBody} numberOfLines={3}>{item.content}</Text>
+                    <Text style={s.notifItemDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                  </View>
+                </TouchableOpacity>
               )}
             />
           </View>
@@ -488,8 +499,9 @@ const s = StyleSheet.create({
   notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '75%' },
   notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 12 },
   notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#7B1FA2' },
-  notifItem:          { backgroundColor: '#F5F0FF', borderRadius: 14, padding: 14, marginBottom: 10 },
-  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#4A148C' },
-  notifItemBody:      { fontSize: 13, color: '#555', marginTop: 4, lineHeight: 18 },
-  notifItemDate:      { fontSize: 11, color: '#aaa', marginTop: 6 },
+  notifItem:          { backgroundColor: '#F5F0FF', borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E1BEE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#4A148C', marginBottom: 4 },
+  notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
+  notifItemDate:      { fontSize: 11, color: '#aaa' },
 });

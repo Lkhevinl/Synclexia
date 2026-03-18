@@ -68,27 +68,45 @@ export default function SpeechToTextScreen() {
   const toggleListening = async () => {
     if (!AVAILABLE) {
       Alert.alert(
-        'Not Available',
-        'Speech recognition requires a development build.\n\nRun: npx expo install expo-speech-recognition\nThen rebuild the app with EAS.',
+        'Development Build Required',
+        'Speech recognition requires a development build with expo-speech-recognition.\n\nSteps to enable:\n1. Run: npx expo install expo-speech-recognition\n2. Build with: eas build --platform android --profile development\n3. Install the development build on your device',
+        [{ text: 'OK' }]
       );
       return;
     }
+
     if (isListening) {
-      ExpoSpeechRecognitionModule.stop();
+      try {
+        ExpoSpeechRecognitionModule.stop();
+      } catch (e) {
+        console.warn('Error stopping speech recognition:', e);
+      }
       setIsListening(false);
       return;
     }
-    setError(null);
-    setTranscript('');
-    transcriptRef.current = '';
-    const { granted } = await ExpoSpeechRecognitionModule.requestSpeechRecognizerPermissionsAsync();
-    if (!granted) {
-      Alert.alert('Permission Denied', 'Microphone permission is required for speech recognition.');
-      return;
+
+    try {
+      setError(null);
+      setTranscript('');
+      transcriptRef.current = '';
+
+      const { granted } = await ExpoSpeechRecognitionModule.requestSpeechRecognizerPermissionsAsync();
+      if (!granted) {
+        Alert.alert('Permission Required', 'Microphone permission is required for speech recognition. Please enable it in your device settings.');
+        return;
+      }
+
+      setIsListening(true);
+      startTimeRef.current = Date.now();
+      await ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        continuous: false
+      });
+    } catch (error) {
+      setError(`Failed to start speech recognition: ${error.message}`);
+      setIsListening(false);
     }
-    setIsListening(true);
-    startTimeRef.current = Date.now();
-    ExpoSpeechRecognitionModule.start({ lang: 'en-US', interimResults: true, continuous: false });
   };
 
   const handleClear = () => { transcriptRef.current = ''; setTranscript(''); setError(null); };

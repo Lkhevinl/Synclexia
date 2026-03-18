@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
+import { supabase } from '../../../lib/supabase';
+import GoBackBtn from '../../../components/GoBackBtn';
 
 const TASK_TYPES = [
   { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },

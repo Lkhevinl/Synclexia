@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
-import GoBackBtn from '../../components/GoBackBtn';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../context/AuthContext';
+import GoBackBtn from '../../../components/GoBackBtn';
 
 const showAlert = (title, msg) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }

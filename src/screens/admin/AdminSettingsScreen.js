@@ -105,14 +105,6 @@ export default function AdminSettingsScreen({ navigation }) {
                   <Ionicons name="help-circle" size={24} color="#607D8B" />
                   <Text style={styles.sectionTitle}>Support</Text>
               </View>
-              
-              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('Support')}>
-                <Ionicons name="chatbubbles-outline" size={20} color="#607D8B" />
-                <Text style={styles.supportText}>Send Feedback</Text>
-                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
-              </TouchableOpacity>
-
-              <View style={styles.divider} />
 
               <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('About')}>
                 <Ionicons name="information-circle-outline" size={20} color="#607D8B" />

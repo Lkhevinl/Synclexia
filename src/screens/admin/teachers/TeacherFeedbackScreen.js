@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
-import AppHeader from '../../components/AppHeader';
+import { supabase } from '../../../lib/supabase';
+import { useAuth } from '../../../context/AuthContext';
+import AppHeader from '../../../components/AppHeader';
 
 export default function TeacherFeedbackScreen() {
   const { profile } = useAuth();

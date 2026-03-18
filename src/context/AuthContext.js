@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 import { navigationRef } from '../navigation/navigationRef';
+import { runDiagnostics } from '../lib/diagnostics';
 
 const AuthContext = createContext({});
 
@@ -69,9 +70,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
-    // Hard 5-second timeout — never hang the loading screen indefinitely
-    if (Date.now() - startTime > 5000) {
-      console.warn('fetchProfile: timed out after 5s');
+    // Extended to 8-second timeout for better reliability on slow connections
+    if (Date.now() - startTime > 8000) {
+      console.warn('fetchProfile: timed out after 8s');
       setProfileError('server_error');
       setProfileLoaded(true);
       return null;
@@ -89,9 +90,9 @@ export const AuthProvider = ({ children }) => {
           setProfileLoaded(true);
           return null;
         }
-        if (isTransient500 && retryCount < 1) {
-          console.log('fetchProfile: transient 500, retrying…');
-          await new Promise(r => setTimeout(r, 800));
+        if (isTransient500 && retryCount < 2) {
+          console.log(`fetchProfile: transient 500, retrying… (attempt ${retryCount + 1})`);
+          await new Promise(r => setTimeout(r, 1000));
           return fetchProfile(userId, retryCount + 1, startTime);
         }
         if (isTransient500) {
@@ -117,10 +118,10 @@ export const AuthProvider = ({ children }) => {
         registerForPushNotificationsAsync(data.id).catch(() => {});
         setProfileLoaded(true);
         return data;
-      } else if (retryCount < 1) {
-        // Profile may not exist yet (signup race) — one quick retry
-        console.log('fetchProfile: profile not found, retrying…');
-        await new Promise(r => setTimeout(r, 500));
+      } else if (retryCount < 2) {
+        // Profile may not exist yet (signup race) or network issue — retry up to 2 times
+        console.log(`fetchProfile: profile not found, retrying… (attempt ${retryCount + 1})`);
+        await new Promise(r => setTimeout(r, 1000));
         return fetchProfile(userId, retryCount + 1, startTime);
       }
       setProfileError('not_found');
@@ -128,7 +129,13 @@ export const AuthProvider = ({ children }) => {
       return null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);
-      setProfileError('server_error');
+      // Check for network-related errors
+      if (e.message?.includes('Network') || e.message?.includes('connect') || e.message?.includes('timeout')) {
+        console.warn('Network error detected, will retry on user request');
+        setProfileError('network_error');
+      } else {
+        setProfileError('server_error');
+      }
       setProfileLoaded(true);
       return null;
     }
@@ -158,6 +165,18 @@ export const AuthProvider = ({ children }) => {
     // signingOutRef.current remains true — reset only via resetSigningOut() on next login
   };
 
+  const retryFetchProfile = async (userId) => {
+    // Clear error state and retry
+    setProfileError(null);
+    setProfileLoaded(false);
+
+    // Run diagnostics first
+    console.log('Running diagnostics before retry...');
+    await runDiagnostics();
+
+    return fetchProfile(userId);
+  };
+
   // Called by LoginScreen after a successful explicit login so that future
   // autoRefreshToken SIGNED_IN events are processed normally.
   const resetSigningOut = () => {
@@ -173,6 +192,7 @@ export const AuthProvider = ({ children }) => {
         profileError,
         setSession,
         fetchProfile,
+        retryFetchProfile,
         signOut,
         dashboardMode,
         setDashboardMode,
