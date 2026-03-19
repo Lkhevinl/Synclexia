@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { xpToLevel } from '../lib/userUtils';
 
 const FONT_STYLES = [
   { label: 'System',         value: 'System'        },
@@ -85,10 +84,6 @@ export default function Sidebar({ visible, onClose }) {
                 <Text style={s.name}>{profile?.full_name || 'User'}</Text>
               </View>
               <Text style={s.email}>{profile?.email}</Text>
-              <View style={s.badgeRow}>
-                <Ionicons name="star" size={11} color="#F59E0B" />
-                <Text style={s.badgeText}>Level {xpToLevel(profile?.xp)}</Text>
-              </View>
             </View>
 
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
@@ -116,23 +111,6 @@ export default function Sidebar({ visible, onClose }) {
               {/* ACCESSIBILITY */}
               <Text style={s.groupLabel}>ACCESSIBILITY</Text>
               <View style={s.card}>
-                {/* Dyslexia toggle */}
-                <View style={s.row}>
-                  <View style={[s.iconWrap, { backgroundColor: '#5C6BC018' }]}><Ionicons name="accessibility" size={18} color="#5C6BC0" /></View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.rowLabel}>Dyslexia-Friendly</Text>
-                    <Text style={s.rowDesc}>Larger, heavier text</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[s.toggle, theme.dyslexiaFont && s.toggleOn]}
-                    onPress={() => updateTheme({ dyslexiaFont: !theme.dyslexiaFont })}
-                  >
-                    <View style={[s.toggleThumb, theme.dyslexiaFont && s.toggleThumbOn]} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={s.divider} />
-
                 {/* Font Size */}
                 <View style={s.block}>
                   <Text style={s.blockLabel}>Font Size</Text>
@@ -192,21 +170,25 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               </View>
 
-              {/* SUPPORT */}
-              <Text style={s.groupLabel}>SUPPORT</Text>
-              <View style={s.card}>
-                <TouchableOpacity style={s.row} onPress={() => navigate('Support')}>
-                  <View style={[s.iconWrap, { backgroundColor: '#00897B18' }]}><Ionicons name="chatbubbles-outline" size={18} color="#00897B" /></View>
-                  <Text style={s.rowLabel}>Send Feedback</Text>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                </TouchableOpacity>
-                <View style={s.divider} />
-                <TouchableOpacity style={s.row} onPress={() => navigate('About')}>
-                  <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="information-circle-outline" size={18} color="#0288D1" /></View>
-                  <Text style={s.rowLabel}>About Us</Text>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                </TouchableOpacity>
-              </View>
+              {/* SUPPORT - Hidden for students */}
+              {!isStudent && (
+                <>
+                  <Text style={s.groupLabel}>SUPPORT</Text>
+                  <View style={s.card}>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Support')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#00897B18' }]}><Ionicons name="chatbubbles-outline" size={18} color="#00897B" /></View>
+                      <Text style={s.rowLabel}>Send Feedback</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => navigate('About')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="information-circle-outline" size={18} color="#0288D1" /></View>
+                      <Text style={s.rowLabel}>About Us</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               {/* ADMIN SECTION - REMOVED SWITCHER */}
 

@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Share } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import { logSession } from '../../lib/analyticsHelper';
@@ -111,15 +113,43 @@ export default function TextToSpeechScreen() {
     speakWordByIndex(words, 0, runId, capturedText);
   };
 
-  const handleShare = async () => {
-    if (!text.trim()) {
-      showAlert('Nothing to share', 'Type some text first.');
-      return;
-    }
+  const handleUpload = async () => {
     try {
-      await Share.share({ message: text });
-    } catch (e) {
-      showAlert('Error', 'Could not share text.');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const file = result.assets[0];
+
+      // Check file extension
+      const validExtensions = ['.txt', '.doc', '.docx'];
+      const fileExtension = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+
+      if (!validExtensions.includes(fileExtension)) {
+        showAlert('Invalid File Type', 'Please select a .txt, .doc, or .docx file.');
+        return;
+      }
+
+      // For .txt files, read the content
+      if (fileExtension === '.txt') {
+        try {
+          const content = await FileSystem.readAsStringAsync(file.uri);
+          setText(content);
+          showAlert('File Loaded', `Successfully loaded ${file.name}`);
+        } catch (error) {
+          showAlert('Error', 'Could not read the text file.');
+        }
+      } else {
+        // For .doc/.docx files, just show a message (full parsing requires additional libraries)
+        showAlert('File Selected', `${file.name} selected. Note: .doc/.docx files require additional processing. Only .txt files can be read directly.`);
+      }
+    } catch (error) {
+      showAlert('Error', 'Could not open file picker.');
     }
   };
 
@@ -162,8 +192,8 @@ export default function TextToSpeechScreen() {
       )}
 
       <View style={styles.controls}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-              <Ionicons name="share-outline" size={24} color="#333" />
+          <TouchableOpacity style={styles.actionBtn} onPress={handleUpload}>
+              <Ionicons name="document-attach-outline" size={24} color="#333" />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.playBtn, isSpeaking && styles.stopBtn]} onPress={speak}>

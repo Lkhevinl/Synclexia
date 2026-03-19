@@ -5,7 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext'; 
 import { supabase } from '../../lib/supabase';
-import { xpToLevel } from '../../lib/userUtils';
 import Sidebar from '../../components/Sidebar';
 
 const DAILY_TIPS = [
@@ -151,75 +150,28 @@ export default function DashboardScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* STATS BAR */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>LEVEL</Text>
-          <Text style={styles.statValue}>{xpToLevel(profile?.xp)}</Text>
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>XP</Text>
-          <Text style={[styles.statValue, { color: '#4CAF50' }]}>{profile?.xp || 0}</Text>
-        </View>
-      </View>
-
-      {/* SCROLLABLE CONTENT */}
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-        {/* PARENT LINK CODE */}
-        {isStudent && (
-          <View style={[styles.linkCodeCard, { backgroundColor: themeColors.cardBg }]}>
-            <View style={styles.linkCodeContent}>
-              <View style={styles.linkCodeHeader}>
-                <Ionicons name="people" size={20} color={getPrimaryColor()} />
-                <View style={styles.linkCodeTextContainer}>
-                  <Text style={[styles.linkCodeLabel, { color: themeColors.textPrimary }]}>Parent Link Code</Text>
-                  <Text style={[styles.linkCodeHint, { color: themeColors.textSecondary }]}>Share this with your parent</Text>
-                </View>
-              </View>
-              <View style={[styles.linkCodeValueContainer, { backgroundColor: themeColors.accentLight }]}>
-                <Text style={[styles.linkCodeValue, { color: getPrimaryColor() }]}>{profile?.unique_code ?? '...'}</Text>
+      {/* PARENT LINK CODE BAR */}
+      {isStudent && (
+        <View style={styles.statsContainer}>
+          <View style={[styles.linkCodeBar, { backgroundColor: themeColors.cardBg }]}>
+            <View style={styles.linkCodeBarContent}>
+              <Ionicons name="people" size={20} color={getPrimaryColor()} />
+              <View style={styles.linkCodeBarText}>
+                <Text style={[styles.linkCodeBarLabel, { color: themeColors.textSecondary }]}>Parent Link Code</Text>
+                <Text style={[styles.linkCodeBarValue, { color: getPrimaryColor() }]}>{profile?.unique_code ?? '...'}</Text>
               </View>
             </View>
           </View>
-        )}
+        </View>
+      )}
+
+      {/* SCROLLABLE CONTENT */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* DAILY TIP */}
         <View style={[styles.tipBox, { backgroundColor: themeColors.textPrimary }]}>
           <Ionicons name="sparkles" size={20} color="#FFD700" style={{ marginRight: 10 }} />
           <Text style={[styles.tipText, { fontSize: theme.fontSize, color: '#fff' }, a11yTextStyle]}>{dailyTip}</Text>
-        </View>
-
-        {/* LEARNING PROGRESS SECTION */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Learning Progress</Text>
-
-          <View style={styles.progressRow}>
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="book" size={18} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>12</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Lessons Done</Text>
-            </View>
-
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="flame" size={18} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>5</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Day Streak</Text>
-            </View>
-
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="star" size={18} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>8</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Badges Earned</Text>
-            </View>
-          </View>
         </View>
 
         {/* RECENT ACHIEVEMENTS */}
@@ -259,22 +211,53 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Learning Tools</Text>
-        
-        {/* MENU GRID */}
-        <View style={styles.grid}>
-          <MenuCard title="Phonics"     icon="🗣️" color={getPrimaryColor()} route="Phonics"               activityType="phonics" />
-          <MenuCard title="Writing"     icon="✍️" color={themeColors.textSecondary} route="Writing"               activityType="writing" />
-          <MenuCard title="Reading"     icon="📖" color={getHeaderGradient()[0]} route="Reading"               activityType="reading" />
-          <MenuCard title="Spelling"    icon="🔤" color={themeColors.accentLight} route="Spelling"              activityType="spelling" />
-          <MenuCard title="Activities"  icon="🎮" color={getPrimaryColor()} route="PhonicsActivity"       activityType="phonics_activity" />
-          <MenuCard title="Awareness"   icon="🎧" color={themeColors.textPrimary} route="PhonologicalAwareness" activityType="phonological_awareness" />
+        {/* LEARNING PROGRESS SECTION */}
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Activities Completed</Text>
+
+          <View style={styles.progressRow}>
+            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
+              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
+                <Ionicons name="book" size={18} color={getPrimaryColor()} />
+              </View>
+              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>12</Text>
+              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Lessons</Text>
+            </View>
+
+            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
+              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
+                <Ionicons name="checkmark-circle" size={18} color={getPrimaryColor()} />
+              </View>
+              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>95%</Text>
+              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Accuracy</Text>
+            </View>
+
+            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
+              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
+                <Ionicons name="flame" size={18} color={getPrimaryColor()} />
+              </View>
+              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>5</Text>
+              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Day Streak</Text>
+            </View>
+          </View>
         </View>
 
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Gamification</Text>
+        {/* LEARNING LESSONS SECTION */}
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Learning Lessons</Text>
+        
+        {/* MENU GRID - Learning Lessons */}
         <View style={styles.grid}>
-          <MenuCard title="Quests" icon="📜" color={getHeaderGradient()[1]} route="Quests" badge={true} />
-          <MenuCard title="Top 10" icon="🏆" color={themeColors.textSecondary} route="Leaderboard" />
+          <MenuCard title="Phonics"     icon="🗣️" color={getPrimaryColor()} route="Phonics"               activityType="phonics" />
+          <MenuCard title="Reading"     icon="📖" color={getHeaderGradient()[0]} route="Reading"               activityType="reading" />
+          <MenuCard title="Writing"     icon="✍️" color={themeColors.textSecondary} route="Writing"               activityType="writing" />
+        </View>
+
+        {/* PLAY & LEARN SECTION */}
+        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Play & Learn</Text>
+        <View style={styles.grid}>
+          <MenuCard title="Spelling"        icon="🔤" color={themeColors.accentLight} route="Spelling"              activityType="spelling" />
+          <MenuCard title="Sound Games"     icon="🎧" color={themeColors.textPrimary} route="PhonologicalAwareness" activityType="phonological_awareness" />
+          <MenuCard title="Phonics Games"   icon="🎮" color={getPrimaryColor()} route="PhonicsActivity"       activityType="phonics_activity" />
         </View>
 
         <View style={{ height: 20 }} /> 
@@ -397,11 +380,40 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
   
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, elevation: 5, justifyContent: 'space-around', alignItems: 'center' },
+  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, elevation: 5, justifyContent: 'center', alignItems: 'center' },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
   divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
+
+  linkCodeBar: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3
+  },
+  linkCodeBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  linkCodeBarText: {
+    flex: 1
+  },
+  linkCodeBarLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2
+  },
+  linkCodeBarValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 2
+  },
 
   scrollContent: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 20 },
   tipBox: {

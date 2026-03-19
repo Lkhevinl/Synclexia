@@ -55,6 +55,7 @@ export default function WritingScreen() {
   const [strokeColor, setStrokeColor] = useState(COLORS[0]); 
   
   const [successVisible, setSuccessVisible] = useState(false);
+  const [demoVisible, setDemoVisible] = useState(false);
   const [demoPath, setDemoPath] = useState(new Animated.Value(0)); // For Demo Animation
 
   // --- REFS (The Fix for "Disappearing" & "Wrong Color") ---
@@ -287,25 +288,12 @@ export default function WritingScreen() {
   // --- ACTIONS ---
   const handleCheck = () => {
     if (paths.length === 0) {
-      Alert.alert("Canvas Empty", "Trace the letter first!");
+      Alert.alert("Canvas Empty", "Please trace something on the canvas!");
       return;
     }
 
-    const totalPoints = paths.reduce((sum, p) => sum + (p.points || 0), 0);
-    const allBounds = paths.map(p => p.bounds).filter(Boolean);
-    const minX = Math.min(...allBounds.map(b => b.minX));
-    const maxX = Math.max(...allBounds.map(b => b.maxX));
-    const minY = Math.min(...allBounds.map(b => b.minY));
-    const maxY = Math.max(...allBounds.map(b => b.maxY));
-    const width = maxX - minX;
-    const height = maxY - minY;
-
-    if (totalPoints < 35 || width < 70 || height < 70) {
-      Alert.alert('Try Again', 'That trace is too short. Please trace the full letter before tapping DONE.');
-      return;
-    }
-
-    Speech.speak(`Excellent! You wrote ${selectedItem.label}!`, { rate: 0.9 });
+    // Allow any trace, no strict validation required
+    Speech.speak(`Great! You completed writing ${selectedItem.label}!`, { rate: 0.9 });
     setSuccessVisible(true);
     if (profile?.id) {
       checkQuestProgress(profile.id, 'Writing');
@@ -329,13 +317,7 @@ export default function WritingScreen() {
 
   // --- DEMO ANIMATION ---
   const playDemo = () => {
-      setDemoPath(new Animated.Value(0)); // Reset
-      Animated.timing(demoPath, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true, // Use native driver for performance
-          easing: Easing.inOut(Easing.ease)
-      }).start();
+      setDemoVisible(true);
   };
 
   // --- RENDER 1: GRID ---
@@ -577,6 +559,63 @@ export default function WritingScreen() {
           </View>
       </Modal>
 
+      {/* Demo/Instruction Modal */}
+      <Modal visible={demoVisible} transparent={true} animationType="slide">
+          <View style={styles.modalOverlay}>
+              <View style={styles.demoCard}>
+                  <View style={styles.demoHeader}>
+                      <Text style={styles.demoTitle}>How to Write {selectedItem?.label}</Text>
+                      <TouchableOpacity onPress={() => setDemoVisible(false)}>
+                          <Ionicons name="close" size={28} color="#333" />
+                      </TouchableOpacity>
+                  </View>
+                  
+                  <ScrollView style={styles.demoContent}>
+                      <Text style={styles.demoInstructions}>
+                        📝 Instructions:
+                      </Text>
+                      <Text style={styles.demoText}>
+                        1. Look at the letter guide in the background
+                      </Text>
+                      <Text style={styles.demoText}>
+                        2. Trace over the letter with your finger
+                      </Text>
+                      <Text style={styles.demoText}>
+                        3. Try to stay within the lines
+                      </Text>
+                      <Text style={styles.demoText}>
+                        4. You can use different colors if you want
+                      </Text>
+                      <Text style={styles.demoText}>
+                        5. Tap "DONE" when you're finished
+                      </Text>
+                      
+                      <Text style={[styles.demoInstructions, { marginTop: 20 }]}>
+                        💡 Tips:
+                      </Text>
+                      <Text style={styles.demoText}>
+                        • Don't worry about being perfect
+                      </Text>
+                      <Text style={styles.demoText}>
+                        • Write slowly and carefully
+                      </Text>
+                      <Text style={styles.demoText}>
+                        • Try writing in different colors
+                      </Text>
+                      <Text style={styles.demoText}>
+                        • Use the "Clear" button to start over
+                      </Text>
+
+                      <View style={{ height: 30 }} />
+                  </ScrollView>
+
+                  <TouchableOpacity style={styles.demoCloseBtn} onPress={() => setDemoVisible(false)}>
+                      <Text style={styles.demoCloseText}>Got it! Let's start ✍️</Text>
+                  </TouchableOpacity>
+              </View>
+          </View>
+      </Modal>
+
     </View>
   );
 }
@@ -630,9 +669,18 @@ const styles = StyleSheet.create({
   successTitle: { fontSize: 28, fontWeight: 'bold', color: '#673AB7' },
   successSub: { fontSize: 16, color: '#666', textAlign: 'center', marginVertical: 10 },
   nextBtn: { backgroundColor: '#FF4081', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 20, marginTop: 10 },
-  nextText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  nextText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  ,
+  // Demo modal styles
+  demoCard: { width: '95%', backgroundColor: '#fff', borderRadius: 25, padding: 20, elevation: 10, maxHeight: '90%' },
+  demoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E0E0E0', paddingBottom: 12 },
+  demoTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  demoContent: { maxHeight: '70%', marginBottom: 16 },
+  demoInstructions: { fontSize: 16, fontWeight: 'bold', color: '#673AB7', marginBottom: 8 },
+  demoText: { fontSize: 14, color: '#555', marginBottom: 8, lineHeight: 20 },
+  demoCloseBtn: { backgroundColor: '#673AB7', borderRadius: 15, paddingVertical: 14, alignItems: 'center' },
+  demoCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
   // ── Compose mode styles ───────────────────────────────────────────
   composeContainer: { flex: 1, backgroundColor: '#ECEFF1' },
   composeHeader: { paddingTop: 60, paddingBottom: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

@@ -70,9 +70,9 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
-    // Extended to 8-second timeout for better reliability on slow connections
-    if (Date.now() - startTime > 8000) {
-      console.warn('fetchProfile: timed out after 8s');
+    // Extended to 15-second timeout for better reliability on slow connections
+    if (Date.now() - startTime > 15000) {
+      console.warn('fetchProfile: timed out after 15s');
       setProfileError('server_error');
       setProfileLoaded(true);
       return null;
@@ -90,9 +90,9 @@ export const AuthProvider = ({ children }) => {
           setProfileLoaded(true);
           return null;
         }
-        if (isTransient500 && retryCount < 2) {
+        if (isTransient500 && retryCount < 3) {
           console.log(`fetchProfile: transient 500, retrying… (attempt ${retryCount + 1})`);
-          await new Promise(r => setTimeout(r, 1000));
+          await new Promise(r => setTimeout(r, 1500));
           return fetchProfile(userId, retryCount + 1, startTime);
         }
         if (isTransient500) {
@@ -118,10 +118,10 @@ export const AuthProvider = ({ children }) => {
         registerForPushNotificationsAsync(data.id).catch(() => {});
         setProfileLoaded(true);
         return data;
-      } else if (retryCount < 2) {
-        // Profile may not exist yet (signup race) or network issue — retry up to 2 times
+      } else if (retryCount < 3) {
+        // Profile may not exist yet (signup race) or network issue — retry up to 3 times
         console.log(`fetchProfile: profile not found, retrying… (attempt ${retryCount + 1})`);
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1500));
         return fetchProfile(userId, retryCount + 1, startTime);
       }
       setProfileError('not_found');

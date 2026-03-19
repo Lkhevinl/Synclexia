@@ -7,16 +7,18 @@ import { useAuth } from '../context/AuthContext';
 
 export default function SupportScreen() {
   const { profile } = useAuth();
-  // Acceptability testing should include students too.
-  // We still require an authenticated user to submit.
-  const canSendFeedback = !!profile?.id;
+  // Students cannot send feedback
+  const isStudent = profile?.role === 'student';
+  const canSendFeedback = !!profile?.id && !isStudent;
   const [tab, setTab] = useState('Help'); // Help | Rate | About
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
 
+  const tabs = isStudent ? ['Help', 'About'] : ['Help', 'Rate', 'About'];
+
   const submitFeedback = async () => {
     if (!canSendFeedback) {
-      alert('Please sign in to send feedback.');
+      alert('Students cannot submit feedback at this time.');
       return;
     }
 
@@ -112,7 +114,7 @@ export default function SupportScreen() {
       <AppHeader title="Help & Support" colors={['#FBC02D', '#F57F17']} backColor="#333" />
       <View style={styles.innerContent}>
       <View style={styles.tabs}>
-            {(['Help', 'Rate', 'About']).map(t => (
+            {tabs.map(t => (
               <TouchableOpacity key={t} onPress={()=>setTab(t)} style={[styles.tabBtn, tab===t && styles.activeTab]}>
                   <Text style={[styles.tabText, tab===t && {color:'#333'}]}>{t}</Text>
               </TouchableOpacity>

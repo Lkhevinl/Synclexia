@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { xpToLevel } from '../lib/userUtils';
 
 export default function SettingsScreen({ navigation }) {
   const { theme, updateTheme, a11yTextStyle, resolveFontFamily } = useTheme();
@@ -79,10 +78,6 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, a11yTextStyle]} numberOfLines={1}>{profile?.full_name || 'User'}</Text>
             <Text style={[styles.profileEmail, a11yTextStyle]} numberOfLines={1}>{profile?.email || '—'}</Text>
-            <View style={styles.profileBadge}>
-              <Ionicons name="star" size={11} color="#F59E0B" />
-              <Text style={[styles.profileBadgeText, a11yTextStyle]}>Level {xpToLevel(profile?.xp)}</Text>
-            </View>
           </View>
           {!isStudent && (
             <TouchableOpacity style={styles.editAvatarBtn} onPress={() => navigation.navigate('Profile')}>
@@ -106,21 +101,18 @@ export default function SettingsScreen({ navigation }) {
         {/* ── ACCESSIBILITY ─────────────────────────────────── */}
         <Text style={[styles.groupLabel, a11yTextStyle]}>ACCESSIBILITY</Text>
         <View style={styles.card}>
-          {/* Dyslexia toggle */}
-          <View style={styles.settingRow}>
-            <View style={[styles.rowIconWrap, { backgroundColor: '#5C6BC018' }]}>
-              <Ionicons name="accessibility" size={18} color="#5C6BC0" />
+          {/* Letter Spacing */}
+          <View style={styles.settingBlock}>
+            <Text style={[styles.blockLabel, a11yTextStyle]}>Font Size</Text>
+            <View style={styles.sizeRow}>
+              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.max(12, theme.fontSize - 2) })}>
+                <Ionicons name="remove" size={18} color="#546E7A" />
+              </TouchableOpacity>
+              <Text style={[styles.sizeVal, a11yTextStyle]}>{theme.fontSize}</Text>
+              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.min(30, theme.fontSize + 2) })}>
+                <Ionicons name="add" size={18} color="#546E7A" />
+              </TouchableOpacity>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, a11yTextStyle]}>Dyslexia-Friendly Mode</Text>
-              <Text style={[styles.rowDesc, a11yTextStyle]}>Larger, heavier text for easier reading</Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.toggle, theme.dyslexiaFont && styles.toggleOn]}
-              onPress={() => updateTheme({ dyslexiaFont: !theme.dyslexiaFont })}
-            >
-              <View style={[styles.toggleThumb, theme.dyslexiaFont && styles.toggleThumbOn]} />
-            </TouchableOpacity>
           </View>
 
           <View style={styles.divider} />
@@ -172,13 +164,17 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── SUPPORT ──────────────────────────────────────── */}
-        <Text style={[styles.groupLabel, a11yTextStyle]}>SUPPORT</Text>
-        <View style={styles.card}>
-          <SettingRow icon="chatbubbles-outline" iconColor="#00897B" label="Send Feedback" onPress={() => navigation.navigate('Support')} />
-          <View style={styles.divider} />
-          <SettingRow icon="information-circle-outline" iconColor="#0288D1" label="About Us" onPress={() => navigation.navigate('About')} />
-        </View>
+        {/* ── SUPPORT (Hidden for students) ──────────────────────────────────────── */}
+        {!isStudent && (
+          <>
+            <Text style={[styles.groupLabel, a11yTextStyle]}>SUPPORT</Text>
+            <View style={styles.card}>
+              <SettingRow icon="chatbubbles-outline" iconColor="#00897B" label="Send Feedback" onPress={() => navigation.navigate('Support')} />
+              <View style={styles.divider} />
+              <SettingRow icon="information-circle-outline" iconColor="#0288D1" label="About Us" onPress={() => navigation.navigate('About')} />
+            </View>
+          </>
+        )}
 
         {/* ── ADMIN VIEW SWITCH ────────────────────────────── */}
         {profile?.role === 'admin' && (
