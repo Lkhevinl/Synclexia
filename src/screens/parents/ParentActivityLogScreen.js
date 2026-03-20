@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
+import { useTheme } from '../../context/ThemeContext';
 
 const ACTIVITY_LABELS = {
   phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
@@ -15,6 +16,7 @@ const ACTIVITY_LABELS = {
 };
 
 export default function ParentActivityLogScreen({ route }) {
+  const { theme, a11yTextStyle } = useTheme();
   const { child } = route.params || {};
   const sid = child?.profiles?.id ?? child?.student_id;
   const name = child?.profiles?.full_name ?? 'Child';

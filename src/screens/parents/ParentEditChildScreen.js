@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import { useTheme } from '../../context/ThemeContext';
 
 const showAlert = (title, message, onOk) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); onOk?.(); }
@@ -18,12 +19,14 @@ const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF980
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 export default function ParentEditChildScreen({ route, navigation }) {
+  const { theme, a11yTextStyle } = useTheme();
   // child is the parent_links row which has a nested `profiles` key
   const { child } = route.params;
   const childProfile = child?.profiles;
   const studentId    = childProfile?.id ?? child?.student_id;
 
   const [fullName,   setFullName]   = useState(childProfile?.full_name || '');
+  const [email,      setEmail]      = useState(childProfile?.email || '');
   const [avatarUrl,  setAvatarUrl]  = useState(childProfile?.avatar_url || null);
   const [uploading,  setUploading]  = useState(false);
   const [saving,     setSaving]     = useState(false);
@@ -82,9 +85,16 @@ export default function ParentEditChildScreen({ route, navigation }) {
       showAlert('Validation', "Child's name cannot be empty.");
       return;
     }
+    if (!email.trim() || !email.includes('@')) {
+      showAlert('Validation', 'Please enter a valid email address.');
+      return;
+    }
     setSaving(true);
 
-    const updates = { full_name: fullName.trim() };
+    const updates = {
+      full_name: fullName.trim(),
+      email: email.trim(),
+    };
     if (avatarUrl && avatarUrl !== childProfile?.avatar_url) {
       updates.avatar_url = avatarUrl;
     }
@@ -93,6 +103,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
       .rpc('parent_update_child_profile', {
         p_student_id: studentId,
         p_full_name: updates.full_name,
+        p_email: updates.email,
         p_avatar_url: updates.avatar_url ?? null,
       });
 
@@ -103,12 +114,16 @@ export default function ParentEditChildScreen({ route, navigation }) {
     } else if (result?.error) {
       showAlert('Error', result.error);
     } else {
-      showAlert('Saved ✓', "Your child's profile has been updated!", () => navigation.goBack());
+      const message = updates.email !== childProfile?.email
+        ? "Profile updated! A verification email has been sent to the new email address."
+        : "Your child's profile has been updated!";
+      showAlert('Saved ✓', message, () => navigation.goBack());
     }
   };
 
   const isChanged =
     fullName.trim() !== (childProfile?.full_name || '') ||
+    email.trim() !== (childProfile?.email || '') ||
     (avatarUrl && avatarUrl !== (childProfile?.avatar_url || null));
 
   const displayName = fullName || childProfile?.full_name || 'Child';
@@ -117,7 +132,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
     <View style={styles.container}>
       <LinearGradient colors={['#7B1FA2', '#4A148C']} style={styles.header}>
         <GoBackBtn tintColor="#fff" />
-        <Text style={styles.headerTitle}>Edit Child Profile</Text>
+        <Text style={[styles.headerTitle, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>Edit Child Profile</Text>
         <View style={{ width: 36 }} />
       </LinearGradient>
 
@@ -126,8 +141,8 @@ export default function ParentEditChildScreen({ route, navigation }) {
         {/* ── Parental guidance notice ── */}
         <View style={styles.noticeBox}>
           <Ionicons name="shield-checkmark" size={20} color="#7B1FA2" style={{ marginRight: 8 }} />
-          <Text style={styles.noticeText}>
-            As the parent/guardian, you can update your child's display name and profile photo.
+          <Text style={[styles.noticeText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>
+            As the parent/guardian, you can update your child's display name and email address.
           </Text>
         </View>
 
@@ -138,7 +153,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
               <Image source={{ uri: avatarUrl }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatarPlaceholder, { backgroundColor: avatarColor(displayName) }]}>
-                <Text style={styles.avatarInitial}>{displayName[0]?.toUpperCase() || '?'}</Text>
+                <Text style={[styles.avatarInitial, a11yTextStyle]}>{displayName[0]?.toUpperCase() || '?'}</Text>
               </View>
             )}
             <View style={styles.cameraOverlay}>
@@ -147,18 +162,18 @@ export default function ParentEditChildScreen({ route, navigation }) {
                 : <Ionicons name="camera" size={16} color="#fff" />}
             </View>
           </TouchableOpacity>
-          <Text style={styles.avatarHint}>
+          <Text style={[styles.avatarHint, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
             {uploading ? 'Uploading...' : "Tap to change child's photo"}
           </Text>
         </View>
 
         {/* ── Form ── */}
         <View style={styles.form}>
-          <Text style={styles.fieldLabel}>CHILD'S DISPLAY NAME</Text>
+          <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S DISPLAY NAME</Text>
           <View style={styles.inputBox}>
             <Ionicons name="person-outline" size={18} color="#90A4AE" />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
               value={fullName}
               onChangeText={setFullName}
               placeholder="Child's full name"
@@ -166,21 +181,23 @@ export default function ParentEditChildScreen({ route, navigation }) {
             />
           </View>
 
-          {/* Read-only info */}
-          <Text style={styles.fieldLabel}>EMAIL (READ ONLY)</Text>
-          <View style={[styles.inputBox, styles.inputBoxReadOnly]}>
-            <Ionicons name="mail-outline" size={18} color="#B0BEC5" />
-            <Text style={styles.readOnlyText}>{childProfile?.email || '—'}</Text>
+          {/* Email input (editable) */}
+          <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S EMAIL</Text>
+          <View style={styles.inputBox}>
+            <Ionicons name="mail-outline" size={18} color="#90A4AE" />
+            <TextInput
+              style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="child@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              returnKeyType="done"
+            />
           </View>
-          <Text style={styles.hintText}>
-            To change the email or password, please contact your school administrator.
+          <Text style={[styles.hintText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>
+            📧 Changing the email will send a verification link to the new address.
           </Text>
-
-          {/* XP info */}
-          <View style={styles.xpRow}>
-            <Ionicons name="trophy" size={18} color="#FF9800" style={{ marginRight: 6 }} />
-            <Text style={styles.xpText}>Current XP: <Text style={{ color: '#FF9800', fontWeight: 'bold' }}>{childProfile?.xp ?? 0}</Text></Text>
-          </View>
 
           {/* Save Button */}
           <TouchableOpacity
@@ -193,7 +210,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
             ) : (
               <>
                 <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.saveBtnText}>Save Changes</Text>
+                <Text style={[styles.saveBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Save Changes</Text>
               </>
             )}
           </TouchableOpacity>

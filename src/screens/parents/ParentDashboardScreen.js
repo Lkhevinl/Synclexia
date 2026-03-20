@@ -25,7 +25,7 @@ const ACTIVITY_LABELS = {
 
 export default function ParentDashboardScreen({ navigation }) {
   const { profile } = useAuth();
-  const { getBgColor, getHeaderGradient, getThemeColors } = useTheme();
+  const { theme, getBgColor, getHeaderGradient, getThemeColors, a11yTextStyle } = useTheme();
   const themeColors = getThemeColors();
   const insets = useSafeAreaInsets();
 
@@ -69,8 +69,7 @@ export default function ParentDashboardScreen({ navigation }) {
         profiles!parent_links_student_id_fkey (
           id,
           full_name,
-          email,
-          xp
+          email
         )
       `)
       .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
@@ -167,10 +166,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const child = children[selectedIdx];
   const cp = childProfile;
   const name = cp?.full_name ?? child?.profiles?.full_name ?? 'Child';
-  const xp = cp?.xp ?? 0;
-  const level = cp?.level ?? Math.floor(xp / 100) + 1;
   const streak = cp?.streak ?? 0;
-  const xpInLevel = xp % 100;
 
   const navParams = { child };
 
@@ -178,7 +174,7 @@ export default function ParentDashboardScreen({ navigation }) {
     return (
       <View style={[s.loadingContainer, { backgroundColor: getBgColor() }]}>
         <ActivityIndicator size="large" color={themeColors.primaryColor} />
-        <Text style={s.loadingText}>Loading your children's data...</Text>
+        <Text style={[s.loadingText, { fontSize: theme.fontSize }, a11yTextStyle]}>Loading your children's data...</Text>
       </View>
     );
   }
@@ -187,15 +183,15 @@ export default function ParentDashboardScreen({ navigation }) {
     return (
       <View style={[s.emptyContainer, { backgroundColor: getBgColor() }]}>
         <LinearGradient colors={getHeaderGradient()} style={s.emptyHeader}>
-          <Text style={s.emptyHeaderTitle}>Parent Dashboard</Text>
+          <Text style={[s.emptyHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
           <Ionicons name="people-outline" size={80} color="#ddd" />
-          <Text style={s.emptyTitle}>No children linked yet</Text>
-          <Text style={s.emptyHint}>Search for your child's account to start monitoring their progress.</Text>
+          <Text style={[s.emptyTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>No children linked yet</Text>
+          <Text style={[s.emptyHint, { fontSize: theme.fontSize }, a11yTextStyle]}>Search for your child's account to start monitoring their progress.</Text>
           <TouchableOpacity style={s.linkChildBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
             <Ionicons name="add-circle" size={20} color="#fff" />
-            <Text style={s.linkChildBtnText}>Link a Child</Text>
+            <Text style={[s.linkChildBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Link a Child</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -210,9 +206,9 @@ export default function ParentDashboardScreen({ navigation }) {
       {/* ── Header ── */}
       <LinearGradient colors={getHeaderGradient()} style={s.header}>
         <View style={s.headerTop}>
-          <View>
-            <Text style={s.greeting}>Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'} 👋</Text>
-            <Text style={s.headerSub}>Monitoring your child's progress</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.greeting, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'} 👋</Text>
+            <Text style={[s.headerSub, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Monitoring your child's progress</Text>
           </View>
           <View style={s.headerActions}>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
@@ -222,7 +218,7 @@ export default function ParentDashboardScreen({ navigation }) {
             <TouchableOpacity style={s.notifBadgeBtn} onPress={() => setNotifModalVisible(true)}>
               <Ionicons name="notifications" size={24} color="#fff" />
               {notifCount > 0 && (
-                <View style={s.badge}><Text style={s.badgeText}>{notifCount > 9 ? '9+' : notifCount}</Text></View>
+                <View style={s.badge}><Text style={[s.badgeText, { fontSize: theme.fontSize - 4 }, a11yTextStyle]}>{notifCount > 9 ? '9+' : notifCount}</Text></View>
               )}
             </TouchableOpacity>
             <TouchableOpacity style={s.headerIconBtn} onPress={() => setSidebarVisible(true)}>
@@ -238,7 +234,7 @@ export default function ParentDashboardScreen({ navigation }) {
               const n = c.profiles?.full_name ?? 'Child';
               return (
                 <TouchableOpacity key={c.id} style={[s.childTab, i === selectedIdx && s.childTabActive]} onPress={() => switchChild(i)}>
-                  <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive]}>{n.split(' ')[0]}</Text>
+                  <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{n.split(' ')[0]}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -257,42 +253,33 @@ export default function ParentDashboardScreen({ navigation }) {
             <Image source={{ uri: childProfile.avatar_url }} style={s.heroAvatarImg} />
           ) : (
             <View style={[s.heroAvatar, { backgroundColor: avatarColor(name) }]}>
-              <Text style={s.heroAvatarText}>{name[0]?.toUpperCase()}</Text>
+              <Text style={[s.heroAvatarText, a11yTextStyle]}>{name[0]?.toUpperCase()}</Text>
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={s.heroName}>{name}</Text>
-            <Text style={s.heroLevel}>Level {level}</Text>
-            <View style={s.xpBarBg}>
-              <View style={[s.xpBarFill, { width: `${xpInLevel}%` }]} />
-            </View>
-            <Text style={s.xpLabel}>{xpInLevel}/100 XP to next level</Text>
+            <Text style={[s.heroName, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{name}</Text>
+            <Text style={[s.heroEmail, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{cp?.email || 'No email'}</Text>
           </View>
           <TouchableOpacity
             style={s.editChildBtn}
             onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
           >
             <Ionicons name="create-outline" size={16} color="#7B1FA2" />
-            <Text style={s.editChildBtnText}>Edit</Text>
+            <Text style={[s.editChildBtnText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Edit</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Stats Row ── */}
         <View style={s.statsRow}>
-          {[
-            { icon: 'trophy', color: '#FF9800', val: xp, lbl: 'Total XP' },
-            { icon: 'flame', color: '#F44336', val: streak, lbl: 'Day Streak' },
-          ].map((stat, i) => (
-            <View key={i} style={s.statBox}>
-              <Ionicons name={stat.icon} size={20} color={stat.color} />
-              <Text style={[s.statVal, { color: stat.color }]}>{stat.val}</Text>
-              <Text style={s.statLbl}>{stat.lbl}</Text>
-            </View>
-          ))}
+          <View style={s.statBox}>
+            <Ionicons name="flame" size={24} color="#F44336" />
+            <Text style={[s.statVal, { color: '#F44336', fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{streak}</Text>
+            <Text style={[s.statLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Day Streak</Text>
+          </View>
         </View>
 
         {/* ── Quick Nav Grid ── */}
-        <Text style={s.sectionTitle}>Quick Access</Text>
+        <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Quick Access</Text>
         <View style={s.navGrid}>
           {[
             { icon: 'bar-chart', color: '#7B1FA2', bg: '#F3E5F5', label: 'Progress', screen: 'ParentProgress' },
@@ -302,10 +289,10 @@ export default function ParentDashboardScreen({ navigation }) {
               <View style={[s.navIconCircle, { backgroundColor: item.color + '20' }]}>
                 <Ionicons name={item.icon} size={26} color={item.color} />
               </View>
-              <Text style={[s.navLabel, { color: item.color }]}>{item.label}</Text>
+              <Text style={[s.navLabel, { color: item.color, fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{item.label}</Text>
               {item.badge > 0 && (
                 <View style={[s.navBadge, { backgroundColor: item.color }]}>
-                  <Text style={s.navBadgeText}>{item.badge}</Text>
+                  <Text style={[s.navBadgeText, a11yTextStyle]}>{item.badge}</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -313,31 +300,32 @@ export default function ParentDashboardScreen({ navigation }) {
         </View>
 
         {/* ── Progress Snapshot ── */}
-        <Text style={s.sectionTitle}>Progress Snapshot (14 days)</Text>
+        <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Progress Snapshot (14 days)</Text>
         <View style={s.card}>
           {!progress || progress.totalSessions === 0 ? (
             <View style={s.emptySnap}>
               <Ionicons name="bar-chart-outline" size={40} color="#ddd" />
-              <Text style={s.emptySnapText}>No activity in the last 14 days</Text>
+              <Text style={[s.emptySnapText, { fontSize: theme.fontSize }, a11yTextStyle]}>No activity in the last 14 days</Text>
             </View>
           ) : (
             <>
               <View style={s.snapRow}>
                 <View style={s.snapItem}>
-                  <Text style={s.snapVal}>{progress.totalSessions}</Text>
-                  <Text style={s.snapLbl}>Sessions</Text>
+                  <Text style={[s.snapVal, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalSessions}</Text>
+                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Sessions</Text>
                 </View>
                 <View style={s.snapDiv} />
                 <View style={s.snapItem}>
-                  <Text style={[s.snapVal, { color: '#4CAF50' }]}>{progress.totalXP}</Text>
-                  <Text style={s.snapLbl}>XP Earned</Text>
+                  <Text style={[s.snapVal, { color: '#4CAF50', fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalXP}</Text>
+                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>XP Earned</Text>
                 </View>
                 <View style={s.snapDiv} />
                 <View style={s.snapItem}>
                   <Text style={[s.snapVal, {
-                    color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336'
-                  }]}>{progress.avgAccuracy}%</Text>
-                  <Text style={s.snapLbl}>Avg Accuracy</Text>
+                    color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336',
+                    fontSize: theme.fontSize + 4
+                  }, a11yTextStyle]}>{progress.avgAccuracy}%</Text>
+                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Avg Accuracy</Text>
                 </View>
               </View>
               {Object.entries(progress.byActivity).slice(0, 3).map(([type, data]) => {
@@ -345,11 +333,11 @@ export default function ParentDashboardScreen({ navigation }) {
                 const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
                 return (
                   <View key={type} style={s.actRow}>
-                    <Text style={s.actIcon}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
+                    <Text style={[s.actIcon, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
                     <View style={{ flex: 1 }}>
                       <View style={s.actTop}>
-                        <Text style={s.actLabel}>{ACTIVITY_LABELS[type] || type}</Text>
-                        <Text style={[s.actAcc, { color }]}>{acc}%</Text>
+                        <Text style={[s.actLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{ACTIVITY_LABELS[type] || type}</Text>
+                        <Text style={[s.actAcc, { color, fontSize: theme.fontSize }, a11yTextStyle]}>{acc}%</Text>
                       </View>
                       <View style={s.barBg}>
                         <View style={[s.barFill, { width: `${Math.min(acc, 100)}%`, backgroundColor: color }]} />
@@ -359,7 +347,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 );
               })}
               <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentProgress', navParams)}>
-                <Text style={s.viewAllText}>View full report →</Text>
+                <Text style={[s.viewAllText, { fontSize: theme.fontSize }, a11yTextStyle]}>View full report →</Text>
               </TouchableOpacity>
             </>
           )}
@@ -373,7 +361,7 @@ export default function ParentDashboardScreen({ navigation }) {
         <View style={s.notifOverlay}>
           <View style={s.notifCard}>
             <View style={s.notifHeader}>
-              <Text style={s.notifTitle}>📢 Announcements</Text>
+              <Text style={[s.notifTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>📢 Announcements</Text>
               <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
@@ -385,7 +373,7 @@ export default function ParentDashboardScreen({ navigation }) {
               ListEmptyComponent={
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                   <Ionicons name="notifications-off-outline" size={48} color="#ddd" />
-                  <Text style={{ textAlign: 'center', color: '#999', padding: 30, fontSize: 14 }}>
+                  <Text style={[{ textAlign: 'center', color: '#999', padding: 30, fontSize: theme.fontSize }, a11yTextStyle]}>
                     No announcements yet.
                   </Text>
                 </View>
@@ -396,9 +384,9 @@ export default function ParentDashboardScreen({ navigation }) {
                     <Ionicons name="megaphone" size={18} color="#7B1FA2" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.notifItemTitle}>{item.title}</Text>
-                    <Text style={s.notifItemBody} numberOfLines={3}>{item.content}</Text>
-                    <Text style={s.notifItemDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                    <Text style={[s.notifItemTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.title}</Text>
+                    <Text style={[s.notifItemBody, { fontSize: theme.fontSize - 1 }, a11yTextStyle]} numberOfLines={3}>{item.content}</Text>
+                    <Text style={[s.notifItemDate, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
                 </TouchableOpacity>
               )}
@@ -424,10 +412,10 @@ const s = StyleSheet.create({
   linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   header:             { paddingTop: 55, paddingBottom: 16, paddingHorizontal: 20 },
-  headerTop:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  greeting:           { fontSize: 20, fontWeight: '900', color: '#fff' },
+  headerTop:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  greeting:           { fontSize: 20, fontWeight: '900', color: '#fff', flex: 1, flexShrink: 1 },
   headerSub:          { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  headerActions:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerActions:      { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 },
   headerIconBtn:      { padding: 4 },
   msgBadgeBtn:        { position: 'relative', padding: 4 },
   badge:              { position: 'absolute', top: 0, right: 0, backgroundColor: '#F44336', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
@@ -445,15 +433,12 @@ const s = StyleSheet.create({
   heroAvatarImg:      { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#7B1FA2' },
   heroAvatarText:     { color: '#fff', fontSize: 26, fontWeight: 'bold' },
   heroName:           { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  heroEmail:          { fontSize: 12, color: '#999', marginTop: 2 },
   editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3E5F5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
   editChildBtnText:   { color: '#7B1FA2', fontWeight: '700', fontSize: 13 },
-  heroLevel:          { fontSize: 12, color: '#7B1FA2', fontWeight: '600', marginTop: 2 },
-  xpBarBg:            { height: 6, backgroundColor: '#F0E6FF', borderRadius: 3, marginTop: 8, overflow: 'hidden' },
-  xpBarFill:          { height: '100%', backgroundColor: '#7B1FA2', borderRadius: 3 },
-  xpLabel:            { fontSize: 10, color: '#999', marginTop: 4 },
 
-  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginBottom: 14, elevation: 2, overflow: 'hidden' },
-  statBox:            { flex: 1, alignItems: 'center', paddingVertical: 14, borderRightWidth: 1, borderRightColor: '#f5f5f5' },
+  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginBottom: 14, elevation: 2, overflow: 'hidden', justifyContent: 'center' },
+  statBox:            { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 },
   statVal:            { fontSize: 18, fontWeight: 'bold', marginTop: 4 },
   statLbl:            { fontSize: 9, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
 

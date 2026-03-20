@@ -154,12 +154,10 @@ export default function DashboardScreen({ navigation }) {
       {isStudent && (
         <View style={styles.statsContainer}>
           <View style={[styles.linkCodeBar, { backgroundColor: themeColors.cardBg }]}>
-            <View style={styles.linkCodeBarContent}>
-              <Ionicons name="people" size={20} color={getPrimaryColor()} />
-              <View style={styles.linkCodeBarText}>
-                <Text style={[styles.linkCodeBarLabel, { color: themeColors.textSecondary }]}>Parent Link Code</Text>
-                <Text style={[styles.linkCodeBarValue, { color: getPrimaryColor() }]}>{profile?.unique_code ?? '...'}</Text>
-              </View>
+            <Ionicons name="people" size={16} color={getPrimaryColor()} />
+            <View style={styles.linkCodeBarText}>
+              <Text style={[styles.linkCodeBarLabel, { color: themeColors.textSecondary, fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Parent Link</Text>
+              <Text style={[styles.linkCodeBarValue, { color: getPrimaryColor(), fontSize: theme.fontSize + 2 }, a11yTextStyle]}>{profile?.unique_code ?? '...'}</Text>
             </View>
           </View>
         </View>
@@ -380,39 +378,36 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 8, backgroundColor: 'rgba(255,255,255,0.45)', borderRadius: 12 },
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
   
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, paddingVertical: 15, paddingHorizontal: 20, marginHorizontal: 20, marginTop: -35, marginBottom: 25, elevation: 5, justifyContent: 'center', alignItems: 'center' },
+  statsContainer: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16, marginHorizontal: 20, marginTop: -30, marginBottom: 20, elevation: 4 },
   statItem: { alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
   statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
   divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
 
   linkCodeBar: {
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
   },
   linkCodeBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12
+    gap: 10
   },
   linkCodeBarText: {
-    flex: 1
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
   linkCodeBarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2
+    fontWeight: '600'
   },
   linkCodeBarValue: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: 2
+    fontWeight: '900'
   },
 
   scrollContent: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 20 },
