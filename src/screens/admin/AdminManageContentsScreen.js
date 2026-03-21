@@ -1,0 +1,263 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
+import AppHeader from '../../components/AppHeader';
+import EmptyState from '../../components/EmptyState';
+
+export default function AdminManageContentsScreen({ navigation }) {
+  const [contentStats, setContentStats] = useState({
+    stories: 0,
+    phonics: 0,
+    spelling: 0,
+    phonicsActivities: 0,
+    phonological: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchContentStats();
+  }, []);
+
+  const fetchContentStats = async () => {
+    try {
+      const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
+        supabase.from('stories').select('id', { count: 'exact', head: true }),
+        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
+        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
+        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
+        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+      ]);
+
+      setContentStats({
+        stories: stories.count || 0,
+        phonics: phonics.count || 0,
+        spelling: spelling.count || 0,
+        phonicsActivities: phonicsAct.count || 0,
+        phonological: phonological.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching content stats:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchContentStats();
+  };
+
+  const contentItems = [
+    {
+      id: 'stories',
+      title: 'Writing Practice',
+      subtitle: `${contentStats.stories} stories`,
+      emoji: '✍️',
+      bgColor: '#E1BEE7',
+      route: 'TeacherAddStory',
+    },
+    {
+      id: 'phonics',
+      title: 'Phonics Audio',
+      subtitle: `${contentStats.phonics} items`,
+      emoji: '🗣️',
+      bgColor: '#B3E5FC',
+      route: 'TeacherPhonics',
+    },
+    {
+      id: 'spelling',
+      title: 'Spelling Words',
+      subtitle: `${contentStats.spelling} words`,
+      emoji: '🔤',
+      bgColor: '#BBDEFB',
+      route: 'TeacherSpelling',
+    },
+    {
+      id: 'phonicsActivities',
+      title: 'Phonics Activity',
+      subtitle: `${contentStats.phonicsActivities} activities`,
+      emoji: '🎮',
+      bgColor: '#FFE0B2',
+      route: 'TeacherPhonicsActivity',
+    },
+    {
+      id: 'phonological',
+      title: 'Phonological Awareness',
+      subtitle: `${contentStats.phonological} items`,
+      emoji: '🎧',
+      bgColor: '#E1BEE7',
+      route: 'TeacherPhonological',
+    },
+  ];
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#607D8B" />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#607D8B']} />
+        }
+      >
+        {/* Stats Summary */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Ionicons name="pie-chart" size={24} color="#607D8B" />
+            <Text style={styles.summaryTitle}>Content Overview</Text>
+          </View>
+          <Text style={styles.summaryText}>
+            Total Items: {Object.values(contentStats).reduce((sum, val) => sum + val, 0)}
+          </Text>
+        </View>
+
+        {/* Content Type Cards */}
+        <View style={styles.cardsContainer}>
+          {contentItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.contentCard}
+              onPress={() => navigation.navigate(item.route)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.contentIconWrapper, { backgroundColor: item.bgColor }]}>
+                <Text style={styles.contentEmoji}>{item.emoji}</Text>
+              </View>
+              <View style={styles.contentInfo}>
+                <Text style={styles.contentTitle}>{item.title}</Text>
+                <Text style={styles.contentSubtitle}>{item.subtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#B0BEC5" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Help Text */}
+        <View style={styles.helpCard}>
+          <Ionicons name="information-circle-outline" size={20} color="#607D8B" />
+          <Text style={styles.helpText}>
+            Tap any content type to add, edit, or manage items
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  summaryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#455A64',
+    marginLeft: 10,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#78909C',
+  },
+  cardsContainer: {
+    gap: 12,
+  },
+  contentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  contentIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  contentEmoji: {
+    fontSize: 28,
+  },
+  contentInfo: {
+    flex: 1,
+  },
+  contentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#263238',
+    marginBottom: 4,
+  },
+  contentSubtitle: {
+    fontSize: 13,
+    color: '#90A4AE',
+  },
+  helpCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    gap: 12,
+  },
+  helpText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#455A64',
+    lineHeight: 18,
+  },
+});

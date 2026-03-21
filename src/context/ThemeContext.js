@@ -189,19 +189,28 @@ export const ThemeProvider = ({ children }) => {
   const fontFamilyStyle = getFontFamily() ? { fontFamily: getFontFamily() } : {};
 
   // Combined — used by screens that explicitly apply it.
-  // NOTE: We intentionally do NOT set a global fontSize here; that caused headings
-  // to shrink/flatten. The global JSX patch will apply per-component scaling when
-  // dyslexiaFont is enabled.
-  const a11yTextStyle = { ...dyslexiaStyle, ...letterSpacingStyle, ...fontFamilyStyle };
+  // NOTE: fontSize is now included as a base font size that can be scaled
+  const a11yTextStyle = {
+    fontSize: theme.fontSize || 14,
+    ...dyslexiaStyle,
+    ...letterSpacingStyle,
+    ...fontFamilyStyle
+  };
 
   // ── Keep the global ref up to date so the patched Text always reads
   //    the latest value — updated synchronously during render so it is
   //    current before any child Text renders.
   a11yStyleRef.current = a11yTextStyle;
+
+  // Calculate scale multiplier based on fontSize setting (base is 14)
+  const fontSizeScale = (theme.fontSize || 14) / 14;
+  const combinedTextScale = fontSizeScale * (theme.dyslexiaFont ? 1.12 : 1);
+  const combinedInputScale = fontSizeScale * (theme.dyslexiaFont ? 1.08 : 1);
+
   a11yStyleRef.meta = {
     dyslexiaFont: !!theme.dyslexiaFont,
-    textScale: theme.dyslexiaFont ? 1.12 : 1,
-    inputScale: theme.dyslexiaFont ? 1.08 : 1,
+    textScale: combinedTextScale,
+    inputScale: combinedInputScale,
   };
 
   return (

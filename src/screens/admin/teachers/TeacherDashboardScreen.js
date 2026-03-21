@@ -56,7 +56,7 @@ export default function TeacherDashboardScreen({ navigation }) {
         supabase.from('stories').select('id', { count: 'exact', head: true }),
         supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
         supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activities').select('id', { count: 'exact', head: true }),
+        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
         supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
       ]);
 

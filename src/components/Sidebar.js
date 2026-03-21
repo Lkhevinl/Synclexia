@@ -170,20 +170,20 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               </View>
 
-              {/* SUPPORT - Hidden for students */}
+              {/* SYSTEM MAINTENANCE - Hidden for students */}
               {!isStudent && (
                 <>
-                  <Text style={s.groupLabel}>SUPPORT</Text>
+                  <Text style={s.groupLabel}>SYSTEM MAINTENANCE</Text>
                   <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => navigate('Support')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#00897B18' }]}><Ionicons name="chatbubbles-outline" size={18} color="#00897B" /></View>
-                      <Text style={s.rowLabel}>Send Feedback</Text>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('MaintenanceLogs')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#607D8B18' }]}><Ionicons name="list-outline" size={18} color="#607D8B" /></View>
+                      <Text style={s.rowLabel}>View Maintenance Logs</Text>
                       <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
-                    <TouchableOpacity style={s.row} onPress={() => navigate('About')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="information-circle-outline" size={18} color="#0288D1" /></View>
-                      <Text style={s.rowLabel}>About Us</Text>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('AddMaintenanceLog')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Ionicons name="add-circle-outline" size={18} color="#4CAF50" /></View>
+                      <Text style={s.rowLabel}>Add Maintenance Log</Text>
                       <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>

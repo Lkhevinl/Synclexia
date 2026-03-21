@@ -52,6 +52,10 @@ import AdminNotificationsScreen from '../screens/admin/AdminNotificationsScreen'
 import AdminFeedbackScreen from '../screens/admin/AdminFeedbackScreen';
 import AdminParentLinksScreen from '../screens/admin/AdminParentLinksScreen';
 import AdminReportsScreen from '../screens/admin/AdminReportsScreen';
+import MaintenanceLogsScreen from '../screens/MaintenanceLogsScreen';
+import MaintenanceLogDetailScreen from '../screens/MaintenanceLogDetailScreen';
+import AddMaintenanceLogScreen from '../screens/admin/AddMaintenanceLogScreen';
+import AdminManageContentsScreen from '../screens/admin/AdminManageContentsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -185,6 +189,8 @@ function AppScreens() {
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+      <Stack.Screen name="MaintenanceLogs" component={MaintenanceLogsScreen} />
+      <Stack.Screen name="MaintenanceLogDetail" component={MaintenanceLogDetailScreen} />
       {/* Teacher routes (Content Management only) */}
       {(isTeacher || isAdmin) && (
         <>
@@ -206,6 +212,8 @@ function AppScreens() {
           <Stack.Screen name="ParentEditChild" component={ParentEditChildScreen} />
         </>
       )}
+      {/* Maintenance Log screen for all authenticated users */}
+      <Stack.Screen name="AddMaintenanceLog" component={AddMaintenanceLogScreen} />
       {isAdmin && (
         <>
           <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
@@ -214,6 +222,7 @@ function AppScreens() {
           <Stack.Screen name="AdminFeedback" component={AdminFeedbackScreen} />
           <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
+          <Stack.Screen name="AdminManageContents" component={AdminManageContentsScreen} />
         </>
       )}
     </Stack.Navigator>

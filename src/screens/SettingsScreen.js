@@ -164,14 +164,12 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── SUPPORT (Hidden for students) ──────────────────────────────────────── */}
+        {/* ── SYSTEM (Hidden for students) ─────────────────────────────────────────── */}
         {!isStudent && (
           <>
-            <Text style={[styles.groupLabel, a11yTextStyle]}>SUPPORT</Text>
+            <Text style={[styles.groupLabel, a11yTextStyle]}>SYSTEM</Text>
             <View style={styles.card}>
-              <SettingRow icon="chatbubbles-outline" iconColor="#00897B" label="Send Feedback" onPress={() => navigation.navigate('Support')} />
-              <View style={styles.divider} />
-              <SettingRow icon="information-circle-outline" iconColor="#0288D1" label="About Us" onPress={() => navigation.navigate('About')} />
+              <SettingRow icon="construct-outline" iconColor="#607D8B" label="View Maintenance Logs" onPress={() => navigation.navigate('MaintenanceLogs')} />
             </View>
           </>
         )}

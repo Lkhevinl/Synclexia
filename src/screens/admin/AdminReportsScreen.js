@@ -1,256 +1,666 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, Share, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Share,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import {
+  BarChart,
+  StatCard,
+  ProgressBar,
+  MetricRow,
+  SectionHeader,
+} from '../../components/AnalyticsChart';
+import {
+  getComprehensiveAnalytics,
+  exportAnalyticsCSV,
+  exportAnalyticsJSON,
+  formatActivityType,
+} from '../../lib/analyticsHelper';
 
 export default function AdminReportsScreen() {
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [tab, setTab] = useState('overview'); // overview, progress, performance, engagement, trends
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('all');
-  const [activityLogs, setActivityLogs] = useState([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [dateRange, setDateRange] = useState(30);
 
-  useEffect(() => { fetchUsers(selectedRole); }, []);
+  useEffect(() => {
+    loadAnalytics();
+  }, [dateRange]);
 
-  const fetchUsers = async (role = selectedRole) => {
-    setRefreshing(true);
-    let query = supabase.from('profiles').select('*').neq('role', 'teacher');
-    if (role !== 'all') {
-      query = query.eq('role', role);
-    }
-    const { data } = await query.order('full_name', { ascending: true });
-    if (data) {
-      setUsers(data);
-      setFilteredUsers(data);
-    }
+  const loadAnalytics = async () => {
+    setLoading(true);
+    const data = await getComprehensiveAnalytics(dateRange);
+    setAnalytics(data);
+    setLoading(false);
     setRefreshing(false);
   };
 
-  const fetchUserActivity = async (userId) => {
-    setLoadingLogs(true);
-    // session_logs may use student_id (for students) or user_id (legacy) — try both
-    const [{ data: byStudent }, { data: byUser }] = await Promise.all([
-      supabase.from('session_logs').select('*').eq('student_id', userId)
-        .order('created_at', { ascending: false }).limit(50),
-      supabase.from('session_logs').select('*').eq('user_id', userId)
-        .order('created_at', { ascending: false }).limit(50),
-    ]);
-    // Merge & deduplicate by id
-    const merged = [...(byStudent || []), ...(byUser || [])];
-    const seen = new Set();
-    const unique = merged.filter(l => {
-      if (seen.has(l.id)) return false;
-      seen.add(l.id);
-      return true;
-    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50);
-    setActivityLogs(unique);
-    setLoadingLogs(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadAnalytics();
   };
 
-  const exportReport = async () => {
-    try {
-      const reportData = users.map(u => ({
-        name: u.full_name || 'Unknown',
-        email: u.email || '',
-        role: u.role || 'user',
-        xp: u.xp || 0,
-        level: Math.floor((u.xp || 0) / 100) + 1,
-        status: u.is_banned ? 'Banned' : 'Active',
-        joined: new Date(u.created_at).toLocaleDateString()
-      }));
-
-      const csvContent = [
-        ['Name', 'Email', 'Role', 'XP', 'Level', 'Status', 'Joined Date'],
-        ...reportData.map(r => [r.name, r.email, r.role, r.xp, r.level, r.status, r.joined])
-      ].map(row => row.join(',')).join('\n');
-
+  const handleExportCSV = async () => {
+    if (!analytics) return;
+    const csvData = exportAnalyticsCSV(analytics);
+    if (Platform.OS === 'web') {
+      // Download as file on web
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+    } else {
       await Share.share({
-        message: csvContent,
-        title: 'User Activity Report'
+        message: csvData,
+        title: 'Analytics Report (CSV)',
       });
-    } catch (error) {
-      Alert.alert('Error', 'Failed to export report');
     }
   };
 
-  const filterByRole = (role) => {
-    setSelectedRole(role);
-    fetchUsers(role);
+  const handleExportJSON = async () => {
+    if (!analytics) return;
+    const jsonData = exportAnalyticsJSON(analytics);
+    await Share.share({
+      message: jsonData,
+      title: 'Analytics Report (JSON)',
+    });
   };
 
-  const showUserDetails = (user) => {
-    setSelectedUser(user);
-    fetchUserActivity(user.id);
+  const renderTabButton = (value, label, icon) => {
+    const isActive = tab === value;
+    return (
+      <TouchableOpacity
+        key={value}
+        style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+        onPress={() => setTab(value)}
+      >
+        <Ionicons name={icon} size={20} color={isActive ? '#fff' : '#607D8B'} />
+        <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderDateRangeButton = (days, label) => {
+    const isActive = dateRange === days;
+    return (
+      <TouchableOpacity
+        key={days}
+        style={[styles.dateBtn, isActive && styles.dateBtnActive]}
+        onPress={() => setDateRange(days)}
+      >
+        <Text style={[styles.dateText, isActive && styles.dateTextActive]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderOverviewTab = () => (
+    <ScrollView
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.tabContent}
+    >
+      <StatCard
+        title="Total Sessions"
+        value={analytics.overview.totalSessions}
+        subtitle={`${analytics.overview.activeStudents} active students`}
+        icon="flash"
+        color="#4CAF50"
+      />
+      <StatCard
+        title="Average Accuracy"
+        value={`${analytics.overview.avgAccuracy.toFixed(1)}%`}
+        subtitle="Across all activities"
+        icon="star"
+        color="#2196F3"
+      />
+      <StatCard
+        title="Completion Rate"
+        value={`${analytics.overview.completionRate.toFixed(1)}%`}
+        subtitle={`${analytics.overview.completedActivities} completed`}
+        icon="checkmark-circle"
+        color="#FF9800"
+      />
+    </ScrollView>
+  );
+
+  const renderProgressTab = () => {
+    const renderStudentItem = ({ item }) => (
+      <View style={styles.studentCard}>
+        <View style={styles.studentHeader}>
+          <View style={styles.studentAvatar}>
+            <Text style={styles.studentInitial}>
+              {item.full_name?.[0]?.toUpperCase() || '?'}
+            </Text>
+          </View>
+          <View style={styles.studentInfo}>
+            <Text style={styles.studentName}>{item.full_name || 'Unknown'}</Text>
+            <Text style={styles.studentEmail}>{item.email || 'No email'}</Text>
+          </View>
+          {item.streak > 0 && (
+            <View style={styles.streakBadge}>
+              <Ionicons name="flame" size={16} color="#FF5722" />
+              <Text style={styles.streakText}>{item.streak}d</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.studentMetrics}>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Sessions</Text>
+            <Text style={styles.metricValue}>{item.totalSessions}</Text>
+          </View>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Accuracy</Text>
+            <Text style={styles.metricValue}>{item.avgAccuracy.toFixed(1)}%</Text>
+          </View>
+          <View style={styles.metricItem}>
+            <Text style={styles.metricLabel}>Total XP</Text>
+            <Text style={styles.metricValue}>{item.totalXP}</Text>
+          </View>
+        </View>
+
+        <View style={styles.progressSection}>
+          <Text style={styles.progressLabel}>Overall Progress</Text>
+          <ProgressBar
+            progress={item.avgAccuracy}
+            color={item.avgAccuracy >= 80 ? '#4CAF50' : item.avgAccuracy >= 50 ? '#FF9800' : '#F44336'}
+          />
+        </View>
+
+        <Text style={styles.lastActive}>
+          Last active: {new Date(item.lastActive).toLocaleDateString()}
+        </Text>
+      </View>
+    );
+
+    return (
+      <FlatList
+        data={analytics?.students || []}
+        keyExtractor={(item) => item.id}
+        renderItem={renderStudentItem}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={styles.tabContent}
+        ListEmptyComponent={
+          <EmptyState
+            icon="people-outline"
+            title="No Student Data"
+            message="No student activity found for the selected period."
+          />
+        }
+      />
+    );
+  };
+
+  const renderPerformanceTab = () => (
+    <ScrollView
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.tabContent}
+    >
+      <SectionHeader icon="bar-chart" title="Activity Breakdown" color="#607D8B" />
+
+      {analytics.activityPerformance.length > 0 ? (
+        <>
+          <BarChart
+            data={analytics.activityPerformance.map((a) => ({
+              label: formatActivityType(a.activityType),
+              value: a.totalSessions,
+            }))}
+            maxValue={Math.max(...analytics.activityPerformance.map((a) => a.totalSessions))}
+            color="#0288D1"
+          />
+
+          <View style={styles.performanceList}>
+            {analytics.activityPerformance.map((activity, index) => (
+              <View key={index} style={styles.performanceCard}>
+                <Text style={styles.performanceTitle}>
+                  {formatActivityType(activity.activityType)}
+                </Text>
+                <MetricRow
+                  icon="flash"
+                  label="Sessions"
+                  value={activity.totalSessions}
+                  color="#0288D1"
+                />
+                <MetricRow
+                  icon="star"
+                  label="Avg Accuracy"
+                  value={`${activity.avgAccuracy.toFixed(1)}%`}
+                  color={activity.avgAccuracy >= 80 ? '#4CAF50' : '#FF9800'}
+                />
+                <MetricRow
+                  icon="trophy"
+                  label="Total XP"
+                  value={activity.totalXP}
+                  color="#FF9800"
+                />
+                <MetricRow
+                  icon="checkmark-circle"
+                  label="Completion"
+                  value={`${activity.completionRate.toFixed(1)}%`}
+                  color="#4CAF50"
+                />
+              </View>
+            ))}
+          </View>
+        </>
+      ) : (
+        <EmptyState
+          icon="bar-chart-outline"
+          title="No Performance Data"
+          message="No activity performance data available."
+        />
+      )}
+    </ScrollView>
+  );
+
+  const renderEngagementTab = () => (
+    <ScrollView
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.tabContent}
+    >
+      <SectionHeader icon="time" title="Peak Activity Hours" color="#607D8B" />
+      {analytics.engagement.peakHours.length > 0 ? (
+        <BarChart
+          data={analytics.engagement.peakHours.map((h) => ({
+            label: `${h.hour}:00`,
+            value: h.count,
+          }))}
+          maxValue={Math.max(...analytics.engagement.peakHours.map((h) => h.count))}
+          color="#FF9800"
+        />
+      ) : (
+        <Text style={styles.noData}>No peak hour data available</Text>
+      )}
+
+      <SectionHeader icon="stats-chart" title="Engagement Metrics" color="#607D8B" />
+      <View style={styles.engagementMetrics}>
+        <StatCard
+          title="Avg Session Duration"
+          value={`${Math.floor(analytics.engagement.avgSessionDuration / 60)}m`}
+          subtitle={`${analytics.engagement.avgSessionDuration % 60}s`}
+          icon="time"
+          color="#607D8B"
+        />
+        <StatCard
+          title="Session Frequency"
+          value={analytics.engagement.sessionFrequency.toFixed(1)}
+          subtitle="Sessions per student"
+          icon="repeat"
+          color="#9C27B0"
+        />
+        <StatCard
+          title="Active Students"
+          value={analytics.engagement.totalActiveStudents}
+          subtitle={`In last ${dateRange} days`}
+          icon="people"
+          color="#00BCD4"
+        />
+      </View>
+    </ScrollView>
+  );
+
+  const renderTrendsTab = () => (
+    <ScrollView
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      contentContainerStyle={styles.tabContent}
+    >
+      <SectionHeader icon="trending-up" title={`Daily Activity (Last ${dateRange} days)`} color="#607D8B" />
+
+      {analytics.trends.daily.length > 0 ? (
+        <>
+          <BarChart
+            data={analytics.trends.daily.slice(-14).map((d) => ({
+              label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              value: d.sessions,
+            }))}
+            maxValue={Math.max(...analytics.trends.daily.map((d) => d.sessions))}
+            color="#9C27B0"
+          />
+
+          <SectionHeader icon="pulse" title="Daily Metrics" color="#607D8B" />
+          <FlatList
+            data={analytics.trends.daily.slice(0, 10)}
+            keyExtractor={(item) => item.date}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <View style={styles.trendCard}>
+                <Text style={styles.trendDate}>
+                  {new Date(item.date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </Text>
+                <MetricRow icon="flash" label="Sessions" value={item.sessions} color="#9C27B0" />
+                <MetricRow
+                  icon="star"
+                  label="Avg Accuracy"
+                  value={`${item.avgAccuracy.toFixed(1)}%`}
+                  color="#2196F3"
+                />
+                <MetricRow icon="trophy" label="Total XP" value={item.totalXP} color="#FF9800" />
+              </View>
+            )}
+          />
+        </>
+      ) : (
+        <EmptyState
+          icon="trending-up-outline"
+          title="No Trend Data"
+          message="Not enough data to show trends."
+        />
+      )}
+    </ScrollView>
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#607D8B" />
+          <Text style={styles.loadingText}>Loading analytics...</Text>
+        </View>
+      );
+    }
+
+    if (!analytics) {
+      return (
+        <EmptyState icon="analytics-outline" title="No Data" message="Unable to load analytics." />
+      );
+    }
+
+    switch (tab) {
+      case 'overview':
+        return renderOverviewTab();
+      case 'progress':
+        return renderProgressTab();
+      case 'performance':
+        return renderPerformanceTab();
+      case 'engagement':
+        return renderEngagementTab();
+      case 'trends':
+        return renderTrendsTab();
+      default:
+        return null;
+    }
   };
 
   return (
     <View style={styles.container}>
-      <View style={{flexDirection:'row', alignItems:'center', marginBottom:15}}>
-        <GoBackBtn />
-        <Text style={styles.headerTitle}>Reports & Analytics</Text>
-      </View>
-
-      {/* FILTERS */}
-      <View style={styles.filterContainer}>
-        {['all', 'student', 'parent'].map(role => (
-          <TouchableOpacity 
-            key={role}
-            style={[styles.filterBtn, selectedRole === role && styles.filterBtnActive]}
-            onPress={() => filterByRole(role)}
-          >
-            <Text style={[styles.filterText, selectedRole === role && styles.filterTextActive]}>
-              {role === 'all' ? 'All' : role}
-            </Text>
+      <AppHeader
+        title="Reports & Analytics"
+        colors={['#607D8B', '#455A64']}
+        right={
+          <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
+            <Ionicons name="download-outline" size={24} color="#fff" />
           </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* STATS SUMMARY */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>{filteredUsers.length}</Text>
-          <Text style={styles.statLabel}>Users</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>
-            {filteredUsers.reduce((sum, u) => sum + (u.xp || 0), 0)}
-          </Text>
-          <Text style={styles.statLabel}>Total XP</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>
-            {filteredUsers.filter(u => u.is_banned).length}
-          </Text>
-          <Text style={styles.statLabel}>Banned</Text>
-        </View>
-      </View>
-
-      {/* EXPORT BUTTON */}
-      <TouchableOpacity style={styles.exportBtn} onPress={exportReport}>
-        <Ionicons name="download-outline" size={20} color="#fff" />
-        <Text style={styles.exportBtnText}>Export Report (CSV)</Text>
-      </TouchableOpacity>
-
-      {/* USER LIST */}
-      <FlatList 
-        data={filteredUsers}
-        keyExtractor={item => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchUsers} />}
-        ListEmptyComponent={<EmptyState icon="people" message="No users found" />}
-        renderItem={({item}) => (
-          <TouchableOpacity style={styles.userCard} onPress={() => showUserDetails(item)}>
-            <View style={styles.userInfo}>
-              <View style={[styles.roleBadge, {backgroundColor: getRoleColor(item.role)}]}>
-                <Text style={styles.roleBadgeText}>{item.role?.[0]?.toUpperCase() || 'U'}</Text>
-              </View>
-              <View style={{flex: 1}}>
-                <Text style={styles.userName}>{item.full_name || 'Unknown'}</Text>
-                <Text style={styles.userEmail}>{item.email}</Text>
-              </View>
-            </View>
-            <View style={styles.userStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{Math.floor((item.xp || 0)/100) + 1}</Text>
-                <Text style={styles.statTitle}>Lvl</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        )}
+        }
       />
 
-      {/* ACTIVITY LOGS MODAL */}
-      {selectedUser && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{selectedUser.full_name}'s Activity</Text>
-              <TouchableOpacity onPress={() => setSelectedUser(null)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            {loadingLogs ? (
-              <ActivityIndicator size="large" color="#0288D1" />
-            ) : activityLogs.length === 0 ? (
-              <Text style={{textAlign: 'center', color: '#999', padding: 20}}>
-                No activity logs found for this user
-              </Text>
-            ) : (
-              <FlatList
-                data={activityLogs}
-                keyExtractor={item => item.id}
-                renderItem={({item}) => (
-                  <View style={styles.logItem}>
-                    <View style={styles.logHeader}>
-                      <Text style={styles.logType}>{item.activity_type}</Text>
-                      <Text style={styles.logDate}>
-                        {new Date(item.created_at).toLocaleString()}
-                      </Text>
-                    </View>
-                    <Text style={styles.logDetail}>
-                      {item.details ? JSON.stringify(item.details) : 'No details'}
-                    </Text>
-                  </View>
-                )}
-              />
-            )}
-          </View>
-        </View>
-      )}
+      {/* Date Range Selector */}
+      <View style={styles.dateRangeContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRangeScroll}>
+          {renderDateRangeButton(7, '7 Days')}
+          {renderDateRangeButton(14, '14 Days')}
+          {renderDateRangeButton(30, '30 Days')}
+          {renderDateRangeButton(60, '60 Days')}
+          {renderDateRangeButton(90, '90 Days')}
+        </ScrollView>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
+          {renderTabButton('overview', 'Overview', 'analytics')}
+          {renderTabButton('progress', 'Progress', 'trending-up')}
+          {renderTabButton('performance', 'Performance', 'bar-chart')}
+          {renderTabButton('engagement', 'Engagement', 'people')}
+          {renderTabButton('trends', 'Trends', 'pulse')}
+        </ScrollView>
+      </View>
+
+      {/* Tab Content */}
+      {renderContent()}
     </View>
   );
 }
 
-const getRoleColor = (role) => {
-  switch(role) {
-    case 'admin': return '#9C27B0';
-    case 'parent': return '#FF9800';
-    case 'student': return '#4CAF50';
-    default: return '#757575';
-  }
-};
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
-  
-  filterContainer: { flexDirection: 'row', gap: 8, marginBottom: 15 },
-  filterBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#fff' },
-  filterBtnActive: { backgroundColor: '#0288D1' },
-  filterText: { color: '#666', fontSize: 12 },
-  filterTextActive: { color: '#fff', fontWeight: 'bold' },
-  
-  statsContainer: { flexDirection: 'row', gap: 10, marginBottom: 15 },
-  statBox: { flex: 1, backgroundColor: '#fff', padding: 15, borderRadius: 12, alignItems: 'center', elevation: 2 },
-  statNumber: { fontSize: 20, fontWeight: 'bold', color: '#0288D1' },
-  statLabel: { fontSize: 11, color: '#666', marginTop: 4 },
-  
-  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#4CAF50', padding: 12, borderRadius: 10, marginBottom: 15, gap: 8 },
-  exportBtnText: { color: '#fff', fontWeight: 'bold' },
-  
-  userCard: { backgroundColor: '#fff', padding: 15, borderRadius: 12, marginBottom: 10, elevation: 1 },
-  userInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  roleBadge: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  roleBadgeText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
-  userName: { fontWeight: 'bold', color: '#333', fontSize: 15 },
-  userEmail: { fontSize: 12, color: '#666' },
-  userStats: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 10, borderTopWidth: 1, borderColor: '#f0f0f0' },
-  statItem: { alignItems: 'center' },
-  statValue: { fontWeight: 'bold', color: '#0288D1', fontSize: 16 },
-  statTitle: { fontSize: 10, color: '#999' },
-  
-  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '70%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  
-  logItem: { padding: 12, backgroundColor: '#f9f9f9', borderRadius: 8, marginBottom: 8 },
-  logHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  logType: { fontWeight: 'bold', color: '#0288D1', textTransform: 'capitalize' },
-  logDate: { fontSize: 10, color: '#999' },
-  logDetail: { fontSize: 11, color: '#666' }
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA',
+  },
+  exportBtn: {
+    padding: 4,
+  },
+  dateRangeContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  dateRangeScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  dateBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    marginRight: 8,
+  },
+  dateBtnActive: {
+    backgroundColor: '#607D8B',
+  },
+  dateText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  dateTextActive: {
+    color: '#fff',
+  },
+  tabsContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  tabsScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  tabBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    marginRight: 8,
+  },
+  tabBtnActive: {
+    backgroundColor: '#607D8B',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#607D8B',
+  },
+  tabTextActive: {
+    color: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#90A4AE',
+  },
+  tabContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  noData: {
+    textAlign: 'center',
+    padding: 32,
+    fontSize: 14,
+    color: '#B0BEC5',
+    fontStyle: 'italic',
+  },
+  studentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  studentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  studentAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#0288D1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  studentInitial: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  studentInfo: {
+    flex: 1,
+  },
+  studentName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#263238',
+    marginBottom: 2,
+  },
+  studentEmail: {
+    fontSize: 13,
+    color: '#90A4AE',
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFE0B2',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  streakText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FF5722',
+  },
+  studentMetrics: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 16,
+  },
+  metricItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  metricLabel: {
+    fontSize: 11,
+    color: '#90A4AE',
+    marginBottom: 4,
+  },
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#263238',
+  },
+  progressSection: {
+    marginBottom: 12,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#78909C',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  lastActive: {
+    fontSize: 12,
+    color: '#B0BEC5',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  performanceList: {
+    marginTop: 16,
+  },
+  performanceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  performanceTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#263238',
+    marginBottom: 12,
+  },
+  engagementMetrics: {
+    marginTop: 8,
+  },
+  trendCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  trendDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#607D8B',
+    marginBottom: 12,
+  },
 });

@@ -99,16 +99,24 @@ export default function AdminSettingsScreen({ navigation }) {
 
             {/* (Teacher tools removed) */}
 
-          {/* SUPPORT */}
+          {/* SYSTEM MAINTENANCE */}
           <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                  <Ionicons name="help-circle" size={24} color="#607D8B" />
-                  <Text style={styles.sectionTitle}>Support</Text>
+                  <Ionicons name="construct" size={24} color="#607D8B" />
+                  <Text style={styles.sectionTitle}>System Maintenance</Text>
               </View>
 
-              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('About')}>
-                <Ionicons name="information-circle-outline" size={20} color="#607D8B" />
-                <Text style={styles.supportText}>About Us</Text>
+              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('MaintenanceLogs')}>
+                <Ionicons name="list-outline" size={20} color="#607D8B" />
+                <Text style={styles.supportText}>View Maintenance Logs</Text>
+                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
+              </TouchableOpacity>
+
+              <View style={styles.divider} />
+
+              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('AddMaintenanceLog')}>
+                <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
+                <Text style={styles.supportText}>Add Maintenance Log</Text>
                 <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
               </TouchableOpacity>
           </View>

@@ -24,7 +24,6 @@ export default function AdminDashboardScreen({ navigation }) {
     phonicsActivities: 0,
     phonological: 0,
   });
-  const [contentModalVisible, setContentModalVisible] = useState(false);
   const [usersModalVisible, setUsersModalVisible] = useState(false);
 
   useEffect(() => {
@@ -53,7 +52,7 @@ export default function AdminDashboardScreen({ navigation }) {
         supabase.from('stories').select('id', { count: 'exact', head: true }),
         supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
         supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activities').select('id', { count: 'exact', head: true }),
+        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
         supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
       ]);
 
@@ -216,7 +215,7 @@ export default function AdminDashboardScreen({ navigation }) {
           {/* MANAGE CONTENTS */}
           <TouchableOpacity
             style={styles.mainCard}
-            onPress={() => setContentModalVisible(true)}
+            onPress={() => navigation.navigate('AdminManageContents')}
             activeOpacity={0.85}
           >
             <LinearGradient colors={getHeaderGradient()} style={styles.mainCardGradient}>
@@ -277,91 +276,6 @@ export default function AdminDashboardScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* CONTENT MANAGEMENT MODAL */}
-      <Modal visible={contentModalVisible} transparent animationType="slide" onRequestClose={() => setContentModalVisible(false)}>
-        <View style={styles.submenuOverlay}>
-          <View style={styles.submenuContent}>
-            <View style={styles.submenuHeader}>
-              <Text style={styles.submenuTitle}>Content Types</Text>
-              <TouchableOpacity onPress={() => setContentModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setContentModalVisible(false); navigation.navigate('TeacherAddStory'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#E1BEE7' }]}>
-                  <Text style={{ fontSize: 24 }}>✍️</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Writing Practice</Text>
-                  <Text style={styles.submenuItemSub}>{contentStats.stories} stories</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setContentModalVisible(false); navigation.navigate('TeacherPhonics'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#B3E5FC' }]}>
-                  <Text style={{ fontSize: 24 }}>🗣️</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Phonics Audio</Text>
-                  <Text style={styles.submenuItemSub}>{contentStats.phonics} items</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setContentModalVisible(false); navigation.navigate('TeacherSpelling'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#BBDEFB' }]}>
-                  <Text style={{ fontSize: 24 }}>🔤</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Spelling Words</Text>
-                  <Text style={styles.submenuItemSub}>{contentStats.spelling} words</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setContentModalVisible(false); navigation.navigate('TeacherPhonicsActivity'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#FFE0B2' }]}>
-                  <Text style={{ fontSize: 24 }}>🎮</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Phonics Activity</Text>
-                  <Text style={styles.submenuItemSub}>{contentStats.phonicsActivities} activities</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setContentModalVisible(false); navigation.navigate('TeacherPhonological'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#E1BEE7' }]}>
-                  <Text style={{ fontSize: 24 }}>🎧</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Phonological Awareness</Text>
-                  <Text style={styles.submenuItemSub}>{contentStats.phonological} items</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* USERS MANAGEMENT MODAL */}
       <Modal visible={usersModalVisible} transparent animationType="slide" onRequestClose={() => setUsersModalVisible(false)}>
