@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
+import { useAuth } from '../../../context/AuthContext';
 
 const GAME_TYPES = [
   { id: 'blend',   label: 'Blend It 🔗',    color: '#FF9800' },
@@ -33,6 +34,7 @@ const rhymeToForm   = (d) => ({ phonemes: '', word: '', emoji: d.emoji || '', ta
 const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: d.count?.toString() || '' });
 
 export default function TeacherPhonicsActivityScreen() {
+  const { profile } = useAuth();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [gameType, setGameType]   = useState('blend');
@@ -78,6 +80,8 @@ export default function TeacherPhonicsActivityScreen() {
   };
 
   const handleSave = async () => {
+    if (!profile?.id) return Alert.alert('Error', 'User authentication required. Please log in again.');
+
     const data = buildData();
     if (!data) return Alert.alert('Missing Fields', 'Please fill all required fields for this game type.');
     const payload = { game_type: gameType, difficulty_level: level, data };
@@ -86,7 +90,7 @@ export default function TeacherPhonicsActivityScreen() {
       if (error) return Alert.alert('Update Error', error.message);
       Alert.alert('✅ Updated', 'Item updated successfully.');
     } else {
-      const { error } = await supabase.from('phonics_activity_content').insert([{ ...payload, is_active: true }]);
+      const { error } = await supabase.from('phonics_activity_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
       Alert.alert('✅ Added', 'Item added successfully.');
     }

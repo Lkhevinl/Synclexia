@@ -28,10 +28,36 @@ export default function SupportScreen() {
         alert('Please add a rating or a short message.');
         return;
       }
-      await supabase.from('feedback').insert([{ user_id: user.id, message: feedback.trim(), rating }]);
+
+      // Create maintenance log entry for feedback instead of old feedback table
+      const feedbackData = {
+        log_type: 'user_concern',
+        title: rating ? `App Rating: ${rating} star${rating > 1 ? 's' : ''}` : 'User Feedback',
+        description: feedback.trim() || `User rated the app ${rating} out of 5 stars.`,
+        reported_by: user.id,
+        reporter_role: profile?.role || 'user',
+        status: 'open',
+        priority: rating <= 2 ? 'high' : rating <= 3 ? 'medium' : 'low',
+        category: 'user_feedback',
+        device_info: {
+          platform: require('react-native').Platform.OS,
+          rating: rating > 0 ? rating : null
+        }
+      };
+
+      const { error } = await supabase
+        .from('maintenance_logs')
+        .insert([feedbackData]);
+
+      if (error) {
+        console.error('Error submitting feedback:', error);
+        alert('Error submitting feedback. Please try again.');
+        return;
+      }
+
       setFeedback('');
       setRating(0);
-      alert("Thank you for your feedback!");
+      alert("Thank you for your feedback! It has been logged for review.");
     }
   };
 
@@ -54,16 +80,24 @@ export default function SupportScreen() {
                 </TouchableOpacity>
             ))}
         </View>
-        <TextInput 
-            style={styles.textArea} 
-            multiline 
-            placeholder="Your feedback..." 
+        <TextInput
+            style={styles.textArea}
+            multiline
+            placeholder="Your feedback..."
             value={feedback}
             onChangeText={setFeedback}
         />
         <TouchableOpacity style={styles.submitBtn} onPress={submitFeedback}>
             <Text style={{fontWeight:'bold'}}>Submit</Text>
         </TouchableOpacity>
+
+        {/* Info about maintenance logs */}
+        <View style={styles.infoBox}>
+          <Ionicons name="information-circle" size={16} color="#607D8B" />
+          <Text style={styles.infoText}>
+            Your feedback is logged in our maintenance system for better tracking and response.
+          </Text>
+        </View>
       </View>
     );
 
@@ -144,5 +178,21 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 40, marginTop: 20 },
   memberCard: { alignItems: 'center' },
   avatarCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center', marginBottom: 5 },
-  roleText: { fontSize: 12, color: '#666' }
+  roleText: { fontSize: 12, color: '#666' },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+    maxWidth: '90%',
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#2E7D32',
+    lineHeight: 16,
+  },
 });

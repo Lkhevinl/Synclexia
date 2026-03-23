@@ -48,8 +48,8 @@ export default function AdminUsersScreen({ route }) {
       .in('role', ['student', 'user', 'parent', 'admin'])
       .order('full_name', { ascending: true });
     if (error) {
-      console.error('[AdminUsers] fetchUsers error:', JSON.stringify(error, null, 2));
       Alert.alert('Load Error', `Could not load users.\n\n${error.message}`);
+      setUsers([]);
     } else {
       setUsers(data ?? []);
       // Do NOT call setFilteredUsers here — the filter useEffect handles it

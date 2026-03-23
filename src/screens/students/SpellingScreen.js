@@ -43,36 +43,95 @@ function buildTiles(word) {
 
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
+function AnimatedModeCard({ children, style, onPress, delay = 0 }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const pressAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, delay }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay }),
+    ]).start();
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, { toValue: 0.95, useNativeDriver: true, friction: 5 }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }], opacity: opacityAnim }]}>
+      <TouchableOpacity onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} activeOpacity={1} style={{ flex: 1 }}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 function ModeSelector({ onSelect }) {
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
+  }, []);
+
+  const modes = [
+    { id: 'dictation', emoji: '🔊', label: 'Listen & Spell',   desc: 'Hear the word, then tap the letters to spell it', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'hint',      emoji: '💡', label: 'Picture Spelling',  desc: 'See the picture and hint, then spell the word',    gradient: ['#9C27B0', '#6A1B9A'] },
+  ];
+
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
-      <Text style={ms.title}>Spelling Practice 🔤</Text>
-      <Text style={ms.sub}>Choose how you want to learn</Text>
-      {[
-        { id: 'dictation', emoji: '🔊', label: 'Listen & Spell',   desc: 'Hear the word, then tap the letters to spell it', color: '#2196F3' },
-        { id: 'hint',      emoji: '💡', label: 'Picture Spelling',  desc: 'See the picture and hint, then spell the word',    color: '#9C27B0' },
-      ].map(m => (
-        <TouchableOpacity key={m.id} style={[ms.card, { borderLeftColor: m.color }]} onPress={() => onSelect(m.id)} activeOpacity={0.8}>
-          <Text style={ms.emoji}>{m.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={ms.label}>{m.label}</Text>
-            <Text style={ms.desc}>{m.desc}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color={m.color} />
-        </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
+        <LinearGradient colors={['#2196F3', '#1565C0']} style={ms.headerCard}>
+          <Text style={ms.headerEmoji}>🔤</Text>
+          <Text style={ms.title}>Spelling Practice</Text>
+          <Text style={ms.sub}>Choose how you want to learn</Text>
+        </LinearGradient>
+      </Animated.View>
+
+      {modes.map((m, index) => (
+        <AnimatedModeCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
+          <LinearGradient colors={m.gradient} style={ms.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <View style={ms.cardContent}>
+              <View style={ms.emojiCircle}>
+                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={ms.cardLabel}>{m.label}</Text>
+                <Text style={ms.cardDesc}>{m.desc}</Text>
+              </View>
+              <View style={ms.playBtn}>
+                <Ionicons name="play" size={20} color="#fff" />
+              </View>
+            </View>
+            <View style={ms.cardShine} />
+          </LinearGradient>
+        </AnimatedModeCard>
       ))}
     </ScrollView>
   );
 }
 
 const ms = StyleSheet.create({
-  container: { padding: 20, paddingTop: 80 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#37474F', textAlign: 'center' },
-  sub: { fontSize: 15, color: '#78909C', textAlign: 'center', marginBottom: 30, marginTop: 4 },
-  card: { backgroundColor: '#fff', borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 16, elevation: 3, borderLeftWidth: 5 },
-  emoji: { fontSize: 36, marginRight: 14 },
-  label: { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
-  desc: { fontSize: 13, color: '#78909C', marginTop: 2 },
+  container: { padding: 20, paddingTop: 80, paddingBottom: 40 },
+  headerCard: { borderRadius: 24, padding: 24, alignItems: 'center', marginBottom: 24, elevation: 6 },
+  headerEmoji: { fontSize: 50, marginBottom: 8 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  sub: { fontSize: 15, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4 },
+  cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  card: { borderRadius: 20, padding: 20, overflow: 'hidden' },
+  cardContent: { flexDirection: 'row', alignItems: 'center' },
+  emojiCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  cardEmoji: { fontSize: 28 },
+  cardLabel: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  cardDesc: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 18 },
+  playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+  cardShine: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
 });
 
 // ─── Core Spelling Game ───────────────────────────────────────────────────────

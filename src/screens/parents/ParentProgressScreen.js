@@ -28,17 +28,26 @@ export default function ParentProgressScreen({ route }) {
   const [progress, setProgress] = useState(null);
   const [adaptive, setAdaptive] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const subRef = useRef(null);
 
   const load = useCallback(async (days) => {
     setLoading(true);
-    const [prog, adap] = await Promise.all([
-      getStudentProgress(sid, days),
-      getAllAdaptiveStates(sid),
-    ]);
-    setProgress(prog);
-    setAdaptive(adap || []);
-    setLoading(false);
+    setError(null);
+    try {
+      const [prog, adap] = await Promise.all([
+        getStudentProgress(sid, days),
+        getAllAdaptiveStates(sid),
+      ]);
+      setProgress(prog);
+      setAdaptive(adap || []);
+    } catch (error) {
+      setError('Failed to load progress data. Please check your connection and try again.');
+      setProgress({ totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
+      setAdaptive([]);
+    } finally {
+      setLoading(false);
+    }
   }, [sid]);
 
   // Re-fetch every time screen comes into focus or daysBack changes
@@ -79,6 +88,16 @@ export default function ParentProgressScreen({ route }) {
 
       {loading ? (
         <View style={s.centered}><ActivityIndicator size="large" color="#7B1FA2" /></View>
+      ) : error ? (
+        <View style={s.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Text style={s.errorTitle}>Connection Error</Text>
+          <Text style={s.errorMessage}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => load(daysBack)}>
+            <Ionicons name="refresh" size={18} color="#fff" />
+            <Text style={s.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}>
           {/* Summary */}
@@ -234,4 +253,11 @@ const s = StyleSheet.create({
   emptyCard:    { alignItems: 'center', paddingVertical: 40 },
   emptyTitle:   { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 14 },
   emptyHint:    { fontSize: 13, color: '#999', marginTop: 6, textAlign: 'center' },
+
+  // Error state
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  errorTitle:     { fontSize: 18, fontWeight: 'bold', color: '#FF6B6B', marginTop: 16, marginBottom: 8 },
+  errorMessage:   { color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  retryBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7B1FA2', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, elevation: 2 },
+  retryBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

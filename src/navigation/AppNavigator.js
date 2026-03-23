@@ -56,6 +56,8 @@ import MaintenanceLogsScreen from '../screens/MaintenanceLogsScreen';
 import MaintenanceLogDetailScreen from '../screens/MaintenanceLogDetailScreen';
 import AddMaintenanceLogScreen from '../screens/admin/AddMaintenanceLogScreen';
 import AdminManageContentsScreen from '../screens/admin/AdminManageContentsScreen';
+import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
+import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -223,6 +225,8 @@ function AppScreens() {
           <Stack.Screen name="AdminParentLinks" component={AdminParentLinksScreen} />
           <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
           <Stack.Screen name="AdminManageContents" component={AdminManageContentsScreen} />
+          <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
+          <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
         </>
       )}
     </Stack.Navigator>

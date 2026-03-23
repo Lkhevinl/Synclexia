@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert, Image, ActivityIndicator, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; 
 import { LinearGradient } from 'expo-linear-gradient'; 
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +30,8 @@ export default function DashboardScreen({ navigation }) {
   const [notifications, setNotifications] = useState([]);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
   const [unreadReplyCount, setUnreadReplyCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const isStudent = profile?.role === 'student';
 
@@ -37,67 +39,131 @@ export default function DashboardScreen({ navigation }) {
   useEffect(() => {
     if (!isStudent || !profile?.id || profile?.unique_code) return;
     const assignCode = async () => {
-      const code = generateUniqueCode();
-      await supabase.from('profiles').update({ unique_code: code }).eq('id', profile.id);
-      await fetchProfile(profile.id);
+      try {
+        const code = generateUniqueCode();
+        await supabase.from('profiles').update({ unique_code: code }).eq('id', profile.id);
+        await fetchProfile(profile.id);
+      } catch (error) {
+        // Silently fail - code generation is not critical
+      }
     };
     assignCode();
   }, [profile?.id]);
 
+  const initializeDashboard = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchNotifications(), fetchUnreadReplies()]);
+      const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
+      setDailyTip(randomTip);
+    } catch (error) {
+      setError('Failed to load dashboard. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchNotifications();
-    fetchUnreadReplies();
-    const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
-    setDailyTip(randomTip);
+    initializeDashboard();
   }, []);
 
   const fetchNotifications = async () => {
-    // Learner app: show global announcements only (no teacher/class targeting).
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('is_draft', false)
-      .in('target_role', ['all', 'student'])
-      .order('created_at', { ascending: false });
-    if (data) setNotifications(data);
+    try {
+      // Learner app: show global announcements only (no teacher/class targeting).
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('is_draft', false)
+        .in('target_role', ['all', 'student'])
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setNotifications([]);
+        return;
+      }
+
+      setNotifications(data || []);
+    } catch (error) {
+      setNotifications([]);
+    }
   };
 
   const fetchUnreadReplies = async () => {
     if (!profile?.id) return;
-    const { count } = await supabase
-      .from('feedback')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', profile?.id)
-      .eq('has_unread_reply', true);
-    setUnreadReplyCount(count || 0);
+    try {
+      const { count, error } = await supabase
+        .from('feedback')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile?.id)
+        .eq('has_unread_reply', true);
+
+      if (error) {
+        setUnreadReplyCount(0);
+        return;
+      }
+
+      setUnreadReplyCount(count || 0);
+    } catch (error) {
+      setUnreadReplyCount(0);
+    }
   };
 
-  const MenuCard = ({ title, icon, color, route, badge, activityType }) => {
+  const MenuCard = ({ title, icon, color, route, badge, activityType, description }) => {
     const { a11yTextStyle: cardA11y } = useTheme();
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    };
+
+    const handlePressOut = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    };
+
     return (
-      <TouchableOpacity 
-        style={[styles.cardContainer]} 
-        onPress={() => {
-          navigation.navigate(route);
-        }}
-        activeOpacity={0.9}
-      >
-        <LinearGradient
-          colors={[color, color + '99']} 
-          style={styles.cardGradient}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      <Animated.View style={[styles.enhancedCardContainer, { transform: [{ scale: scaleAnim }] }]}>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          onPress={() => {
+            navigation.navigate(route);
+          }}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={1}
         >
-          <View style={styles.iconCircle}>
-            <Text style={{ fontSize: 32 }}>{icon}</Text>
-          </View>
-          <Text style={[styles.cardTitle, cardA11y]}>{title}</Text>
-          {badge && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>!</Text>
+          <LinearGradient
+            colors={[color, color]}
+            style={styles.enhancedCardGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.enhancedCardHeader}>
+              <View style={styles.enhancedIconCircle}>
+                <Text style={styles.enhancedIconText}>{icon}</Text>
+              </View>
+              {badge && (
+                <View style={styles.enhancedBadge}>
+                  <Text style={styles.enhancedBadgeText}>!</Text>
+                </View>
+              )}
             </View>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+            <Text style={[styles.enhancedCardTitle, cardA11y]}>{title}</Text>
+            {description && (
+              <Text style={[styles.enhancedCardDescription, cardA11y]}>{description}</Text>
+            )}
+            {/* Removed shine effect for cleaner look */}
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
@@ -106,10 +172,27 @@ export default function DashboardScreen({ navigation }) {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
-      {/* HEADER */}
-      <LinearGradient
-        colors={getHeaderGradient()}
-        style={styles.headerGradient}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={themeColors.primaryColor} />
+          <Text style={[styles.loadingText, { fontSize: theme.fontSize }, a11yTextStyle]}>Loading your dashboard...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Text style={[styles.errorTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Connection Error</Text>
+          <Text style={[styles.errorMessage, { fontSize: theme.fontSize }, a11yTextStyle]}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => initializeDashboard()}>
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={[styles.retryBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* HEADER */}
+          <LinearGradient
+            colors={getHeaderGradient()}
+            style={styles.headerGradient}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
@@ -150,115 +233,215 @@ export default function DashboardScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* PARENT LINK CODE BAR */}
+      {/* PARENT LINK CODE BAR - ENHANCED */}
       {isStudent && (
-        <View style={styles.statsContainer}>
-          <View style={[styles.linkCodeBar, { backgroundColor: themeColors.cardBg }]}>
-            <Ionicons name="people" size={16} color={getPrimaryColor()} />
-            <View style={styles.linkCodeBarText}>
-              <Text style={[styles.linkCodeBarLabel, { color: themeColors.textSecondary, fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Parent Link</Text>
-              <Text style={[styles.linkCodeBarValue, { color: getPrimaryColor(), fontSize: theme.fontSize + 2 }, a11yTextStyle]}>{profile?.unique_code ?? '...'}</Text>
+        <View style={styles.enhancedLinkContainer}>
+          <LinearGradient
+            colors={['rgba(123, 31, 162, 0.1)', 'rgba(123, 31, 162, 0.05)']}
+            style={styles.enhancedLinkCard}
+          >
+            <View style={styles.linkCardHeader}>
+              <View style={styles.linkIconContainer}>
+                <Ionicons name="people" size={20} color={getPrimaryColor()} />
+              </View>
+              <View style={styles.linkCardInfo}>
+                <Text style={[styles.linkCardTitle, { color: themeColors.textPrimary, fontSize: theme.fontSize }, a11yTextStyle]}>
+                  Parent Link Code
+                </Text>
+                <Text style={[styles.linkCardSubtitle, { color: themeColors.textSecondary, fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                  Share with your parents to connect
+                </Text>
+              </View>
             </View>
-          </View>
+            <View style={styles.linkCodeContainer}>
+              <Text style={[styles.linkCodeValue, { color: getPrimaryColor(), fontSize: theme.fontSize + 8 }, a11yTextStyle]}>
+                {profile?.unique_code ?? '...'}
+              </Text>
+            </View>
+          </LinearGradient>
         </View>
       )}
 
       {/* SCROLLABLE CONTENT */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* DAILY TIP */}
-        <View style={[styles.tipBox, { backgroundColor: themeColors.textPrimary }]}>
-          <Ionicons name="sparkles" size={20} color="#FFD700" style={{ marginRight: 10 }} />
-          <Text style={[styles.tipText, { fontSize: theme.fontSize, color: '#fff' }, a11yTextStyle]}>{dailyTip}</Text>
+        {/* QUICK ACCESS BAR - Horizontal scroll for main activities */}
+        <View style={styles.quickAccessSection}>
+          <Text style={[styles.quickAccessTitle, { color: themeColors.textPrimary }, a11yTextStyle]}>
+            🚀 Quick Start
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickAccessScroll}>
+            {[
+              { title: 'Phonics', icon: '🗣️', color: '#5C6BC0', route: 'Phonics' },
+              { title: 'Reading', icon: '📖', color: '#EC407A', route: 'Reading' },
+              { title: 'Writing', icon: '✍️', color: '#29B6F6', route: 'Writing' },
+              { title: 'Spelling', icon: '🔤', color: '#66BB6A', route: 'Spelling' },
+              { title: 'Games', icon: '🎮', color: '#FFA726', route: 'PhonicsActivity' },
+            ].map((item, index) => (
+              <TouchableOpacity
+                key={item.route}
+                style={[styles.quickAccessItem, { backgroundColor: item.color }]}
+                onPress={() => navigation.navigate(item.route)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.quickAccessIcon}>{item.icon}</Text>
+                <Text style={styles.quickAccessLabel}>{item.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
-        {/* RECENT ACHIEVEMENTS */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Recent Achievements</Text>
+        {/* DAILY TIP - COMPACT */}
+        <TouchableOpacity
+          style={[styles.compactTipBox, { backgroundColor: themeColors.cardBg || '#fff' }]}
+          activeOpacity={0.9}
+        >
+          <View style={styles.tipBulb}>
+            <Ionicons name="bulb" size={20} color="#FFD700" />
+          </View>
+          <Text style={[styles.compactTipText, { color: themeColors.textSecondary }, a11yTextStyle]} numberOfLines={2}>
+            {dailyTip}
+          </Text>
+        </TouchableOpacity>
 
-          <View style={[styles.achievementCard, { backgroundColor: themeColors.cardBg }]}>
-            <View style={styles.achievementItem}>
-              <View style={[styles.achievementBadge, { backgroundColor: '#FFD700' }]}>
-                <Ionicons name="trophy" size={16} color="#fff" />
-              </View>
-              <View style={styles.achievementContent}>
-                <Text style={[styles.achievementText, { color: themeColors.textPrimary }]}>Reading Champion!</Text>
-                <Text style={[styles.achievementTime, { color: themeColors.textSecondary }]}>Completed 10 reading exercises</Text>
-              </View>
+        {/* MAIN LEARNING ACTIVITIES */}
+        <View style={styles.activitiesSection}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIconBg, { backgroundColor: '#667eea20' }]}>
+              <Ionicons name="school" size={18} color="#667eea" />
             </View>
+            <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>
+              Core Skills
+            </Text>
+          </View>
 
-            <View style={styles.achievementItem}>
-              <View style={[styles.achievementBadge, { backgroundColor: '#4CAF50' }]}>
-                <Ionicons name="checkmark-circle" size={16} color="#fff" />
-              </View>
-              <View style={styles.achievementContent}>
-                <Text style={[styles.achievementText, { color: themeColors.textPrimary }]}>Perfect Spelling!</Text>
-                <Text style={[styles.achievementTime, { color: themeColors.textSecondary }]}>Got 100% on spelling test</Text>
-              </View>
-            </View>
-
-            <View style={styles.achievementItem}>
-              <View style={[styles.achievementBadge, { backgroundColor: getPrimaryColor() }]}>
-                <Ionicons name="flash" size={16} color="#fff" />
-              </View>
-              <View style={styles.achievementContent}>
-                <Text style={[styles.achievementText, { color: themeColors.textPrimary }]}>Speed Reader!</Text>
-                <Text style={[styles.achievementTime, { color: themeColors.textSecondary }]}>Fastest reading time this week</Text>
-              </View>
-            </View>
+          <View style={styles.enhancedGrid}>
+            <MenuCard
+              title="Phonics"
+              icon="🗣️"
+              color="#5C6BC0"
+              route="Phonics"
+              description="Learn letter sounds"
+              activityType="phonics"
+            />
+            <MenuCard
+              title="Reading"
+              icon="📖"
+              color="#EC407A"
+              route="Reading"
+              description="Practice reading"
+              activityType="reading"
+            />
+            <MenuCard
+              title="Writing"
+              icon="✍️"
+              color="#29B6F6"
+              route="Writing"
+              description="Creative writing"
+              activityType="writing"
+            />
+            <MenuCard
+              title="Spelling"
+              icon="🔤"
+              color="#66BB6A"
+              route="Spelling"
+              description="Master spelling"
+              activityType="spelling"
+            />
           </View>
         </View>
 
-        {/* LEARNING PROGRESS SECTION */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Activities Completed</Text>
-
-          <View style={styles.progressRow}>
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="book" size={18} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>12</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Lessons</Text>
+        {/* INTERACTIVE GAMES - Horizontal Cards */}
+        <View style={styles.activitiesSection}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIconBg, { backgroundColor: '#FF6B6B20' }]}>
+              <Ionicons name="game-controller" size={18} color="#FF6B6B" />
             </View>
+            <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>
+              Interactive Games
+            </Text>
+          </View>
 
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="checkmark-circle" size={18} color={getPrimaryColor()} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalCards}>
+            <TouchableOpacity
+              style={[styles.horizontalCard, { backgroundColor: '#E91E63' }]}
+              onPress={() => navigation.navigate('PhonologicalAwareness')}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.hCardIcon}>🎧</Text>
+              <View style={styles.hCardContent}>
+                <Text style={styles.hCardTitle}>Sound Games</Text>
+                <Text style={styles.hCardDesc}>Listen & learn sounds</Text>
               </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>95%</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Accuracy</Text>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
 
-            <View style={[styles.progressCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.progressIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="flame" size={18} color={getPrimaryColor()} />
+            <TouchableOpacity
+              style={[styles.horizontalCard, { backgroundColor: '#FF9800' }]}
+              onPress={() => navigation.navigate('PhonicsActivity')}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.hCardIcon}>🎮</Text>
+              <View style={styles.hCardContent}>
+                <Text style={styles.hCardTitle}>Phonics Games</Text>
+                <Text style={styles.hCardDesc}>Blend, rhyme & more</Text>
               </View>
-              <Text style={[styles.progressValue, { color: themeColors.textPrimary }]}>5</Text>
-              <Text style={[styles.progressLabel, { color: themeColors.textSecondary }]}>Day Streak</Text>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.9)" />
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* TOOLS & EXTRAS - Compact Grid */}
+        <View style={styles.activitiesSection}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionIconBg, { backgroundColor: '#00BCD420' }]}>
+              <Ionicons name="apps" size={18} color="#00BCD4" />
             </View>
+            <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>
+              Tools & More
+            </Text>
+          </View>
+
+          <View style={styles.compactGrid}>
+            <TouchableOpacity
+              style={[styles.compactCard, { borderLeftColor: '#00BCD4' }]}
+              onPress={() => navigation.navigate('TextToSpeech')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.compactIcon}>🔊</Text>
+              <Text style={[styles.compactTitle, { color: themeColors.textPrimary }]}>Text to Speech</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.compactCard, { borderLeftColor: '#26C6DA' }]}
+              onPress={() => navigation.navigate('SpeechToText')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.compactIcon}>🎤</Text>
+              <Text style={[styles.compactTitle, { color: themeColors.textPrimary }]}>Speech to Text</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.compactCard, { borderLeftColor: '#7C4DFF' }]}
+              onPress={() => navigation.navigate('Scan')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.compactIcon}>📸</Text>
+              <Text style={[styles.compactTitle, { color: themeColors.textPrimary }]}>Scan & Learn</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.compactCard, { borderLeftColor: '#FFB300' }]}
+              onPress={() => navigation.navigate('Leaderboard')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.compactIcon}>🏆</Text>
+              <Text style={[styles.compactTitle, { color: themeColors.textPrimary }]}>Leaderboard</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* LEARNING LESSONS SECTION */}
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Learning Lessons</Text>
-        
-        {/* MENU GRID - Learning Lessons */}
-        <View style={styles.grid}>
-          <MenuCard title="Phonics"     icon="🗣️" color={getPrimaryColor()} route="Phonics"               activityType="phonics" />
-          <MenuCard title="Reading"     icon="📖" color={getHeaderGradient()[0]} route="Reading"               activityType="reading" />
-          <MenuCard title="Writing"     icon="✍️" color={themeColors.textSecondary} route="Writing"               activityType="writing" />
-        </View>
-
-        {/* PLAY & LEARN SECTION */}
-        <Text style={[styles.sectionTitle, { fontSize: theme.fontSize + 4, color: themeColors.textPrimary }, a11yTextStyle]}>Play & Learn</Text>
-        <View style={styles.grid}>
-          <MenuCard title="Spelling"        icon="🔤" color={themeColors.accentLight} route="Spelling"              activityType="spelling" />
-          <MenuCard title="Sound Games"     icon="🎧" color={themeColors.textPrimary} route="PhonologicalAwareness" activityType="phonological_awareness" />
-          <MenuCard title="Phonics Games"   icon="🎮" color={getPrimaryColor()} route="PhonicsActivity"       activityType="phonics_activity" />
-        </View>
-
-        <View style={{ height: 20 }} /> 
+        <View style={{ height: 30 }} /> 
       </ScrollView>
 
       {/* NOTIFICATIONS MODAL */}
@@ -310,60 +493,15 @@ export default function DashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  mainContainer: { flex: 1 }, 
-
-  linkCodeCard: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4
-  },
-  linkCodeContent: {
-    gap: 12
-  },
-  linkCodeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
-  },
-  linkCodeTextContainer: {
-    flex: 1
-  },
-  linkCodeLabel: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    lineHeight: 20
-  },
-  linkCodeHint: {
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16
-  },
-  linkCodeValueContainer: {
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-    minWidth: 120
-  },
-  linkCodeValue: {
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 3,
-    textAlign: 'center'
-  },
+  mainContainer: { flex: 1 },
 
   headerGradient: { paddingTop: 55, paddingBottom: 50, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
@@ -379,10 +517,6 @@ const styles = StyleSheet.create({
   redDot: { position: 'absolute', top: 5, right: 5, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF5252' },
   
   statsContainer: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16, marginHorizontal: 20, marginTop: -30, marginBottom: 20, elevation: 4 },
-  statItem: { alignItems: 'center' },
-  statLabel: { fontSize: 10, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 1 },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  divider: { width: 1, height: 25, backgroundColor: '#ECEFF1' },
 
   linkCodeBar: {
     flexDirection: 'row',
@@ -391,11 +525,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 12,
-  },
-  linkCodeBarContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10
   },
   linkCodeBarText: {
     flex: 1,
@@ -410,29 +539,9 @@ const styles = StyleSheet.create({
     fontWeight: '900'
   },
 
-  scrollContent: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 20 },
-  tipBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
-  },
-  tipText: { flex: 1, lineHeight: 20, fontWeight: '500' },
-  sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
+  scrollContent: { paddingTop: 16, paddingHorizontal: 20, paddingBottom: 20 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
-  cardContainer: { width: '48%', marginBottom: 16, borderRadius: 18, elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
-  cardGradient: { padding: 18, borderRadius: 18, height: 120, justifyContent: 'center', alignItems: 'center' },
-  iconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  cardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 14, textAlign: 'center' },
-  badge: { position: 'absolute', top: 10, right: 10, backgroundColor: '#FF5252', width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#fff' },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '75%' },
@@ -451,38 +560,251 @@ const styles = StyleSheet.create({
   closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 12 },
   closeText: { color: '#fff', fontWeight: 'bold' },
 
-  // New enhancement styles
-  sectionContainer: { marginBottom: 24 },
+  // Loading and Error states
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  loadingText: { color: '#666', marginTop: 16, textAlign: 'center' },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  errorTitle: { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: 24, marginBottom: 12 },
+  errorMessage: { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#7B1FA2', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
+  retryBtnText: { color: '#fff', fontWeight: 'bold' },
 
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  progressCard: {
-    flex: 1,
+  // Enhanced Layout Styles
+  enhancedLinkContainer: { paddingHorizontal: 20, marginTop: -20, marginBottom: 20 },
+  enhancedLinkCard: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#9C27B0',
+    backgroundColor: '#F3E5F5',
+  },
+  linkCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  linkIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(123, 31, 162, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  linkCardInfo: { flex: 1 },
+  linkCardTitle: { fontWeight: 'bold', marginBottom: 2 },
+  linkCardSubtitle: { opacity: 0.7 },
+  linkCodeContainer: {
+    backgroundColor: 'rgba(123, 31, 162, 0.05)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(123, 31, 162, 0.1)'
+  },
+  linkCodeValue: { fontWeight: 'bold', letterSpacing: 3 },
+
+  welcomeSection: { marginBottom: 24, paddingHorizontal: 4 },
+  welcomeTitle: { fontWeight: 'bold', marginBottom: 6 },
+  welcomeSubtitle: {},
+
+  enhancedTipBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 28,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6
+  },
+  tipIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16
+  },
+  tipContent: { flex: 1 },
+  tipLabel: { fontSize: 12, fontWeight: 'bold', color: 'rgba(255,255,255,0.9)', marginBottom: 4 },
+  tipText: { color: '#fff', lineHeight: 20, fontWeight: '500' },
+
+  activitiesSection: { marginBottom: 28 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4, gap: 8 },
+  sectionTitle: { fontWeight: 'bold' },
+
+  enhancedGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
+  enhancedCardContainer: {
+    width: '47%',
+    marginBottom: 16,
+    borderRadius: 20,
+  },
+  enhancedCardGradient: {
+    padding: 20,
+    borderRadius: 20,
+    minHeight: 140,
+    justifyContent: 'space-between',
+  },
+  enhancedCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  enhancedIconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  enhancedIconText: { fontSize: 28 },
+  enhancedBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF5252',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff'
+  },
+  enhancedBadgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  enhancedCardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginBottom: 6 },
+  enhancedCardDescription: { color: 'rgba(255,255,255,0.9)', fontSize: 12, lineHeight: 16 },
+  cardShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+
+  // Quick Access Bar Styles
+  quickAccessSection: {
+    marginBottom: 20,
+  },
+  quickAccessTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  quickAccessScroll: {
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  quickAccessItem: {
+    width: 72,
+    height: 80,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickAccessIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  quickAccessLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+  },
+
+  // Compact Tip Box Styles
+  compactTipBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 16,
     padding: 14,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: '#FFD700',
+    backgroundColor: '#FFFDE7',
+  },
+  tipBulb: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    minHeight: 90
+    marginRight: 12,
   },
-  progressIcon: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  progressValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  progressLabel: { fontSize: 11, textAlign: 'center', lineHeight: 14, fontWeight: '500' },
+  compactTipText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
+    color: '#5D4037',
+  },
 
-  achievementCard: {
-    borderRadius: 16,
-    padding: 16,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3
+  // Section Icon Background
+  sectionIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  achievementItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 14 },
-  achievementBadge: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  achievementContent: { flex: 1 },
-  achievementText: { fontSize: 14, fontWeight: '600', lineHeight: 18 },
-  achievementTime: { fontSize: 12, marginTop: 2, lineHeight: 16 }
+
+  // Horizontal Cards Styles (Interactive Games)
+  horizontalCards: {
+    paddingHorizontal: 4,
+    gap: 14,
+  },
+  horizontalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 200,
+    borderRadius: 18,
+    padding: 16,
+  },
+  hCardIcon: {
+    fontSize: 32,
+    marginRight: 12,
+  },
+  hCardContent: {
+    flex: 1,
+  },
+  hCardTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  hCardDesc: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+  },
+
+  // Compact Grid Styles (Tools & More)
+  compactGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  compactCard: {
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 14,
+    borderLeftWidth: 4,
+  },
+  compactIcon: {
+    fontSize: 22,
+    marginRight: 10,
+  },
+  compactTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
 });

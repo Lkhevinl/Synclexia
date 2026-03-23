@@ -1,143 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 
-export default function AdminFeedbackScreen() {
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [replyTexts, setReplyTexts] = useState({}); // { [feedbackId]: string }
+export default function AdminFeedbackScreen({ navigation }) {
+  useEffect(() => {
+    // Show redirect message and navigate to maintenance logs
+    const timer = setTimeout(() => {
+      Alert.alert(
+        "Feedback System Updated",
+        "User feedback is now managed through the unified Maintenance Logs system. You'll be redirected there now.",
+        [
+          {
+            text: "Go to Maintenance Logs",
+            onPress: () => navigation.replace('MaintenanceLogs')
+          }
+        ]
+      );
+    }, 1000);
 
-  useEffect(() => { fetchFeedback(); }, []);
-
-  const fetchFeedback = async () => {
-    const { data: rawFeedback } = await supabase
-      .from('feedback')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (rawFeedback && rawFeedback.length > 0) {
-      // Fetch user profiles in batch
-      const uids = [...new Set(rawFeedback.map(f => f.user_id))];
-      const { data: profs } = await supabase.from('profiles').select('id, full_name, email').in('id', uids);
-      const profMap = {};
-      (profs || []).forEach(p => { profMap[p.id] = p; });
-      setFeedbacks(rawFeedback.map(f => ({ ...f, profiles: profMap[f.user_id] || null })));
-    } else {
-      setFeedbacks([]);
-    }
-  };
-
-  const sendReply = async (id) => {
-    const text = (replyTexts[id] || '').trim();
-    if (!text) return;
-    const { error } = await supabase
-      .from('feedback')
-      .update({ reply: text, has_unread_reply: true })
-      .eq('id', id);
-    
-    if (!error) {
-      Alert.alert('Sent ✓', 'Reply sent to user.');
-      setReplyTexts(prev => { const n = { ...prev }; delete n[id]; return n; });
-      fetchFeedback();
-    } else {
-      Alert.alert('Error', error.message);
-    }
-  };
-
-  const markResolved = async (id) => {
-    const { error } = await supabase
-      .from('feedback')
-      .update({ status: 'resolved' })
-      .eq('id', id);
-    
-    if (!error) {
-      Alert.alert("Success", "Feedback marked as resolved");
-      fetchFeedback();
-    }
-  };
+    return () => clearTimeout(timer);
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
       <GoBackBtn />
-      <Text style={styles.headerTitle}>User Feedback</Text>
+      <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <Ionicons name="construct" size={64} color="#607D8B" />
+        </View>
+        <Text style={styles.title}>Feedback System Updated</Text>
+        <Text style={styles.message}>
+          User feedback and concerns are now managed through the unified Maintenance Logs system.
+        </Text>
+        <Text style={styles.description}>
+          This provides better tracking, categorization, and management of all user feedback, bug reports, and system issues in one place.
+        </Text>
 
-      <FlatList 
-        data={feedbacks}
-        keyExtractor={item => item.id}
-        renderItem={({item}) => (
-          <View style={styles.card}>
-             <View style={styles.row}>
-                 <View style={styles.avatar}>
-                    <Text style={{color:'#fff', fontWeight:'bold'}}>
-                        {item.profiles?.full_name?.charAt(0) || "U"}
-                    </Text>
-                 </View>
-                 <View style={{flex: 1, marginLeft: 10}}>
-                     <Text style={styles.name}>{item.profiles?.full_name || "Unknown"}</Text>
-                     <View style={{flexDirection:'row'}}>
-                        {item.rating !== null && item.rating !== undefined
-                          ? [...Array(item.rating || 0)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)
-                          : [...Array(5)].map((_,i)=><Ionicons key={i} name="star-outline" size={12} color="#ccc"/>)
-                        }
-                     </View>
-                 </View>
-                 <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
-             </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('MaintenanceLogs')}
+        >
+          <Ionicons name="list-outline" size={20} color="#fff" />
+          <Text style={styles.buttonText}>View Maintenance Logs</Text>
+        </TouchableOpacity>
 
-             <Text style={styles.message}>{item.message}</Text>
-
-          {item.status === 'resolved' ? (
-                 <View style={styles.resolvedBadge}>
-                     <Text style={styles.resolvedText}>Resolved</Text>
-                 </View>
-             ) : (
-                 <TouchableOpacity style={styles.resolveBtn} onPress={() => markResolved(item.id)}>
-                     <Text style={styles.resolveBtnText}>Mark as Resolved</Text>
-                 </TouchableOpacity>
-             )}
-
-             {/* REPLY SECTION */}
-             {item.reply ? (
-                 <View style={styles.adminReply}>
-                     <Text style={styles.replyLabel}>You replied:</Text>
-                     <Text style={styles.replyText}>{item.reply}</Text>
-                 </View>
-             ) : (
-                 <View style={styles.replyBox}>
-                     <TextInput 
-                        placeholder="Write a reply..." 
-                        style={styles.input}
-                        value={replyTexts[item.id] || ""}
-                        onChangeText={(t) => setReplyTexts(prev => ({ ...prev, [item.id]: t }))}
-                     />
-                     <TouchableOpacity onPress={() => sendReply(item.id)}>
-                         <Ionicons name="send" size={24} color="#0288D1" />
-                     </TouchableOpacity>
-                 </View>
-             )}
-          </View>
-        )}
-      />
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
+          onPress={() => navigation.navigate('AddMaintenanceLog')}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#607D8B" />
+          <Text style={[styles.buttonText, styles.secondaryButtonText]}>Add New Entry</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#0277BD', marginBottom: 20, textAlign: 'center' },
-  card: { padding: 15, borderBottomWidth: 1, borderColor: '#eee', marginBottom: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center' },
-  name: { fontWeight: 'bold', color: '#333' },
-  date: { fontSize: 12, color: '#999' },
-  message: { fontSize: 16, color: '#444', marginBottom: 10 },
-  adminReply: { backgroundColor: '#E1F5FE', padding: 10, borderRadius: 8, marginTop: 5 },
-  replyLabel: { fontSize: 10, fontWeight: 'bold', color: '#0277BD' },
-  replyText: { color: '#01579B' },
-  replyBox: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 },
-  resolvedBadge: { backgroundColor: '#E8F5E9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, alignSelf: 'flex-start', marginBottom: 10 },
-  resolvedText: { color: '#2E7D32', fontSize: 11, fontWeight: 'bold' },
-  resolveBtn: { backgroundColor: '#4CAF50', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, alignSelf: 'flex-start', marginBottom: 10 },
-  resolveBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F7FA'
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  iconContainer: {
+    backgroundColor: '#607D8B20',
+    borderRadius: 40,
+    padding: 20,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#263238',
+    marginBottom: 16,
+    textAlign: 'center'
+  },
+  message: {
+    fontSize: 16,
+    color: '#546E7A',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  description: {
+    fontSize: 14,
+    color: '#90A4AE',
+    textAlign: 'center',
+    marginBottom: 32,
+    lineHeight: 20,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#607D8B',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+    minWidth: '60%',
+    justifyContent: 'center',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#607D8B',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButtonText: {
+    color: '#607D8B',
+  },
 });

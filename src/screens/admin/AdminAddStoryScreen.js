@@ -8,10 +8,12 @@ import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import { useAuth } from '../../context/AuthContext';
 
 const LEVEL_COLORS = ['', '#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'];
 
 export default function AdminAddStoryScreen() {
+  const { profile } = useAuth();
   const [stories, setStories] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -59,8 +61,17 @@ export default function AdminAddStoryScreen() {
       Alert.alert('Error', 'Title and content are required.');
       return;
     }
+    if (!profile?.id) {
+      Alert.alert('Error', 'User authentication required. Please log in again.');
+      return;
+    }
     setSaving(true);
-    const payload = { title: title.trim(), content: content.trim(), level: parseInt(level) };
+    const payload = {
+      title: title.trim(),
+      content: content.trim(),
+      level: parseInt(level),
+      created_by: profile.id
+    };
 
     let error;
     if (editingId) {

@@ -33,8 +33,10 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
   const fetchLogs = async () => {
     try {
-      // First try with full relationships
-      let { data, error } = await supabase
+      console.log('Fetching maintenance logs and legacy feedback...');
+
+      // Fetch from new maintenance_logs table
+      let { data: maintenanceLogs, error: maintenanceError } = await supabase
         .from('maintenance_logs')
         .select(`
           *,
@@ -45,18 +47,74 @@ export default function MaintenanceLogsScreen({ navigation }) {
         .limit(100);
 
       // If relationship query fails, try simple query
-      if (error && error.code === 'PGRST200') {
-        console.log('Foreign key relationship failed, trying simple query...');
-        ({ data, error } = await supabase
+      if (maintenanceError && maintenanceError.code === 'PGRST200') {
+        console.log('Foreign key relationship failed for maintenance_logs, trying simple query...');
+        ({ data: maintenanceLogs, error: maintenanceError } = await supabase
           .from('maintenance_logs')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100));
       }
 
-      // If table doesn't exist, create some sample data for demo
-      if (error && error.code === '42P01') {
-        console.log('Table does not exist, showing demo data...');
+      // Fetch from legacy feedback table
+      let { data: legacyFeedback, error: feedbackError } = await supabase
+        .from('feedback')
+        .select(`
+          *,
+          profiles:user_id (full_name, role)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      // If relationship query fails for feedback, try simple query
+      if (feedbackError && feedbackError.code === 'PGRST200') {
+        console.log('Foreign key relationship failed for feedback, trying simple query...');
+        ({ data: legacyFeedback, error: feedbackError } = await supabase
+          .from('feedback')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100));
+      }
+
+      // Transform legacy feedback to maintenance log format
+      const transformedFeedback = (legacyFeedback || []).map(feedback => ({
+        id: `feedback-${feedback.id}`,
+        log_type: 'user_concern',
+        title: feedback.rating
+          ? `App Rating: ${feedback.rating} star${feedback.rating > 1 ? 's' : ''}`
+          : 'User Feedback',
+        description: feedback.message || `User rated the app ${feedback.rating} out of 5 stars.`,
+        status: feedback.status || 'open',
+        priority: feedback.rating && feedback.rating <= 2 ? 'high' :
+                 feedback.rating && feedback.rating <= 3 ? 'medium' : 'low',
+        category: 'legacy_feedback',
+        reproduction_steps: null,
+        device_info: { rating: feedback.rating, legacy: true },
+        performed_by: null,
+        performed_by_profile: null,
+        reported_by: feedback.user_id,
+        reported_by_profile: feedback.profiles || null,
+        reporter_role: feedback.profiles?.role || 'user',
+        created_at: feedback.created_at,
+        updated_at: feedback.updated_at || feedback.created_at,
+        // Mark as legacy for UI distinction
+        isLegacy: true,
+        legacyReply: feedback.reply
+      }));
+
+      // Combine both data sources
+      const allLogs = [
+        ...(maintenanceLogs || []),
+        ...transformedFeedback
+      ];
+
+      // Sort combined results by creation date (newest first)
+      allLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      console.log(`Loaded ${maintenanceLogs?.length || 0} maintenance logs and ${transformedFeedback.length} legacy feedback entries`);
+
+      if (allLogs.length === 0 && (maintenanceError?.code === '42P01' || feedbackError?.code === '42P01')) {
+        console.log('Tables do not exist, showing demo data...');
         setLogs([
           {
             id: 'demo-1',
@@ -69,7 +127,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
             created_at: new Date().toISOString(),
             performed_by_profile: { full_name: 'System' },
             performed_by: 'system',
-            reported_by: profile?.id || 'demo-user', // Set to current user so it appears in My Reports
+            reported_by: profile?.id || 'demo-user',
             reporter_role: profile?.role || 'admin'
           },
           {
@@ -80,7 +138,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
             status: 'open',
             priority: 'medium',
             category: 'feedback',
-            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+            created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
             reported_by_profile: { full_name: profile?.full_name || 'Demo User' },
             reported_by: profile?.id || 'demo-user',
             reporter_role: profile?.role || 'student'
@@ -93,7 +151,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
             status: 'open',
             priority: 'high',
             category: 'navigation',
-            created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+            created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
             reported_by_profile: { full_name: 'Demo Parent' },
             reported_by: 'demo-parent',
             reporter_role: 'parent'
@@ -104,12 +162,16 @@ export default function MaintenanceLogsScreen({ navigation }) {
         return;
       }
 
-      if (error) throw error;
-      setLogs(data || []);
+      if (maintenanceError && feedbackError) {
+        console.error('Error fetching both maintenance logs and feedback:', { maintenanceError, feedbackError });
+        throw maintenanceError || feedbackError;
+      }
+
+      setLogs(allLogs);
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
-      console.error('Error fetching maintenance logs:', error);
+      console.error('Error fetching maintenance logs and feedback:', error);
       // Show user-friendly error state with multiple sample logs
       setLogs([
         {
@@ -129,12 +191,12 @@ export default function MaintenanceLogsScreen({ navigation }) {
         {
           id: 'error-2',
           log_type: 'user_concern',
-          title: 'Sample Feedback Entry',
-          description: 'This is how user feedback and concerns will appear once the system is properly configured.',
+          title: 'Legacy Feedback Loading Issue',
+          description: 'Unable to load legacy feedback data. Please check database connectivity and try refreshing.',
           status: 'open',
           priority: 'medium',
           category: 'demo',
-          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+          created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
           reported_by_profile: { full_name: profile?.full_name || 'Current User' },
           reported_by: profile?.id || 'demo-user',
           reporter_role: profile?.role || 'student'
@@ -156,7 +218,8 @@ export default function MaintenanceLogsScreen({ navigation }) {
         break;
       case 'user_feedback':
         filtered = logs.filter(log =>
-          ['user_concern', 'bug_report', 'parent_feedback', 'learner_issue', 'ui_problem', 'content_issue', 'performance_issue'].includes(log.log_type)
+          ['user_concern', 'bug_report', 'parent_feedback', 'learner_issue', 'ui_problem', 'content_issue', 'performance_issue', 'legacy_feedback'].includes(log.log_type) ||
+          log.category === 'legacy_feedback'
         );
         break;
       case 'my_reports':
@@ -196,6 +259,9 @@ export default function MaintenanceLogsScreen({ navigation }) {
       ui_problem: { icon: 'phone-portrait', color: '#795548', label: 'Interface Problem', bgColor: '#EFEBE9' },
       content_issue: { icon: 'document-text', color: '#607D8B', label: 'Content Issue', bgColor: '#ECEFF1' },
       performance_issue: { icon: 'speedometer', color: '#E91E63', label: 'Performance Issue', bgColor: '#FCE4EC' },
+
+      // Legacy feedback type
+      legacy_feedback: { icon: 'archive', color: '#795548', label: 'Legacy Feedback', bgColor: '#EFEBE9' },
     };
     return configs[type] || { icon: 'information-circle', color: '#9E9E9E', label: 'General', bgColor: '#F5F5F5' };
   };
@@ -309,6 +375,17 @@ export default function MaintenanceLogsScreen({ navigation }) {
               <View style={[styles.typeBadge, { backgroundColor: typeConfig.color }]}>
                 <Text style={styles.typeBadgeText}>{typeConfig.label}</Text>
               </View>
+              {item.isLegacy && (
+                <View style={styles.legacyBadge}>
+                  <Text style={styles.legacyBadgeText}>LEGACY</Text>
+                </View>
+              )}
+              {(item.admin_comment || item.legacyReply) && (
+                <View style={styles.commentBadge}>
+                  <Ionicons name="chatbubble" size={10} color="#4CAF50" />
+                  <Text style={styles.commentBadgeText}>REPLIED</Text>
+                </View>
+              )}
               <Text style={styles.logDate}>{formatDate(item.created_at)}</Text>
             </View>
           </View>
@@ -382,7 +459,8 @@ export default function MaintenanceLogsScreen({ navigation }) {
         <View style={styles.statsCard}>
           <Text style={styles.statsNumber}>
             {logs.filter(log =>
-              ['user_concern', 'bug_report', 'parent_feedback', 'learner_issue'].includes(log.log_type)
+              ['user_concern', 'bug_report', 'parent_feedback', 'learner_issue', 'legacy_feedback'].includes(log.log_type) ||
+              log.category === 'legacy_feedback'
             ).length}
           </Text>
           <Text style={styles.statsLabel}>User Reports</Text>
@@ -582,6 +660,35 @@ const styles = StyleSheet.create({
     color: '#fff',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  legacyBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#FF9800',
+  },
+  legacyBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  commentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#E8F5E9',
+    gap: 3,
+  },
+  commentBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#4CAF50',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   logDate: {
     fontSize: 12,

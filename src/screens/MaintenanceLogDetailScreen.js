@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,135 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
+  Modal,
+  Alert,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export default function MaintenanceLogDetailScreen({ route, navigation }) {
   const { log } = route.params;
   const { profile } = useAuth();
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [adminComment, setAdminComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [showCommentSection, setShowCommentSection] = useState(false);
+
+  const statusOptions = [
+    { value: 'open', label: 'Open', color: '#FF9800', bgColor: '#FFF8E1', icon: 'alert-circle' },
+    { value: 'in_progress', label: 'In Progress', color: '#2196F3', bgColor: '#E3F2FD', icon: 'time' },
+    { value: 'resolved', label: 'Resolved', color: '#4CAF50', bgColor: '#E8F5E8', icon: 'checkmark-circle' },
+    { value: 'closed', label: 'Closed', color: '#90A4AE', bgColor: '#F5F5F5', icon: 'close-circle' },
+  ];
+
+  const updateStatus = async (newStatus) => {
+    setUpdating(true);
+    try {
+      if (!log.id || log.id.startsWith('demo-') || log.id.startsWith('error-')) {
+        Alert.alert('Info', 'Cannot update demo or error entries. This would work with real data.');
+        setUpdating(false);
+        setShowStatusModal(false);
+        return;
+      }
+
+      // Check if it's a legacy feedback entry
+      if (log.id.startsWith('feedback-')) {
+        // Update in the old feedback table
+        const { error } = await supabase
+          .from('feedback')
+          .update({ status: newStatus })
+          .eq('id', log.id.replace('feedback-', ''));
+
+        if (error) throw error;
+      } else {
+        // Update in the maintenance_logs table
+        const { error } = await supabase
+          .from('maintenance_logs')
+          .update({ status: newStatus })
+          .eq('id', log.id);
+
+        if (error) throw error;
+      }
+
+      Alert.alert('Success', `Status updated to ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}`);
+
+      // Update the local log object for immediate UI feedback
+      log.status = newStatus;
+
+      setShowStatusModal(false);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      Alert.alert('Error', 'Failed to update status. Please try again.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const submitAdminComment = async () => {
+    if (!adminComment.trim()) {
+      Alert.alert('Error', 'Please enter a comment before submitting.');
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      if (!log.id || log.id.startsWith('demo-') || log.id.startsWith('error-')) {
+        Alert.alert('Info', 'Cannot add comments to demo or error entries. This would work with real data.');
+        setSubmittingComment(false);
+        return;
+      }
+
+      // Check if it's a legacy feedback entry
+      if (log.id.startsWith('feedback-')) {
+        // Update reply in the old feedback table
+        const { error } = await supabase
+          .from('feedback')
+          .update({
+            reply: adminComment.trim(),
+            has_unread_reply: true,
+            status: 'resolved' // Automatically mark as resolved when admin replies
+          })
+          .eq('id', log.id.replace('feedback-', ''));
+
+        if (error) throw error;
+
+        // Update local log object
+        log.legacyReply = adminComment.trim();
+        log.status = 'resolved';
+      } else {
+        // For maintenance_logs, we could add a comments field or create a separate comments table
+        // For now, let's add a simple admin_comment field update
+        const { error } = await supabase
+          .from('maintenance_logs')
+          .update({
+            admin_comment: adminComment.trim(),
+            status: log.status === 'open' ? 'in_progress' : log.status // Move to in_progress if it was open
+          })
+          .eq('id', log.id);
+
+        if (error) throw error;
+
+        // Update local log object
+        log.admin_comment = adminComment.trim();
+        if (log.status === 'open') {
+          log.status = 'in_progress';
+        }
+      }
+
+      Alert.alert('Success', 'Comment added successfully!');
+      setAdminComment('');
+      setShowCommentSection(false);
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+      Alert.alert('Error', 'Failed to submit comment. Please try again.');
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
 
   const getLogTypeConfig = (type) => {
     const configs = {
@@ -108,6 +229,11 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                 <View style={[styles.typeBadge, { backgroundColor: typeConfig.color }]}>
                   <Text style={styles.typeBadgeText}>{typeConfig.label}</Text>
                 </View>
+                {log.isLegacy && (
+                  <View style={styles.legacyBadge}>
+                    <Text style={styles.legacyBadgeText}>LEGACY</Text>
+                  </View>
+                )}
                 {log.priority && (
                   <View style={[styles.priorityBadge, { backgroundColor: priorityConfig.bgColor }]}>
                     <Text style={[styles.priorityText, { color: priorityConfig.color }]}>
@@ -136,6 +262,114 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Description</Text>
             <Text style={styles.description}>{log.description}</Text>
+          </View>
+        )}
+
+        {/* Star Rating - Legacy Feedback */}
+        {log.isLegacy && log.device_info?.rating && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>User Rating</Text>
+            <View style={styles.ratingContainer}>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Ionicons
+                    key={star}
+                    name={star <= log.device_info.rating ? "star" : "star-outline"}
+                    size={24}
+                    color="#FBC02D"
+                    style={styles.star}
+                  />
+                ))}
+              </View>
+              <Text style={styles.ratingText}>
+                {log.device_info.rating} out of 5 stars
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Admin Reply - Legacy Feedback */}
+        {log.isLegacy && log.legacyReply && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Admin Response</Text>
+            <View style={styles.adminReplyContainer}>
+              <View style={styles.adminReplyHeader}>
+                <Ionicons name="chatbubble-outline" size={16} color="#2196F3" />
+                <Text style={styles.adminReplyLabel}>Admin replied:</Text>
+              </View>
+              <Text style={styles.adminReplyText}>{log.legacyReply}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Admin Comment - New Maintenance Logs */}
+        {!log.isLegacy && log.admin_comment && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Admin Comment</Text>
+            <View style={styles.adminReplyContainer}>
+              <View style={styles.adminReplyHeader}>
+                <Ionicons name="chatbubble-outline" size={16} color="#2196F3" />
+                <Text style={styles.adminReplyLabel}>Admin commented:</Text>
+              </View>
+              <Text style={styles.adminReplyText}>{log.admin_comment}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Admin Comment Input Section */}
+        {profile?.role === 'admin' && !log.legacyReply && !log.admin_comment && (
+          <View style={styles.card}>
+            <View style={styles.commentHeader}>
+              <Text style={styles.cardTitle}>Add Admin Comment</Text>
+              <TouchableOpacity
+                onPress={() => setShowCommentSection(!showCommentSection)}
+                style={styles.toggleButton}
+              >
+                <Ionicons
+                  name={showCommentSection ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#607D8B"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {showCommentSection && (
+              <View style={styles.commentInputSection}>
+                <TextInput
+                  style={styles.commentInput}
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Add your comment or response..."
+                  placeholderTextColor="#90A4AE"
+                  value={adminComment}
+                  onChangeText={setAdminComment}
+                  textAlignVertical="top"
+                />
+
+                <View style={styles.commentActions}>
+                  <TouchableOpacity
+                    style={styles.cancelCommentBtn}
+                    onPress={() => {
+                      setShowCommentSection(false);
+                      setAdminComment('');
+                    }}
+                  >
+                    <Text style={styles.cancelCommentText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.submitCommentBtn, { opacity: submittingComment ? 0.6 : 1 }]}
+                    onPress={submitAdminComment}
+                    disabled={submittingComment}
+                  >
+                    <Ionicons name="send" size={16} color="#fff" />
+                    <Text style={styles.submitCommentText}>
+                      {submittingComment ? 'Sending...' : 'Send Comment'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -170,7 +404,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {log.device_info && (
+          {log.device_info && !log.device_info.legacy && (
             <View style={styles.infoRow}>
               <Ionicons name="phone-portrait-outline" size={16} color="#607D8B" />
               <Text style={styles.infoLabel}>Device:</Text>
@@ -182,22 +416,30 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
               </Text>
             </View>
           )}
+
+          {log.device_info?.legacy && (
+            <View style={styles.infoRow}>
+              <Ionicons name="archive-outline" size={16} color="#607D8B" />
+              <Text style={styles.infoLabel}>Source:</Text>
+              <Text style={styles.infoValue}>Legacy Feedback System</Text>
+            </View>
+          )}
         </View>
 
-        {/* Action Buttons */}
+        {/* Admin Actions */}
         {profile?.role === 'admin' && (
           <View style={styles.actionCard}>
             <Text style={styles.cardTitle}>Admin Actions</Text>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity style={[styles.actionBtn, styles.updateBtn]}>
-                <Ionicons name="create-outline" size={20} color="#fff" />
-                <Text style={styles.actionBtnText}>Update Status</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionBtn, styles.assignBtn]}>
-                <Ionicons name="person-add-outline" size={20} color="#fff" />
-                <Text style={styles.actionBtnText}>Assign To</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.updateBtn]}
+              onPress={() => setShowStatusModal(true)}
+              disabled={updating}
+            >
+              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Text style={styles.actionBtnText}>
+                {updating ? 'Updating...' : 'Update Status'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -212,6 +454,64 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
           </View>
         )}
       </ScrollView>
+
+      {/* Status Update Modal */}
+      <Modal
+        visible={showStatusModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Update Status</Text>
+              <TouchableOpacity
+                onPress={() => setShowStatusModal(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Current status: <Text style={styles.currentStatus}>{getStatusConfig(log.status).label}</Text>
+            </Text>
+
+            <View style={styles.statusOptions}>
+              {statusOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.statusOption,
+                    { backgroundColor: option.bgColor },
+                    log.status === option.value && styles.currentStatusOption
+                  ]}
+                  onPress={() => updateStatus(option.value)}
+                  disabled={updating || log.status === option.value}
+                >
+                  <View style={styles.statusOptionContent}>
+                    <Ionicons name={option.icon} size={24} color={option.color} />
+                    <Text style={[styles.statusOptionText, { color: option.color }]}>
+                      {option.label}
+                    </Text>
+                    {log.status === option.value && (
+                      <Ionicons name="checkmark-circle" size={20} color={option.color} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowStatusModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -369,28 +669,219 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
   actionBtn: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
     gap: 8,
   },
   updateBtn: {
     backgroundColor: '#607D8B',
   },
-  assignBtn: {
-    backgroundColor: '#FF9800',
-  },
   actionBtnText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  // Legacy feedback specific styles
+  legacyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#FF9800',
+  },
+  legacyBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  ratingContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    gap: 4,
+  },
+  star: {
+    marginHorizontal: 2,
+  },
+  ratingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#546E7A',
+  },
+  adminReplyContainer: {
+    backgroundColor: '#E3F2FD',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  adminReplyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  adminReplyLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2196F3',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  adminReplyText: {
+    fontSize: 15,
+    color: '#1976D2',
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  // Status Update Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#263238',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#546E7A',
+    marginBottom: 20,
+  },
+  currentStatus: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  statusOptions: {
+    marginBottom: 20,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  currentStatusOption: {
+    borderColor: '#607D8B',
+    opacity: 0.7,
+  },
+  statusOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+    flex: 1,
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  // Admin Comment Styles
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toggleButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  commentInputSection: {
+    marginTop: 16,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 15,
+    color: '#333',
+    backgroundColor: '#FAFAFA',
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  commentActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    gap: 12,
+  },
+  cancelCommentBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+    alignItems: 'center',
+  },
+  cancelCommentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  submitCommentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#2196F3',
+    gap: 8,
+  },
+  submitCommentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

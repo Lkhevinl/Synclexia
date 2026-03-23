@@ -27,16 +27,82 @@ const STT_AVAILABLE = !!ExpoSpeechRecognitionModule;
 const DEFAULT_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 const COLORS = ['#000000', '#F44336', '#2196F3', '#4CAF50', '#FFEB3B'];
 
+// Helper function for level colors
+const getLevelColor = (level) => {
+  const colors = {
+    1: '#4CAF50', // Green - Easy
+    2: '#2196F3', // Blue - Medium
+    3: '#FF9800', // Orange - Advanced
+    4: '#E91E63', // Pink - Difficult
+    5: '#9C27B0', // Purple - Expert
+  };
+  return colors[level] || '#607D8B';
+};
+
+// Compare student's text with original story
+const compareTexts = (original, studentText) => {
+  const normalize = (text) => text.toLowerCase().replace(/[^\w\s]/g, '').trim();
+  const originalWords = normalize(original).split(/\s+/).filter(Boolean);
+  const studentWords = normalize(studentText).split(/\s+/).filter(Boolean);
+
+  let correctCount = 0;
+  const wordResults = [];
+
+  // Compare word by word
+  const maxLen = Math.max(originalWords.length, studentWords.length);
+  for (let i = 0; i < maxLen; i++) {
+    const origWord = originalWords[i] || '';
+    const studWord = studentWords[i] || '';
+
+    if (origWord === studWord) {
+      correctCount++;
+      wordResults.push({ word: studWord, correct: true, expected: origWord });
+    } else if (studWord) {
+      wordResults.push({ word: studWord, correct: false, expected: origWord });
+    } else {
+      wordResults.push({ word: '___', correct: false, expected: origWord, missing: true });
+    }
+  }
+
+  // Extra words typed by student
+  if (studentWords.length > originalWords.length) {
+    for (let i = originalWords.length; i < studentWords.length; i++) {
+      wordResults.push({ word: studentWords[i], correct: false, expected: '', extra: true });
+    }
+  }
+
+  const accuracy = originalWords.length > 0
+    ? Math.round((correctCount / originalWords.length) * 100)
+    : 0;
+
+  return {
+    accuracy,
+    correctCount,
+    totalWords: originalWords.length,
+    wordResults,
+    isPassing: accuracy >= 80, // 80% or higher is passing
+  };
+};
+
 export default function WritingScreen() {
   const { profile } = useAuth();
   const { a11yTextStyle } = useTheme();
 
-  // Mode: tracing (existing) vs composition (new)
-  const [mode, setMode] = useState('trace'); // 'trace' | 'compose'
+  // Mode: tracing, story selection, or composition
+  const [mode, setMode] = useState('trace'); // 'trace' | 'stories' | 'compose'
 
   // STATE
   const [items, setItems] = useState(DEFAULT_LETTERS.map(l => ({ id: l, label: l })));
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Stories from admin
+  const [stories, setStories] = useState([]);
+  const [selectedStory, setSelectedStory] = useState(null);
+  const [loadingStories, setLoadingStories] = useState(false);
+
+  // Comparison/Validation state for story copying
+  const [comparisonResult, setComparisonResult] = useState(null);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
 
   // ── COMPOSITION STATE ─────────────────────────────────────────────
   const [draft, setDraft] = useState('');
@@ -74,6 +140,23 @@ export default function WritingScreen() {
       if (data && data.length > 0) setItems(data);
     };
     fetchItems();
+  }, []);
+
+  // Fetch stories from admin for writing practice
+  useEffect(() => {
+    const fetchStories = async () => {
+      setLoadingStories(true);
+      const { data, error } = await supabase
+        .from('stories')
+        .select('*')
+        .eq('is_active', true)
+        .order('level', { ascending: true });
+      if (data && data.length > 0) {
+        setStories(data);
+      }
+      setLoadingStories(false);
+    };
+    fetchStories();
   }, []);
 
   // ── Speech recognition events (composition mode) ──────────────────
@@ -224,6 +307,51 @@ export default function WritingScreen() {
     checkQuestProgress(profile.id, 'Writing');
   };
 
+  // Check student's copy against the original story
+  const checkMyCopy = () => {
+    if (!selectedStory) {
+      Alert.alert('No Story Selected', 'Please select a story first.');
+      return;
+    }
+    const studentText = (draftRef.current || '').trim();
+    if (!studentText) {
+      Alert.alert('Empty Text', 'Please write something first!');
+      return;
+    }
+
+    const result = compareTexts(selectedStory.content, studentText);
+    setComparisonResult(result);
+    setShowComparisonModal(true);
+
+    // Log the session with accuracy score
+    if (profile?.id) {
+      logSession({
+        studentId: profile.id,
+        activityType: 'writing_copy',
+        score: result.correctCount,
+        total: result.totalWords,
+        durationSeconds: composeStartRef.current
+          ? Math.round((Date.now() - composeStartRef.current) / 1000)
+          : 0,
+        details: {
+          story_id: selectedStory.id,
+          story_title: selectedStory.title,
+          accuracy: result.accuracy,
+        },
+      });
+      if (result.isPassing) {
+        checkQuestProgress(profile.id, 'Writing');
+      }
+    }
+
+    // Speak feedback
+    if (result.isPassing) {
+      Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
+    } else {
+      Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
+    }
+  };
+
   // Stop speech when leaving compose mode
   useEffect(() => {
     if (mode !== 'compose') {
@@ -231,6 +359,7 @@ export default function WritingScreen() {
       setIsListening(false);
       setMatches([]);
       setLtError(null);
+      setComparisonResult(null);
       composeStartRef.current = null;
       try { Speech.stop(); } catch (_) {}
       try { if (STT_AVAILABLE) ExpoSpeechRecognitionModule.stop(); } catch (_) {}
@@ -320,26 +449,115 @@ export default function WritingScreen() {
       setDemoVisible(true);
   };
 
-  // --- RENDER 1: GRID ---
+  // --- RENDER: STORIES SELECTION ---
+  if (mode === 'stories') {
+    return (
+      <View style={styles.mainContainer}>
+        <StatusBar barStyle="light-content" />
+        <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.header}>
+          <GoBackBtn />
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Story Writing 📖</Text>
+            <Text style={styles.headerSub}>Choose a story to practice writing</Text>
+          </View>
+          <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePill}>
+            <Ionicons name="brush-outline" size={16} color="#fff" />
+            <Text style={styles.modePillText}>Trace</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        <ScrollView contentContainerStyle={styles.storiesContainer}>
+          {loadingStories ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#673AB7" />
+              <Text style={[styles.loadingText, a11yTextStyle]}>Loading stories...</Text>
+            </View>
+          ) : stories.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>📚</Text>
+              <Text style={[styles.emptyText, a11yTextStyle]}>No stories available yet.</Text>
+              <Text style={[styles.emptySubtext, a11yTextStyle]}>Ask your teacher to add some stories!</Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.storiesHeader, a11yTextStyle]}>Select a story to practice copying:</Text>
+              {stories.map((story) => (
+                <TouchableOpacity
+                  key={story.id}
+                  style={styles.storyCard}
+                  onPress={() => {
+                    setSelectedStory(story);
+                    setDraft('');
+                    draftRef.current = '';
+                    setMode('compose');
+                  }}
+                >
+                  <View style={styles.storyCardHeader}>
+                    <Text style={[styles.storyTitle, a11yTextStyle]} numberOfLines={1}>{story.title}</Text>
+                    <View style={[styles.levelBadge, { backgroundColor: getLevelColor(story.level) }]}>
+                      <Text style={styles.levelText}>Level {story.level}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
+                  <View style={styles.storyMeta}>
+                    <Text style={styles.storyMetaText}>{story.content.split(' ').length} words</Text>
+                    <Ionicons name="chevron-forward" size={18} color="#9575CD" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // --- RENDER: COMPOSE MODE ---
   if (mode === 'compose') {
     return (
       <View style={styles.composeContainer}>
         <StatusBar barStyle="light-content" />
         <LinearGradient colors={['#263238', '#37474F']} style={styles.composeHeader}>
           <GoBackBtn />
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[styles.composeTitle, a11yTextStyle]}>Writing (Compose) ✍️</Text>
-            <Text style={[styles.composeSub, a11yTextStyle]}>Dictate, type, then review corrections</Text>
+          <View style={{ alignItems: 'center', flex: 1 }}>
+            <Text style={[styles.composeTitle, a11yTextStyle]} numberOfLines={1}>
+              {selectedStory ? `✍️ ${selectedStory.title}` : 'Writing (Compose) ✍️'}
+            </Text>
+            <Text style={[styles.composeSub, a11yTextStyle]}>
+              {selectedStory ? 'Copy the story below' : 'Dictate, type, then review corrections'}
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => { logComposeSession(); setMode('trace'); }} style={styles.modePill}>
-            <Ionicons name="brush-outline" size={16} color="#fff" />
-            <Text style={styles.modePillText}>Trace</Text>
+          <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePill}>
+            <Ionicons name="library-outline" size={16} color="#fff" />
+            <Text style={styles.modePillText}>Stories</Text>
           </TouchableOpacity>
         </LinearGradient>
 
         <ScrollView contentContainerStyle={styles.composeBody} keyboardShouldPersistTaps="handled">
+          {/* Story Reference Card */}
+          {selectedStory && (
+            <View style={styles.storyRefCard}>
+              <View style={styles.storyRefHeader}>
+                <Text style={[styles.storyRefLabel, a11yTextStyle]}>📖 Story to Copy:</Text>
+                <View style={[styles.levelBadge, { backgroundColor: getLevelColor(selectedStory.level) }]}>
+                  <Text style={styles.levelText}>Level {selectedStory.level}</Text>
+                </View>
+              </View>
+              <Text style={[styles.storyRefText, a11yTextStyle]}>{selectedStory.content}</Text>
+              <TouchableOpacity
+                style={styles.speakStoryBtn}
+                onPress={() => Speech.speak(selectedStory.content, { rate: 0.85 })}
+              >
+                <Ionicons name="volume-high" size={16} color="#fff" />
+                <Text style={styles.speakStoryText}>Hear Story</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.composeCard}>
-            <Text style={[styles.composeLabel, a11yTextStyle]}>Your text</Text>
+            <Text style={[styles.composeLabel, a11yTextStyle]}>
+              {selectedStory ? 'Your copy:' : 'Your text'}
+            </Text>
             <TextInput
               value={draft}
               onChangeText={(t) => { setDraft(t); draftRef.current = t; }}
@@ -361,20 +579,31 @@ export default function WritingScreen() {
                 <Text style={styles.composeBtnText}>{composeSpeaking ? 'Stop' : 'Read Aloud'}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.composeBtn, styles.composeBtnCheck]}
-                onPress={() => checkLanguageTool(draftRef.current || '')}
-                disabled={checking}
-              >
-                {checking ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles" size={20} color="#fff" />
-                    <Text style={styles.composeBtnText}>Check</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              {/* Show "Check My Copy" for story mode, "Check Grammar" for free compose */}
+              {selectedStory ? (
+                <TouchableOpacity
+                  style={[styles.composeBtn, styles.composeBtnSubmit]}
+                  onPress={checkMyCopy}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.composeBtnText}>Check Copy</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.composeBtn, styles.composeBtnCheck]}
+                  onPress={() => checkLanguageTool(draftRef.current || '')}
+                  disabled={checking}
+                >
+                  {checking ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={20} color="#fff" />
+                      <Text style={styles.composeBtnText}>Check</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.autoRow}>
@@ -428,6 +657,91 @@ export default function WritingScreen() {
             )}
           </View>
         </ScrollView>
+
+        {/* Comparison Result Modal */}
+        <Modal visible={showComparisonModal} transparent={true} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.comparisonCard}>
+              <View style={styles.comparisonHeader}>
+                <Text style={styles.comparisonTitle}>
+                  {comparisonResult?.isPassing ? '🎉 Great Job!' : '📝 Keep Practicing!'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowComparisonModal(false)}>
+                  <Ionicons name="close" size={28} color="#333" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Accuracy Score */}
+              <View style={[
+                styles.accuracyBadge,
+                { backgroundColor: comparisonResult?.isPassing ? '#4CAF50' : '#FF9800' }
+              ]}>
+                <Text style={styles.accuracyText}>{comparisonResult?.accuracy || 0}%</Text>
+                <Text style={styles.accuracyLabel}>Accuracy</Text>
+              </View>
+
+              <Text style={styles.comparisonStats}>
+                {comparisonResult?.correctCount || 0} of {comparisonResult?.totalWords || 0} words correct
+              </Text>
+
+              {/* Word-by-word breakdown */}
+              <ScrollView style={styles.wordResultsContainer}>
+                <Text style={styles.wordResultsTitle}>Your Results:</Text>
+                <View style={styles.wordResultsWrap}>
+                  {comparisonResult?.wordResults?.map((wr, idx) => (
+                    <View
+                      key={idx}
+                      style={[
+                        styles.wordChip,
+                        wr.correct ? styles.wordCorrect : styles.wordWrong,
+                        wr.missing && styles.wordMissing,
+                        wr.extra && styles.wordExtra,
+                      ]}
+                    >
+                      <Text style={[styles.wordChipText, !wr.correct && styles.wordChipTextWrong]}>
+                        {wr.word}
+                      </Text>
+                      {!wr.correct && wr.expected && !wr.extra && (
+                        <Text style={styles.expectedText}>→ {wr.expected}</Text>
+                      )}
+                      {wr.extra && <Text style={styles.expectedText}>(extra)</Text>}
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+
+              <View style={styles.comparisonBtnRow}>
+                <TouchableOpacity
+                  style={styles.tryAgainBtn}
+                  onPress={() => {
+                    setShowComparisonModal(false);
+                    setDraft('');
+                    draftRef.current = '';
+                  }}
+                >
+                  <Ionicons name="refresh" size={18} color="#fff" />
+                  <Text style={styles.tryAgainText}>Try Again</Text>
+                </TouchableOpacity>
+
+                {comparisonResult?.isPassing && (
+                  <TouchableOpacity
+                    style={styles.nextStoryBtn}
+                    onPress={() => {
+                      setShowComparisonModal(false);
+                      setSelectedStory(null);
+                      setDraft('');
+                      draftRef.current = '';
+                      setMode('stories');
+                    }}
+                  >
+                    <Text style={styles.nextStoryText}>Next Story</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -440,20 +754,20 @@ export default function WritingScreen() {
             <GoBackBtn />
             <View style={styles.headerContent}>
                 <Text style={styles.headerTitle}>Writing Lab ✍️</Text>
-                <Text style={styles.headerSub}>Choose a letter or compose text</Text>
+                <Text style={styles.headerSub}>Trace letters or practice stories</Text>
             </View>
-            <TouchableOpacity onPress={() => setMode('compose')} style={styles.modePill}>
-              <Ionicons name="create-outline" size={16} color="#fff" />
-              <Text style={styles.modePillText}>Compose</Text>
+            <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePill}>
+              <Ionicons name="library-outline" size={16} color="#fff" />
+              <Text style={styles.modePillText}>Stories</Text>
             </TouchableOpacity>
         </LinearGradient>
-        <View style={styles.gridContainer}>
+        <ScrollView contentContainerStyle={styles.gridContainer}>
            {items.map((item) => (
                <TouchableOpacity key={item.id} style={styles.gridCard} onPress={() => setSelectedItem(item)}>
                    <Text style={styles.gridText}>{item.label}</Text>
                </TouchableOpacity>
            ))}
-        </View>
+        </ScrollView>
       </View>
     );
   }
@@ -714,4 +1028,58 @@ const styles = StyleSheet.create({
   applyBtn: { backgroundColor: '#0288D1', paddingHorizontal: 10, paddingVertical: 10, borderRadius: 12, maxWidth: 140 },
   applyBtnDisabled: { backgroundColor: '#CFD8DC' },
   applyText: { color: '#fff', fontWeight: 'bold', fontSize: 11, textAlign: 'center' },
+
+  // ── Stories mode styles ─────────────────────────────────────────────
+  storiesContainer: { padding: 16, paddingBottom: 40 },
+  storiesHeader: { fontSize: 16, fontWeight: 'bold', color: '#5E35B1', marginBottom: 16 },
+  storyCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#673AB7' },
+  storyCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  storyTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', flex: 1, marginRight: 8 },
+  levelBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  levelText: { color: '#fff', fontWeight: 'bold', fontSize: 11 },
+  storyPreview: { color: '#666', fontSize: 14, lineHeight: 20, marginBottom: 8 },
+  storyMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  storyMetaText: { color: '#9575CD', fontSize: 12, fontWeight: '600' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+  loadingText: { marginTop: 12, color: '#673AB7', fontWeight: '600' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+  emptyEmoji: { fontSize: 60, marginBottom: 16 },
+  emptyText: { fontSize: 18, fontWeight: 'bold', color: '#555', marginBottom: 8 },
+  emptySubtext: { fontSize: 14, color: '#888', textAlign: 'center' },
+
+  // ── Story reference card (in compose) ───────────────────────────────
+  storyRefCard: { backgroundColor: '#EDE7F6', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#D1C4E9' },
+  storyRefHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  storyRefLabel: { fontSize: 14, fontWeight: 'bold', color: '#5E35B1' },
+  storyRefText: { fontSize: 15, color: '#333', lineHeight: 24, backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 10 },
+  speakStoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#7E57C2', borderRadius: 12, paddingVertical: 10, gap: 6 },
+  speakStoryText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+
+  // ── Submit button style ─────────────────────────────────────────────
+  composeBtnSubmit: { backgroundColor: '#4CAF50' },
+
+  // ── Comparison Modal styles ─────────────────────────────────────────
+  comparisonCard: { width: '92%', backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 10, maxHeight: '85%' },
+  comparisonHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  comparisonTitle: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+  accuracyBadge: { alignSelf: 'center', paddingHorizontal: 30, paddingVertical: 16, borderRadius: 20, marginBottom: 12 },
+  accuracyText: { fontSize: 48, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  accuracyLabel: { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', fontWeight: '600' },
+  comparisonStats: { textAlign: 'center', color: '#666', fontSize: 15, marginBottom: 16 },
+  wordResultsContainer: { maxHeight: 200, marginBottom: 16 },
+  wordResultsTitle: { fontSize: 14, fontWeight: 'bold', color: '#5E35B1', marginBottom: 10 },
+  wordResultsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  wordChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginBottom: 4 },
+  wordCorrect: { backgroundColor: '#C8E6C9' },
+  wordWrong: { backgroundColor: '#FFCDD2' },
+  wordMissing: { backgroundColor: '#FFE0B2', borderStyle: 'dashed', borderWidth: 1, borderColor: '#FF9800' },
+  wordExtra: { backgroundColor: '#E1BEE7' },
+  wordChipText: { color: '#2E7D32', fontWeight: '600', fontSize: 13 },
+  wordChipTextWrong: { color: '#C62828' },
+  expectedText: { color: '#666', fontSize: 10, marginTop: 2 },
+  comparisonBtnRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  tryAgainBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF9800', paddingVertical: 14, borderRadius: 14, gap: 6 },
+  tryAgainText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  nextStoryBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#4CAF50', paddingVertical: 14, borderRadius: 14, gap: 6 },
+  nextStoryText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });

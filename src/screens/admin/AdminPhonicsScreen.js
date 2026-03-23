@@ -3,8 +3,10 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, A
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AdminPhonicsScreen() {
+  const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
@@ -37,6 +39,7 @@ export default function AdminPhonicsScreen() {
 
   const handleSave = async () => {
     if (!label.trim()) return Alert.alert('Error', 'Label is required.');
+    if (!profile?.id) return Alert.alert('Error', 'User authentication required. Please log in again.');
 
     if (editingId) {
       const { error } = await supabase
@@ -49,7 +52,7 @@ export default function AdminPhonicsScreen() {
     } else {
       const { error } = await supabase
         .from('phonics_items')
-        .insert([{ label: label.trim(), icon, bg_color: bgColor }]);
+        .insert([{ label: label.trim(), icon, bg_color: bgColor, created_by: profile.id }]);
 
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Success', 'Item added.');

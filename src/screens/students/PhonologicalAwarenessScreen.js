@@ -50,48 +50,112 @@ function shuffleArr(arr) {
   return a;
 }
 
+// ─── Animated Components ──────────────────────────────────────────────────────
+
+function AnimatedCard({ children, style, onPress, delay = 0 }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const pressAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, delay }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay }),
+    ]).start();
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, { toValue: 0.95, useNativeDriver: true, friction: 5 }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }], opacity: opacityAnim }]}>
+      <TouchableOpacity onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} activeOpacity={1} style={{ flex: 1 }}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
 function ModeSelector({ onSelect, level }) {
+  const headerAnim = useRef(new Animated.Value(0)).current;
   const levelColors = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
   const levelLabels = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+  const levelEmojis = { 1: '🌱', 2: '🌿', 3: '🌳' };
+
+  useEffect(() => {
+    Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
+  }, []);
+
+  const modes = [
+    { id: 'syllable', emoji: '👏', label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'rime',     emoji: '🎵', label: 'Onset-Rime',        desc: 'Find the word that rhymes',            gradient: ['#9C27B0', '#6A1B9A'] },
+    { id: 'phoneme',  emoji: '🔤', label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
+  ];
+
   return (
-    <ScrollView contentContainerStyle={ms.container}>
-      <Text style={ms.title}>Phonological Awareness 🎧</Text>
-      <Text style={ms.sub}>Building blocks of reading & spelling</Text>
-      <View style={[ms.levelBadge, { backgroundColor: levelColors[level] + '20', borderColor: levelColors[level] }]}>
-        <Text style={[ms.levelText, { color: levelColors[level] }]}>
-          Adaptive Level: {levelLabels[level]}
-        </Text>
-      </View>
-      {[
-        { id: 'syllable', emoji: '👏', label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', color: '#2196F3' },
-        { id: 'rime',     emoji: '🎵', label: 'Onset-Rime',        desc: 'Find the word that rhymes',            color: '#9C27B0' },
-        { id: 'phoneme',  emoji: '🔤', label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     color: '#E91E63' },
-      ].map(m => (
-        <TouchableOpacity key={m.id} style={[ms.card, { borderLeftColor: m.color }]} onPress={() => onSelect(m.id)} activeOpacity={0.8}>
-          <Text style={ms.emoji}>{m.emoji}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={ms.label}>{m.label}</Text>
-            <Text style={ms.desc}>{m.desc}</Text>
+    <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
+      <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
+        <LinearGradient colors={['#673AB7', '#512DA8']} style={ms.headerCard}>
+          <Text style={ms.headerEmoji}>🎧</Text>
+          <Text style={ms.title}>Phonological Awareness</Text>
+          <Text style={ms.sub}>Building blocks of reading & spelling</Text>
+          <View style={[ms.levelPill, { backgroundColor: levelColors[level] + '30', borderColor: levelColors[level] }]}>
+            <Text style={ms.levelEmoji}>{levelEmojis[level]}</Text>
+            <Text style={[ms.levelText, { color: levelColors[level] }]}>
+              Level: {levelLabels[level]}
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={22} color={m.color} />
-        </TouchableOpacity>
+        </LinearGradient>
+      </Animated.View>
+
+      {modes.map((m, index) => (
+        <AnimatedCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
+          <LinearGradient colors={m.gradient} style={ms.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <View style={ms.cardContent}>
+              <View style={ms.emojiCircle}>
+                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={ms.cardLabel}>{m.label}</Text>
+                <Text style={ms.cardDesc}>{m.desc}</Text>
+              </View>
+              <View style={ms.playBtn}>
+                <Ionicons name="play" size={20} color="#fff" />
+              </View>
+            </View>
+            <View style={ms.cardShine} />
+          </LinearGradient>
+        </AnimatedCard>
       ))}
     </ScrollView>
   );
 }
 
 const ms = StyleSheet.create({
-  container:   { padding: 20, paddingTop: 70 },
-  title:       { fontSize: 26, fontWeight: 'bold', color: '#37474F', textAlign: 'center' },
-  sub:         { fontSize: 14, color: '#78909C', textAlign: 'center', marginBottom: 16, marginTop: 4 },
-  levelBadge:  { borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6, alignSelf: 'center', marginBottom: 24 },
-  levelText:   { fontWeight: 'bold', fontSize: 13 },
-  card:        { backgroundColor: '#fff', borderRadius: 18, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 16, elevation: 3, borderLeftWidth: 5 },
-  emoji:       { fontSize: 34, marginRight: 14 },
-  label:       { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
-  desc:        { fontSize: 13, color: '#78909C', marginTop: 2 },
+  container:   { padding: 20, paddingTop: 70, paddingBottom: 40 },
+  headerCard:  { borderRadius: 24, padding: 24, alignItems: 'center', marginBottom: 24, elevation: 6 },
+  headerEmoji: { fontSize: 50, marginBottom: 8 },
+  title:       { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  sub:         { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4, marginBottom: 12 },
+  levelPill:   { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  levelEmoji:  { fontSize: 18 },
+  levelText:   { fontWeight: 'bold', fontSize: 14 },
+  cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  card:        { borderRadius: 20, padding: 20, overflow: 'hidden' },
+  cardContent: { flexDirection: 'row', alignItems: 'center' },
+  emojiCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  cardEmoji:   { fontSize: 28 },
+  cardLabel:   { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  cardDesc:    { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 18 },
+  playBtn:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
+  cardShine:   { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
 });
 
 // ─── Syllable Game ─────────────────────────────────────────────────────────────

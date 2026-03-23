@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView,
@@ -33,6 +33,16 @@ export default function ParentLinkChildScreen({ navigation }) {
   const [error, setError]       = useState('');
   const [linkSuccess, setLinkSuccess] = useState(false);
   const [linkError, setLinkError]     = useState('');
+  const timeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // ── Base font size driven by theme ──────────────────────────────────
   const fs = theme.fontSize || 14;
@@ -94,7 +104,7 @@ export default function ParentLinkChildScreen({ navigation }) {
       }
       // Success — show inline banner then navigate back
       setLinkSuccess(true);
-      setTimeout(() => navigation.goBack(), 1800);
+      timeoutRef.current = setTimeout(() => navigation.goBack(), 1800);
     } catch (e) {
       setLinkError(e.message || 'An unexpected error occurred.');
     } finally {

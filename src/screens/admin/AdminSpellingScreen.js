@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import { useAuth } from '../../context/AuthContext';
 
 const LEVELS = [
   { value: 1, label: 'Level 1 — CVC / Easy' },
@@ -18,6 +19,7 @@ const LEVELS = [
 ];
 
 export default function AdminSpellingScreen() {
+  const { profile } = useAuth();
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [word, setWord] = useState('');
@@ -54,11 +56,14 @@ export default function AdminSpellingScreen() {
 
   const handleSave = async () => {
     if (!word.trim()) return Alert.alert('Error', 'Word is required.');
+    if (!profile?.id) return Alert.alert('Error', 'User authentication required. Please log in again.');
+
     const payload = {
       word: word.trim().toLowerCase(),
       emoji: emoji.trim() || null,
       hint: hint.trim() || null,
       difficulty_level: level,
+      created_by: profile.id,
     };
     if (editingId) {
       const { error } = await supabase.from('spelling_words').update(payload).eq('id', editingId);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image,
+  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +39,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   // Real-time subscription refs
   const profileSubRef = useRef(null);
@@ -46,35 +47,55 @@ export default function ParentDashboardScreen({ navigation }) {
 
   // ── Fetch system notifications for parents ────────────────────────────────
   const fetchNotifications = async () => {
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .in('target_role', ['all', 'parent'])
-      .eq('is_draft', false)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setNotifications(data || []);
-    // Badge shows only notifications posted in the last 7 days as "new"
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    setNotifCount((data || []).filter(n => n.created_at >= sevenDaysAgo).length);
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .in('target_role', ['all', 'parent'])
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        setNotifications([]);
+        setNotifCount(0);
+        return;
+      }
+
+      setNotifications(data || []);
+      // Badge shows only notifications posted in the last 7 days as "new"
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      setNotifCount((data || []).filter(n => n.created_at >= sevenDaysAgo).length);
+    } catch (error) {
+      setNotifications([]);
+      setNotifCount(0);
+    }
   };
 
   // ── Fetch linked children ──────────────────────────────────────────────────
   const fetchChildren = async () => {
     if (!profile?.id) return [];
-    const { data, error } = await supabase
-      .from('parent_links')
-      .select(`
-        student_id,
-        profiles!parent_links_student_id_fkey (
-          id,
-          full_name,
-          email
-        )
-      `)
-      .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
+    try {
+      const { data, error } = await supabase
+        .from('parent_links')
+        .select(`
+          student_id,
+          profiles!parent_links_student_id_fkey (
+            id,
+            full_name,
+            email
+          )
+        `)
+        .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
 
-    return data || [];
+      if (error) {
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      return [];
+    }
   };
 
   // ── Fetch everything for the selected child ────────────────────────────────
@@ -82,13 +103,19 @@ export default function ParentDashboardScreen({ navigation }) {
     if (!childLink) return;
     const sid = childLink.profiles?.id ?? childLink.student_id;
 
-    const [{ data: cp }, prog] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
-      getStudentProgress(sid, 14),
-    ]);
+    try {
+      const [{ data: cp }, prog] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
+        getStudentProgress(sid, 14),
+      ]);
 
-    setChildProfile(cp);
-    setProgress(prog);
+      setChildProfile(cp);
+      setProgress(prog);
+    } catch (error) {
+      // Set null on error but don't crash
+      setChildProfile(null);
+      setProgress(null);
+    }
   };
 
   // ── Full refresh ───────────────────────────────────────────────────────────
@@ -100,6 +127,7 @@ export default function ParentDashboardScreen({ navigation }) {
     }
 
     if (showSpinner) setLoading(true);
+    setError(null); // Clear previous errors
     try {
       const kids = await fetchChildren();
       setChildren(kids);
@@ -107,8 +135,7 @@ export default function ParentDashboardScreen({ navigation }) {
       setSelectedIdx(idx);
       await Promise.all([loadChild(kids[idx]), fetchNotifications()]);
     } catch (e) {
-      console.error('[ParentDashboard] refresh exception:', e?.message || e);
-      Alert.alert('Load Error', 'Could not load parent dashboard data. Please try again.');
+      setError('Could not load dashboard data. Please check your connection and try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -179,6 +206,25 @@ export default function ParentDashboardScreen({ navigation }) {
     );
   }
 
+  if (error) {
+    return (
+      <View style={[s.errorContainer, { backgroundColor: getBgColor() }]}>
+        <LinearGradient colors={getHeaderGradient()} style={s.errorHeader}>
+          <Text style={[s.errorHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
+        </LinearGradient>
+        <View style={[s.errorBody, { paddingBottom: insets.bottom + 20 }]}>
+          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Text style={[s.errorTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Connection Error</Text>
+          <Text style={[s.errorMessage, { fontSize: theme.fontSize }, a11yTextStyle]}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => refresh(true)}>
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={[s.retryBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   if (children.length === 0) {
     return (
       <View style={[s.emptyContainer, { backgroundColor: getBgColor() }]}>
@@ -233,7 +279,7 @@ export default function ParentDashboardScreen({ navigation }) {
             {children.map((c, i) => {
               const n = c.profiles?.full_name ?? 'Child';
               return (
-                <TouchableOpacity key={c.id} style={[s.childTab, i === selectedIdx && s.childTabActive]} onPress={() => switchChild(i)}>
+                <TouchableOpacity key={c.student_id || i} style={[s.childTab, i === selectedIdx && s.childTabActive]} onPress={() => switchChild(i)}>
                   <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{n.split(' ')[0]}</Text>
                 </TouchableOpacity>
               );
@@ -489,4 +535,14 @@ const s = StyleSheet.create({
   notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#4A148C', marginBottom: 4 },
   notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
   notifItemDate:      { fontSize: 11, color: '#aaa' },
+
+  // Error state
+  errorContainer:     { flex: 1 },
+  errorHeader:        { paddingTop: 55, paddingBottom: 28, paddingHorizontal: 22, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
+  errorHeaderTitle:   { fontSize: 24, fontWeight: '900', color: '#fff', textAlign: 'center' },
+  errorBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  errorTitle:         { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: 24, marginBottom: 12 },
+  errorMessage:       { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#7B1FA2', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
+  retryBtnText:       { color: '#fff', fontWeight: 'bold' },
 });

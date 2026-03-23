@@ -37,7 +37,6 @@ export default function AdminParentLinksScreen({ navigation }) {
     try {
       await Promise.all([fetchLinks(), fetchParents(), fetchStudents()]);
     } catch (e) {
-      console.error('[AdminParentLinks] fetchAll exception:', e?.message || e);
       Alert.alert('Load Error', 'Could not load parent links. Please try again.');
     } finally {
       setLoading(false);
@@ -51,7 +50,6 @@ export default function AdminParentLinksScreen({ navigation }) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[AdminParentLinks] fetchLinks error:', error.message);
       setLinks([]);
       return;
     }
@@ -68,7 +66,6 @@ export default function AdminParentLinksScreen({ navigation }) {
         .in('id', allIds);
 
       if (profErr) {
-        console.error('[AdminParentLinks] hydrate profiles error:', profErr.message);
         // Still show raw links even if hydration fails
         setLinks(data.map(l => ({ ...l, parent_profile: null, student_profile: null })));
         return;
@@ -95,7 +92,6 @@ export default function AdminParentLinksScreen({ navigation }) {
       .eq('role', 'parent')
       .order('full_name');
     if (error) {
-      console.error('[AdminParentLinks] fetchParents error:', error.message);
       setParents([]);
       return;
     }
@@ -109,7 +105,6 @@ export default function AdminParentLinksScreen({ navigation }) {
       .eq('role', 'student')
       .order('full_name');
     if (error) {
-      console.error('[AdminParentLinks] fetchStudents error:', error.message);
       setStudents([]);
       return;
     }

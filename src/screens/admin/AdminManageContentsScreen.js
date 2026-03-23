@@ -46,7 +46,14 @@ export default function AdminManageContentsScreen({ navigation }) {
         phonological: phonological.count || 0,
       });
     } catch (error) {
-      console.error('Error fetching content stats:', error);
+      // Set default values on error so UI still renders
+      setContentStats({
+        stories: 0,
+        phonics: 0,
+        spelling: 0,
+        phonicsActivities: 0,
+        phonological: 0,
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -65,7 +72,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       subtitle: `${contentStats.stories} stories`,
       emoji: '✍️',
       bgColor: '#E1BEE7',
-      route: 'TeacherAddStory',
+      route: 'AdminAddStory',
     },
     {
       id: 'phonics',
@@ -73,7 +80,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       subtitle: `${contentStats.phonics} items`,
       emoji: '🗣️',
       bgColor: '#B3E5FC',
-      route: 'TeacherPhonics',
+      route: 'AdminPhonics',
     },
     {
       id: 'spelling',

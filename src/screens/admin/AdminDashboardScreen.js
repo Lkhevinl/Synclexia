@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
@@ -25,25 +25,57 @@ export default function AdminDashboardScreen({ navigation }) {
     phonological: 0,
   });
   const [usersModalVisible, setUsersModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const initializeAdminDashboard = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchNotifications(), fetchUserCounts(), fetchContentStats()]);
+    } catch (error) {
+      setError('Failed to load admin dashboard. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUserCounts();
-    fetchContentStats();
+    initializeAdminDashboard();
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
-    if (data) setNotifications(data);
+    try {
+      const { data, error } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
+      if (error) {
+        setNotifications([]);
+        return;
+      }
+      setNotifications(data || []);
+    } catch (error) {
+      setNotifications([]);
+    }
   };
 
   const fetchUserCounts = async () => {
-    const [s, p] = await Promise.all([
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-      supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
-    ]);
-    setStudentCount(s.count || 0);
-    setParentCount(p.count || 0);
+    try {
+      const [s, p] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+      ]);
+
+      if (s.error || p.error) {
+        setStudentCount(0);
+        setParentCount(0);
+        return;
+      }
+
+      setStudentCount(s.count || 0);
+      setParentCount(p.count || 0);
+    } catch (error) {
+      setStudentCount(0);
+      setParentCount(0);
+    }
   };
 
   const fetchContentStats = async () => {
@@ -64,7 +96,13 @@ export default function AdminDashboardScreen({ navigation }) {
         phonological: phonological.count || 0,
       });
     } catch (error) {
-      console.error('Error fetching content stats:', error);
+      setContentStats({
+        stories: 0,
+        phonics: 0,
+        spelling: 0,
+        phonicsActivities: 0,
+        phonological: 0,
+      });
     }
   };
 
@@ -114,164 +152,141 @@ export default function AdminDashboardScreen({ navigation }) {
       <StatusBar barStyle="light-content" />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
-      {/* HEADER */}
-      <LinearGradient colors={getHeaderGradient()} style={styles.header}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.greeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 👋</Text>
-            <Text style={styles.subGreeting}>Manage platform content and users</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={getPrimaryColor()} />
+          <Text style={styles.loadingText}>Loading admin dashboard...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Text style={styles.errorTitle}>Connection Error</Text>
+          <Text style={styles.errorMessage}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={initializeAdminDashboard}>
+            <Ionicons name="refresh" size={20} color="#fff" />
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <>
+          {/* HEADER */}
+          <LinearGradient colors={getHeaderGradient()} style={styles.enhancedHeader}>
+        <View style={styles.enhancedHeaderContent}>
+          <View style={styles.headerTextSection}>
+            <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 👋</Text>
+            <Text style={styles.enhancedSubGreeting}>Manage platform content and users</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
-              <Ionicons name="notifications-outline" size={24} color="#fff" />
-              {notifications.length > 0 && <View style={styles.redDot} />}
+          <View style={styles.enhancedHeaderIcons}>
+            <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.enhancedIconBtn}>
+              <Ionicons name="notifications-outline" size={28} color="#fff" />
+              {notifications.length > 0 && <View style={styles.enhancedRedDot} />}
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
-              <Ionicons name="menu-outline" size={26} color="#fff" />
+            <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.enhancedIconBtn}>
+              <Ionicons name="menu-outline" size={30} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
       </LinearGradient>
 
-      {/* STATS BAR */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>STUDENTS</Text>
-          <Text style={[styles.statValue, { color: '#4CAF50' }]}>{studentCount}</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>PARENTS</Text>
-          <Text style={[styles.statValue, { color: '#9C27B0' }]}>{parentCount}</Text>
-        </View>
-      </View>
-
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-        {/* QUICK OVERVIEW SECTION */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Quick Overview</Text>
-
-          <View style={styles.overviewRow}>
-            <View style={[styles.overviewCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.overviewIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="trending-up" size={20} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.overviewValue, { color: themeColors.textPrimary }]}>24</Text>
-              <Text style={[styles.overviewLabel, { color: themeColors.textSecondary }]}>Active Sessions</Text>
+        {/* ENHANCED STATS OVERVIEW */}
+        <View style={styles.statsGrid}>
+          <View style={[styles.statCard, { backgroundColor: '#E8F5E9' }]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="people" size={24} color="#4CAF50" />
             </View>
+            <Text style={[styles.statNumber, { color: '#4CAF50' }]}>{studentCount}</Text>
+            <Text style={styles.statLabel}>Students</Text>
+            <Text style={styles.statSubtext}>Active learners</Text>
+          </View>
 
-            <View style={[styles.overviewCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.overviewIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="checkmark-circle" size={20} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.overviewValue, { color: themeColors.textPrimary }]}>156</Text>
-              <Text style={[styles.overviewLabel, { color: themeColors.textSecondary }]}>Completed Tasks</Text>
+          <View style={[styles.statCard, { backgroundColor: '#F3E5F5' }]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="heart" size={24} color="#9C27B0" />
             </View>
+            <Text style={[styles.statNumber, { color: '#9C27B0' }]}>{parentCount}</Text>
+            <Text style={styles.statLabel}>Parents</Text>
+            <Text style={styles.statSubtext}>Family support</Text>
+          </View>
 
-            <View style={[styles.overviewCard, { backgroundColor: themeColors.cardBg }]}>
-              <View style={[styles.overviewIcon, { backgroundColor: themeColors.accentLight }]}>
-                <Ionicons name="time" size={20} color={getPrimaryColor()} />
-              </View>
-              <Text style={[styles.overviewValue, { color: themeColors.textPrimary }]}>3</Text>
-              <Text style={[styles.overviewLabel, { color: themeColors.textSecondary }]}>Pending Reviews</Text>
+          <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="library" size={24} color="#2196F3" />
             </View>
+            <Text style={[styles.statNumber, { color: '#2196F3' }]}>{Object.values(contentStats).reduce((a, b) => a + b, 0)}</Text>
+            <Text style={styles.statLabel}>Content</Text>
+            <Text style={styles.statSubtext}>Learning items</Text>
+          </View>
+
+          <View style={[styles.statCard, { backgroundColor: '#FFF3E0' }]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="trending-up" size={24} color="#FF9800" />
+            </View>
+            <Text style={[styles.statNumber, { color: '#FF9800' }]}>98%</Text>
+            <Text style={styles.statLabel}>Uptime</Text>
+            <Text style={styles.statSubtext}>System health</Text>
           </View>
         </View>
 
-        {/* RECENT ACTIVITY SECTION */}
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: themeColors.textPrimary }]}>Recent Activity</Text>
-
-          <View style={[styles.activityCard, { backgroundColor: themeColors.cardBg }]}>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityDot, { backgroundColor: '#4CAF50' }]} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: themeColors.textPrimary }]}>New student enrollment</Text>
-                <Text style={[styles.activityTime, { color: themeColors.textSecondary }]}>2 hours ago</Text>
-              </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={[styles.activityDot, { backgroundColor: getPrimaryColor() }]} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: themeColors.textPrimary }]}>Content updated: Phonics lesson</Text>
-                <Text style={[styles.activityTime, { color: themeColors.textSecondary }]}>5 hours ago</Text>
-              </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={[styles.activityDot, { backgroundColor: '#FF9800' }]} />
-              <View style={styles.activityContent}>
-                <Text style={[styles.activityText, { color: themeColors.textPrimary }]}>Parent feedback received</Text>
-                <Text style={[styles.activityTime, { color: themeColors.textSecondary }]}>1 day ago</Text>
-              </View>
-            </View>
-          </View>
+        {/* QUICK ACTIONS SECTION */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="flash" size={20} color={getPrimaryColor()} />
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
-        {/* MAIN ACTION CARDS - ROW 1 */}
-        <View style={styles.cardRow}>
+        {/* MAIN ACTION CARDS - ENHANCED LAYOUT */}
+        <View style={styles.enhancedCardGrid}>
           {/* MANAGE CONTENTS */}
           <TouchableOpacity
-            style={styles.mainCard}
+            style={[styles.enhancedCard, styles.wideCard]}
             onPress={() => navigation.navigate('AdminManageContents')}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={getHeaderGradient()} style={styles.mainCardGradient}>
-              <View style={styles.cardIconWrap}>
-                <Ionicons name="layers" size={28} color="#fff" />
+            <LinearGradient colors={['#667eea', '#764ba2']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Ionicons name="layers" size={32} color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Manage Contents</Text>
               </View>
-              <Text style={styles.mainCardTitle}>Manage Contents</Text>
-              <Text style={styles.mainCardSubtitle}>{Object.values(contentStats).reduce((a, b) => a + b, 0)} items</Text>
+              <Text style={styles.enhancedCardDescription}>
+                Create and organize learning materials for students
+              </Text>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>{Object.values(contentStats).reduce((a, b) => a + b, 0)} total items</Text>
+                <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.8)" />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
 
           {/* MANAGE USERS */}
           <TouchableOpacity
-            style={styles.mainCard}
+            style={styles.enhancedCard}
             onPress={() => setUsersModalVisible(true)}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={[getPrimaryColor(), themeColors.textPrimary]} style={styles.mainCardGradient}>
-              <View style={styles.cardIconWrap}>
-                <Ionicons name="people" size={28} color="#fff" />
+            <LinearGradient colors={['#f093fb', '#f5576c']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedIconWrap}>
+                <Ionicons name="people" size={32} color="#fff" />
               </View>
-              <Text style={styles.mainCardTitle}>Manage Users</Text>
-              <Text style={styles.mainCardSubtitle}>{studentCount + parentCount} users</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-
-        {/* MAIN ACTION CARDS - ROW 2 */}
-        <View style={styles.cardRow}>
-          {/* MANAGE FEEDBACK */}
-          <TouchableOpacity
-            style={styles.mainCard}
-            onPress={() => navigation.navigate('AdminFeedback')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={[themeColors.textSecondary, getPrimaryColor()]} style={styles.mainCardGradient}>
-              <View style={styles.cardIconWrap}>
-                <Ionicons name="chatbubbles" size={28} color="#fff" />
-              </View>
-              <Text style={styles.mainCardTitle}>Manage Feedback</Text>
-              <Text style={styles.mainCardSubtitle}>Read & respond</Text>
+              <Text style={styles.enhancedCardTitle}>Users</Text>
+              <Text style={styles.enhancedCardSubtitle}>{studentCount + parentCount} total</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* REPORTS */}
+          {/* MAINTENANCE LOGS */}
           <TouchableOpacity
-            style={styles.mainCard}
-            onPress={() => navigation.navigate('AdminReports')}
+            style={styles.enhancedCard}
+            onPress={() => navigation.navigate('MaintenanceLogs')}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={[...getHeaderGradient()].reverse()} style={styles.mainCardGradient}>
-              <View style={styles.cardIconWrap}>
-                <Ionicons name="bar-chart" size={28} color="#fff" />
+            <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedIconWrap}>
+                <Ionicons name="construct" size={32} color="#fff" />
               </View>
-              <Text style={styles.mainCardTitle}>Reports</Text>
-              <Text style={styles.mainCardSubtitle}>Analytics & data</Text>
+              <Text style={styles.enhancedCardTitle}>Maintenance</Text>
+              <Text style={styles.enhancedCardSubtitle}>Logs & Issues</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -384,6 +399,8 @@ export default function AdminDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+      </>
+      )}
     </View>
   );
 }
@@ -398,21 +415,11 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 5, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8 },
   redDot: { position: 'absolute', top: 2, right: 2, width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF5252' },
 
-  statsContainer: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 14, marginHorizontal: 14, marginTop: -14, marginBottom: 8, elevation: 3, justifyContent: 'space-around', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3 },
-  statItem: { alignItems: 'center' },
-  statLabel: { fontSize: 8, fontWeight: 'bold', color: '#90A4AE', letterSpacing: 0.5 },
-  statValue: { fontSize: 15, fontWeight: 'bold', color: '#333', marginTop: 2 },
-  statDivider: { width: 1, height: 18, backgroundColor: '#ECEFF1' },
+  scrollContent: { paddingTop: 12, paddingHorizontal: 20, paddingBottom: 20 },
 
-  scrollContent: { paddingTop: 12, paddingHorizontal: 12, paddingBottom: 20 },
+  sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
 
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  mainCard: { flex: 1, marginHorizontal: 6, borderRadius: 18, elevation: 4, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4 },
-  mainCardGradient: { paddingVertical: 24, paddingHorizontal: 12, height: 160, justifyContent: 'center', alignItems: 'center' },
-  cardIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  mainCardTitle: { fontSize: 13, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
-  mainCardSubtitle: { fontSize: 10, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 3 },
-
+  // Modal styles (keeping these as they're still used)
   submenuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   submenuContent: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '80%' },
   submenuHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
@@ -421,41 +428,6 @@ const styles = StyleSheet.create({
   submenuIcon: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   submenuItemTitle: { fontSize: 15, fontWeight: '600', color: '#333' },
   submenuItemSub: { fontSize: 12, color: '#999', marginTop: 2 },
-  sectionTitle: { fontWeight: 'bold', color: '#37474F', marginBottom: 15, marginLeft: 5 },
-
-  card: { flexDirection: 'row', backgroundColor: '#fff', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 15, elevation: 2 },
-  iconBox: { width: 60, height: 60, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  cardContent: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#37474F' },
-  cardSub: { fontSize: 13, color: '#90A4AE', marginTop: 4 },
-  badge: { backgroundColor: '#F44336', borderRadius: 12, minWidth: 24, height: 24, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6, marginRight: 8 },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
-
-  tipBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1a237e', borderRadius: 16, padding: 14, marginBottom: 18, elevation: 2 },
-  tipText: { color: '#fff', flex: 1, lineHeight: 18, fontWeight: '600', fontSize: 13 },
-
-  contentGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginBottom: 20 },
-  contentCard: { width: '48%', marginBottom: 12, borderRadius: 18, elevation: 4 },
-  contentGradient: { padding: 16, borderRadius: 18, height: 160, justifyContent: 'space-between', alignItems: 'center' },
-  contentIconCircle: { width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  contentCardTitle: { color: '#fff', fontWeight: 'bold', fontSize: 14, textAlign: 'center', marginBottom: 3 },
-  contentCardSubtitle: { color: 'rgba(255,255,255,0.9)', fontSize: 11, textAlign: 'center', marginBottom: 10 },
-  contentCardFooter: { width: '100%', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)' },
-  itemsCount: { color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '600' },
-
-  pendingAlert: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F44336', borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    elevation: 4,
-  },
-  pendingAlertIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center', alignItems: 'center', marginRight: 14,
-  },
-  pendingAlertTitle: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-  pendingAlertSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 2 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { width: '100%', backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '75%' },
@@ -471,20 +443,137 @@ const styles = StyleSheet.create({
   closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 10 },
   closeText: { color: '#fff', fontWeight: 'bold' },
 
-  // New layout enhancement styles
-  sectionContainer: { marginBottom: 20, paddingHorizontal: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12, marginLeft: 4 },
+  // Loading and Error states
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  loadingText: { color: '#666', marginTop: 16, fontSize: 16, textAlign: 'center' },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  errorTitle: { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: 24, marginBottom: 12 },
+  errorMessage: { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 32, fontSize: 16 },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#607D8B', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
+  retryBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  overviewRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  overviewCard: { flex: 1, borderRadius: 16, padding: 16, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-  overviewIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  overviewValue: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
-  overviewLabel: { fontSize: 11, textAlign: 'center', lineHeight: 14 },
+  // Enhanced Layout Styles
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, marginBottom: 24 },
+  statCard: {
+    width: '47%',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    elevation: 1
+  },
+  statNumber: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
+  statLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 2 },
+  statSubtext: { fontSize: 11, color: '#666', textAlign: 'center' },
 
-  activityCard: { borderRadius: 16, padding: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-  activityItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
-  activityDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  activityContent: { flex: 1 },
-  activityText: { fontSize: 13, fontWeight: '500', lineHeight: 18 },
-  activityTime: { fontSize: 11, marginTop: 2 }
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+
+  enhancedCardGrid: { gap: 16 },
+  enhancedCard: {
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    marginBottom: 16
+  },
+  wideCard: { width: '100%' },
+  enhancedCardGradient: {
+    borderRadius: 20,
+    padding: 20,
+    minHeight: 140
+  },
+  enhancedCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  enhancedIconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16
+  },
+  enhancedCardTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', flex: 1 },
+  enhancedCardSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 8 },
+  enhancedCardDescription: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: 16 },
+  enhancedCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
+  enhancedCardStats: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+
+  // Enhanced Header Styles
+  enhancedHeader: {
+    paddingTop: 55,
+    paddingBottom: 28,
+    paddingHorizontal: 22,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  enhancedHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTextSection: {
+    flex: 1,
+  },
+  enhancedGreeting: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  enhancedSubGreeting: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  enhancedHeaderIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  enhancedIconBtn: {
+    width: 48,
+    height: 48,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  enhancedRedDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF5252',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
 });

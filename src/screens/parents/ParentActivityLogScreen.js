@@ -26,21 +26,35 @@ export default function ParentActivityLogScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [daysBack, setDaysBack] = useState(14);
+  const [error, setError] = useState(null);
   const subRef = useRef(null);
 
   const fetchSessions = useCallback(async (days) => {
     setRefreshing(true);
-    const since = new Date();
-    since.setDate(since.getDate() - days);
-    const { data } = await supabase
-      .from('session_logs')
-      .select('*')
-      .eq('student_id', sid)
-      .gte('created_at', since.toISOString())
-      .order('created_at', { ascending: false });
-    setSessions(data || []);
-    setLoading(false);
-    setRefreshing(false);
+    setError(null);
+    try {
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      const { data, error } = await supabase
+        .from('session_logs')
+        .select('*')
+        .eq('student_id', sid)
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setError('Failed to load activity sessions. Please try again.');
+        setSessions([]);
+      } else {
+        setSessions(data || []);
+      }
+    } catch (error) {
+      setError('Failed to load activity sessions. Please try again.');
+      setSessions([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [sid]);
 
   // Re-fetch every time screen comes into focus
@@ -64,6 +78,7 @@ export default function ParentActivityLogScreen({ route }) {
 
   // Group sessions by date
   const grouped = sessions.reduce((acc, s) => {
+    if (!s.created_at) return acc; // Skip sessions without valid dates
     const date = new Date(s.created_at).toLocaleDateString();
     if (!acc[date]) acc[date] = [];
     acc[date].push(s);
@@ -141,6 +156,16 @@ export default function ParentActivityLogScreen({ route }) {
 
       {loading ? (
         <View style={s.centered}><ActivityIndicator size="large" color="#7B1FA2" /></View>
+      ) : error ? (
+        <View style={s.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Text style={s.errorTitle}>Connection Error</Text>
+          <Text style={s.errorMessage}>{error}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={() => fetchSessions(daysBack)}>
+            <Ionicons name="refresh" size={18} color="#fff" />
+            <Text style={s.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={groupedList}
@@ -190,4 +215,11 @@ const s = StyleSheet.create({
   emptyBox:      { alignItems: 'center', paddingTop: 60 },
   emptyTitle:    { fontSize: 17, fontWeight: 'bold', color: '#555', marginTop: 14 },
   emptyHint:     { fontSize: 13, color: '#999', marginTop: 6, textAlign: 'center' },
+
+  // Error state
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
+  errorTitle:     { fontSize: 18, fontWeight: 'bold', color: '#FF6B6B', marginTop: 16, marginBottom: 8 },
+  errorMessage:   { color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  retryBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7B1FA2', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, elevation: 2 },
+  retryBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

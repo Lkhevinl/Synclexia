@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
+import { useAuth } from '../../../context/AuthContext';
 
 const TASK_TYPES = [
   { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
@@ -25,6 +26,7 @@ const FORM_HINTS = {
 };
 
 export default function TeacherPhonologicalScreen() {
+  const { profile } = useAuth();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [taskType, setTaskType]   = useState('syllable');
@@ -91,6 +93,8 @@ export default function TeacherPhonologicalScreen() {
   };
 
   const handleSave = async () => {
+    if (!profile?.id) return Alert.alert('Error', 'User authentication required. Please log in again.');
+
     const data = buildData();
     if (!data) return Alert.alert('Missing Fields', 'Please fill all required fields for this task type.');
     const payload = { task_type: taskType, difficulty_level: level, data };
@@ -99,7 +103,7 @@ export default function TeacherPhonologicalScreen() {
       if (error) return Alert.alert('Update Error', error.message);
       Alert.alert('✅ Updated', 'Item updated successfully.');
     } else {
-      const { error } = await supabase.from('phonological_content').insert([{ ...payload, is_active: true }]);
+      const { error } = await supabase.from('phonological_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
       Alert.alert('✅ Added', 'Item added successfully.');
     }

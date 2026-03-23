@@ -17,9 +17,7 @@ export default function ScanScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedText, setScannedText] = useState("");
   const navigation = useNavigation();
-  const API_KEY = (process.env.EXPO_PUBLIC_OCR_API_KEY || 'K85307563288957').trim();
-
-  console.log('🔑 OCR API Key status:', API_KEY ? 'Available' : 'Missing');
+  const API_KEY = process.env.EXPO_PUBLIC_OCR_API_KEY?.trim();
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => Speech.stop());
@@ -64,11 +62,9 @@ export default function ScanScreen() {
   };
 
   const handleScan = async ({ base64, mimeType }) => {
-    console.log('🔍 Starting OCR process...');
-    console.log('🔑 API Key available:', !!API_KEY);
-
-    if (!API_KEY || API_KEY === 'K85307563288957') {
-      console.warn('⚠️ Using fallback API key');
+    if (!API_KEY) {
+      showAlert('Configuration Error', 'OCR API key is not configured. Please contact support.');
+      return;
     }
 
     if (!base64) {
@@ -79,7 +75,6 @@ export default function ScanScreen() {
     setIsScanning(true);
     setScannedText(""); // Clear previous text
     try {
-        console.log('📤 Sending OCR request...');
         let formData = new FormData();
         const safeMime = mimeType || 'image/jpeg';
         formData.append("base64Image", `data:${safeMime};base64,${base64}`);
@@ -94,19 +89,16 @@ export default function ScanScreen() {
         });
 
         if (!response.ok) {
-          console.error('❌ OCR request failed:', response.status, response.statusText);
           throw new Error(`OCR request failed (${response.status})`);
         }
 
         const data = await response.json();
-        console.log('📨 OCR response received:', data);
 
         if (data.OCRExitCode === 1) {
           const extractedText = data.ParsedResults?.[0]?.ParsedText || "";
           setScannedText(extractedText.trim());
 
           if (extractedText.trim()) {
-            console.log('✅ Text extracted successfully');
             logSession({
               studentId: profile?.id,
               activityType: 'text_recognition',
@@ -119,11 +111,9 @@ export default function ScanScreen() {
             showAlert("No Text Found", "Could not detect any text in this image. Try using a clearer image with more text.");
           }
         } else {
-          console.error('❌ OCR processing failed:', data.ErrorMessage);
           showAlert("OCR Error", data.ErrorMessage?.[0] || "Failed to process image. Please try again.");
         }
     } catch (error) {
-        console.error('❌ OCR error:', error);
         showAlert("Scan Failed", `Error: ${error.message}. Please check your internet connection and try again.`);
     } finally {
         setIsScanning(false);
