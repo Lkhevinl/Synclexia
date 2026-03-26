@@ -106,11 +106,11 @@ export default function SettingsScreen({ navigation }) {
           <View style={styles.settingBlock}>
             <Text style={[styles.blockLabel, a11yTextStyle]}>Font Size</Text>
             <View style={styles.sizeRow}>
-              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.max(12, theme.fontSize - 2) })}>
+              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.max(10, theme.fontSize - 1) })}>
                 <Ionicons name="remove" size={18} color="#546E7A" />
               </TouchableOpacity>
               <Text style={[styles.sizeVal, a11yTextStyle]}>{theme.fontSize}</Text>
-              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.min(30, theme.fontSize + 2) })}>
+              <TouchableOpacity style={styles.sizeBtn} onPress={() => updateTheme({ fontSize: Math.min(17, theme.fontSize + 1) })}>
                 <Ionicons name="add" size={18} color="#546E7A" />
               </TouchableOpacity>
             </View>

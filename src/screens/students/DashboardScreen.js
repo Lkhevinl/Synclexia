@@ -375,17 +375,19 @@ export default function DashboardScreen({ navigation }) {
                     Hello {profile?.full_name?.split(' ')[0]?.toLowerCase() || "learner"}
                   </Text>
                 </View>
-                <View style={styles.tipBadgeContainer}>
-                  <View style={[
-                    styles.tipBadge,
-                    dailyTip.startsWith('Goal') && styles.tipBadgeGoal,
-                    dailyTip.startsWith('Tip') && styles.tipBadgeTip,
-                    dailyTip.startsWith('Fun') && styles.tipBadgeFun,
-                    dailyTip.startsWith('Fact') && styles.tipBadgeFact,
-                  ]}>
-                    <Text style={styles.tipBadgeText}>{dailyTip}</Text>
+                {theme.letterSpacing === 'normal' && (
+                  <View style={styles.tipBadgeContainer}>
+                    <View style={[
+                      styles.tipBadge,
+                      dailyTip.startsWith('Goal') && styles.tipBadgeGoal,
+                      dailyTip.startsWith('Tip') && styles.tipBadgeTip,
+                      dailyTip.startsWith('Fun') && styles.tipBadgeFun,
+                      dailyTip.startsWith('Fact') && styles.tipBadgeFact,
+                    ]}>
+                      <Text style={styles.tipBadgeText}>{dailyTip}</Text>
+                    </View>
                   </View>
-                </View>
+                )}
               </View>
               <View style={styles.modernHeaderIcons}>
                 <TouchableOpacity
@@ -430,6 +432,21 @@ export default function DashboardScreen({ navigation }) {
                 <Text style={styles.quickStatLabel}>Accuracy</Text>
               </View>
             </View>
+
+            {/* TIP BADGE - Shows here when letter spacing is wide/wider */}
+            {(theme.letterSpacing === 'wide' || theme.letterSpacing === 'wider') && (
+              <View style={styles.movableTipContainer}>
+                <View style={[
+                  styles.movableTipBadge,
+                  dailyTip.startsWith('Goal') && styles.tipBadgeGoal,
+                  dailyTip.startsWith('Tip') && styles.tipBadgeTip,
+                  dailyTip.startsWith('Fun') && styles.tipBadgeFun,
+                  dailyTip.startsWith('Fact') && styles.tipBadgeFact,
+                ]}>
+                  <Text style={styles.tipBadgeText}>{dailyTip}</Text>
+                </View>
+              </View>
+            )}
 
             {/* AI INSIGHTS BANNER */}
             <TouchableOpacity
@@ -773,14 +790,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     marginRight: 16,
-    flexShrink: 1,
+    maxWidth: '70%',
   },
   tipBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
+    paddingHorizontal: 5,
+    paddingVertical: 4,
+    borderRadius: 7,
+    flexShrink: 1,
+    minHeight: 16,
+    justifyContent: 'center',
   },
   tipBadgeGoal: {
     backgroundColor: '#FFE5E5',
@@ -795,10 +813,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
   },
   tipBadgeText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '600',
     color: '#333',
-    flexWrap: 'wrap',
+    lineHeight: 12,
+    textAlign: 'left',
+  },
+  movableTipContainer: {
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  movableTipBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 7,
+    justifyContent: 'center',
   },
   modernHeaderIcons: {
     flexDirection: 'row',

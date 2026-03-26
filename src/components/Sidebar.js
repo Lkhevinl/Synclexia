@@ -52,6 +52,15 @@ export default function Sidebar({ visible, onClose }) {
     </TouchableOpacity>
   );
 
+  const FontSizeBtn = ({ label, value }) => (
+    <TouchableOpacity
+      style={[s.chipBtn, theme.fontSize === value && s.chipBtnActive]}
+      onPress={() => updateTheme({ fontSize: value })}
+    >
+      <Text style={[s.chipText, theme.fontSize === value && s.chipTextActive]}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <>
       <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
@@ -125,14 +134,10 @@ export default function Sidebar({ visible, onClose }) {
                 {/* Font Size */}
                 <View style={s.block}>
                   <Text style={s.blockLabel}>Font Size</Text>
-                  <View style={s.sizeRow}>
-                    <TouchableOpacity style={s.sizeBtn} onPress={() => updateTheme({ fontSize: Math.max(12, theme.fontSize - 2) })}>
-                      <Ionicons name="remove" size={18} color="#546E7A" />
-                    </TouchableOpacity>
-                    <Text style={s.sizeVal}>{theme.fontSize}</Text>
-                    <TouchableOpacity style={s.sizeBtn} onPress={() => updateTheme({ fontSize: Math.min(30, theme.fontSize + 2) })}>
-                      <Ionicons name="add" size={18} color="#546E7A" />
-                    </TouchableOpacity>
+                  <View style={s.chipRow}>
+                    <FontSizeBtn label="Normal" value={12} />
+                    <FontSizeBtn label="Medium" value={14} />
+                    <FontSizeBtn label="Large" value={17} />
                   </View>
                 </View>
 

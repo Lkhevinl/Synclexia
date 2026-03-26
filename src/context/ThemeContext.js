@@ -64,7 +64,7 @@ const COLOR_THEMES = {
 };
 
 const DEFAULT_THEME = {
-  fontSize: 14,            // Default Text Size
+  fontSize: 12,            // Default Text Size
   bgColor: '#FFF0F5',      // Default Background — pastel blush
   fontStyle: 'System',     // Default Font
   primaryColor: '#C06080', // Default Accent — rose
@@ -80,7 +80,7 @@ const normalizeTheme = (rawTheme = {}) => {
   const merged = { ...DEFAULT_THEME, ...rawTheme };
   // Clamp fontSize to a safe range so UI cannot break with extreme values
   if (typeof merged.fontSize === 'number') {
-    merged.fontSize = Math.max(12, Math.min(30, merged.fontSize));
+    merged.fontSize = Math.max(10, Math.min(17, merged.fontSize));
   } else {
     merged.fontSize = DEFAULT_THEME.fontSize;
   }
@@ -137,8 +137,8 @@ export const ThemeProvider = ({ children }) => {
 
   // Computed helpers consumed throughout the app
   const getLetterSpacingValue = () => {
-    if (theme.letterSpacing === 'wide') return 2;
-    if (theme.letterSpacing === 'wider') return 4;
+    if (theme.letterSpacing === 'wide') return 1;
+    if (theme.letterSpacing === 'wider') return 2;
     return 0;
   };
 
@@ -188,8 +188,8 @@ export const ThemeProvider = ({ children }) => {
   const dyslexiaStyle = theme.dyslexiaFont ? { fontWeight: '700' } : {};
 
   const letterSpacingStyle = (() => {
-    if (theme.letterSpacing === 'wide')  return { letterSpacing: 2 };
-    if (theme.letterSpacing === 'wider') return { letterSpacing: 4 };
+    if (theme.letterSpacing === 'wide')  return { letterSpacing: 1 };
+    if (theme.letterSpacing === 'wider') return { letterSpacing: 2 };
     return {};
   })();
 
@@ -219,7 +219,7 @@ export const ThemeProvider = ({ children }) => {
   // Combined — used by screens that explicitly apply it.
   // NOTE: fontSize is now included as a base font size that can be scaled
   const a11yTextStyle = {
-    fontSize: theme.fontSize || 14,
+    fontSize: theme.fontSize || 12,
     ...dyslexiaStyle,
     ...letterSpacingStyle,
     ...fontFamilyStyle
@@ -230,8 +230,8 @@ export const ThemeProvider = ({ children }) => {
   //    current before any child Text renders.
   a11yStyleRef.current = a11yTextStyle;
 
-  // Calculate scale multiplier based on fontSize setting (base is 14)
-  const fontSizeScale = (theme.fontSize || 14) / 14;
+  // Calculate scale multiplier based on fontSize setting (base is 12)
+  const fontSizeScale = (theme.fontSize || 12) / 12;
   const combinedTextScale = fontSizeScale * (theme.dyslexiaFont ? 1.12 : 1);
   const combinedInputScale = fontSizeScale * (theme.dyslexiaFont ? 1.08 : 1);
 
