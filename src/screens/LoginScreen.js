@@ -1,12 +1,37 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+  Dimensions,
+  StatusBar,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { showAlert } from '../lib/uiAlert';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Synclexia App Colors
+const COLORS = {
+  background: '#F4F1DE',
+  textPrimary: '#3A3A3A',
+  textSecondary: '#6B6B6B',
+  primary: '#F28C82',
+  blue: '#6FA8DC',
+  green: '#93C47D',
+  lavender: '#B4A7D6',
+  inputBg: '#EFEFEF',
+  white: '#FFFFFF',
+};
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -16,7 +41,6 @@ export default function LoginScreen({ navigation }) {
   const [formError, setFormError] = useState('');
 
   const { setSession, resetSigningOut } = useAuth();
-  const { getBgColor, getPrimaryColor } = useTheme();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -81,15 +105,12 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
-  const bgColor = getBgColor();
-  const primaryColor = getPrimaryColor();
-
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={bgColor} />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <ScrollView
@@ -99,32 +120,11 @@ export default function LoginScreen({ navigation }) {
         >
           {/* Top Illustration Area */}
           <View style={styles.illustrationArea}>
-            <View style={styles.illustrationContainer}>
-              {/* ADD YOUR ILLUSTRATION IMAGE HERE */}
-              {/* Uncomment and replace with your actual image: */}
-              {/* <Image
-                source={require('../../assets/explore-illustration.png')}
-                style={styles.illustrationImage}
-                resizeMode="contain"
-              /> */}
-
-              {/* Temporary placeholder - Remove when you add your image */}
-              <View style={styles.illustrationBox}>
-                <Text style={styles.exploreText}>EXPLORE</Text>
-                <View style={styles.illustrationCircle}>
-                  <Ionicons name="book-outline" size={60} color="#2D5A5A" />
-                </View>
-                <View style={styles.decorStar1}>
-                  <Ionicons name="star" size={16} color="#FFD93D" />
-                </View>
-                <View style={styles.decorStar2}>
-                  <Ionicons name="star" size={12} color="#FFD93D" />
-                </View>
-                <View style={styles.decorLeaf}>
-                  <Ionicons name="leaf" size={20} color="#7CB342" />
-                </View>
-              </View>
-            </View>
+            <Image
+              source={require('../../assets/9__2_-removebg-preview.png')}
+              style={styles.illustration}
+              resizeMode="contain"
+            />
           </View>
 
           {/* Login Card */}
@@ -132,7 +132,7 @@ export default function LoginScreen({ navigation }) {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require('../../assets/icon.png')}
+                source={require('../../assets/synclexia-logo2-removebg-preview.png')}
                 style={styles.logo}
                 resizeMode="contain"
               />
@@ -142,13 +142,16 @@ export default function LoginScreen({ navigation }) {
 
             {/* Username/Email Input */}
             <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
+              <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Username"
-                placeholderTextColor="#999"
+                placeholderTextColor={COLORS.textSecondary}
                 value={email}
-                onChangeText={(v) => { setEmail(v); if (formError) setFormError(''); }}
+                onChangeText={(v) => {
+                  setEmail(v);
+                  if (formError) setFormError('');
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
@@ -156,30 +159,40 @@ export default function LoginScreen({ navigation }) {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#999"
+                placeholderTextColor={COLORS.textSecondary}
                 value={password}
-                onChangeText={(v) => { setPassword(v); if (formError) setFormError(''); }}
+                onChangeText={(v) => {
+                  setPassword(v);
+                  if (formError) setFormError('');
+                }}
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
-                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#999" />
+              <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
             {!!formError && <Text style={styles.formError}>{formError}</Text>}
 
             {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPassword')}>
-              <Text style={[styles.forgotText, { color: primaryColor }]}>Forgot Password?</Text>
+            <TouchableOpacity
+              style={styles.forgotBtn}
+              onPress={() => navigation.navigate('ForgotPassword')}
+            >
+              <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
             <TouchableOpacity
-              style={[styles.loginBtn, { backgroundColor: primaryColor }]}
+              style={styles.loginBtn}
               onPress={handleLogin}
               disabled={loading}
               activeOpacity={0.8}
@@ -195,7 +208,7 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.footer}>
               <Text style={styles.footerText}>Don't have an account yet? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                <Text style={[styles.signupText, { color: primaryColor }]}>Sign Up</Text>
+                <Text style={styles.signupText}>Sign Up</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -208,6 +221,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -218,90 +232,47 @@ const styles = StyleSheet.create({
 
   // Illustration Area
   illustrationArea: {
-    height: SCREEN_HEIGHT * 0.35,
+    height: SCREEN_HEIGHT * 0.38,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 20,
   },
-  illustrationContainer: {
-    width: '100%',
+  illustration: {
+    width: '90%',
     height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Add this for when you use an actual illustration image
-  illustrationImage: {
-    width: '80%',
-    height: '80%',
-  },
-  illustrationBox: {
-    width: 200,
-    height: 180,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  exploreText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2D5A5A',
-    marginBottom: 10,
-    letterSpacing: 2,
-  },
-  illustrationCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  decorStar1: {
-    position: 'absolute',
-    top: 20,
-    right: 30,
-  },
-  decorStar2: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-  },
-  decorLeaf: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
   },
 
   // Card
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
-    paddingTop: 30,
+    paddingTop: 25,
     paddingBottom: 40,
-    minHeight: SCREEN_HEIGHT * 0.65,
+    minHeight: SCREEN_HEIGHT * 0.68,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 10,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 120,
+    height: 50,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 25,
   },
 
   // Inputs
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 12,
     paddingHorizontal: 15,
     height: 55,
@@ -313,7 +284,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: COLORS.textPrimary,
   },
 
   formError: {
@@ -331,10 +302,12 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 14,
+    color: COLORS.primary,
   },
 
   // Login Button
   loginBtn: {
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     height: 55,
     justifyContent: 'center',
@@ -354,11 +327,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#666',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
   signupText: {
     fontSize: 14,
     fontWeight: '600',
+    color: COLORS.primary,
   },
 });

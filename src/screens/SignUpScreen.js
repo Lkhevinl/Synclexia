@@ -1,18 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions, StatusBar } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+  Dimensions,
+  StatusBar,
+  Modal,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import { useTheme } from '../context/ThemeContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Synclexia App Colors
+const COLORS = {
+  background: '#F4F1DE',
+  textPrimary: '#3A3A3A',
+  textSecondary: '#6B6B6B',
+  primary: '#F28C82',
+  blue: '#6FA8DC',
+  green: '#93C47D',
+  lavender: '#B4A7D6',
+  inputBg: '#EFEFEF',
+  white: '#FFFFFF',
+};
+
 const showAlert = (title, message) => {
-  if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); }
-  else { Alert.alert(title, message); }
+  if (Platform.OS === 'web') {
+    window.alert(`${title}\n\n${message}`);
+  } else {
+    Alert.alert(title, message);
+  }
 };
 
 export default function SignUpScreen({ navigation }) {
-  const { getBgColor, getPrimaryColor } = useTheme();
   const [step, setStep] = useState(1); // 1 = role selection, 2 = form
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -21,14 +50,12 @@ export default function SignUpScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   };
-
-  const bgColor = getBgColor();
-  const primaryColor = getPrimaryColor();
 
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
@@ -113,16 +140,12 @@ export default function SignUpScreen({ navigation }) {
       if (role === 'student') {
         for (let attempt = 0; attempt < 5; attempt++) {
           profileData.unique_code = generateUniqueCode();
-          const result = await supabase
-            .from('profiles')
-            .upsert([profileData], { onConflict: 'id' });
+          const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
           profileError = result.error;
           if (!profileError || profileError.code !== '23505') break;
         }
       } else {
-        const result = await supabase
-          .from('profiles')
-          .upsert([profileData], { onConflict: 'id' });
+        const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
         profileError = result.error;
       }
 
@@ -132,12 +155,12 @@ export default function SignUpScreen({ navigation }) {
         try {
           await Promise.race([
             supabase.auth.signOut(),
-            new Promise(resolve => setTimeout(resolve, 3000)),
+            new Promise((resolve) => setTimeout(resolve, 3000)),
           ]);
         } catch (_) {}
 
-        showAlert('Account Created!', 'Your account has been created! Please log in.');
-        navigation.navigate('Login');
+        // Show success modal
+        setShowSuccessModal(true);
       }
     } catch (e) {
       showAlert('Unexpected Error', `Something went wrong.`);
@@ -146,13 +169,18 @@ export default function SignUpScreen({ navigation }) {
     }
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('Login');
+  };
+
   // Step 1: Role Selection
   const renderRoleSelection = () => (
     <View style={styles.card}>
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/synclexia-logo2-removebg-preview.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -160,54 +188,61 @@ export default function SignUpScreen({ navigation }) {
 
       <Text style={styles.subtitle}>Please fill in your details to create an account</Text>
 
-      {/* Role Buttons */}
-      <View style={styles.roleButtonsContainer}>
+      {/* Role Selection Cards */}
+      <View style={styles.roleCardsContainer}>
+        {/* Child Card */}
         <TouchableOpacity
-          style={[styles.roleBtn, styles.kidBtn]}
+          style={styles.roleCard}
           onPress={() => handleRoleSelect('student')}
           activeOpacity={0.8}
         >
-          <Text style={styles.roleBtnText}>KID</Text>
+          <Image
+            source={require('../../assets/7-removebg-preview.png')}
+            style={styles.roleImage}
+            resizeMode="contain"
+          />
+          <View style={styles.roleLabelContainer}>
+            <Text style={styles.roleLabel}>Child</Text>
+          </View>
         </TouchableOpacity>
 
+        {/* Parent Card */}
         <TouchableOpacity
-          style={[styles.roleBtn, styles.parentBtn]}
+          style={styles.roleCard}
           onPress={() => handleRoleSelect('parent')}
           activeOpacity={0.8}
         >
-          <Text style={styles.roleBtnText}>PARENT</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.roleBtn, styles.therapistBtn]}
-          onPress={() => handleRoleSelect('teacher')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.roleBtnText}>THERAPIST</Text>
+          <Image
+            source={require('../../assets/6-removebg-preview.png')}
+            style={styles.roleImage}
+            resizeMode="contain"
+          />
+          <View style={styles.roleLabelContainer}>
+            <Text style={styles.roleLabel}>Parent</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
-      {/* Login Button */}
-      <TouchableOpacity
-        style={[styles.loginBtn, { backgroundColor: primaryColor }]}
-        onPress={() => navigation.navigate('Login')}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.loginBtnText}>Login</Text>
-      </TouchableOpacity>
+      {/* Login Link */}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Already have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.loginLinkText}>Login</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
   // Step 2: Registration Form
   const renderForm = () => (
-    <View style={[styles.card, styles.formCard]}>
+    <View style={styles.card}>
       {/* Blue accent bar */}
       <View style={styles.accentBar} />
 
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/synclexia-logo2-removebg-preview.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -217,11 +252,11 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Email Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color="#999" style={styles.inputIcon} />
+        <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textSecondary}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -231,11 +266,11 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Username Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
+        <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Username"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textSecondary}
           value={fullName}
           onChangeText={setFullName}
         />
@@ -243,27 +278,31 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Password Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+        <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textSecondary}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
         />
-        <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
-          <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#999" />
+        <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
+          <Ionicons
+            name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+            size={20}
+            color={COLORS.textSecondary}
+          />
         </TouchableOpacity>
       </View>
 
       {/* Confirm Password Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+        <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Confirm Password"
-          placeholderTextColor="#999"
+          placeholderTextColor={COLORS.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry={!showPassword}
@@ -272,41 +311,58 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Create Account Button */}
       <TouchableOpacity
-        style={[styles.createBtn, { backgroundColor: primaryColor }]}
+        style={styles.createBtn}
         onPress={handleSignUp}
         disabled={loading}
         activeOpacity={0.8}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.createBtnText}>Create Account</Text>
-        )}
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.createBtnText}>Create Account</Text>}
       </TouchableOpacity>
 
       {/* Login Link */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>Already have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={[styles.loginLinkText, { color: primaryColor }]}>Login</Text>
+          <Text style={styles.loginLinkText}>Login</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
+  // Success Modal
+  const renderSuccessModal = () => (
+    <Modal visible={showSuccessModal} transparent animationType="fade" onRequestClose={handleSuccessClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={handleSuccessClose}>
+        <View style={styles.modalContent}>
+          {/* Green Checkmark */}
+          <View style={styles.checkmarkContainer}>
+            <Ionicons name="checkmark" size={60} color={COLORS.white} />
+          </View>
+
+          {/* Success Message */}
+          <Text style={styles.modalTitle}>
+            {role === 'student' ? 'Yay!' : 'Account created successfully.'}
+          </Text>
+          <Text style={styles.modalMessage}>
+            {role === 'student'
+              ? "Your account is ready.\nLet's start learning!"
+              : "You can now start monitoring\nyour child's progress."}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={bgColor} />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={24} color="#333" />
+        <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
       </TouchableOpacity>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -314,33 +370,20 @@ export default function SignUpScreen({ navigation }) {
         >
           {/* Top Illustration Area */}
           <View style={styles.illustrationArea}>
-            {/* ADD YOUR ILLUSTRATION IMAGE HERE */}
-            {/* Uncomment and replace with your actual image: */}
-            {/* <Image
-              source={require('../../assets/explore-illustration.png')}
-              style={styles.illustrationImage}
+            <Image
+              source={require('../../assets/9-removebg-preview.png')}
+              style={styles.illustration}
               resizeMode="contain"
-            /> */}
-
-            {/* Temporary placeholder - Remove when you add your image */}
-            <View style={styles.illustrationBox}>
-              <Text style={styles.exploreText}>EXPLORE</Text>
-              <View style={styles.illustrationCircle}>
-                <Ionicons name="book-outline" size={60} color="#2D5A5A" />
-              </View>
-              <View style={styles.decorStar1}>
-                <Ionicons name="star" size={16} color="#FFD93D" />
-              </View>
-              <View style={styles.decorStar2}>
-                <Ionicons name="star" size={12} color="#FFD93D" />
-              </View>
-            </View>
+            />
           </View>
 
           {/* Card */}
           {step === 1 ? renderRoleSelection() : renderForm()}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      {renderSuccessModal()}
     </View>
   );
 }
@@ -348,6 +391,7 @@ export default function SignUpScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
   keyboardView: {
     flex: 1,
@@ -370,60 +414,26 @@ const styles = StyleSheet.create({
 
   // Illustration Area
   illustrationArea: {
-    height: SCREEN_HEIGHT * 0.28,
+    height: SCREEN_HEIGHT * 0.25,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: 50,
   },
-  // Add this for when you use an actual illustration image
-  illustrationImage: {
+  illustration: {
     width: '70%',
     height: '100%',
-  },
-  illustrationBox: {
-    width: 200,
-    height: 160,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  exploreText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D5A5A',
-    marginBottom: 10,
-    letterSpacing: 2,
-  },
-  illustrationCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  decorStar1: {
-    position: 'absolute',
-    top: 15,
-    right: 30,
-  },
-  decorStar2: {
-    position: 'absolute',
-    top: 45,
-    left: 25,
   },
 
   // Card
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.white,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 30,
-    paddingTop: 30,
+    paddingTop: 25,
     paddingBottom: 40,
-    minHeight: SCREEN_HEIGHT * 0.72,
-  },
-  formCard: {
+    minHeight: SCREEN_HEIGHT * 0.75,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -433,7 +443,7 @@ const styles = StyleSheet.create({
     top: 30,
     bottom: 30,
     width: 5,
-    backgroundColor: '#5C9DFF',
+    backgroundColor: COLORS.blue,
     borderTopRightRadius: 3,
     borderBottomRightRadius: 3,
   },
@@ -442,51 +452,44 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: 120,
+    height: 50,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 25,
   },
 
-  // Role Buttons
-  roleButtonsContainer: {
-    gap: 15,
+  // Role Selection Cards
+  roleCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 30,
+    gap: 20,
   },
-  roleBtn: {
-    height: 55,
-    borderRadius: 12,
-    justifyContent: 'center',
+  roleCard: {
+    flex: 1,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: 16,
+    padding: 15,
     alignItems: 'center',
   },
-  kidBtn: {
-    backgroundColor: '#90CAF9',
+  roleImage: {
+    width: '100%',
+    height: 120,
+    marginBottom: 10,
   },
-  parentBtn: {
-    backgroundColor: '#F48FB1',
+  roleLabelContainer: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 25,
   },
-  therapistBtn: {
-    backgroundColor: '#CE93D8',
-  },
-  roleBtnText: {
-    color: '#fff',
+  roleLabel: {
+    color: COLORS.white,
     fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  loginBtn: {
-    borderRadius: 12,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginBtnText: {
-    color: '#fff',
-    fontSize: 18,
     fontWeight: '600',
   },
 
@@ -494,7 +497,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.inputBg,
     borderRadius: 12,
     paddingHorizontal: 15,
     height: 55,
@@ -506,11 +509,12 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: COLORS.textPrimary,
   },
 
   // Create Account Button
   createBtn: {
+    backgroundColor: COLORS.primary,
     borderRadius: 12,
     height: 55,
     justifyContent: 'center',
@@ -531,11 +535,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#666',
+    color: COLORS.textSecondary,
     fontSize: 14,
   },
   loginLinkText: {
     fontSize: 14,
     fontWeight: '600',
+    color: COLORS.primary,
+  },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    marginHorizontal: 40,
+    width: SCREEN_WIDTH - 80,
+  },
+  checkmarkContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.green,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
