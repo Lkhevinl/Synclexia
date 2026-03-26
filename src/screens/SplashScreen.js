@@ -27,7 +27,7 @@ export default function SplashScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <Image
-        source={require('../../assets/1.png')}
+        source={require('../../assets/synclexia-logo2-removebg-preview.png')}
         style={styles.logo}
         resizeMode="contain"
       />
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: SCREEN_WIDTH * 0.6,
-    height: SCREEN_HEIGHT * 0.3,
+    width: SCREEN_WIDTH * 0.45,
+    height: SCREEN_HEIGHT * 0.18,
   },
 });

@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -50,7 +51,11 @@ export default function SignUpScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [signedUpSession, setSignedUpSession] = useState(null);
+
+  const { setSession } = useAuth();
 
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -59,6 +64,9 @@ export default function SignUpScreen({ navigation }) {
 
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
+  };
+
+  const handleContinue = () => {
     setStep(2);
   };
 
@@ -152,14 +160,7 @@ export default function SignUpScreen({ navigation }) {
       if (profileError) {
         showAlert('Profile Save Failed', `Could not save your profile.`);
       } else {
-        try {
-          await Promise.race([
-            supabase.auth.signOut(),
-            new Promise((resolve) => setTimeout(resolve, 3000)),
-          ]);
-        } catch (_) {}
-
-        // Show success modal
+        setSignedUpSession(data.session);
         setShowSuccessModal(true);
       }
     } catch (e) {
@@ -171,7 +172,11 @@ export default function SignUpScreen({ navigation }) {
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
-    navigation.navigate('Login');
+    if (signedUpSession && setSession) {
+      setSession(signedUpSession);
+    } else {
+      navigation.navigate('Login');
+    }
   };
 
   // Step 1: Role Selection
@@ -186,13 +191,13 @@ export default function SignUpScreen({ navigation }) {
         />
       </View>
 
-      <Text style={styles.subtitle}>Please fill in your details to create an account</Text>
+      <Text style={styles.subtitle}>Are you a child or a parent?</Text>
 
       {/* Role Selection Cards */}
       <View style={styles.roleCardsContainer}>
         {/* Child Card */}
         <TouchableOpacity
-          style={styles.roleCard}
+          style={[styles.roleCard, role === 'student' && styles.roleCardSelected]}
           onPress={() => handleRoleSelect('student')}
           activeOpacity={0.8}
         >
@@ -201,14 +206,12 @@ export default function SignUpScreen({ navigation }) {
             style={styles.roleImage}
             resizeMode="contain"
           />
-          <View style={styles.roleLabelContainer}>
-            <Text style={styles.roleLabel}>Child</Text>
-          </View>
+          <Text style={styles.roleLabel}>I am a child</Text>
         </TouchableOpacity>
 
         {/* Parent Card */}
         <TouchableOpacity
-          style={styles.roleCard}
+          style={[styles.roleCard, role === 'parent' && styles.roleCardSelected]}
           onPress={() => handleRoleSelect('parent')}
           activeOpacity={0.8}
         >
@@ -217,28 +220,20 @@ export default function SignUpScreen({ navigation }) {
             style={styles.roleImage}
             resizeMode="contain"
           />
-          <View style={styles.roleLabelContainer}>
-            <Text style={styles.roleLabel}>Parent</Text>
-          </View>
+          <Text style={styles.roleLabel}>I am a parent</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Login Link */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginLinkText}>Login</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Continue Button */}
+      <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.8}>
+        <Text style={styles.continueBtnText}>Continue</Text>
+      </TouchableOpacity>
     </View>
   );
 
   // Step 2: Registration Form
   const renderForm = () => (
     <View style={styles.card}>
-      {/* Blue accent bar */}
-      <View style={styles.accentBar} />
-
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image
@@ -255,7 +250,7 @@ export default function SignUpScreen({ navigation }) {
         <Ionicons name="mail-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder="Enter Email Address"
           placeholderTextColor={COLORS.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -269,7 +264,7 @@ export default function SignUpScreen({ navigation }) {
         <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder="Username"
+          placeholder="Enter Username"
           placeholderTextColor={COLORS.textSecondary}
           value={fullName}
           onChangeText={setFullName}
@@ -281,7 +276,7 @@ export default function SignUpScreen({ navigation }) {
         <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder="Password"
+          placeholder="Enter Password"
           placeholderTextColor={COLORS.textSecondary}
           value={password}
           onChangeText={setPassword}
@@ -301,12 +296,19 @@ export default function SignUpScreen({ navigation }) {
         <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder="Confirm Password"
+          placeholder="Enter Password Again"
           placeholderTextColor={COLORS.textSecondary}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          secureTextEntry={!showPassword}
+          secureTextEntry={!showConfirmPassword}
         />
+        <TouchableOpacity onPress={() => setShowConfirmPassword((prev) => !prev)}>
+          <Ionicons
+            name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+            size={20}
+            color={COLORS.textSecondary}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Create Account Button */}
@@ -332,34 +334,37 @@ export default function SignUpScreen({ navigation }) {
   // Success Modal
   const renderSuccessModal = () => (
     <Modal visible={showSuccessModal} transparent animationType="fade" onRequestClose={handleSuccessClose}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={handleSuccessClose}>
+      <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          {/* Green Checkmark */}
+          {/* Outlined Green Checkmark */}
           <View style={styles.checkmarkContainer}>
-            <Ionicons name="checkmark" size={60} color={COLORS.white} />
+            <Ionicons name="checkmark" size={44} color={COLORS.green} />
           </View>
 
           {/* Success Message */}
-          <Text style={styles.modalTitle}>
-            {role === 'student' ? 'Yay!' : 'Account created successfully.'}
-          </Text>
+          <Text style={styles.modalTitle}>Account created successfully!</Text>
           <Text style={styles.modalMessage}>
             {role === 'student'
-              ? "Your account is ready.\nLet's start learning!"
-              : "You can now start monitoring\nyour child's progress."}
+              ? "Yay! Your account is ready. Let's start learning!"
+              : "Account created successfully. You can now start monitoring your child's progress."}
           </Text>
+
+          {/* Continue Button */}
+          <TouchableOpacity style={styles.modalBtn} onPress={handleSuccessClose} activeOpacity={0.8}>
+            <Text style={styles.modalBtnText}>Continue</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+        <Ionicons name="arrow-back" size={24} color={COLORS.white} />
       </TouchableOpacity>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
@@ -371,9 +376,9 @@ export default function SignUpScreen({ navigation }) {
           {/* Top Illustration Area */}
           <View style={styles.illustrationArea}>
             <Image
-              source={require('../../assets/9-removebg-preview.png')}
+              source={require('../../assets/9__2_-removebg-preview.png')}
               style={styles.illustration}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           </View>
 
@@ -391,7 +396,7 @@ export default function SignUpScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
@@ -407,20 +412,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   // Illustration Area
   illustrationArea: {
-    height: SCREEN_HEIGHT * 0.25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 50,
+    height: SCREEN_HEIGHT * 0.45,
+    width: '100%',
+    overflow: 'hidden',
   },
   illustration: {
-    width: '70%',
+    width: '100%',
     height: '100%',
   },
 
@@ -430,22 +434,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    marginTop: -30,
     paddingHorizontal: 30,
     paddingTop: 25,
     paddingBottom: 40,
-    minHeight: SCREEN_HEIGHT * 0.75,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  accentBar: {
-    position: 'absolute',
-    left: 0,
-    top: 30,
-    bottom: 30,
-    width: 5,
-    backgroundColor: COLORS.blue,
-    borderTopRightRadius: 3,
-    borderBottomRightRadius: 3,
+    minHeight: SCREEN_HEIGHT * 0.6,
   },
   logoContainer: {
     alignItems: 'center',
@@ -467,7 +460,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 30,
-    gap: 20,
+    gap: 15,
   },
   roleCard: {
     flex: 1,
@@ -475,21 +468,36 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 15,
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  roleCardSelected: {
+    borderColor: COLORS.primary,
   },
   roleImage: {
     width: '100%',
-    height: 120,
+    height: 110,
     marginBottom: 10,
   },
-  roleLabelContainer: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 25,
-  },
   roleLabel: {
-    color: COLORS.white,
-    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // Continue Button
+  continueBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  continueBtnText: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '600',
   },
 
@@ -553,32 +561,48 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 30,
     alignItems: 'center',
-    marginHorizontal: 40,
-    width: SCREEN_WIDTH - 80,
+    marginHorizontal: 30,
+    width: SCREEN_WIDTH - 60,
   },
   checkmarkContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.green,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: COLORS.green,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.textPrimary,
     textAlign: 'center',
     marginBottom: 10,
   },
   modalMessage: {
-    fontSize: 15,
+    fontSize: 13,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  modalBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    height: 50,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

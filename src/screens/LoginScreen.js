@@ -107,7 +107,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -123,7 +123,7 @@ export default function LoginScreen({ navigation }) {
             <Image
               source={require('../../assets/9__2_-removebg-preview.png')}
               style={styles.illustration}
-              resizeMode="contain"
+              resizeMode="cover"
             />
           </View>
 
@@ -145,7 +145,7 @@ export default function LoginScreen({ navigation }) {
               <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Username"
+                placeholder="Enter Username"
                 placeholderTextColor={COLORS.textSecondary}
                 value={email}
                 onChangeText={(v) => {
@@ -162,7 +162,7 @@ export default function LoginScreen({ navigation }) {
               <Ionicons name="lock-closed-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Enter Password"
                 placeholderTextColor={COLORS.textSecondary}
                 value={password}
                 onChangeText={(v) => {
@@ -221,7 +221,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.white,
   },
   keyboardView: {
     flex: 1,
@@ -232,13 +232,12 @@ const styles = StyleSheet.create({
 
   // Illustration Area
   illustrationArea: {
-    height: SCREEN_HEIGHT * 0.38,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 20,
+    height: SCREEN_HEIGHT * 0.45,
+    width: '100%',
+    overflow: 'hidden',
   },
   illustration: {
-    width: '90%',
+    width: '100%',
     height: '100%',
   },
 
@@ -248,10 +247,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
+    marginTop: -30,
     paddingHorizontal: 30,
     paddingTop: 25,
     paddingBottom: 40,
-    minHeight: SCREEN_HEIGHT * 0.68,
+    minHeight: SCREEN_HEIGHT * 0.6,
   },
   logoContainer: {
     alignItems: 'center',
