@@ -7,6 +7,7 @@ import GoBackBtn from '../../components/GoBackBtn';
 import { useFocusEffect } from '@react-navigation/native';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import { getAllAdaptiveStates, levelLabel } from '../../lib/adaptiveEngine';
+import { analyzeStudentProfile, ACTIVITY_META } from '../../lib/strengthsAnalysis';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -27,6 +28,7 @@ export default function ParentProgressScreen({ route }) {
   const [daysBack, setDaysBack] = useState(14);
   const [progress, setProgress] = useState(null);
   const [adaptive, setAdaptive] = useState([]);
+  const [aiProfile, setAiProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const subRef = useRef(null);
@@ -35,16 +37,20 @@ export default function ParentProgressScreen({ route }) {
     setLoading(true);
     setError(null);
     try {
-      const [prog, adap] = await Promise.all([
+      const [prog, adap, aiData] = await Promise.all([
         getStudentProgress(sid, days),
         getAllAdaptiveStates(sid),
+        analyzeStudentProfile(sid, 60),
       ]);
       setProgress(prog);
       setAdaptive(adap || []);
+      setAiProfile(aiData);
     } catch (error) {
+      console.warn('[ParentProgressScreen] load failed:', error);
       setError('Failed to load progress data. Please check your connection and try again.');
       setProgress({ totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
       setAdaptive([]);
+      setAiProfile(null);
     } finally {
       setLoading(false);
     }
@@ -172,6 +178,75 @@ export default function ParentProgressScreen({ route }) {
             </View>
           )}
 
+          {/* AI Strengths & Weaknesses */}
+          {aiProfile && aiProfile.totalSessions > 0 && (
+            <View style={s.card}>
+              <Text style={s.cardTitle}>🧠 AI Strength & Weakness Analysis</Text>
+              <Text style={s.cardSub}>Based on last 60 days of activity</Text>
+
+              {/* Overall Score */}
+              <View style={s.aiScoreRow}>
+                <View style={[s.aiScoreBadge, {
+                  backgroundColor: aiProfile.overallScore >= 75 ? '#E8F5E9' : aiProfile.overallScore >= 50 ? '#FFF8E1' : '#FFEBEE',
+                  borderColor: aiProfile.overallScore >= 75 ? '#4CAF50' : aiProfile.overallScore >= 50 ? '#FF9800' : '#EF5350',
+                }]}>
+                  <Text style={[s.aiScoreNum, {
+                    color: aiProfile.overallScore >= 75 ? '#2E7D32' : aiProfile.overallScore >= 50 ? '#E65100' : '#B71C1C',
+                  }]}>{aiProfile.overallScore}%</Text>
+                  <Text style={s.aiScoreLbl}>Overall</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={s.aiScoreDesc}>
+                    {aiProfile.overallScore >= 75 ? `${name} is excelling! Keep up the great work.` :
+                     aiProfile.overallScore >= 50 ? `${name} is making steady progress. A little more practice will help!` :
+                     `${name} needs more support in some areas. Focus on the weaknesses below.`}
+                  </Text>
+                </View>
+              </View>
+
+              {aiProfile.strengths.length > 0 && (
+                <>
+                  <Text style={[s.aiGroupLabel, { color: '#2E7D32' }]}>Strengths</Text>
+                  {aiProfile.strengths.map(item => (
+                    <View key={item.activity} style={s.aiItemRow}>
+                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Text style={s.aiItemLabel}>{item.label}</Text>
+                      <View style={s.aiBar}>
+                        <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#4CAF50' }]} />
+                      </View>
+                      <Text style={[s.aiItemScore, { color: '#2E7D32' }]}>{item.avgAccuracy}%</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {aiProfile.weaknesses.length > 0 && (
+                <>
+                  <Text style={[s.aiGroupLabel, { color: '#E65100', marginTop: 10 }]}>Needs Focus</Text>
+                  {aiProfile.weaknesses.map(item => (
+                    <View key={item.activity} style={s.aiItemRow}>
+                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Text style={s.aiItemLabel}>{item.label}</Text>
+                      <View style={s.aiBar}>
+                        <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#EF5350' }]} />
+                      </View>
+                      <Text style={[s.aiItemScore, { color: '#EF5350' }]}>{item.avgAccuracy}%</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+
+              {aiProfile.notPracticed.length > 0 && (
+                <View style={s.aiNotPracticedBox}>
+                  <Text style={s.aiNotPracticedTitle}>Not practiced yet:</Text>
+                  <Text style={s.aiNotPracticedList}>
+                    {aiProfile.notPracticed.map(a => ACTIVITY_META[a]?.label).filter(Boolean).join(' · ')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Recent Sessions */}
           {(progress?.recentSessions?.length ?? 0) > 0 && (
             <View style={s.card}>
@@ -253,6 +328,23 @@ const s = StyleSheet.create({
   emptyCard:    { alignItems: 'center', paddingVertical: 40 },
   emptyTitle:   { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 14 },
   emptyHint:    { fontSize: 13, color: '#999', marginTop: 6, textAlign: 'center' },
+
+  // AI analysis styles
+  aiScoreRow:           { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  aiScoreBadge:         { width: 72, height: 72, borderRadius: 36, borderWidth: 3, justifyContent: 'center', alignItems: 'center' },
+  aiScoreNum:           { fontSize: 22, fontWeight: 'bold' },
+  aiScoreLbl:           { fontSize: 9, fontWeight: '700', color: '#999', textTransform: 'uppercase' },
+  aiScoreDesc:          { fontSize: 13, color: '#555', lineHeight: 18 },
+  aiGroupLabel:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  aiItemRow:            { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 },
+  aiItemIcon:           { fontSize: 16, width: 22 },
+  aiItemLabel:          { width: 90, fontSize: 12, fontWeight: '600', color: '#444' },
+  aiBar:                { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
+  aiBarFill:            { height: '100%', borderRadius: 3 },
+  aiItemScore:          { width: 36, fontSize: 12, fontWeight: 'bold', textAlign: 'right' },
+  aiNotPracticedBox:    { backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: 10 },
+  aiNotPracticedTitle:  { fontSize: 11, fontWeight: '700', color: '#F57C00', marginBottom: 4 },
+  aiNotPracticedList:   { fontSize: 12, color: '#795548', lineHeight: 18 },
 
   // Error state
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },

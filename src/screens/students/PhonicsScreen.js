@@ -40,12 +40,13 @@ export default function PhonicsScreen({ navigation }) {
 
   const fetchPhonics = async () => {
     try {
-        const { data } = await supabase.from('phonics_items').select('*').order('label');
-        if (data) setItems(data);
+      const { data, error } = await supabase.from('phonics_items').select('*').order('label');
+      if (error) console.warn('[PhonicsScreen] fetch error:', error.message);
+      if (data) setItems(data);
     } catch (e) {
-        // Failed to load phonics items
+      console.warn('[PhonicsScreen] fetchPhonics failed:', e);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -87,8 +88,14 @@ export default function PhonicsScreen({ navigation }) {
         
         {loading ? (
             <ActivityIndicator size="large" color="#FF9800" style={{marginTop: 50}} />
+        ) : items.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>🗣️</Text>
+              <Text style={styles.emptyTitle}>No phonics items yet</Text>
+              <Text style={styles.emptyHint}>Ask your teacher to add phonics cards!</Text>
+            </View>
         ) : (
-            <FlatList 
+            <FlatList
               data={items}
               keyExtractor={item => item.id.toString()}
               numColumns={2}
@@ -161,13 +168,23 @@ const styles = StyleSheet.create({
   label: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadow: 'rgba(0,0,0,0.2) 0px 0px 2px' },
   
   shine: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: '40%',
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      borderTopLeftRadius: 25,
-      borderTopRightRadius: 25,
-  }
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyTitle: { fontSize: 20, fontWeight: 'bold', color: '#37474F', marginBottom: 8 },
+  emptyHint:  { fontSize: 14, color: '#78909C', textAlign: 'center', lineHeight: 20 },
 });

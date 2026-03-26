@@ -12,6 +12,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 import Sidebar from '../../components/Sidebar';
 import { getStudentProgress } from '../../lib/analyticsHelper';
+import { analyzeStudentProfile, ACTIVITY_META } from '../../lib/strengthsAnalysis';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
@@ -33,6 +34,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [childProfile, setChildProfile] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [aiInsights, setAiInsights] = useState(null);
   const [notifCount, setNotifCount] = useState(0);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -104,17 +106,20 @@ export default function ParentDashboardScreen({ navigation }) {
     const sid = childLink.profiles?.id ?? childLink.student_id;
 
     try {
-      const [{ data: cp }, prog] = await Promise.all([
+      const [{ data: cp }, prog, insights] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
         getStudentProgress(sid, 14),
+        analyzeStudentProfile(sid, 60),
       ]);
 
       setChildProfile(cp);
       setProgress(prog);
+      setAiInsights(insights);
     } catch (error) {
-      // Set null on error but don't crash
+      console.warn('[ParentDashboard] loadChild failed:', error);
       setChildProfile(null);
       setProgress(null);
+      setAiInsights(null);
     }
   };
 
@@ -187,6 +192,7 @@ export default function ParentDashboardScreen({ navigation }) {
     setSelectedIdx(idx);
     setChildProfile(null);
     setProgress(null);
+    setAiInsights(null);
     await loadChild(children[idx]);
   };
 
@@ -336,14 +342,62 @@ export default function ParentDashboardScreen({ navigation }) {
                 <Ionicons name={item.icon} size={26} color={item.color} />
               </View>
               <Text style={[s.navLabel, { color: item.color, fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{item.label}</Text>
-              {item.badge > 0 && (
-                <View style={[s.navBadge, { backgroundColor: item.color }]}>
-                  <Text style={[s.navBadgeText, a11yTextStyle]}>{item.badge}</Text>
-                </View>
-              )}
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* ── AI Insights Panel ── */}
+        {aiInsights && aiInsights.totalSessions > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>AI Learning Insights</Text>
+            <View style={s.aiCard}>
+              <View style={s.aiCardHeader}>
+                <Text style={s.aiCardIcon}>🧠</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.aiCardTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>
+                    Overall Score: <Text style={{ color: aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#FF9800' : '#EF5350' }}>{aiInsights.overallScore}%</Text>
+                  </Text>
+                  <Text style={[s.aiCardSub, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>{aiInsights.totalSessions} sessions analysed</Text>
+                </View>
+              </View>
+
+              {aiInsights.strengths.length > 0 && (
+                <View style={s.aiSection}>
+                  <Text style={[s.aiSectionLabel, { color: '#2E7D32', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Strengths</Text>
+                  {aiInsights.strengths.slice(0, 2).map(str => (
+                    <View key={str.activity} style={s.aiRow}>
+                      <Text style={s.aiRowIcon}>{str.icon}</Text>
+                      <Text style={[s.aiRowLabel, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{str.label}</Text>
+                      <Text style={[s.aiRowScore, { color: '#2E7D32', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{str.avgAccuracy}%</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {aiInsights.weaknesses.length > 0 && (
+                <View style={s.aiSection}>
+                  <Text style={[s.aiSectionLabel, { color: '#E65100', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Needs Practice</Text>
+                  {aiInsights.weaknesses.slice(0, 2).map(wk => (
+                    <View key={wk.activity} style={s.aiRow}>
+                      <Text style={s.aiRowIcon}>{wk.icon}</Text>
+                      <Text style={[s.aiRowLabel, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{wk.label}</Text>
+                      <Text style={[s.aiRowScore, { color: '#E65100', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{wk.avgAccuracy}%</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {aiInsights.notPracticed.length > 0 && (
+                <View style={s.aiNotPracticedRow}>
+                  <Ionicons name="alert-circle-outline" size={14} color="#FF9800" />
+                  <Text style={[s.aiNotPracticedText, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
+                    Not tried yet: {aiInsights.notPracticed.map(a => ACTIVITY_META[a]?.label).filter(Boolean).join(', ')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
 
         {/* ── Progress Snapshot ── */}
         <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Progress Snapshot (14 days)</Text>
@@ -521,6 +575,21 @@ const s = StyleSheet.create({
   assignNote:         { fontSize: 11, color: '#999', marginTop: 2 },
   diffBadge:          { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
   diffText:           { fontSize: 11, fontWeight: 'bold' },
+
+  // AI Insights panel
+  aiCard:             { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, elevation: 2 },
+  aiCardHeader:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  aiCardIcon:         { fontSize: 28 },
+  aiCardTitle:        { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  aiCardSub:          { fontSize: 10, color: '#999', marginTop: 2 },
+  aiSection:          { marginBottom: 10 },
+  aiSectionLabel:     { fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  aiRow:              { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 8 },
+  aiRowIcon:          { fontSize: 16, width: 22 },
+  aiRowLabel:         { flex: 1, fontSize: 13, color: '#444' },
+  aiRowScore:         { fontSize: 13, fontWeight: 'bold' },
+  aiNotPracticedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 8, marginTop: 4 },
+  aiNotPracticedText: { flex: 1, fontSize: 11, color: '#F57C00', lineHeight: 16 },
 
   // Notification bell
   notifBadgeBtn:      { position: 'relative', padding: 4 },

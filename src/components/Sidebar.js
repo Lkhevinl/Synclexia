@@ -84,6 +84,17 @@ export default function Sidebar({ visible, onClose }) {
                 <Text style={s.name}>{profile?.full_name || 'User'}</Text>
               </View>
               <Text style={s.email}>{profile?.email}</Text>
+
+              {/* PARENT LINK CODE - For Students */}
+              {isStudent && profile?.unique_code && (
+                <View style={s.parentLinkSection}>
+                  <View style={s.parentLinkHeader}>
+                    <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
+                    <Text style={s.parentLinkLabel}>Parent Link Code</Text>
+                  </View>
+                  <Text style={s.parentLinkCode}>{profile.unique_code}</Text>
+                </View>
+              )}
             </View>
 
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
@@ -170,8 +181,27 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               </View>
 
-              {/* SYSTEM MAINTENANCE - Hidden for students */}
-              {!isStudent && (
+              {/* AI INSIGHTS - For students */}
+              {isStudent && (
+                <>
+                  <Text style={s.groupLabel}>LEARNING AI</Text>
+                  <View style={s.card}>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
+                      <View style={[s.iconWrap, { backgroundColor: '#667eea18' }]}>
+                        <Text style={{ fontSize: 16 }}>🧠</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.rowLabel}>AI Learning Insights</Text>
+                        <Text style={s.rowDesc}>Strengths, weaknesses & custom path</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {/* SYSTEM MAINTENANCE - Admin only */}
+              {isAdmin && (
                 <>
                   <Text style={s.groupLabel}>SYSTEM MAINTENANCE</Text>
                   <View style={s.card}>
@@ -184,6 +214,26 @@ export default function Sidebar({ visible, onClose }) {
                     <TouchableOpacity style={s.row} onPress={() => navigate('AddMaintenanceLog')}>
                       <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Ionicons name="add-circle-outline" size={18} color="#4CAF50" /></View>
                       <Text style={s.rowLabel}>Add Maintenance Log</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
+              {/* SUPPORT - Parent/Teacher views */}
+              {!isStudent && !isAdmin && (
+                <>
+                  <Text style={s.groupLabel}>SUPPORT</Text>
+                  <View style={s.card}>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'About' })}>
+                      <View style={[s.iconWrap, { backgroundColor: '#1976D218' }]}><Ionicons name="information-circle-outline" size={18} color="#1976D2" /></View>
+                      <Text style={s.rowLabel}>About</Text>
+                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'Rate' })}>
+                      <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Ionicons name="chatbubble-ellipses-outline" size={18} color="#2E7D32" /></View>
+                      <Text style={s.rowLabel}>Send Feedback to Admin</Text>
                       <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
@@ -263,6 +313,33 @@ const s = StyleSheet.create({
   avatarText: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   name: { fontSize: 17, fontWeight: '700', color: '#fff' },
   email: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  parentLinkSection: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  parentLinkHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  parentLinkLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+  },
+  parentLinkCode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
   badgeText: { fontSize: 11, fontWeight: '700', color: '#F59E0B' },
 

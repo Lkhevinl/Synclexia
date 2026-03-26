@@ -76,19 +76,47 @@ const DEFAULT_THEME = {
   audioInstructions: true, // Speak screen instructions on entry
 };
 
+const normalizeTheme = (rawTheme = {}) => {
+  const merged = { ...DEFAULT_THEME, ...rawTheme };
+  // Clamp fontSize to a safe range so UI cannot break with extreme values
+  if (typeof merged.fontSize === 'number') {
+    merged.fontSize = Math.max(12, Math.min(30, merged.fontSize));
+  } else {
+    merged.fontSize = DEFAULT_THEME.fontSize;
+  }
+  const colors = COLOR_THEMES[merged.colorOverlay] || COLOR_THEMES.none;
+
+  // Keep derived color fields in sync because many screens read theme.* directly.
+  return {
+    ...merged,
+    bgColor: colors.bgColor,
+    primaryColor: colors.primaryColor,
+    cardBg: colors.cardBg,
+    headerGradient: colors.headerGradient,
+    accentLight: colors.accentLight,
+    textPrimary: colors.textPrimary,
+    textSecondary: colors.textSecondary,
+  };
+};
+
 // Create the Context
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(DEFAULT_THEME);
+  const [theme, setTheme] = useState(normalizeTheme(DEFAULT_THEME));
 
   // Load persisted theme on mount
   useEffect(() => {
     AsyncStorage.getItem(THEME_STORAGE_KEY).then((stored) => {
       if (stored) {
         try {
-          setTheme((prev) => ({ ...prev, ...JSON.parse(stored) }));
-        } catch (_) {}
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') {
+            setTheme((prev) => normalizeTheme({ ...prev, ...parsed }));
+          }
+        } catch (e) {
+          console.warn('[ThemeContext] Corrupt stored theme, using defaults:', e);
+        }
       }
     });
   }, []);
@@ -96,7 +124,7 @@ export const ThemeProvider = ({ children }) => {
   // Function to update settings — persists to AsyncStorage
   const updateTheme = (newSettings) => {
     setTheme((prev) => {
-      const updated = { ...prev, ...newSettings };
+      const updated = normalizeTheme({ ...prev, ...newSettings });
       AsyncStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
       return updated;
     });
@@ -218,7 +246,7 @@ export const ThemeProvider = ({ children }) => {
       theme,
       updateTheme,
       getLetterSpacingValue,
-      getOverlayColor,
+      getOverlayColor, // kept for backward compatibility — always returns null
       getDyslexiaTextStyle,
       dyslexiaStyle,
       letterSpacingStyle,
@@ -226,7 +254,6 @@ export const ThemeProvider = ({ children }) => {
       getFontFamily,
       fontFamilyStyle,
       a11yTextStyle,
-      // New theme color helpers
       getThemeColors,
       getBgColor,
       getPrimaryColor,

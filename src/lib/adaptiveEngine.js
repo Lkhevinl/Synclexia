@@ -46,7 +46,8 @@ export const getAdaptiveLevel = async (studentId, activityType) => {
       correct_streak: 0,
     });
     return MIN_LEVEL;
-  } catch {
+  } catch (e) {
+    console.warn('[adaptiveEngine] getAdaptiveLevel failed:', e);
     return MIN_LEVEL;
   }
 };
@@ -115,7 +116,8 @@ export const updateAdaptiveState = async (studentId, activityType, accuracy) => 
     }, { onConflict: 'student_id,activity_type' });
 
     return { newLevel: current_level, promoted, demoted };
-  } catch {
+  } catch (e) {
+    console.warn('[adaptiveEngine] updateAdaptiveState failed:', e);
     return { newLevel: MIN_LEVEL, promoted: false, demoted: false };
   }
 };
@@ -134,7 +136,8 @@ export const getAllAdaptiveStates = async (studentId) => {
       .eq('student_id', studentId)
       .order('activity_type');
     return data ?? [];
-  } catch {
+  } catch (e) {
+    console.warn('[adaptiveEngine] getAllAdaptiveStates failed:', e);
     return [];
   }
 };

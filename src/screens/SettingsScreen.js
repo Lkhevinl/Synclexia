@@ -12,6 +12,7 @@ export default function SettingsScreen({ navigation }) {
   const [confirmLogout, setConfirmLogout] = React.useState(false);
 
   const isStudent = profile?.role === 'student';
+  const isAdmin = profile?.role === 'admin';
 
   const FONT_STYLES = [
     { label: 'System',         value: 'System'         },
@@ -164,12 +165,24 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ── SYSTEM (Hidden for students) ─────────────────────────────────────────── */}
-        {!isStudent && (
+        {/* ── SYSTEM (Admin only) ───────────────────────────────────────────────────── */}
+        {isAdmin && (
           <>
             <Text style={[styles.groupLabel, a11yTextStyle]}>SYSTEM</Text>
             <View style={styles.card}>
               <SettingRow icon="construct-outline" iconColor="#607D8B" label="View Maintenance Logs" onPress={() => navigation.navigate('MaintenanceLogs')} />
+            </View>
+          </>
+        )}
+
+        {/* ── SUPPORT (Parent/Teacher) ─────────────────────────────────────────────── */}
+        {!isStudent && !isAdmin && (
+          <>
+            <Text style={[styles.groupLabel, a11yTextStyle]}>SUPPORT</Text>
+            <View style={styles.card}>
+              <SettingRow icon="information-circle-outline" iconColor="#1976D2" label="About" onPress={() => navigation.navigate('Support', { initialTab: 'About' })} />
+              <View style={styles.divider} />
+              <SettingRow icon="chatbubble-ellipses-outline" iconColor="#2E7D32" label="Send Feedback to Admin" onPress={() => navigation.navigate('Support', { initialTab: 'Rate' })} />
             </View>
           </>
         )}

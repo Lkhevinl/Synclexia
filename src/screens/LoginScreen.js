@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, Dimensions, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { showAlert } from '../lib/uiAlert';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -12,9 +14,9 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
-  
-  // Get setSession to force update the app state immediately upon success
-  const { setSession, resetSigningOut } = useAuth(); 
+
+  const { setSession, resetSigningOut } = useAuth();
+  const { getBgColor, getPrimaryColor } = useTheme();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -27,213 +29,336 @@ export default function LoginScreen({ navigation }) {
     setFormError('');
 
     try {
-        // 1. Attempt Login with Supabase (trim + lowercase email to prevent mismatches)
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password: password,
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password: password,
+      });
 
-        if (error) {
-          const raw = (error.message || '').trim();
-          const lower = raw.toLowerCase();
+      if (error) {
+        const raw = (error.message || '').trim();
+        const lower = raw.toLowerCase();
 
-          let title = 'Login Failed';
-          let message = raw || 'Unable to sign in. Please try again.';
+        let title = 'Login Failed';
+        let message = raw || 'Unable to sign in. Please try again.';
 
-          if (lower.includes('invalid login credentials')) {
-            title = 'Incorrect Password';
-            message = 'The email or password is incorrect.';
-          } else if (lower.includes('email not confirmed')) {
-            title = 'Email Not Verified';
-            message = 'Please verify your email first, then try again.';
-          } else if (lower.includes('network') || lower.includes('fetch')) {
-            title = 'Connection Error';
-            message = 'Please check your internet connection and try again.';
-          }
-
-          setFormError(message);
-          showAlert(title, message);
-          return;
-        } else {
-          // 2. Check ban status before letting the user in
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('is_banned, role')
-            .eq('id', data.session.user.id)
-            .single();
-          if (profileData?.is_banned) {
-            await supabase.auth.signOut();
-            showAlert('Access Denied', 'Your account has been suspended. Please contact support.');
-            return;
-          }
-
-          // 3. Force App Context to Update
-          if (resetSigningOut) resetSigningOut(); // re-enable SIGNED_IN events for token refresh
-          if (setSession) {
-             setSession(data.session);
-          }
-          // The AppNavigator will automatically detect the session change and switch to Dashboard
+        if (lower.includes('invalid login credentials')) {
+          title = 'Incorrect Password';
+          message = 'The email or password is incorrect.';
+        } else if (lower.includes('email not confirmed')) {
+          title = 'Email Not Verified';
+          message = 'Please verify your email first, then try again.';
+        } else if (lower.includes('network') || lower.includes('fetch')) {
+          title = 'Connection Error';
+          message = 'Please check your internet connection and try again.';
         }
+
+        setFormError(message);
+        showAlert(title, message);
+        return;
+      } else {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_banned, role')
+          .eq('id', data.session.user.id)
+          .single();
+        if (profileData?.is_banned) {
+          await supabase.auth.signOut();
+          showAlert('Access Denied', 'Your account has been suspended. Please contact support.');
+          return;
+        }
+
+        if (resetSigningOut) resetSigningOut();
+        if (setSession) {
+          setSession(data.session);
+        }
+      }
     } catch (err) {
       const msg = 'Something went wrong. Please check your internet and try again.';
       setFormError(msg);
       showAlert('Error', msg);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
+  const bgColor = getBgColor();
+  const primaryColor = getPrimaryColor();
+
   return (
-    <LinearGradient
-      colors={['#f9a8c9', '#f7c5a0', '#f9a8c9']}
-      style={styles.container}
-    >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={bgColor} />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            
-            {/* 1. THE LOGO SECTION */}
-            <View style={styles.logoContainer}>
-              <View style={styles.logoCircle}>
-                <Image
-                  source={require('../../assets/icon.png')}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Top Illustration Area */}
+          <View style={styles.illustrationArea}>
+            <View style={styles.illustrationContainer}>
+              {/* ADD YOUR ILLUSTRATION IMAGE HERE */}
+              {/* Uncomment and replace with your actual image: */}
+              {/* <Image
+                source={require('../../assets/explore-illustration.png')}
+                style={styles.illustrationImage}
+                resizeMode="contain"
+              /> */}
+
+              {/* Temporary placeholder - Remove when you add your image */}
+              <View style={styles.illustrationBox}>
+                <Text style={styles.exploreText}>EXPLORE</Text>
+                <View style={styles.illustrationCircle}>
+                  <Ionicons name="book-outline" size={60} color="#2D5A5A" />
+                </View>
+                <View style={styles.decorStar1}>
+                  <Ionicons name="star" size={16} color="#FFD93D" />
+                </View>
+                <View style={styles.decorStar2}>
+                  <Ionicons name="star" size={12} color="#FFD93D" />
+                </View>
+                <View style={styles.decorLeaf}>
+                  <Ionicons name="leaf" size={20} color="#7CB342" />
+                </View>
               </View>
-              <Text style={styles.appName}>SYNCLEXIA</Text>
-              <Text style={styles.tagline}>Learning made accessible.</Text>
+            </View>
+          </View>
+
+          {/* Login Card */}
+          <View style={styles.card}>
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../../assets/icon.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
 
-            {/* 2. THE GLASS LOGIN CARD */}
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Please enter your details to log in</Text>
 
-                {/* Email Input */}
-                <View style={styles.inputContainer}>
-                    <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email Address"
-                        placeholderTextColor="#999"
-                        value={email}
-                      onChangeText={(v) => { setEmail(v); if (formError) setFormError(''); }}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                        nativeID="login-email"
-                        autoComplete="email"
-                    />
-                </View>
-
-                {/* Password Input */}
-                <View style={styles.inputContainer}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Password"
-                        placeholderTextColor="#999"
-                        value={password}
-                      onChangeText={(v) => { setPassword(v); if (formError) setFormError(''); }}
-                        secureTextEntry={!showPassword}
-                        nativeID="login-password"
-                        autoComplete="current-password"
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
-                        <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#666" />
-                    </TouchableOpacity>
-                </View>
-
-                  {!!formError && <Text style={styles.formError}>{formError}</Text>}
-
-                {/* Forgot Password Link */}
-                <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPassword')}>
-                    <Text style={styles.forgotText}>Forgot Password?</Text>
-                </TouchableOpacity>
-
-                {/* Login Button */}
-                <TouchableOpacity style={styles.loginBtn} onPress={handleLogin} disabled={loading}>
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text style={styles.loginBtnText}>SIGN IN</Text>
-                    )}
-                </TouchableOpacity>
-
-                {/* Sign Up Link */}
-                <View style={styles.footer}>
-                    <Text style={styles.footerText}>Don't have an account? </Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-                        <Text style={styles.signupText}>Sign Up</Text>
-                    </TouchableOpacity>
-                </View>
+            {/* Username/Email Input */}
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={20} color="#999" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor="#999"
+                value={email}
+                onChangeText={(v) => { setEmail(v); if (formError) setFormError(''); }}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
             </View>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={(v) => { setPassword(v); if (formError) setFormError(''); }}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+                <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            {!!formError && <Text style={styles.formError}>{formError}</Text>}
+
+            {/* Forgot Password */}
+            <TouchableOpacity style={styles.forgotBtn} onPress={() => navigation.navigate('ForgotPassword')}>
+              <Text style={[styles.forgotText, { color: primaryColor }]}>Forgot Password?</Text>
+            </TouchableOpacity>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[styles.loginBtn, { backgroundColor: primaryColor }]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginBtnText}>Login</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Sign Up Link */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Don't have an account yet? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+                <Text style={[styles.signupText, { color: primaryColor }]}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  keyboardView: { flex: 1 },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-
-  // Logo Styles
-  logoContainer: { alignItems: 'center', marginBottom: 40, marginTop: 40 },
-  logoCircle: {
-      width: 110, height: 110, borderRadius: 28,
-      backgroundColor: 'rgba(255,255,255,0.5)',
-      justifyContent: 'center', alignItems: 'center',
-      borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)',
-      marginBottom: 15,
-      overflow: 'hidden',
+  container: {
+    flex: 1,
   },
-  logoImage: { width: 100, height: 100, borderRadius: 24 },
-  appName: { fontSize: 32, fontWeight: 'bold', color: '#7B2D52', letterSpacing: 2 },
-  tagline: { fontSize: 14, color: '#9E5070', letterSpacing: 0.5 },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
 
-  // Card Styles
+  // Illustration Area
+  illustrationArea: {
+    height: SCREEN_HEIGHT * 0.35,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  illustrationContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Add this for when you use an actual illustration image
+  illustrationImage: {
+    width: '80%',
+    height: '80%',
+  },
+  illustrationBox: {
+    width: 200,
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  exploreText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2D5A5A',
+    marginBottom: 10,
+    letterSpacing: 2,
+  },
+  illustrationCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  decorStar1: {
+    position: 'absolute',
+    top: 20,
+    right: 30,
+  },
+  decorStar2: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+  },
+  decorLeaf: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+  },
+
+  // Card
   card: {
-      backgroundColor: '#fff',
-      borderRadius: 25,
-      padding: 30,
-      elevation: 10,
-      boxShadow: '0px 10px 10px rgba(0,0,0,0.25)',
-      marginBottom: 20
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 30,
+    paddingTop: 30,
+    paddingBottom: 40,
+    minHeight: SCREEN_HEIGHT * 0.65,
   },
-  cardTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 20, textAlign: 'center' },
-
-  // Input Styles
-  inputContainer: { 
-      flexDirection: 'row', alignItems: 'center', 
-      backgroundColor: '#f5f5f5', borderRadius: 12, 
-      marginBottom: 15, paddingHorizontal: 15, height: 50
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, color: '#333', fontWeight: '600' },
+  logo: {
+    width: 60,
+    height: 60,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
 
-  formError: { color: '#E53935', fontSize: 13, fontWeight: '600', marginTop: -6, marginBottom: 12 },
+  // Inputs
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    height: 55,
+    marginBottom: 15,
+  },
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
 
-  // Button Styles
-  forgotBtn: { alignSelf: 'flex-end', marginBottom: 20 },
-  forgotText: { color: '#666', fontSize: 13, fontWeight: '600' },
+  formError: {
+    color: '#E53935',
+    fontSize: 13,
+    marginTop: -8,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
 
+  // Forgot Password
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: 25,
+  },
+  forgotText: {
+    fontSize: 14,
+  },
+
+  // Login Button
   loginBtn: {
-      backgroundColor: '#C06080',
-      borderRadius: 12,
-      height: 55,
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 20,
-      boxShadow: '0px 4px 5px rgba(192,96,128,0.3)',
-      elevation: 5
+    borderRadius: 12,
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 25,
   },
-  loginBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 1 },
+  loginBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
 
   // Footer
-  footer: { flexDirection: 'row', justifyContent: 'center' },
-  footerText: { color: '#666' },
-  signupText: { color: '#C06080', fontWeight: 'bold' }
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  signupText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });

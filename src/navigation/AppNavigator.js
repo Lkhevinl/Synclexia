@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
@@ -11,6 +13,7 @@ import DashboardSwitcher from '../components/DashboardSwitcher';
 // Standard Screens
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import DashboardScreen from '../screens/students/DashboardScreen';
 import PhonicsScreen from '../screens/students/PhonicsScreen';
 import WritingScreen from '../screens/students/WritingScreen';
@@ -24,6 +27,9 @@ import AboutScreen from '../screens/AboutScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
+import AIInsightsScreen from '../screens/students/AIInsightsScreen';
+
+const ONBOARDING_KEY = '@synclexia_onboarding_complete';
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
@@ -67,39 +73,63 @@ const Tab = createBottomTabNavigator();
 // doubles the bottom gap and pushes labels off-screen on iPhone.
 const TAB_BAR_STYLE = {
   backgroundColor: '#fff',
-  height: 64,
-  paddingBottom: 6,
-  paddingTop: 8,
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-  elevation: 5,
-  boxShadow: '0px -2px 8px rgba(0, 0, 0, 0.06)',
+  height: 70,
+  paddingBottom: 10,
+  paddingTop: 12,
+  borderTopWidth: 0,
+  elevation: 15,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: -3 },
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
 };
 
 function StudentTabs() {
+  const { getPrimaryColor } = useTheme();
+  const primaryColor = getPrimaryColor();
+  const primaryColorLight = primaryColor + '1A'; // Add alpha for light background
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: TAB_BAR_STYLE,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarIcon: ({ focused, color }) => {
           let iconName;
+          let iconSize = focused ? 28 : 24;
+
           if (route.name === 'Dashboard')   iconName = focused ? 'home'        : 'home-outline';
           else if (route.name === 'TTS')    iconName = focused ? 'volume-high' : 'volume-high-outline';
           else if (route.name === 'STT')    iconName = focused ? 'mic'         : 'mic-outline';
           else if (route.name === 'Scan')   iconName = focused ? 'camera'      : 'camera-outline';
           else                              iconName = 'ellipse-outline';
-          return <Ionicons name={iconName} size={size} color={color} />;
+
+          return (
+            <View style={{
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              backgroundColor: focused ? primaryColorLight : 'transparent',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              <Ionicons name={iconName} size={iconSize} color={color} />
+            </View>
+          );
         },
-        tabBarActiveTintColor: '#FF9800',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: primaryColor,
+        tabBarInactiveTintColor: '#999',
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardSwitcher} />
-      <Tab.Screen name="TTS"       component={TextToSpeechScreen}  options={{ title: 'Text-to-Speech' }} />
-      <Tab.Screen name="Scan"      component={ScanScreen} />
-      <Tab.Screen name="STT"       component={SpeechToTextScreen}  options={{ title: 'Speech-to-Text' }} />
+      <Tab.Screen name="Dashboard" component={DashboardSwitcher} options={{ title: 'Home' }} />
+      <Tab.Screen name="TTS"       component={TextToSpeechScreen}  options={{ title: 'Listen' }} />
+      <Tab.Screen name="Scan"      component={ScanScreen} options={{ title: 'Scan' }} />
+      <Tab.Screen name="STT"       component={SpeechToTextScreen}  options={{ title: 'Speak' }} />
     </Tab.Navigator>
   );
 }
@@ -187,6 +217,7 @@ function AppScreens() {
       <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
       <Stack.Screen name="Spelling" component={SpellingScreen} />
       <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+      <Stack.Screen name="AIInsights" component={AIInsightsScreen} />
       <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
@@ -250,13 +281,33 @@ const navStyles = StyleSheet.create({
 
 export default function RootNavigator() {
   const { session, loading } = useAuth();
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  if (loading) return <LoadingScreen />;
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const value = await AsyncStorage.getItem(ONBOARDING_KEY);
+      setShowOnboarding(value !== 'true');
+    } catch (e) {
+      setShowOnboarding(true);
+    } finally {
+      setCheckingOnboarding(false);
+    }
+  };
+
+  if (loading || checkingOnboarding) return <LoadingScreen />;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {!session ? (
         <>
+          {showOnboarding && (
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          )}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

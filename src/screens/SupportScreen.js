@@ -1,20 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../components/AppHeader';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-export default function SupportScreen() {
+export default function SupportScreen({ route }) {
   const { profile } = useAuth();
   // Students cannot send feedback
   const isStudent = profile?.role === 'student';
   const canSendFeedback = !!profile?.id && !isStudent;
-  const [tab, setTab] = useState('Help'); // Help | Rate | About
+  const tabs = React.useMemo(() => (isStudent ? ['Help', 'About'] : ['Help', 'Rate', 'About']), [isStudent]);
+  const requestedTab = route?.params?.initialTab;
+  const initialTab = tabs.includes(requestedTab) ? requestedTab : 'Help';
+  const [tab, setTab] = useState(initialTab);
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
 
-  const tabs = isStudent ? ['Help', 'About'] : ['Help', 'Rate', 'About'];
+  useEffect(() => {
+    if (tabs.includes(requestedTab)) {
+      setTab(requestedTab);
+    }
+  }, [requestedTab, tabs]);
 
   const submitFeedback = async () => {
     if (!canSendFeedback) {
