@@ -21,119 +21,15 @@ const DAILY_TIPS = [
 
 // Loading Screen Component
 const LoadingScreen = ({ progress }) => {
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const dotAnim1 = useRef(new Animated.Value(0)).current;
-  const dotAnim2 = useRef(new Animated.Value(0)).current;
-  const dotAnim3 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Scale in animation
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      tension: 50,
-      friction: 7,
-      useNativeDriver: true,
-    }).start();
-
-    // Continuous rotation for the outer ring
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    // Pulse animation for logo
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    // Bouncing dots animation
-    const animateDot = (anim, delay) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(anim, {
-            toValue: -10,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    };
-
-    animateDot(dotAnim1, 0);
-    animateDot(dotAnim2, 150);
-    animateDot(dotAnim3, 300);
-  }, []);
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.loadingScreenContainer}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-
-      {/* Background decorative circles */}
-      <View style={styles.loadingBgCircle1} />
-      <View style={styles.loadingBgCircle2} />
-      <View style={styles.loadingBgCircle3} />
-
-      <Animated.View style={[styles.loadingLogoContainer, { transform: [{ scale: scaleAnim }] }]}>
-        {/* Rotating outer ring */}
-        <Animated.View style={[styles.loadingOuterRing, { transform: [{ rotate: spin }] }]}>
-          <LinearGradient
-            colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0.3)']}
-            style={styles.loadingRingGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-        </Animated.View>
-
-        {/* Logo circle */}
-        <Animated.View style={[styles.loadingLogoCircle, { transform: [{ scale: pulseAnim }] }]}>
-          <Text style={styles.loadingLogoText}>S</Text>
-        </Animated.View>
-      </Animated.View>
-
-      <Text style={styles.loadingAppName}>Synclexia</Text>
-      <Text style={styles.loadingTagline}>Learning made fun!</Text>
-
-      {/* Bouncing dots */}
-      <View style={styles.loadingDotsContainer}>
-        <Animated.View style={[styles.loadingDot, { transform: [{ translateY: dotAnim1 }] }]} />
-        <Animated.View style={[styles.loadingDot, styles.loadingDotMiddle, { transform: [{ translateY: dotAnim2 }] }]} />
-        <Animated.View style={[styles.loadingDot, { transform: [{ translateY: dotAnim3 }] }]} />
-      </View>
-
-      <Text style={styles.loadingStatusText}>Loading your dashboard...</Text>
-    </LinearGradient>
+    <View style={styles.loadingScreenContainer}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF5F1" />
+      <Image
+        source={require('../../../assets/synclexia-logo2-removebg-preview.png')}
+        style={styles.loadingLogo}
+        resizeMode="contain"
+      />
+    </View>
   );
 };
 
@@ -621,106 +517,13 @@ const styles = StyleSheet.create({
   // Loading Screen Styles
   loadingScreenContainer: {
     flex: 1,
+    backgroundColor: '#FAF5F1',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
-  loadingBgCircle1: {
-    position: 'absolute',
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    top: -50,
-    left: -100,
-  },
-  loadingBgCircle2: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    bottom: 100,
-    right: -50,
-  },
-  loadingBgCircle3: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    top: '40%',
-    right: 20,
-  },
-  loadingLogoContainer: {
-    width: 140,
-    height: 140,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  loadingOuterRing: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 3,
-    borderColor: 'transparent',
-    overflow: 'hidden',
-  },
-  loadingRingGradient: {
-    flex: 1,
-    borderRadius: 70,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  loadingLogoCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  loadingLogoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#667eea',
-  },
-  loadingAppName: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
-  loadingTagline: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 40,
-  },
-  loadingDotsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  loadingDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#fff',
-  },
-  loadingDotMiddle: {
-    marginHorizontal: 8,
-  },
-  loadingStatusText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+  loadingLogo: {
+    width: SCREEN_WIDTH * 0.5,
+    height: SCREEN_WIDTH * 0.5,
   },
 
   // Modern Header Styles
