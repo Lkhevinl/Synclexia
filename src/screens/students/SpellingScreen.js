@@ -415,7 +415,7 @@ function FinishScreen({ score, total, onBack }) {
 }
 
 const fin = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#E3F2FD' },
+  container: { flex: 1, backgroundColor: '#FAF5F1' },
   header: { paddingTop: 70, paddingBottom: 20, alignItems: 'center' },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   card: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 28, padding: 32, alignItems: 'center', elevation: 4 },
@@ -477,6 +477,6 @@ export default function SpellingScreen() {
 }
 
 const root = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1, backgroundColor: '#FAF5F1' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
 });

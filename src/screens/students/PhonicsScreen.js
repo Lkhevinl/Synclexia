@@ -133,13 +133,13 @@ export default function PhonicsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#F0F4F8' },
+  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
   safeArea: { flex: 1 },
-  
+
   headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 },
-  header: { fontSize: 32, fontWeight: 'bold', color: '#37474F', letterSpacing: 1 },
-  subHeader: { fontSize: 16, color: '#78909C', marginTop: 5, marginBottom: 12 },
-  activitiesBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FF9800', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 },
+  header: { fontSize: 28, fontWeight: '800', color: '#333', letterSpacing: 0.5 },
+  subHeader: { fontSize: 15, color: '#777', marginTop: 5, marginBottom: 14, letterSpacing: 0.2 },
+  activitiesBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8927C', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 },
   activitiesBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 
   listContent: { paddingBottom: 40, paddingHorizontal: 20 },

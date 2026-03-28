@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Alert, Image, ActivityIndicator, Animated, Dimensions, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Image, Dimensions, DeviceEventEmitter } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
@@ -9,7 +9,6 @@ import { getStudentProgress } from '../../lib/analyticsHelper';
 import Sidebar from '../../components/Sidebar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - 60) / 2;
 
 const DAILY_TIPS = [
   "Tip: Reading out loud helps you remember better!",
@@ -86,6 +85,11 @@ export default function DashboardScreen({ navigation }) {
 
   useEffect(() => {
     initializeDashboard();
+  }, []);
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('openSidebar', () => setSidebarVisible(true));
+    return () => sub.remove();
   }, []);
 
   const fetchNotifications = async () => {
@@ -175,50 +179,6 @@ export default function DashboardScreen({ navigation }) {
     }
   };
 
-  // Dashboard Card Component - Matching the reference UI
-  const DashboardCard = ({ title, icon, color, route, gradientColors }) => {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-
-    const handlePressIn = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-        friction: 5,
-      }).start();
-    };
-
-    const handlePressOut = () => {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        friction: 5,
-      }).start();
-    };
-
-    return (
-      <Animated.View style={[styles.dashboardCardContainer, { transform: [{ scale: scaleAnim }] }]}>
-        <TouchableOpacity
-          style={styles.dashboardCardTouchable}
-          onPress={() => navigation.navigate(route)}
-          onPressIn={handlePressIn}
-          onPressOut={handlePressOut}
-          activeOpacity={1}
-        >
-          <LinearGradient
-            colors={gradientColors || [color, color]}
-            style={styles.dashboardCardGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View style={styles.dashboardCardIconContainer}>
-              <Text style={styles.dashboardCardIcon}>{icon}</Text>
-            </View>
-            <Text style={styles.dashboardCardTitle}>{title}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
 
   return (
     <View style={[styles.mainContainer, { backgroundColor: bgColor }]}>
@@ -242,64 +202,46 @@ export default function DashboardScreen({ navigation }) {
           {/* MODERN HEADER */}
           <View style={[styles.modernHeader, { backgroundColor: bgColor }]}>
             <View style={styles.modernHeaderContent}>
-              <View style={styles.modernHeaderLeft}>
-                <View style={styles.profileSection}>
-                  <TouchableOpacity
-                    style={styles.modernAvatarWrapper}
-                    onPress={isStudent ? undefined : () => navigation.navigate('Profile')}
-                    disabled={isStudent}
-                    activeOpacity={isStudent ? 1 : 0.8}
-                  >
-                    {profile?.avatar_url ? (
-                      <Image
-                        source={{ uri: profile.avatar_url }}
-                        style={styles.modernAvatarImg}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <LinearGradient
-                        colors={['#667eea', '#764ba2']}
-                        style={styles.modernAvatarPlaceholder}
-                      >
-                        <Text style={styles.modernAvatarInitial}>
-                          {profile?.full_name?.[0]?.toUpperCase() || '?'}
-                        </Text>
-                      </LinearGradient>
-                    )}
-                  </TouchableOpacity>
-                  <Text style={styles.profileName}>
-                    Hello {profile?.full_name?.split(' ')[0]?.toLowerCase() || "learner"}
-                  </Text>
-                </View>
-                {theme.letterSpacing === 'normal' && (
-                  <View style={styles.tipBadgeContainer}>
-                    <View style={[
-                      styles.tipBadge,
-                      dailyTip.startsWith('Goal') && styles.tipBadgeGoal,
-                      dailyTip.startsWith('Tip') && styles.tipBadgeTip,
-                      dailyTip.startsWith('Fun') && styles.tipBadgeFun,
-                      dailyTip.startsWith('Fact') && styles.tipBadgeFact,
-                    ]}>
-                      <Text style={styles.tipBadgeText}>{dailyTip}</Text>
-                    </View>
+              {/* Avatar */}
+              <TouchableOpacity
+                style={styles.modernAvatarWrapper}
+                onPress={isStudent ? undefined : () => navigation.navigate('Profile')}
+                disabled={isStudent}
+                activeOpacity={isStudent ? 1 : 0.8}
+              >
+                {profile?.avatar_url ? (
+                  <Image
+                    source={{ uri: profile.avatar_url }}
+                    style={styles.modernAvatarImg}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.modernAvatarPlaceholder}>
+                    <Text style={styles.modernAvatarInitial}>
+                      {profile?.full_name?.[0]?.toUpperCase() || '?'}
+                    </Text>
                   </View>
                 )}
+              </TouchableOpacity>
+
+              {/* Welcome Card */}
+              <View style={styles.welcomeCard}>
+                <View style={styles.welcomeCardText}>
+                  <Text style={styles.welcomeCardTitle}>
+                    Welcome back, {profile?.full_name?.split(' ')[0] || 'Learner'}!
+                  </Text>
+                </View>
+                <Ionicons name="book" size={24} color="rgba(255,255,255,0.9)" />
               </View>
-              <View style={styles.modernHeaderIcons}>
-                <TouchableOpacity
-                  style={styles.modernIconBtn}
-                  onPress={() => setNotifVisible(true)}
-                >
-                  <Ionicons name="notifications-outline" size={24} color="#333" />
-                  {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.modernRedDot} />}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modernIconBtn}
-                  onPress={() => setSidebarVisible(true)}
-                >
-                  <Ionicons name="menu-outline" size={26} color="#333" />
-                </TouchableOpacity>
-              </View>
+
+              {/* Bell Icon */}
+              <TouchableOpacity
+                style={styles.modernIconBtn}
+                onPress={() => setNotifVisible(true)}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#333" />
+                {(notifications.length > 0 || unreadReplyCount > 0) && <View style={styles.modernRedDot} />}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -329,45 +271,35 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
 
-            {/* TIP BADGE - Shows here when letter spacing is wide/wider */}
-            {(theme.letterSpacing === 'wide' || theme.letterSpacing === 'wider') && (
-              <View style={styles.movableTipContainer}>
-                <View style={[
-                  styles.movableTipBadge,
-                  dailyTip.startsWith('Goal') && styles.tipBadgeGoal,
-                  dailyTip.startsWith('Tip') && styles.tipBadgeTip,
-                  dailyTip.startsWith('Fun') && styles.tipBadgeFun,
-                  dailyTip.startsWith('Fact') && styles.tipBadgeFact,
-                ]}>
-                  <Text style={styles.tipBadgeText}>{dailyTip}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* AI INSIGHTS BANNER */}
-            <TouchableOpacity
-              style={styles.aiBanner}
-              onPress={() => navigation.navigate('AIInsights')}
-              activeOpacity={0.88}
-            >
-              <LinearGradient
-                colors={['#667eea', '#764ba2']}
-                style={styles.aiBannerGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
+            {/* AI INSIGHTS BANNER — parents only */}
+            {profile?.role === 'parent' && (
+              <TouchableOpacity
+                style={styles.aiBanner}
+                onPress={() => navigation.navigate('AIInsights')}
+                activeOpacity={0.88}
               >
-                <View style={styles.aiBannerLeft}>
-                  <View style={styles.aiIconBg}>
-                    <Text style={{ fontSize: 22 }}>🧠</Text>
+                <LinearGradient
+                  colors={['#667eea', '#764ba2']}
+                  style={styles.aiBannerGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <View style={styles.aiBannerLeft}>
+                    <LinearGradient
+                      colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0.15)']}
+                      style={styles.aiAvatarBg}
+                    >
+                      <Text style={styles.aiAvatarText}>AI</Text>
+                    </LinearGradient>
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                      <Text style={styles.aiBannerTitle}>AI Learning Insights</Text>
+                      <Text style={styles.aiBannerSub}>See your strengths & customize learning</Text>
+                    </View>
                   </View>
-                  <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={styles.aiBannerTitle}>AI Learning Insights</Text>
-                    <Text style={styles.aiBannerSub}>See your strengths & customize learning</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-              </LinearGradient>
-            </TouchableOpacity>
+                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
 
             {/* EXPLORE SECTION */}
             <View style={styles.section}>
@@ -377,39 +309,27 @@ export default function DashboardScreen({ navigation }) {
                   <Ionicons name="compass" size={16} color="#667eea" />
                 </View>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScrollContainer}
-              >
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Phonics"
-                    icon="🗣️"
-                    color="#7C4DFF"
-                    gradientColors={['#7C4DFF', '#651FFF']}
-                    route="Phonics"
-                  />
-                </View>
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Reading"
-                    icon="📖"
-                    color="#E91E63"
-                    gradientColors={['#E91E63', '#C2185B']}
-                    route="Reading"
-                  />
-                </View>
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Writing"
-                    icon="✍️"
-                    color="#00BFA5"
-                    gradientColors={['#00BFA5', '#00897B']}
-                    route="Writing"
-                  />
-                </View>
-              </ScrollView>
+              {[
+                { title: 'Phonics',  iconName: 'volume-high', desc: 'Tap to hear sounds and learn how to read words!',          route: 'Phonics',  tag: 'Listening'  },
+                { title: 'Reading',  iconName: 'book-outline', desc: 'Select a book, listen to the story, and follow along!',   route: 'Reading',  tag: 'Comprehension' },
+                { title: 'Writing',  iconName: 'pencil',       desc: 'Practice writing letters and words to build your skills!', route: 'Writing', tag: 'Practice'   },
+              ].map(({ title, iconName, desc, route, tag }) => (
+                <TouchableOpacity key={title} style={styles.contentCard} onPress={() => navigation.navigate(route)} activeOpacity={0.85}>
+                  <View style={styles.contentCardIcon}>
+                    <Ionicons name={iconName} size={26} color="#fff" />
+                  </View>
+                  <View style={styles.contentCardBody}>
+                    <View style={styles.contentCardTagRow}>
+                      <Text style={styles.contentCardTag}>{tag}</Text>
+                    </View>
+                    <Text style={styles.contentCardTitle}>{title}</Text>
+                    <Text style={styles.contentCardDesc}>{desc}</Text>
+                  </View>
+                  <View style={styles.contentCardArrow}>
+                    <Ionicons name="arrow-forward" size={16} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
 
             {/* PLAY & LEARN SECTION */}
@@ -420,39 +340,27 @@ export default function DashboardScreen({ navigation }) {
                   <Ionicons name="game-controller" size={16} color="#FF9800" />
                 </View>
               </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScrollContainer}
-              >
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Spelling"
-                    icon="🔤"
-                    color="#FF9800"
-                    gradientColors={['#FF9800', '#F57C00']}
-                    route="Spelling"
-                  />
-                </View>
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Sound Games"
-                    icon="🎧"
-                    color="#E91E63"
-                    gradientColors={['#E91E63', '#C2185B']}
-                    route="PhonologicalAwareness"
-                  />
-                </View>
-                <View style={styles.horizontalCard}>
-                  <DashboardCard
-                    title="Phonics Games"
-                    icon="🎮"
-                    color="#9C27B0"
-                    gradientColors={['#9C27B0', '#7B1FA2']}
-                    route="PhonicsActivity"
-                  />
-                </View>
-              </ScrollView>
+              {[
+                { title: 'Spelling',      iconName: 'text',            desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words'    },
+                { title: 'Sound Games',   iconName: 'headset',         desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening' },
+                { title: 'Phonics Games', iconName: 'game-controller', desc: 'Have fun while mastering phonics with interactive games!', route: 'PhonicsActivity',       tag: 'Games'    },
+              ].map(({ title, iconName, desc, route, tag }) => (
+                <TouchableOpacity key={title} style={styles.contentCard} onPress={() => navigation.navigate(route)} activeOpacity={0.85}>
+                  <View style={styles.contentCardIcon}>
+                    <Ionicons name={iconName} size={26} color="#fff" />
+                  </View>
+                  <View style={styles.contentCardBody}>
+                    <View style={styles.contentCardTagRow}>
+                      <Text style={styles.contentCardTag}>{tag}</Text>
+                    </View>
+                    <Text style={styles.contentCardTitle}>{title}</Text>
+                    <Text style={styles.contentCardDesc}>{desc}</Text>
+                  </View>
+                  <View style={styles.contentCardArrow}>
+                    <Ionicons name="arrow-forward" size={16} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           </ScrollView>
 
@@ -529,119 +437,70 @@ const styles = StyleSheet.create({
   // Modern Header Styles
   modernHeader: {
     paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
   },
   modernHeaderContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  modernHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12,
-  },
-  profileSection: {
-    alignItems: 'center',
-  },
-  profileName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 6,
+    gap: 10,
   },
   modernAvatarWrapper: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     overflow: 'hidden',
+    flexShrink: 0,
   },
   modernAvatarImg: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   modernAvatarPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E8927C',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modernAvatarInitial: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
   },
-  modernGreetingContainer: {
-    marginLeft: 14,
+  welcomeCard: {
     flex: 1,
-  },
-  modernGreetingText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modernSubGreeting: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
-  },
-  tipBadgeContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    marginRight: 16,
-    maxWidth: '70%',
-  },
-  tipBadge: {
-    paddingHorizontal: 5,
-    paddingVertical: 4,
-    borderRadius: 7,
-    flexShrink: 1,
-    minHeight: 16,
-    justifyContent: 'center',
-  },
-  tipBadgeGoal: {
-    backgroundColor: '#FFE5E5',
-  },
-  tipBadgeTip: {
-    backgroundColor: '#E3F2FD',
-  },
-  tipBadgeFun: {
-    backgroundColor: '#FFF9E6',
-  },
-  tipBadgeFact: {
-    backgroundColor: '#E8F5E9',
-  },
-  tipBadgeText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#333',
-    lineHeight: 12,
-    textAlign: 'left',
-  },
-  movableTipContainer: {
-    paddingHorizontal: 10,
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  movableTipBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 7,
-    justifyContent: 'center',
-  },
-  modernHeaderIcons: {
     flexDirection: 'row',
-    gap: 12,
-    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#E8927C',
+    elevation: 2,
+    shadowColor: '#E8927C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  welcomeCardText: {
+    flex: 1,
+  },
+  welcomeCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  welcomeCardEmoji: {
+    fontSize: 22,
+    marginLeft: 8,
   },
   modernIconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -650,6 +509,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+    flexShrink: 0,
   },
   modernRedDot: {
     position: 'absolute',
@@ -662,12 +522,33 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
+  tipBadgeGoal: { backgroundColor: '#FFE5E5' },
+  tipBadgeTip: { backgroundColor: '#E3F2FD' },
+  tipBadgeFun: { backgroundColor: '#FFF9E6' },
+  tipBadgeFact: { backgroundColor: '#E8F5E9' },
+  tipBadgeText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: '#333',
+    lineHeight: 12,
+  },
+  movableTipContainer: {
+    paddingHorizontal: 10,
+    marginBottom: 8,
+    alignItems: 'flex-start',
+  },
+  movableTipBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 7,
+    justifyContent: 'center',
+  },
 
   // Modern Scroll Content
   modernScrollContent: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 100,
   },
 
   // Quick Stats Bar
@@ -683,149 +564,74 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
   },
-  quickStatItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  quickStatValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 6,
-  },
-  quickStatLabel: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 2,
-  },
-  quickStatDivider: {
-    width: 1,
-    backgroundColor: '#E0E0E0',
-    marginHorizontal: 8,
-  },
+  quickStatItem: { flex: 1, alignItems: 'center' },
+  quickStatValue: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 6 },
+  quickStatLabel: { fontSize: 11, color: '#888', marginTop: 2 },
+  quickStatDivider: { width: 1, backgroundColor: '#E0E0E0', marginHorizontal: 8 },
 
   // Section Styles
-  section: {
-    marginBottom: 28,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-  },
+  section: { marginBottom: 28 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   sectionIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F5F7FA',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center',
   },
 
-  // Dashboard Grid Styles
-  dashboardGrid: {
+  // Content Cards
+  contentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-
-  // Horizontal Scroll Styles
-  horizontalScrollContainer: {
-    paddingRight: 20,
-    gap: 12,
-  },
-  horizontalCard: {
-    width: CARD_WIDTH,
-  },
-
-  dashboardCardContainer: {
-    width: CARD_WIDTH,
-    marginBottom: 16,
-    borderRadius: 24,
-    elevation: 5,
-    shadowColor: '#000',
+    alignItems: 'center',
+    gap: 16,
+    elevation: 2,
+    shadowColor: '#E8927C',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#E8927C',
   },
-  dashboardCardTouchable: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
+  contentCardIcon: {
+    width: 60, height: 60, borderRadius: 16,
+    backgroundColor: '#E8927C',
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  dashboardCardGradient: {
-    padding: 20,
-    borderRadius: 24,
-    height: 130,
-    justifyContent: 'center',
-    alignItems: 'center',
+  contentCardBody: { flex: 1 },
+  contentCardTagRow: { marginBottom: 3 },
+  contentCardTag: {
+    fontSize: 10, fontWeight: '700', color: '#E8927C',
+    textTransform: 'uppercase', letterSpacing: 0.8,
   },
-  dashboardCardIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  dashboardCardIcon: {
-    fontSize: 32,
-  },
-  dashboardCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
+  contentCardTitle: { fontSize: 17, fontWeight: '800', color: '#222', marginBottom: 4 },
+  contentCardDesc: { fontSize: 12, color: '#777', lineHeight: 17 },
+  contentCardArrow: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#E8927C',
+    justifyContent: 'center', alignItems: 'center',
+    alignSelf: 'center', flexShrink: 0,
   },
 
   // AI Insights Banner
   aiBanner: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 24,
-    elevation: 5,
-    shadowColor: '#667eea',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    borderRadius: 20, overflow: 'hidden', marginBottom: 24,
+    elevation: 5, shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 8,
   },
-  aiBannerGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+  aiBannerGradient: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 18 },
+  aiBannerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  aiAvatarBg: {
+    width: 48, height: 48, borderRadius: 24,
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
-  aiBannerLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+  aiAvatarText: {
+    fontSize: 16, fontWeight: '900', color: '#fff', letterSpacing: 1,
   },
-  aiIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  aiBannerTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 2,
-  },
-  aiBannerSub: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-  },
+  aiBannerTitle: { fontSize: 15, fontWeight: 'bold', color: '#fff', marginBottom: 2 },
+  aiBannerSub: { fontSize: 11, color: 'rgba(255,255,255,0.8)' },
 
   // Error State
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },

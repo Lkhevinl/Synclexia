@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, DeviceEventEmitter } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,64 +72,77 @@ const Tab = createBottomTabNavigator();
 // adds insets.bottom as padding. Do NOT add insets.bottom here too or it
 // doubles the bottom gap and pushes labels off-screen on iPhone.
 const TAB_BAR_STYLE = {
-  backgroundColor: '#fff',
-  height: 70,
+  position: 'absolute',
+  backgroundColor: '#F5EDE6',
+  height: 64,
+  borderRadius: 50,
+  marginHorizontal: 20,
+  marginBottom: 20,
+  paddingTop: 10,
   paddingBottom: 10,
-  paddingTop: 12,
+  paddingLeft: 10,
+  paddingRight: 20,
   borderTopWidth: 0,
-  elevation: 15,
+  overflow: 'hidden',
+  elevation: 12,
   shadowColor: '#000',
-  shadowOffset: { width: 0, height: -3 },
-  shadowOpacity: 0.1,
-  shadowRadius: 10,
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.12,
+  shadowRadius: 20,
 };
 
 function StudentTabs() {
-  const { getPrimaryColor } = useTheme();
-  const primaryColor = getPrimaryColor();
-  const primaryColorLight = primaryColor + '1A'; // Add alpha for light background
-
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: TAB_BAR_STYLE,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 4,
-        },
-        tabBarIcon: ({ focused, color }) => {
+        tabBarShowLabel: false,
+        tabBarIcon: ({ focused }) => {
           let iconName;
-          let iconSize = focused ? 28 : 24;
-
-          if (route.name === 'Dashboard')   iconName = focused ? 'home'        : 'home-outline';
-          else if (route.name === 'TTS')    iconName = focused ? 'volume-high' : 'volume-high-outline';
-          else if (route.name === 'STT')    iconName = focused ? 'mic'         : 'mic-outline';
-          else if (route.name === 'Scan')   iconName = focused ? 'camera'      : 'camera-outline';
-          else                              iconName = 'ellipse-outline';
+          if (route.name === 'Dashboard')    iconName = focused ? 'home'    : 'home-outline';
+          else if (route.name === 'TTS')     iconName = focused ? 'reader'  : 'reader-outline';
+          else if (route.name === 'Scan')    iconName = focused ? 'camera'  : 'camera-outline';
+          else if (route.name === 'STT')     iconName = focused ? 'headset' : 'headset-outline';
+          else if (route.name === 'Profile') iconName = focused ? 'menu'    : 'menu-outline';
+          else                               iconName = 'ellipse-outline';
 
           return (
             <View style={{
-              width: 50,
-              height: 50,
-              borderRadius: 25,
-              backgroundColor: focused ? primaryColorLight : 'transparent',
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: focused ? '#E8735A' : 'transparent',
               justifyContent: 'center',
               alignItems: 'center',
+              flexShrink: 0,
             }}>
-              <Ionicons name={iconName} size={iconSize} color={color} />
+              <Ionicons name={iconName} size={20} color={focused ? '#fff' : '#bbb'} />
             </View>
           );
         },
-        tabBarActiveTintColor: primaryColor,
-        tabBarInactiveTintColor: '#999',
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardSwitcher} options={{ title: 'Home' }} />
-      <Tab.Screen name="TTS"       component={TextToSpeechScreen}  options={{ title: 'Listen' }} />
-      <Tab.Screen name="Scan"      component={ScanScreen} options={{ title: 'Scan' }} />
-      <Tab.Screen name="STT"       component={SpeechToTextScreen}  options={{ title: 'Speak' }} />
+      <Tab.Screen name="Dashboard" component={DashboardSwitcher}  options={{ title: 'Home' }} />
+      <Tab.Screen name="TTS"       component={TextToSpeechScreen} options={{ title: 'Listen' }} />
+      <Tab.Screen name="Scan"      component={ScanScreen}         options={{ title: 'Scan' }} />
+      <Tab.Screen name="STT"       component={SpeechToTextScreen} options={{ title: 'Speak' }} />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Menu',
+          tabBarButton: () => (
+            <TouchableOpacity
+              style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => DeviceEventEmitter.emit('openSidebar')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="menu-outline" size={20} color="#bbb" />
+            </TouchableOpacity>
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }

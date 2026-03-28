@@ -25,17 +25,7 @@ export default function ProfileScreen({ navigation }) {
   const { profile, fetchProfile } = useAuth();
   const isStudent = profile?.role === 'student';
 
-  useEffect(() => {
-    if (!isStudent) return;
-    showAlert(
-      'Not Available',
-      'Only a parent can manage a student account profile and password.',
-      () => {
-        if (typeof navigation?.canGoBack === 'function' && navigation.canGoBack()) navigation.goBack();
-        else navigation.reset?.({ index: 0, routes: [{ name: 'Home' }] });
-      },
-    );
-  }, [isStudent, navigation]);
+  // Students can view and update their photo/banner but not name or email.
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [email, setEmail] = useState(profile?.email || '');
@@ -132,7 +122,7 @@ export default function ProfileScreen({ navigation }) {
   // ─── Save Profile ─────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (isStudent) {
-      showAlert('View Only', 'Students can view profile details but cannot edit them.');
+      showAlert('View Only', 'Name and email can only be changed by a parent.');
       return;
     }
 
@@ -242,7 +232,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <Text style={styles.avatarHint}>
-          {uploading ? 'Uploading photo...' : isStudent ? 'Profile is view-only for student accounts' : 'Tap photo or cover to change'}
+          {uploading ? 'Uploading photo...' : isStudent ? 'Photos can only be changed by a parent' : 'Tap photo or cover to change'}
         </Text>
 
         {/* ── Form ── */}

@@ -206,7 +206,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#2196F3" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#E3F2FD' }]}>
+    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
       <LinearGradient colors={['#2196F3', '#1565C0']} style={g.header}>
         <Text style={g.headerTitle}>Syllable Clapping 👏</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -283,7 +283,7 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#9C27B0" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#F3E5F5' }]}>
+    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
       <LinearGradient colors={['#9C27B0', '#6A1B9A']} style={g.header}>
         <Text style={g.headerTitle}>Onset-Rime 🎵</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -358,7 +358,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#E91E63" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FCE4EC' }]}>
+    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
       <LinearGradient colors={['#E91E63', '#AD1457']} style={g.header}>
         <Text style={g.headerTitle}>Phoneme Isolation 🔤</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -470,7 +470,7 @@ export default function PhonologicalAwarenessScreen() {
 
   if (contentLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6A1B9A" />
         <Text style={{ marginTop: 12, color: '#78909C' }}>Loading activities…</Text>
       </SafeAreaView>
@@ -482,7 +482,7 @@ export default function PhonologicalAwarenessScreen() {
   if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} level={level} items={contentMap.phoneme} />;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1' }}>
       <StatusBar barStyle="dark-content" />
       <GoBackBtn />
       <ModeSelector onSelect={setMode} level={level} />

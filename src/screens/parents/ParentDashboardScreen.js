@@ -85,7 +85,9 @@ export default function ParentDashboardScreen({ navigation }) {
           profiles!parent_links_student_id_fkey (
             id,
             full_name,
-            email
+            email,
+            avatar_url,
+            banner_url
           )
         `)
         .eq('parent_id', profile.id); // make sure profile.id is the logged-in parent's ID
@@ -215,7 +217,7 @@ export default function ParentDashboardScreen({ navigation }) {
   if (error) {
     return (
       <View style={[s.errorContainer, { backgroundColor: getBgColor() }]}>
-        <LinearGradient colors={getHeaderGradient()} style={s.errorHeader}>
+        <LinearGradient colors={['#E8927C', '#C87456']} style={s.errorHeader}>
           <Text style={[s.errorHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.errorBody, { paddingBottom: insets.bottom + 20 }]}>
@@ -234,7 +236,7 @@ export default function ParentDashboardScreen({ navigation }) {
   if (children.length === 0) {
     return (
       <View style={[s.emptyContainer, { backgroundColor: getBgColor() }]}>
-        <LinearGradient colors={getHeaderGradient()} style={s.emptyHeader}>
+        <LinearGradient colors={['#E8927C', '#C87456']} style={s.emptyHeader}>
           <Text style={[s.emptyHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
@@ -252,53 +254,65 @@ export default function ParentDashboardScreen({ navigation }) {
 
   return (
     <View style={[s.container, { backgroundColor: getBgColor() }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={getBgColor()} />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
-      {/* ── Header ── */}
-      <LinearGradient colors={getHeaderGradient()} style={s.header}>
-        <View style={s.headerTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={[s.greeting, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'} 👋</Text>
-            <Text style={[s.headerSub, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Monitoring your child's progress</Text>
-          </View>
-          <View style={s.headerActions}>
-            <TouchableOpacity style={s.headerIconBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
-              <Ionicons name="person-add" size={22} color="#fff" />
-            </TouchableOpacity>
-            {/* Notifications bell */}
-            <TouchableOpacity style={s.notifBadgeBtn} onPress={() => setNotifModalVisible(true)}>
-              <Ionicons name="notifications" size={24} color="#fff" />
-              {notifCount > 0 && (
-                <View style={s.badge}><Text style={[s.badgeText, { fontSize: theme.fontSize - 4 }, a11yTextStyle]}>{notifCount > 9 ? '9+' : notifCount}</Text></View>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity style={s.headerIconBtn} onPress={() => setSidebarVisible(true)}>
-              <Ionicons name="menu-outline" size={26} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
+      {/* ── Header (matches learner style) ── */}
+      <View style={[s.header, { backgroundColor: getBgColor() }]}>
+        <View style={s.headerContent}>
+          {/* Avatar */}
+          <TouchableOpacity style={s.avatarWrapper} activeOpacity={0.8}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} resizeMode="cover" />
+            ) : (
+              <View style={s.avatarPlaceholder}>
+                <Text style={s.avatarInitial}>{(profile?.full_name?.[0] ?? 'P').toUpperCase()}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-        {/* Child tabs */}
+          {/* Welcome pill */}
+          <View style={s.welcomeCard}>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.welcomeTitle, a11yTextStyle]} numberOfLines={1}>
+                Hello, {profile?.full_name?.split(' ')[0] ?? 'Parent'}!
+              </Text>
+              <Text style={[s.welcomeSub, a11yTextStyle]} numberOfLines={1}>Monitoring your child's progress</Text>
+            </View>
+            <Ionicons name="people" size={22} color="rgba(255,255,255,0.9)" />
+          </View>
+
+          {/* Bell icon */}
+          <TouchableOpacity style={s.iconBtn} onPress={() => setNotifModalVisible(true)}>
+            <Ionicons name="notifications-outline" size={22} color="#333" />
+            {notifCount > 0 && <View style={s.redDot} />}
+          </TouchableOpacity>
+
+          {/* Menu icon */}
+          <TouchableOpacity style={s.iconBtn} onPress={() => setSidebarVisible(true)}>
+            <Ionicons name="menu-outline" size={22} color="#333" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#E8927C']} />}
+      >
+        {/* Child tabs (only when multiple children) */}
         {children.length > 1 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.childTabs}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.childTabs} contentContainerStyle={{ paddingRight: 8 }}>
             {children.map((c, i) => {
               const n = c.profiles?.full_name ?? 'Child';
               return (
                 <TouchableOpacity key={c.student_id || i} style={[s.childTab, i === selectedIdx && s.childTabActive]} onPress={() => switchChild(i)}>
-                  <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{n.split(' ')[0]}</Text>
+                  <Text style={[s.childTabText, i === selectedIdx && s.childTabTextActive, a11yTextStyle]}>{n.split(' ')[0]}</Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
         )}
-      </LinearGradient>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#7B1FA2']} />}
-      >
         {/* ── Child Hero Card ── */}
         <View style={s.heroCard}>
           {childProfile?.avatar_url ? (
@@ -316,7 +330,7 @@ export default function ParentDashboardScreen({ navigation }) {
             style={s.editChildBtn}
             onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
           >
-            <Ionicons name="create-outline" size={16} color="#7B1FA2" />
+            <Ionicons name="create-outline" size={16} color="#E8927C" />
             <Text style={[s.editChildBtnText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -324,24 +338,40 @@ export default function ParentDashboardScreen({ navigation }) {
         {/* ── Stats Row ── */}
         <View style={s.statsRow}>
           <View style={s.statBox}>
-            <Ionicons name="flame" size={24} color="#F44336" />
-            <Text style={[s.statVal, { color: '#F44336', fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{streak}</Text>
-            <Text style={[s.statLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Day Streak</Text>
+            <Ionicons name="flame" size={22} color="#F44336" />
+            <Text style={[s.statVal, { color: '#F44336' }, a11yTextStyle]}>{streak}</Text>
+            <Text style={[s.statLbl, a11yTextStyle]}>Day Streak</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statBox}>
+            <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+            <Text style={[s.statVal, { color: '#4CAF50' }, a11yTextStyle]}>{progress?.totalSessions ?? 0}</Text>
+            <Text style={[s.statLbl, a11yTextStyle]}>Sessions</Text>
+          </View>
+          <View style={s.statDivider} />
+          <View style={s.statBox}>
+            <Ionicons name="trophy" size={22} color="#FF9800" />
+            <Text style={[s.statVal, { color: '#FF9800' }, a11yTextStyle]}>{progress?.avgAccuracy ?? 0}%</Text>
+            <Text style={[s.statLbl, a11yTextStyle]}>Accuracy</Text>
           </View>
         </View>
 
-        {/* ── Quick Nav Grid ── */}
+        {/* ── Quick Nav ── */}
         <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Quick Access</Text>
-        <View style={s.navGrid}>
+        <View style={s.navList}>
           {[
-            { icon: 'bar-chart', color: '#7B1FA2', bg: '#F3E5F5', label: 'Progress', screen: 'ParentProgress' },
-            { icon: 'time', color: '#4CAF50', bg: '#E8F5E9', label: 'Activity Log', screen: 'ParentActivityLog' },
+            { icon: 'bar-chart', label: 'Progress Report', desc: 'View detailed learning history', screen: 'ParentProgress' },
+            { icon: 'time',      label: 'Activity Log',    desc: 'See recent sessions and exercises', screen: 'ParentActivityLog' },
           ].map((item) => (
-            <TouchableOpacity key={item.screen} style={[s.navCard, { backgroundColor: item.bg }]} onPress={() => navigation.navigate(item.screen, navParams)}>
-              <View style={[s.navIconCircle, { backgroundColor: item.color + '20' }]}>
-                <Ionicons name={item.icon} size={26} color={item.color} />
+            <TouchableOpacity key={item.screen} style={s.navCard} onPress={() => navigation.navigate(item.screen, navParams)} activeOpacity={0.85}>
+              <View style={s.navIconSquare}>
+                <Ionicons name={item.icon} size={22} color="#fff" />
               </View>
-              <Text style={[s.navLabel, { color: item.color, fontSize: theme.fontSize - 1 }, a11yTextStyle]}>{item.label}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.navLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.label}</Text>
+                <Text style={[s.navDesc, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{item.desc}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#E8927C" />
             </TouchableOpacity>
           ))}
         </View>
@@ -447,7 +477,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 );
               })}
               <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentProgress', navParams)}>
-                <Text style={[s.viewAllText, { fontSize: theme.fontSize }, a11yTextStyle]}>View full report →</Text>
+                <Text style={[s.viewAllText, { fontSize: theme.fontSize }, a11yTextStyle]}>View full report</Text>
               </TouchableOpacity>
             </>
           )}
@@ -481,7 +511,7 @@ export default function ParentDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <TouchableOpacity style={s.notifItem} activeOpacity={0.7}>
                   <View style={s.notifItemIconBox}>
-                    <Ionicons name="megaphone" size={18} color="#7B1FA2" />
+                    <Ionicons name="megaphone" size={18} color="#E8927C" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.notifItemTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.title}</Text>
@@ -499,75 +529,79 @@ export default function ParentDashboardScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: '#F5F0FF' },
-  loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5F0FF' },
-  loadingText:        { marginTop: 12, color: '#7B1FA2', fontWeight: '600' },
-  emptyContainer:     { flex: 1, backgroundColor: '#F5F0FF' },
+  container:          { flex: 1, backgroundColor: '#FAF5F1' },
+  loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAF5F1' },
+  loadingText:        { marginTop: 12, color: '#E8927C', fontWeight: '600' },
+  emptyContainer:     { flex: 1, backgroundColor: '#FAF5F1' },
   emptyHeader:        { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20 },
   emptyHeaderTitle:   { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   emptyBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
   emptyTitle:         { fontSize: 20, fontWeight: 'bold', color: '#555', marginTop: 20 },
   emptyHint:          { fontSize: 14, color: '#999', marginTop: 8, textAlign: 'center', lineHeight: 22 },
-  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7B1FA2', borderRadius: 25, paddingHorizontal: 24, paddingVertical: 14, marginTop: 24, elevation: 3 },
+  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8927C', borderRadius: 25, paddingHorizontal: 24, paddingVertical: 14, marginTop: 24, elevation: 3 },
   linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  header:             { paddingTop: 55, paddingBottom: 16, paddingHorizontal: 20 },
-  headerTop:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  greeting:           { fontSize: 20, fontWeight: '900', color: '#fff', flex: 1, flexShrink: 1 },
-  headerSub:          { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
-  headerActions:      { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 0 },
-  headerIconBtn:      { padding: 4 },
-  msgBadgeBtn:        { position: 'relative', padding: 4 },
+  header:             { paddingTop: 50, paddingBottom: 16, paddingHorizontal: 16 },
+  headerContent:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarWrapper:      { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', flexShrink: 0 },
+  avatarImg:          { width: 48, height: 48, borderRadius: 24 },
+  avatarPlaceholder:  { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center' },
+  avatarInitial:      { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  welcomeCard:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: '#E8927C', elevation: 2, shadowColor: '#E8927C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+  welcomeTitle:       { fontSize: 14, fontWeight: '700', color: '#fff' },
+  welcomeSub:         { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
+  iconBtn:            { width: 42, height: 42, borderRadius: 21, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flexShrink: 0, position: 'relative' },
+  redDot:             { position: 'absolute', top: 8, right: 8, width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF5252', borderWidth: 2, borderColor: '#fff' },
   badge:              { position: 'absolute', top: 0, right: 0, backgroundColor: '#F44336', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
   badgeText:          { color: '#fff', fontSize: 9, fontWeight: 'bold' },
-  childTabs:          { marginTop: 14 },
-  childTab:           { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', marginRight: 8 },
-  childTabActive:     { backgroundColor: '#fff' },
-  childTabText:       { color: 'rgba(255,255,255,0.8)', fontWeight: 'bold', fontSize: 13 },
-  childTabTextActive: { color: '#7B1FA2' },
+  childTabs:          { marginBottom: 14 },
+  childTab:           { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', marginRight: 8, elevation: 1, borderWidth: 1.5, borderColor: '#E0D8D4' },
+  childTabActive:     { backgroundColor: '#E8927C', borderColor: '#E8927C' },
+  childTabText:       { color: '#888', fontWeight: '600', fontSize: 13 },
+  childTabTextActive: { color: '#fff' },
 
   scroll:             { padding: 16 },
 
-  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3, gap: 12 },
-  heroAvatar:         { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
-  heroAvatarImg:      { width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: '#7B1FA2' },
-  heroAvatarText:     { color: '#fff', fontSize: 26, fontWeight: 'bold' },
-  heroName:           { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  heroEmail:          { fontSize: 12, color: '#999', marginTop: 2 },
-  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F3E5F5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
-  editChildBtnText:   { color: '#7B1FA2', fontWeight: '700', fontSize: 13 },
+  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3, gap: 14, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
+  heroAvatar:         { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
+  heroAvatarImg:      { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#E8927C' },
+  heroAvatarText:     { color: '#fff', fontSize: 28, fontWeight: 'bold' },
+  heroName:           { fontSize: 18, fontWeight: '800', color: '#222' },
+  heroEmail:          { fontSize: 12, color: '#aaa', marginTop: 3 },
+  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF0EB', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
+  editChildBtnText:   { color: '#E8927C', fontWeight: '700', fontSize: 13 },
 
-  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, marginBottom: 14, elevation: 2, overflow: 'hidden', justifyContent: 'center' },
-  statBox:            { alignItems: 'center', paddingVertical: 14, paddingHorizontal: 20 },
-  statVal:            { fontSize: 18, fontWeight: 'bold', marginTop: 4 },
-  statLbl:            { fontSize: 9, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
+  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, marginBottom: 16, elevation: 2, overflow: 'hidden' },
+  statBox:            { flex: 1, alignItems: 'center', paddingVertical: 16 },
+  statDivider:        { width: 1, backgroundColor: '#F0F0F0', marginVertical: 12 },
+  statVal:            { fontSize: 20, fontWeight: 'bold', marginTop: 5 },
+  statLbl:            { fontSize: 10, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
 
-  sectionTitle:       { fontSize: 14, fontWeight: 'bold', color: '#555', marginBottom: 10, marginTop: 4 },
+  sectionTitle:       { fontSize: 15, fontWeight: '800', color: '#333', marginBottom: 10, marginTop: 4 },
 
-  navGrid:            { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
-  navCard:            { width: '47%', borderRadius: 16, padding: 16, alignItems: 'center', elevation: 1, position: 'relative' },
-  navIconCircle:      { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  navLabel:           { fontSize: 13, fontWeight: 'bold' },
-  navBadge:           { position: 'absolute', top: 10, right: 10, borderRadius: 10, minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4 },
-  navBadgeText:       { color: '#fff', fontSize: 10, fontWeight: 'bold' },
+  navList:            { gap: 10, marginBottom: 16 },
+  navCard:            { backgroundColor: '#fff', borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, elevation: 2, borderLeftWidth: 4, borderLeftColor: '#E8927C', shadowColor: '#E8927C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+  navIconSquare:      { width: 48, height: 48, borderRadius: 14, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  navLabel:           { fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 2 },
+  navDesc:            { fontSize: 12, color: '#888' },
 
-  card:               { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, elevation: 2 },
+  card:               { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 14, elevation: 2 },
   snapRow:            { flexDirection: 'row', justifyContent: 'space-around', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', marginBottom: 14 },
   snapItem:           { alignItems: 'center' },
   snapVal:            { fontSize: 22, fontWeight: 'bold', color: '#333' },
   snapLbl:            { fontSize: 10, color: '#999', marginTop: 2, fontWeight: '600' },
   snapDiv:            { width: 1, backgroundColor: '#f0f0f0' },
-  actRow:             { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  actRow:             { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
   actIcon:            { fontSize: 22, width: 30 },
-  actTop:             { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  actTop:             { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   actLabel:           { fontSize: 13, fontWeight: '600', color: '#333' },
   actAcc:             { fontSize: 13, fontWeight: 'bold' },
-  barBg:              { height: 5, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
-  barFill:            { height: '100%', borderRadius: 3 },
-  emptySnap:          { alignItems: 'center', paddingVertical: 20 },
+  barBg:              { height: 8, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' },
+  barFill:            { height: '100%', borderRadius: 4 },
+  emptySnap:          { alignItems: 'center', paddingVertical: 24 },
   emptySnapText:      { color: '#bbb', marginTop: 8, fontSize: 13 },
-  viewAll:            { marginTop: 12, alignItems: 'center' },
-  viewAllText:        { color: '#7B1FA2', fontWeight: 'bold', fontSize: 13 },
+  viewAll:            { marginTop: 14, alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F5F5F5' },
+  viewAllText:        { color: '#E8927C', fontWeight: 'bold', fontSize: 13 },
 
   assignRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', gap: 10 },
   assignIcon:         { fontSize: 24 },
@@ -577,18 +611,18 @@ const s = StyleSheet.create({
   diffText:           { fontSize: 11, fontWeight: 'bold' },
 
   // AI Insights panel
-  aiCard:             { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, elevation: 2 },
-  aiCardHeader:       { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
-  aiCardIcon:         { fontSize: 28 },
-  aiCardTitle:        { fontSize: 14, fontWeight: 'bold', color: '#333' },
-  aiCardSub:          { fontSize: 10, color: '#999', marginTop: 2 },
-  aiSection:          { marginBottom: 10 },
-  aiSectionLabel:     { fontSize: 11, fontWeight: '700', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  aiRow:              { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 8 },
+  aiCard:             { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 14, elevation: 2 },
+  aiCardHeader:       { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  aiCardIcon:         { fontSize: 30 },
+  aiCardTitle:        { fontSize: 15, fontWeight: '800', color: '#333' },
+  aiCardSub:          { fontSize: 11, color: '#999', marginTop: 2 },
+  aiSection:          { marginBottom: 12 },
+  aiSectionLabel:     { fontSize: 11, fontWeight: '800', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.6 },
+  aiRow:              { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
   aiRowIcon:          { fontSize: 16, width: 22 },
   aiRowLabel:         { flex: 1, fontSize: 13, color: '#444' },
   aiRowScore:         { fontSize: 13, fontWeight: 'bold' },
-  aiNotPracticedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 8, marginTop: 4 },
+  aiNotPracticedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: 4 },
   aiNotPracticedText: { flex: 1, fontSize: 11, color: '#F57C00', lineHeight: 16 },
 
   // Notification bell
@@ -598,10 +632,10 @@ const s = StyleSheet.create({
   notifOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '75%' },
   notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 12 },
-  notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#7B1FA2' },
-  notifItem:          { backgroundColor: '#F5F0FF', borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E1BEE7', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#4A148C', marginBottom: 4 },
+  notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#E8927C' },
+  notifItem:          { backgroundColor: '#FFF5F0', borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFE0D0', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#C87456', marginBottom: 4 },
   notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
   notifItemDate:      { fontSize: 11, color: '#aaa' },
 
@@ -612,6 +646,6 @@ const s = StyleSheet.create({
   errorBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
   errorTitle:         { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: 24, marginBottom: 12 },
   errorMessage:       { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
-  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#7B1FA2', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
+  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8927C', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
   retryBtnText:       { color: '#fff', fontWeight: 'bold' },
 });

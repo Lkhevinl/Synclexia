@@ -8,7 +8,7 @@ const THEME_STORAGE_KEY = '@synclexia_theme';
 // Color themes based on overlay selection
 const COLOR_THEMES = {
   none: {
-    bgColor: '#FFF0F5',        // Pastel blush
+    bgColor: '#FAF5F1',        // Warm cream
     primaryColor: '#C06080',   // Rose
     cardBg: '#ffffff',
     headerGradient: ['#4c669f', '#3b5998', '#192f6a'],
@@ -65,7 +65,7 @@ const COLOR_THEMES = {
 
 const DEFAULT_THEME = {
   fontSize: 12,            // Default Text Size
-  bgColor: '#FFF0F5',      // Default Background — pastel blush
+  bgColor: '#FAF5F1',      // Default Background — warm cream
   fontStyle: 'System',     // Default Font
   primaryColor: '#C06080', // Default Accent — rose
 

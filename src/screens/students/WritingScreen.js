@@ -454,7 +454,7 @@ export default function WritingScreen() {
     return (
       <View style={styles.mainContainer}>
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.header}>
+        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
           <GoBackBtn />
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Story Writing 📖</Text>
@@ -517,7 +517,7 @@ export default function WritingScreen() {
     return (
       <View style={styles.composeContainer}>
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#263238', '#37474F']} style={styles.composeHeader}>
+        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.composeHeader}>
           <GoBackBtn />
           <View style={{ alignItems: 'center', flex: 1 }}>
             <Text style={[styles.composeTitle, a11yTextStyle]} numberOfLines={1}>
@@ -750,7 +750,7 @@ export default function WritingScreen() {
     return (
       <View style={styles.mainContainer}>
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.header}>
+        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
             <GoBackBtn />
             <View style={styles.headerContent}>
                 <Text style={styles.headerTitle}>Writing Lab ✍️</Text>
@@ -935,7 +935,7 @@ export default function WritingScreen() {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#F3E5F5' }, // Light Purple Theme
+  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
   
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
   headerContent: { alignItems: 'center' },
@@ -972,9 +972,9 @@ const styles = StyleSheet.create({
   activeColor: { borderWidth: 3, borderColor: '#333', transform: [{scale: 1.15}] },
 
   btnRow: { flexDirection: 'row', gap: 15 },
-  clearBtn: { flex: 1, padding: 15, backgroundColor: '#fff', borderRadius: 15, borderWidth: 2, borderColor: '#673AB7', alignItems: 'center' },
-  clearText: { color: '#673AB7', fontWeight: 'bold' },
-  checkBtn: { flex: 2, padding: 15, backgroundColor: '#673AB7', borderRadius: 15, alignItems: 'center', elevation: 5 },
+  clearBtn: { flex: 1, padding: 15, backgroundColor: '#fff', borderRadius: 15, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center' },
+  clearText: { color: '#E8927C', fontWeight: 'bold' },
+  checkBtn: { flex: 2, padding: 15, backgroundColor: '#E8927C', borderRadius: 15, alignItems: 'center', elevation: 5 },
   checkText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
@@ -996,7 +996,7 @@ const styles = StyleSheet.create({
   demoCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // ── Compose mode styles ───────────────────────────────────────────
-  composeContainer: { flex: 1, backgroundColor: '#ECEFF1' },
+  composeContainer: { flex: 1, backgroundColor: '#FAF5F1' },
   composeHeader: { paddingTop: 60, paddingBottom: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   composeTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   composeSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },

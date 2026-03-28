@@ -137,7 +137,7 @@ export default function ReadingScreen() {
       <StatusBar barStyle="light-content" />
 
       {/* 1. LIBRARY HEADER */}
-      <LinearGradient colors={['#5D4037', '#4E342E']} style={styles.header}>
+      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
         <GoBackBtn />
         <View style={styles.headerTitleBox}>
           <Text style={styles.headerTitle}>My Library</Text>
@@ -148,7 +148,7 @@ export default function ReadingScreen() {
       {/* 2. LOADING / BOOKSHELF GRID */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#5D4037" />
+          <ActivityIndicator size="large" color="#E8927C" />
           <Text style={{ marginTop: 10, color: '#78909C' }}>Loading library...</Text>
         </View>
       ) : stories.length === 0 ? (
@@ -222,11 +222,11 @@ export default function ReadingScreen() {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#D7CCC8' },
+  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
   header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
   headerTitleBox: { alignItems: 'center', marginTop: 10 },
-  headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff', fontFamily: 'serif' },
-  headerSub: { color: '#BCAAA4', fontSize: 14, fontStyle: 'italic' },
+  headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
   shelfContainer: { padding: 20, paddingTop: 30 },
   bookCover: { width: '47%', aspectRatio: 0.7, borderRadius: 12, marginBottom: 20, elevation: 6, borderRightWidth: 5, borderRightColor: 'rgba(0,0,0,0.1)', borderBottomWidth: 5, borderBottomColor: 'rgba(0,0,0,0.1)' },
   spine: { position: 'absolute', left: 10, top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
