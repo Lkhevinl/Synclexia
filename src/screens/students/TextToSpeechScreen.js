@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
@@ -177,17 +177,19 @@ export default function TextToSpeechScreen() {
       {text.trim().length > 0 && (
         <View style={styles.previewBox}>
           <Text style={styles.previewLabel}>Read-along Preview</Text>
-          <Text style={styles.previewText}>
-            {tokenize(text).tokens.map((t, i) => {
-              if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
-              const isActive = isSpeaking && t.wordIndex === activeWordIndex;
-              return (
-                <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
-                  {t.text}
-                </Text>
-              );
-            })}
-          </Text>
+          <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={true}>
+            <Text style={styles.previewText}>
+              {tokenize(text).tokens.map((t, i) => {
+                if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
+                const isActive = isSpeaking && t.wordIndex === activeWordIndex;
+                return (
+                  <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
+                    {t.text}
+                  </Text>
+                );
+              })}
+            </Text>
+          </ScrollView>
         </View>
       )}
 
@@ -209,9 +211,10 @@ const styles = StyleSheet.create({
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#333' },
   textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
-  input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28, textAlignVertical: 'top' },
-  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 15, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16 },
+  input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28 },
+  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 15, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, maxHeight: 120 },
   previewLabel: { fontSize: 12, fontWeight: 'bold', color: '#78909C', marginBottom: 6, textTransform: 'uppercase' },
+  previewScroll: { maxHeight: 80 },
   previewText: { fontSize: 16, color: '#333', lineHeight: 24 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },

@@ -121,16 +121,22 @@ export default function SpeechToTextScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView style={styles.transcriptBox} contentContainerStyle={styles.transcriptContent}>
-        {transcript ? (
-          <Text style={styles.transcriptText}>{transcript}</Text>
-        ) : (
-          <Text style={styles.placeholderText}>
-            {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
-          </Text>
-        )}
-        {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
-      </ScrollView>
+      <View style={styles.transcriptBox}>
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.transcriptContent}
+          showsVerticalScrollIndicator={true}
+        >
+          {transcript ? (
+            <Text style={styles.transcriptText}>{transcript}</Text>
+          ) : (
+            <Text style={styles.placeholderText}>
+              {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
+            </Text>
+          )}
+          {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
+        </ScrollView>
+      </View>
 
       <View style={styles.controls}>
         <TouchableOpacity style={[styles.clearBtn, !transcript && styles.clearBtnHidden]} onPress={handleClear} disabled={!transcript}>
@@ -159,7 +165,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 },
   transcriptBox: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
-  transcriptContent: { padding: 24, minHeight: 200 },
+  scrollView: { flex: 1 },
+  transcriptContent: { padding: 24, flexGrow: 1 },
   transcriptText: { fontSize: 22, color: '#333', lineHeight: 36 },
   placeholderText: { fontSize: 16, color: '#B0BEC5', textAlign: 'center', marginTop: 40, lineHeight: 26 },
   errorText: { fontSize: 14, color: '#F44336', marginTop: 16, textAlign: 'center' },

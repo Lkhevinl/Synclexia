@@ -182,7 +182,11 @@ export default function ScanScreen() {
               <Text style={styles.resultLabel}>Detected Text</Text>
             </View>
 
-            <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.resultScroll} 
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
               <Text style={styles.resultText}>{scannedText || 'Scan an image to extract text here.'}</Text>
             </ScrollView>
 
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
   resultLabel: { fontWeight: 'bold', color: '#555', marginLeft: 8, fontSize: 12, textTransform: 'uppercase' },
   // Do not set fontFamily here so global Font Style can apply.
   resultText: { fontSize: 18, color: '#333', lineHeight: 28 },
-  resultScroll: { flex: 1 },
+  resultScroll: { maxHeight: 200 },
   
   divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
   
