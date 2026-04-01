@@ -452,7 +452,7 @@ export default function SpellingScreen() {
     <View style={root.container}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={{ flex: 1 }}>
-        <GoBackBtn />
+        <GoBackBtn title="Spelling Practice" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#2196F3" />
@@ -466,7 +466,16 @@ export default function SpellingScreen() {
         ) : mode ? (
           <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />
         ) : (
-          <ModeSelector onSelect={setMode} />
+          <>
+            <View style={root.instructionHint}>
+              <Ionicons name="information-circle" size={22} color="#E8927C" />
+              <Text style={root.instructionHintText}>
+                <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+                Choose a mode: "Picture Spelling" shows a hint image, "Listen & Spell" plays the word aloud. Tap the letters in order to spell the word correctly!
+              </Text>
+            </View>
+            <ModeSelector onSelect={setMode} />
+          </>
         )}
       </SafeAreaView>
       {overlayColor && (
@@ -479,4 +488,6 @@ export default function SpellingScreen() {
 const root = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAF5F1' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, margin: 16, marginBottom: 4, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
 });

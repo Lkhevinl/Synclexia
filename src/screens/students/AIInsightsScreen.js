@@ -184,7 +184,7 @@ export default function AIInsightsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#667eea" />
+        <ActivityIndicator size="large" color="#E8927C" />
         <Text style={styles.loadingText}>Analyzing your learning journey...</Text>
       </View>
     );
@@ -213,7 +213,7 @@ export default function AIInsightsScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <LinearGradient colors={['#667eea', '#764ba2']} style={styles.header}>
+      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
@@ -293,7 +293,7 @@ export default function AIInsightsScreen({ navigation }) {
         {hasNotPracticed && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#9C27B0', '#6A1B9A']} style={styles.sectionIconGradient}>
+              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
                 <Ionicons name="rocket" size={14} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Not Explored Yet</Text>
@@ -328,7 +328,7 @@ export default function AIInsightsScreen({ navigation }) {
         {p.recommendations.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#667eea', '#764ba2']} style={styles.sectionIconGradient}>
+              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
                 <Ionicons name="bulb" size={14} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
@@ -366,7 +366,7 @@ export default function AIInsightsScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={applied ? ['#4CAF50', '#2E7D32'] : ['#667eea', '#764ba2']}
+                  colors={applied ? ['#4CAF50', '#2E7D32'] : ['#E8927C', '#C87456']}
                   style={styles.applyBtnGradient}
                 >
                   {applying ? (
@@ -396,7 +396,7 @@ export default function AIInsightsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1, backgroundColor: '#FAF5F1' },
 
   // Header
   header: {
@@ -430,14 +430,14 @@ const styles = StyleSheet.create({
 
   // Loading / error
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  loadingText: { marginTop: 16, fontSize: 15, color: '#667eea', fontWeight: '500' },
+  loadingText: { marginTop: 16, fontSize: 15, color: '#E8927C', fontWeight: '500' },
   errorText: { marginTop: 16, fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginTop: 24,
-    backgroundColor: '#667eea',
+    backgroundColor: '#E8927C',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 14,
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#667eea',
+    backgroundColor: '#E8927C',
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     elevation: 4,
-    shadowColor: '#667eea',
+    shadowColor: '#E8927C',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

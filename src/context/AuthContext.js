@@ -4,7 +4,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 import { navigationRef } from '../navigation/navigationRef';
-import { runDiagnostics } from '../lib/diagnostics';
 
 const AuthContext = createContext({});
 
@@ -70,15 +69,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
-    // Extended to 15-second timeout for better reliability on slow connections
-    if (Date.now() - startTime > 15000) {
-      console.warn('fetchProfile: timed out after 15s');
+    if (Date.now() - startTime > 20000) {
+      console.warn('fetchProfile: total time exceeded 20s');
       setProfileError('server_error');
       setProfileLoaded(true);
       return null;
     }
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // Race the Supabase query against a 8-second hard timeout so a hanging
+      // network request can never block the app indefinitely.
+      const queryPromise = supabase.from('profiles').select('*').eq('id', userId).single();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000)
+      );
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
       if (error) {
         console.warn('fetchProfile error:', error.message, '| code:', error.code, '| status:', error.status);
         const isInfiniteRecursion = error.code === '42P17' ||
@@ -129,13 +133,17 @@ export const AuthProvider = ({ children }) => {
       return null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);
-      // Check for network-related errors
-      if (e.message?.includes('Network') || e.message?.includes('connect') || e.message?.includes('timeout')) {
-        console.warn('Network error detected, will retry on user request');
-        setProfileError('network_error');
-      } else {
-        setProfileError('server_error');
+      const isTimeout = e.message === 'timeout';
+      const isNetwork = e.message?.includes('Network') || e.message?.includes('connect') || e.message?.includes('fetch');
+
+      // Retry on timeout or network errors (up to 3 times total)
+      if ((isTimeout || isNetwork) && retryCount < 3) {
+        console.log(`fetchProfile: ${isTimeout ? 'request timed out' : 'network error'}, retrying… (attempt ${retryCount + 1})`);
+        await new Promise(r => setTimeout(r, 1500));
+        return fetchProfile(userId, retryCount + 1, startTime);
       }
+
+      setProfileError(isTimeout || isNetwork ? 'network_error' : 'server_error');
       setProfileLoaded(true);
       return null;
     }
@@ -166,14 +174,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const retryFetchProfile = async (userId) => {
-    // Clear error state and retry
     setProfileError(null);
     setProfileLoaded(false);
-
-    // Run diagnostics first
-    console.log('Running diagnostics before retry...');
-    await runDiagnostics();
-
     return fetchProfile(userId);
   };
 

@@ -71,18 +71,21 @@ export default function PhonicsScreen({ navigation }) {
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={styles.safeArea}>
         
-        <GoBackBtn />
-        
+        <GoBackBtn title="Phonics Fun" />
+
         <View style={styles.headerContainer}>
-           <Text style={styles.header}>Phonics Fun 🗣️</Text>
            <Text style={styles.subHeader}>Tap a card to hear the sound!</Text>
+           <View style={styles.instructionHint}>
+             <Ionicons name="hand-left" size={18} color="#E8927C" />
+             <Text style={styles.instructionHintText}>Tap any card to hear how the letter or sound is pronounced. Keep tapping to practice!</Text>
+           </View>
            <TouchableOpacity
              style={styles.activitiesBtn}
              onPress={() => navigation.navigate('PhonicsActivity')}
              activeOpacity={0.8}
            >
              <Ionicons name="game-controller-outline" size={20} color="#fff" />
-             <Text style={styles.activitiesBtnText}>Phonics Activities 🎮</Text>
+             <Text style={styles.activitiesBtnText}>Phonics Activities</Text>
            </TouchableOpacity>
         </View>
         
@@ -177,6 +180,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
   },
+
+  instructionHint: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E8', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, gap: 8, borderWidth: 1, borderColor: '#E8927C30', marginTop: 10 },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
 
   emptyContainer: {
     flex: 1,

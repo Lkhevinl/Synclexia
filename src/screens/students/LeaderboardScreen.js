@@ -100,14 +100,20 @@ export default function LeaderboardScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#FFF9C4' }}>
-      <GoBackBtn />
-      <View style={styles.header}>
-        <Text style={styles.title}>🏆 Hall of Fame</Text>
-        <Text style={styles.subtitle}>
-          {RANGES[range].days === null ? 'All-Time Top Students' : `Top Students — ${RANGES[range].label}`}
+    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+      <GoBackBtn title="Hall of Fame" />
+
+      <View style={styles.instructionHint}>
+        <Ionicons name="information-circle" size={22} color="#E8927C" />
+        <Text style={styles.instructionHintText}>
+          <Text style={{ fontWeight: 'bold' }}>How it works: </Text>
+          Students who practice the most earn the most XP and climb the leaderboard. Keep doing activities to move up!
         </Text>
       </View>
+
+      <Text style={styles.subtitle}>
+        {RANGES[range].days === null ? 'All-Time Top Students' : `Top Students — ${RANGES[range].label}`}
+      </Text>
 
       {/* Range Selector */}
       <View style={styles.rangeRow}>
@@ -125,7 +131,7 @@ export default function LeaderboardScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#F57F17" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#E8927C" style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={leaders}
@@ -155,30 +161,30 @@ export default function LeaderboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: 'center', marginVertical: 16 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#F57F17' },
-  subtitle: { color: '#888', marginTop: 4 },
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 12, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  subtitle: { color: '#888', textAlign: 'center', marginBottom: 12 },
 
   rangeRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
   rangeBtn: {
     paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#FFD54F',
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#E8927C',
     backgroundColor: '#fff',
   },
-  rangeBtnActive: { backgroundColor: '#F57F17', borderColor: '#F57F17' },
-  rangeBtnText: { fontSize: 12, fontWeight: 'bold', color: '#F57F17' },
+  rangeBtnActive: { backgroundColor: '#E8927C', borderColor: '#E8927C' },
+  rangeBtnText: { fontSize: 12, fontWeight: 'bold', color: '#E8927C' },
   rangeBtnTextActive: { color: '#fff' },
 
   card: {
     flexDirection: 'row', backgroundColor: '#fff', padding: 15,
     borderRadius: 15, marginBottom: 10, alignItems: 'center', elevation: 2,
   },
-  top3Card: { borderWidth: 2, borderColor: '#FFD700', backgroundColor: '#FFFDE7' },
+  top3Card: { borderWidth: 2, borderColor: '#E8927C', backgroundColor: '#FFF5F0' },
 
   rankCol: { width: 50, alignItems: 'center' },
   rankText: { fontSize: 24, fontWeight: 'bold', color: '#333' },
 
   infoCol: { flex: 1 },
   name: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  xpText: { fontSize: 12, color: '#1976D2', fontWeight: 'bold' },
+  xpText: { fontSize: 12, color: '#E8927C', fontWeight: 'bold' },
 });

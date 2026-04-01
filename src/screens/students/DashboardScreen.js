@@ -301,6 +301,29 @@ export default function DashboardScreen({ navigation }) {
               </TouchableOpacity>
             )}
 
+            {/* QUICK START GUIDE */}
+            <View style={styles.guideCard}>
+              <View style={styles.guideHeader}>
+                <View style={styles.guideIconCircle}>
+                  <Ionicons name="rocket" size={20} color="#E8927C" />
+                </View>
+                <Text style={styles.guideTitle}>How to Use Synclexia</Text>
+              </View>
+              {[
+                { icon: 'finger-print',     color: '#E8927C', step: '1', text: 'Tap any card below to start an activity' },
+                { icon: 'volume-high',       color: '#FF9800', step: '2', text: 'Follow the instructions on each screen' },
+                { icon: 'trophy',            color: '#4CAF50', step: '3', text: 'Finish activities to earn XP and complete quests!' },
+              ].map(({ icon, color, step, text }) => (
+                <View key={step} style={styles.guideStep}>
+                  <View style={[styles.guideStepBadge, { backgroundColor: color }]}>
+                    <Text style={styles.guideStepNum}>{step}</Text>
+                  </View>
+                  <Ionicons name={icon} size={18} color={color} style={{ marginRight: 8 }} />
+                  <Text style={styles.guideStepText}>{text}</Text>
+                </View>
+              ))}
+            </View>
+
             {/* EXPLORE SECTION */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -309,6 +332,7 @@ export default function DashboardScreen({ navigation }) {
                   <Ionicons name="compass" size={16} color="#667eea" />
                 </View>
               </View>
+              <Text style={styles.sectionSubtitle}>Learn phonics, reading, and writing</Text>
               {[
                 { title: 'Phonics',  iconName: 'volume-high', desc: 'Tap to hear sounds and learn how to read words!',          route: 'Phonics',  tag: 'Listening'  },
                 { title: 'Reading',  iconName: 'book-outline', desc: 'Select a book, listen to the story, and follow along!',   route: 'Reading',  tag: 'Comprehension' },
@@ -340,6 +364,7 @@ export default function DashboardScreen({ navigation }) {
                   <Ionicons name="game-controller" size={16} color="#FF9800" />
                 </View>
               </View>
+              <Text style={styles.sectionSubtitle}>Practice your skills with fun games</Text>
               {[
                 { title: 'Spelling',      iconName: 'text',            desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words'    },
                 { title: 'Sound Games',   iconName: 'headset',         desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening' },
@@ -413,6 +438,8 @@ export default function DashboardScreen({ navigation }) {
               </View>
             </View>
           </Modal>
+
+
         </>
       )}
     </View>
@@ -569,10 +596,31 @@ const styles = StyleSheet.create({
   quickStatLabel: { fontSize: 11, color: '#888', marginTop: 2 },
   quickStatDivider: { width: 1, backgroundColor: '#E0E0E0', marginHorizontal: 8 },
 
+  // Quick Start Guide
+  guideCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 18, marginBottom: 28,
+    elevation: 2, shadowColor: '#E8927C', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 6,
+    borderLeftWidth: 4, borderLeftColor: '#E8927C',
+  },
+  guideHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
+  guideIconCircle: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF0E8',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  guideTitle: { fontSize: 16, fontWeight: '800', color: '#333' },
+  guideStep: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  guideStepBadge: {
+    width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginRight: 8,
+  },
+  guideStepNum: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
+  guideStepText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 18 },
+
   // Section Styles
   section: { marginBottom: 28 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 10 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+  sectionSubtitle: { fontSize: 12, color: '#999', marginBottom: 14, marginLeft: 2 },
   sectionIconBadge: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center',

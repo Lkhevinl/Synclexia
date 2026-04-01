@@ -74,7 +74,7 @@ export default function Sidebar({ visible, onClose }) {
               {profile?.banner_url ? (
                 <Image source={{ uri: profile.banner_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : (
-                <LinearGradient colors={['#546E7A', '#37474F']} style={StyleSheet.absoluteFill} />
+                <LinearGradient colors={['#E8927C', '#C87456']} style={StyleSheet.absoluteFill} />
               )}
               {/* Dark overlay for readability over any background */}
               <View style={s.headerOverlay} />
@@ -186,25 +186,6 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               </View>
 
-              {/* AI INSIGHTS - For students */}
-              {isStudent && (
-                <>
-                  <Text style={s.groupLabel}>LEARNING AI</Text>
-                  <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#667eea18' }]}>
-                        <Text style={{ fontSize: 16 }}>🧠</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>AI Learning Insights</Text>
-                        <Text style={s.rowDesc}>Strengths, weaknesses & custom path</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-
               {/* SYSTEM MAINTENANCE - Admin only */}
               {isAdmin && (
                 <>
@@ -307,7 +288,7 @@ export default function Sidebar({ visible, onClose }) {
 
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row-reverse' },
-  drawer: { width: '85%', backgroundColor: '#F0F2F5', elevation: 10 },
+  drawer: { width: '85%', backgroundColor: '#FAF5F1', elevation: 10 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, overflow: 'hidden' },
@@ -378,17 +359,17 @@ const s = StyleSheet.create({
   // Chips
   chipRow: { flexDirection: 'row', gap: 6 },
   chipBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#E8ECF0', alignItems: 'center', backgroundColor: '#F8F9FB' },
-  chipBtnActive: { borderColor: '#546E7A', backgroundColor: '#ECEFF1' },
+  chipBtnActive: { borderColor: '#E8927C', backgroundColor: '#FFF0E8' },
   chipText: { fontSize: 12, fontWeight: '600', color: '#B0BEC5' },
-  chipTextActive: { color: '#37474F' },
+  chipTextActive: { color: '#E8927C' },
 
   // Color overlay
   overlayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   overlayBtn: { alignItems: 'center', paddingHorizontal: 7, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: '#E8ECF0', backgroundColor: '#F8F9FB', minWidth: 48 },
-  overlayBtnActive: { borderColor: '#546E7A', backgroundColor: '#ECEFF1' },
+  overlayBtnActive: { borderColor: '#E8927C', backgroundColor: '#FFF0E8' },
   overlayEmoji: { fontSize: 18, marginBottom: 2 },
   overlayLabel: { fontSize: 9, color: '#90A4AE', fontWeight: '600' },
-  overlayLabelActive: { color: '#37474F' },
+  overlayLabelActive: { color: '#E8927C' },
 
   // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#FFCDD2' },
@@ -409,7 +390,7 @@ const s = StyleSheet.create({
   fontHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', alignSelf: 'center', marginBottom: 20 },
   fontTitle: { fontSize: 17, fontWeight: '700', color: '#263238', textAlign: 'center', marginBottom: 14 },
   fontOption: { paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, marginBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fontOptionActive: { backgroundColor: '#ECEFF1' },
-  fontOptionText: { fontSize: 15, color: '#546E7A' },
-  fontOptionTextActive: { fontWeight: '700', color: '#263238' },
+  fontOptionActive: { backgroundColor: '#FFF0E8' },
+  fontOptionText: { fontSize: 15, color: '#E8927C' },
+  fontOptionTextActive: { fontWeight: '700', color: '#C87456' },
 });

@@ -9,6 +9,19 @@ import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
+import LexiCompanion from '../components/LexiCompanion';
+
+/** Wraps a student activity screen so Lexi floats over it. */
+function withLexi(ScreenComponent) {
+  const Wrapped = (props) => (
+    <View style={{ flex: 1 }}>
+      <ScreenComponent {...props} />
+      <LexiCompanion />
+    </View>
+  );
+  Wrapped.displayName = `WithLexi(${ScreenComponent.displayName || ScreenComponent.name || 'Screen'})`;
+  return Wrapped;
+}
 
 // Standard Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -93,6 +106,7 @@ const TAB_BAR_STYLE = {
 
 function StudentTabs() {
   return (
+    <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -144,6 +158,8 @@ function StudentTabs() {
         }}
       />
     </Tab.Navigator>
+    <LexiCompanion />
+    </View>
   );
 }
 
@@ -167,11 +183,11 @@ function AppScreens() {
   const { profile, profileLoaded, profileError, retryFetchProfile, signOut, session } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
-  // Safety-net: if profileLoaded never fires (e.g. Supabase hangs after the
-  // 8s fetchProfile timeout), stop showing the loading screen after 10s.
+  // Safety-net: fetchProfile can take up to ~20s (15s timeout + 3x1.5s retries).
+  // Only show the error screen if it still hasn't resolved after 25s.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
-    const t = setTimeout(() => setTimedOut(true), 10000);
+    const t = setTimeout(() => setTimedOut(true), 35000);
     return () => clearTimeout(t);
   }, [profileLoaded]);
 
@@ -218,18 +234,18 @@ function AppScreens() {
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {/* User App */}
       <Stack.Screen name="Home" component={HomeComponent} />
-      <Stack.Screen name="Phonics" component={PhonicsScreen} />
-      <Stack.Screen name="Writing" component={WritingScreen} />
-      <Stack.Screen name="Reading" component={ReadingScreen} />
-      <Stack.Screen name="Scan" component={ScanScreen} />
-      <Stack.Screen name="Quests" component={QuestsScreen} />
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Stack.Screen name="Support" component={SupportScreen} />
-      <Stack.Screen name="About" component={AboutScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
-      <Stack.Screen name="Spelling" component={SpellingScreen} />
-      <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+      <Stack.Screen name="Phonics"                 component={withLexi(PhonicsScreen)} />
+      <Stack.Screen name="Writing"                 component={withLexi(WritingScreen)} />
+      <Stack.Screen name="Reading"                 component={withLexi(ReadingScreen)} />
+      <Stack.Screen name="Scan"                    component={ScanScreen} />
+      <Stack.Screen name="Quests"                  component={withLexi(QuestsScreen)} />
+      <Stack.Screen name="Leaderboard"             component={withLexi(LeaderboardScreen)} />
+      <Stack.Screen name="Support"                 component={SupportScreen} />
+      <Stack.Screen name="About"                   component={AboutScreen} />
+      <Stack.Screen name="Settings"                component={SettingsScreen} />
+      <Stack.Screen name="PhonicsActivity"         component={withLexi(PhonicsActivityScreen)} />
+      <Stack.Screen name="Spelling"                component={withLexi(SpellingScreen)} />
+      <Stack.Screen name="PhonologicalAwareness"   component={withLexi(PhonologicalAwarenessScreen)} />
       <Stack.Screen name="AIInsights" component={AIInsightsScreen} />
       <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />

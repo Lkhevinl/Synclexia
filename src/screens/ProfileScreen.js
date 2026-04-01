@@ -195,7 +195,7 @@ export default function ProfileScreen({ navigation }) {
             {bannerUrl ? (
               <Image source={{ uri: bannerUrl }} style={styles.bannerImg} />
             ) : (
-              <LinearGradient colors={['#0288D1', '#01579B']} style={styles.bannerImg} />
+              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
             )}
             <View style={styles.bannerEditBtn}>
               {bannerUploading
@@ -298,7 +298,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.changePassBtn}
               onPress={() => navigation.navigate('ChangePassword')}
             >
-              <Ionicons name="lock-closed-outline" size={20} color="#0288D1" />
+              <Ionicons name="lock-closed-outline" size={20} color="#E8927C" />
               <Text style={styles.changePassText}>Change Password</Text>
               <Ionicons name="chevron-forward" size={16} color="#90A4AE" />
             </TouchableOpacity>
@@ -310,7 +310,7 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ECEFF1' },
+  container: { flex: 1, backgroundColor: '#FAF5F1' },
   body: { paddingBottom: 60 },
 
   // Banner + avatar hero
@@ -334,13 +334,13 @@ const styles = StyleSheet.create({
   },
   avatarPlaceholder: {
     width: 90, height: 90, borderRadius: 45,
-    backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center',
     borderWidth: 3, borderColor: '#fff',
   },
   avatarInitial: { fontSize: 34, fontWeight: 'bold', color: '#fff' },
   cameraOverlay: {
     position: 'absolute', bottom: 2, right: 2,
-    backgroundColor: '#0277BD', borderRadius: 13, padding: 4,
+    backgroundColor: '#E8927C', borderRadius: 13, padding: 4,
     borderWidth: 2, borderColor: '#fff',
   },
   avatarHint: { color: '#90A4AE', fontSize: 12, textAlign: 'center', marginBottom: 16, marginTop: -8 },
@@ -360,16 +360,16 @@ const styles = StyleSheet.create({
   emailHint: { fontSize: 11, color: '#B0BEC5', marginTop: 5, marginLeft: 4, marginBottom: 4 },
 
   saveBtn: {
-    flexDirection: 'row', backgroundColor: '#0288D1', borderRadius: 14,
+    flexDirection: 'row', backgroundColor: '#E8927C', borderRadius: 14,
     padding: 15, justifyContent: 'center', alignItems: 'center',
     marginTop: 22, gap: 8, elevation: 2,
   },
-  saveBtnDisabled: { backgroundColor: '#90CAF9' },
+  saveBtnDisabled: { backgroundColor: '#F5C0A8' },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   changePassBtn: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#E3F2FD',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E8',
     borderRadius: 14, padding: 14, marginTop: 12, gap: 8,
   },
-  changePassText: { flex: 1, color: '#0288D1', fontWeight: 'bold', fontSize: 15 },
+  changePassText: { flex: 1, color: '#E8927C', fontWeight: 'bold', fontSize: 15 },
 });

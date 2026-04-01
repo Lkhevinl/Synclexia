@@ -113,65 +113,69 @@ export default function SpeechToTextScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#01579B', '#0288D1']} style={styles.header}>
+      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
         <GoBackBtn />
         <View style={styles.headerTitleBox}>
           <Text style={styles.headerTitle}>Speech to Text</Text>
-          <Text style={styles.headerSub}>Tap the mic and start speaking</Text>
+          <Text style={styles.headerSub}>Tap the microphone button below and speak clearly — your words will appear as text on screen!</Text>
         </View>
       </LinearGradient>
 
-      <View style={styles.transcriptBox}>
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.transcriptContent}
-          showsVerticalScrollIndicator={true}
-        >
-          {transcript ? (
-            <Text style={styles.transcriptText}>{transcript}</Text>
-          ) : (
-            <Text style={styles.placeholderText}>
-              {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
-            </Text>
-          )}
-          {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
-        </ScrollView>
-      </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.transcriptBox}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.transcriptContent}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {transcript ? (
+              <Text style={styles.transcriptText}>{transcript}</Text>
+            ) : (
+              <Text style={styles.placeholderText}>
+                {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
+              </Text>
+            )}
+            {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
+          </ScrollView>
+        </View>
 
-      <View style={styles.controls}>
-        <TouchableOpacity style={[styles.clearBtn, !transcript && styles.clearBtnHidden]} onPress={handleClear} disabled={!transcript}>
-          <Ionicons name="trash-outline" size={22} color="#78909C" />
-          <Text style={styles.clearBtnText}>Clear</Text>
-        </TouchableOpacity>
+        <View style={styles.controls}>
+          <TouchableOpacity style={[styles.clearBtn, !transcript && styles.clearBtnHidden]} onPress={handleClear} disabled={!transcript}>
+            <Ionicons name="trash-outline" size={22} color="#78909C" />
+            <Text style={styles.clearBtnText}>Clear</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.micBtn, isListening && styles.micBtnActive]} onPress={toggleListening} activeOpacity={0.8}>
-          <Ionicons name={isListening ? 'stop' : 'mic'} size={36} color="#fff" />
-        </TouchableOpacity>
+          <TouchableOpacity style={[styles.micBtn, isListening && styles.micBtnActive]} onPress={toggleListening} activeOpacity={0.8}>
+            <Ionicons name={isListening ? 'stop' : 'mic'} size={36} color="#fff" />
+          </TouchableOpacity>
 
-        <View style={styles.clearBtn} />
-      </View>
+          <View style={styles.clearBtn} />
+        </View>
 
-      {!AVAILABLE && (
-        <Text style={styles.devNote}>⚙️ Install expo-speech-recognition for live recognition</Text>
-      )}
+        {!AVAILABLE && (
+          <Text style={styles.devNote}>⚙️ Install expo-speech-recognition for live recognition</Text>
+        )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
-  header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerTitleBox: { alignItems: 'center', marginTop: 10 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 },
-  transcriptBox: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
+  container: { flex: 1, backgroundColor: '#FAF5F1' },
+  header: { paddingTop: 50, paddingBottom: 18, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
+  headerTitleBox: { alignItems: 'center', marginTop: 6 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
+  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4, textAlign: 'center', lineHeight: 17 },
+  scrollContent: { flexGrow: 1 },
+  transcriptBox: { height: 280, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
   scrollView: { flex: 1 },
   transcriptContent: { padding: 24, flexGrow: 1 },
   transcriptText: { fontSize: 22, color: '#333', lineHeight: 36 },
   placeholderText: { fontSize: 16, color: '#B0BEC5', textAlign: 'center', marginTop: 40, lineHeight: 26 },
   errorText: { fontSize: 14, color: '#F44336', marginTop: 16, textAlign: 'center' },
-  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 40 },
-  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center', elevation: 8 },
+  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 100 },
+  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', elevation: 8 },
   micBtnActive: { backgroundColor: '#C62828' },
   clearBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#ECEFF1', justifyContent: 'center', alignItems: 'center' },
   clearBtnHidden: { opacity: 0 },

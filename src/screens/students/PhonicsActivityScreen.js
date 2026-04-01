@@ -691,7 +691,7 @@ export default function PhonicsActivityScreen() {
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={{ flex: 1 }}>
-        <GoBackBtn />
+        <GoBackBtn title="Phonics Activities" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#FF9800" />

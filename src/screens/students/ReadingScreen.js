@@ -141,7 +141,7 @@ export default function ReadingScreen() {
         <GoBackBtn />
         <View style={styles.headerTitleBox}>
           <Text style={styles.headerTitle}>My Library</Text>
-          <Text style={styles.headerSub}>Select a book to read</Text>
+          <Text style={styles.headerSub}>Tap a book cover to open it, then tap "Read to Me" to hear it read aloud with highlighted words!</Text>
         </View>
       </LinearGradient>
 

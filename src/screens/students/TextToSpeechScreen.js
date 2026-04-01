@@ -155,10 +155,14 @@ export default function TextToSpeechScreen() {
 
   return (
     <View style={styles.container}>
-       <View style={styles.topRow}>
-          <GoBackBtn />
-          <Text style={styles.header}>Text-to-Speech</Text>
-          <View style={{ width: 24 }} />
+       <GoBackBtn title="Text-to-Speech" />
+
+      <View style={styles.instructionHint}>
+        <Ionicons name="information-circle" size={22} color="#E8927C" />
+        <Text style={styles.instructionHintText}>
+          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+          Type or paste any text in the box, then tap the Play button to hear it read aloud. Each word lights up as it is spoken!
+        </Text>
       </View>
 
       <View style={styles.textBox}>
@@ -207,9 +211,9 @@ export default function TextToSpeechScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 20, paddingTop: 50 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  container: { flex: 1, backgroundColor: '#FAF5F1', padding: 20, paddingTop: 50 },
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
   textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
   input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28 },
   previewBox: { backgroundColor: '#F5F7FA', borderRadius: 15, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, maxHeight: 120 },
@@ -217,8 +221,8 @@ const styles = StyleSheet.create({
   previewScroll: { maxHeight: 80 },
   previewText: { fontSize: 16, color: '#333', lineHeight: 24 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
-  controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },
+  controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 100 },
   actionBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#FFE082', justifyContent: 'center', alignItems: 'center' },
-  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#01579B', justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', elevation: 5 },
   stopBtn: { backgroundColor: '#C62828' },
 });

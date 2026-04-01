@@ -61,10 +61,15 @@ export default function QuestScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#FFF3E0' }}>
-      <GoBackBtn />
-      <View style={styles.header}>
-        <Text style={styles.title}>Quest Board 📜</Text>
+    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+      <GoBackBtn title="Quest Board" />
+
+      <View style={styles.instructionHint}>
+        <Ionicons name="information-circle" size={22} color="#E8927C" />
+        <Text style={styles.instructionHintText}>
+          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+          Complete activities (Reading, Phonics, Spelling, etc.) to fill up quest progress bars. When a quest is full, tap "CLAIM" to earn your XP reward!
+        </Text>
       </View>
 
       <FlatList
@@ -114,10 +119,11 @@ export default function QuestScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 50, marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#E65100' },
-  
-  card: { flexDirection: 'row', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#FFE0B2' },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#E8927C' },
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+
+  card: { flexDirection: 'row', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#E8927C' },
   cardClaimed: { opacity: 0.6, backgroundColor: '#eee', borderColor: '#ccc' },
   
   questTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 5 },

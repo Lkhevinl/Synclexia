@@ -484,8 +484,20 @@ export default function PhonologicalAwarenessScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1' }}>
       <StatusBar barStyle="dark-content" />
-      <GoBackBtn />
+      <GoBackBtn title="Phonological Awareness" />
+      <View style={paRoot.instructionHint}>
+        <Ionicons name="information-circle" size={22} color="#E8927C" />
+        <Text style={paRoot.instructionHintText}>
+          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+          Pick a game below! Clap Syllables counts word parts, Onset-Rime finds rhyming words, and Phoneme Isolation identifies sounds. Tap to hear the words before answering!
+        </Text>
+      </View>
       <ModeSelector onSelect={setMode} level={level} />
     </SafeAreaView>
   );
 }
+
+const paRoot = StyleSheet.create({
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, margin: 16, marginBottom: 4, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+});

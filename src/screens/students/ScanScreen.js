@@ -129,14 +129,18 @@ export default function ScanScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#F0F4F8' }}>
-      <View style={styles.topBar}>
-         <GoBackBtn />
-         <Text style={styles.header}>Magic Scanner</Text>
-         <View style={{width: 40}} />
+    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+      <GoBackBtn title="Magic Scanner" />
+
+      <View style={styles.instructionHint}>
+        <Ionicons name="information-circle" size={22} color="#E8927C" />
+        <Text style={styles.instructionHintText}>
+          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+          Tap "Take Photo" or the gallery icon to pick an image. Then tap "Listen Now" to hear the scanned text read aloud!
+        </Text>
       </View>
 
-      <View style={styles.body}>
+      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
         {/* 1. SCANNER VIEWFINDER CARD */}
         <View style={styles.cardContainer}>
           <View style={styles.previewBox}>
@@ -145,7 +149,7 @@ export default function ScanScreen() {
             ) : (
               <View style={styles.placeholderState}>
                 <View style={styles.iconCircle}>
-                  <Ionicons name="scan" size={50} color="#0288D1" />
+                  <Ionicons name="scan" size={50} color="#E8927C" />
                 </View>
                 <Text style={styles.placeholderTitle}>Ready to Scan</Text>
                 <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
@@ -170,7 +174,7 @@ export default function ScanScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
-            <Ionicons name="images" size={26} color="#0277BD" />
+            <Ionicons name="images" size={26} color="#E8927C" />
           </TouchableOpacity>
         </View>
 
@@ -206,23 +210,24 @@ export default function ScanScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </ScrollView>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
+  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
+  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
 
   body: { flex: 1 },
+  bodyContent: { paddingBottom: 100 },
   
   cardContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, marginBottom: 16, justifyContent: 'center' },
   previewBox: { height: 260, backgroundColor: '#F5F7FA', borderRadius: 15, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   
   placeholderState: { alignItems: 'center', padding: 20 },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E1F5FE', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   placeholderTitle: { fontSize: 18, fontWeight: 'bold', color: '#455A64' },
   placeholderSub: { fontSize: 12, color: '#90A4AE', textAlign: 'center', marginTop: 5 },
 
@@ -230,11 +235,11 @@ const styles = StyleSheet.create({
   loadingText: { color: '#fff', fontWeight: 'bold', marginTop: 15, fontSize: 16 },
 
   controls: { flexDirection: 'row', gap: 15, marginBottom: 16 },
-  btnCamera: { flex: 1, backgroundColor: '#0288D1', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 15, elevation: 3 },
-  btnGallery: { width: 70, backgroundColor: '#E1F5FE', alignItems: 'center', justifyContent: 'center', borderRadius: 15, borderWidth: 1, borderColor: '#B3E5FC' },
+  btnCamera: { flex: 1, backgroundColor: '#E8927C', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 15, elevation: 3 },
+  btnGallery: { width: 70, backgroundColor: '#FFF0E8', alignItems: 'center', justifyContent: 'center', borderRadius: 15, borderWidth: 1, borderColor: '#E8927C' },
   btnTextMain: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
 
-  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, elevation: 2, flex: 1 },
+  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, elevation: 2 },
   resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, opacity: 0.7 },
   resultLabel: { fontWeight: 'bold', color: '#555', marginLeft: 8, fontSize: 12, textTransform: 'uppercase' },
   // Do not set fontFamily here so global Font Style can apply.
