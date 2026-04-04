@@ -271,7 +271,7 @@ export default function Sidebar({ visible, onClose }) {
               >
                 <Text style={[
                   s.fontOptionText,
-                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : (f.value !== 'System' ? f.value : undefined) },
+                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : undefined },
                   theme.fontStyle === f.value && s.fontOptionTextActive,
                 ]}>
                   {f.label}

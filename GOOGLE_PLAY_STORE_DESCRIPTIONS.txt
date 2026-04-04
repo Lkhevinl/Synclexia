@@ -1,0 +1,70 @@
+GOOGLE PLAY STORE LISTING - SYNCLEXIA
+======================================
+
+APP NAME:
+---------
+Synclexia
+
+
+SHORT DESCRIPTION (80 characters max):
+--------------------------------------
+Dyslexia-friendly literacy app with AI-powered personalized learning paths
+
+[Character count: 78/80]
+
+
+FULL DESCRIPTION (4000 characters max):
+---------------------------------------
+Synclexia is a literacy support app designed specifically for children with dyslexia and reading difficulties. Combining evidence-based synthetic phonics with AI-driven personalization, Synclexia makes reading and writing practice engaging, accessible, and effective.
+
+🎯 DYSLEXIA-FRIENDLY FEATURES:
+• OpenDyslexic font + customizable letter spacing
+• Color overlay options to reduce visual stress  
+• Text-to-speech with word highlighting
+• Adjustable font sizes (10-17pt)
+• Phonics instruction based on synthetic phonics methodology
+
+📚 LEARNING ACTIVITIES:
+• Phonics Fun - Interactive letter and sound practice
+• Reading Practice - Leveled stories with read-along support
+• Letter Tracing - Guided handwriting with visual guides
+• Spelling Challenges - Phonetically-organized word drills
+• Phonological Awareness - Sound awareness and blending exercises
+• Play & Learn Games - Engaging mini-games that reinforce learning
+• Magic Scanner - Extract and read text from photos using OCR
+
+🤖 AI-POWERED PERSONALIZATION:
+• Analyzes performance to suggest appropriate difficulty levels
+• Provides personalized learning insights
+• Automatically adapts activities based on student progress
+• Tracks learning data to identify patterns and trends
+
+👨‍👩‍👧 PARENT & EDUCATOR TOOLS:
+• Real-time progress monitoring for parents
+• Detailed activity logs and achievement tracking
+• Educator content management and reporting
+• Simple linking system for family connections
+• Two-way feedback between parents and educators
+
+🏆 MOTIVATION THROUGH GAMIFICATION:
+• Quest system with XP rewards
+• Achievement tracking and personal progress
+• Streak counters for consistent practice
+• Daily challenges to keep learning fun
+
+✅ SAFE & SECURE:
+• COPPA compliant - special protections for children under 13
+• No data selling - we never share your data with third parties
+• Encrypted data storage
+• Parental controls included
+
+PERFECT FOR:
+✓ Children with dyslexia (ages 5-12+)
+✓ Students struggling with reading or spelling
+✓ Learners who benefit from multi-sensory approaches
+✓ Children needing consistent literacy intervention
+✓ Families wanting to support home learning
+
+Start your child's journey to reading confidence today. Synclexia makes literacy learning accessible, engaging, and fun.
+
+[Character count: 2,244/4000]

@@ -507,7 +507,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#546E7A',
     marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   hint: {
     fontSize: 12,

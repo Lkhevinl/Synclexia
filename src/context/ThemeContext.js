@@ -66,7 +66,7 @@ const COLOR_THEMES = {
 const DEFAULT_THEME = {
   fontSize: 12,            // Default Text Size
   bgColor: '#FAF5F1',      // Default Background — warm cream
-  fontStyle: 'System',     // Default Font
+  fontStyle: 'Inter',      // Default Font
   primaryColor: '#C06080', // Default Accent — rose
 
   // ── Dyslexia Accessibility Settings ──────────────────────────────────
@@ -78,6 +78,8 @@ const DEFAULT_THEME = {
 
 const normalizeTheme = (rawTheme = {}) => {
   const merged = { ...DEFAULT_THEME, ...rawTheme };
+  // Migrate legacy 'System' value to Inter
+  if (merged.fontStyle === 'System') merged.fontStyle = 'Inter';
   // Clamp fontSize to a safe range so UI cannot break with extreme values
   if (typeof merged.fontSize === 'number') {
     merged.fontSize = Math.max(10, Math.min(17, merged.fontSize));
@@ -196,10 +198,15 @@ export const ThemeProvider = ({ children }) => {
   // Font family helper — platform-safe fallbacks (Android doesn't have many desktop fonts).
   // Keep the mapping distinct so users can *see* the difference.
   const resolveFontFamily = (fontStyleValue) => {
-    if (!fontStyleValue || fontStyleValue === 'System') return undefined;
+    if (!fontStyleValue) return undefined;
 
     const fontMap = {
-      // These are labels from the picker; map to platform-available families.
+      // Inter variants — loaded via @expo-google-fonts/inter
+      'Inter':          'Inter_400Regular',
+      'Inter Medium':   'Inter_500Medium',
+      'Inter SemiBold': 'Inter_600SemiBold',
+      'Inter Bold':     'Inter_700Bold',
+      // Platform-available fallbacks
       'OpenDyslexic': Platform.select({ ios: 'Arial Rounded MT Bold', android: 'monospace', default: 'monospace' }),
       'Open Sans': Platform.select({ ios: 'Arial', android: 'sans-serif', default: 'sans-serif' }),
       'Trebuchet MS': Platform.select({ ios: 'Trebuchet MS', android: 'serif', default: 'serif' }),

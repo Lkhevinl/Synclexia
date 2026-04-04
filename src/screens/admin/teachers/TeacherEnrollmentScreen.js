@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     letterSpacing: 6,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   studentsSection: { flex: 1 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 15 },

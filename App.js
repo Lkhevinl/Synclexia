@@ -9,6 +9,7 @@ import { AdaptiveProvider } from './src/context/AdaptiveContext';
 import RootNavigator from './src/navigation/AppNavigator';
 import { navigationRef } from './src/navigation/navigationRef';
 import { useTheme } from './src/context/ThemeContext';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 // Sits INSIDE ThemeProvider so it can read theme state
 function GlobalOverlay() {
@@ -41,6 +42,9 @@ function AppWithTheme() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  if (!fontsLoaded) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaProvider>

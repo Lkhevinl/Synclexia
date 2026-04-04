@@ -15,7 +15,10 @@ export default function SettingsScreen({ navigation }) {
   const isAdmin = profile?.role === 'admin';
 
   const FONT_STYLES = [
-    { label: 'System',         value: 'System'         },
+    { label: 'Inter',          value: 'Inter'          },
+    { label: 'Inter Medium',   value: 'Inter Medium'   },
+    { label: 'Inter SemiBold', value: 'Inter SemiBold' },
+    { label: 'Inter Bold',     value: 'Inter Bold'     },
     { label: 'Arial',          value: 'Arial'          },
     { label: 'Open Dyslexic',  value: 'OpenDyslexic'   },
     { label: 'Verdana',        value: 'Verdana'        },

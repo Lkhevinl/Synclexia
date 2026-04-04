@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   spine: { position: 'absolute', left: 10, top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
   bookContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 10, paddingLeft: 15 },
   bookLevel: { fontSize: 12, fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', marginBottom: 5 },
-  bookTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', textAlign: 'center', fontFamily: 'serif' },
+  bookTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
   readerContainer: { width: '90%', height: '80%', backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden' },
   readerHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
