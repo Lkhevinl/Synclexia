@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const LEVELS = [
   { value: 1, label: 'Level 1 — CVC / Easy' },
@@ -20,6 +22,7 @@ const LEVELS = [
 
 export default function AdminSpellingScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [word, setWord] = useState('');
@@ -100,7 +103,7 @@ export default function AdminSpellingScreen() {
   const levelColor = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
       <Text style={styles.header}>Spelling Words 🔤</Text>
 
@@ -185,12 +188,12 @@ export default function AdminSpellingScreen() {
           )}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
   form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 340, elevation: 2 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },

@@ -4,59 +4,82 @@
  * Props:
  *   title       — main title string (required)
  *   subtitle    — optional smaller text below the title
- *   colors      — gradient colors array (default deep blue)
- *   right       — optional right-side React node (icon button, etc.)
+ *   variant     — 'default' (gradient) | 'flat' (solid surface, dark text)
+ *                 admin/teacher screens use 'flat'; default is 'default'
+ *   right       — optional right-side React node
  *   showBack    — show back button (default true)
- *   backColor   — back button icon color (default '#fff')
+ *   backColor   — back button icon color (auto-set by variant, but overridable)
+ *
+ * Note: the old `colors` prop is removed — gradients are read from ThemeContext automatically.
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
+import tokens from '../theme/tokens';
 import GoBackBtn from './GoBackBtn';
 
 export default function AppHeader({
   title,
   subtitle,
-  colors = ['#3b5998', '#192f6a'],
+  variant = 'default',
   right = null,
   showBack = true,
-  backColor = '#fff',
+  backColor,
 }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const isFlat = variant === 'flat';
+  const resolvedBackColor = backColor ?? (isFlat ? colors.onSurface : '#fff');
+  const paddingTop = Math.max(insets.top + 12, 28);
+
+  const content = (
+    <View style={[styles.row, { paddingTop, paddingBottom: tokens.spacing.lg, paddingHorizontal: tokens.spacing.md }]}>
+      <View style={styles.side}>
+        {showBack && <GoBackBtn color={resolvedBackColor} />}
+      </View>
+      <View style={styles.center}>
+        <Text style={[styles.title, isFlat && { color: colors.onSurface }]} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={[styles.subtitle, isFlat && { color: colors.onSurfaceMuted }]} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      <View style={styles.side}>{right}</View>
+    </View>
+  );
+
+  if (isFlat) {
+    return (
+      <View style={[styles.flatHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        {content}
+      </View>
+    );
+  }
 
   return (
     <LinearGradient
-      colors={colors}
-      style={[styles.header, { paddingTop: Math.max(insets.top + 12, 28) }]}
+      colors={colors.headerGradient}
+      style={styles.gradientHeader}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <View style={styles.row}>
-        {/* Left — back button */}
-        <View style={styles.side}>
-          {showBack && <GoBackBtn color={backColor} />}
-        </View>
-
-        {/* Center — title */}
-        <View style={styles.center}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
-        </View>
-
-        {/* Right — optional action */}
-        <View style={styles.side}>{right}</View>
-      </View>
+      {content}
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+  gradientHeader: {
+    borderBottomLeftRadius: tokens.radius.xl,
+    borderBottomRightRadius: tokens.radius.xl,
+  },
+  flatHeader: {
+    borderBottomWidth: 1,
   },
   row: {
     flexDirection: 'row',
@@ -73,13 +96,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: tokens.fontSize.lg,
     fontWeight: '700',
     color: '#fff',
     letterSpacing: 0.3,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: tokens.fontSize.xs,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 3,
   },

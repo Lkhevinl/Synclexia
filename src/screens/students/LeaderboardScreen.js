@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import EmptyState from '../../components/EmptyState';
+import { useTheme } from '../../context/ThemeContext';
 
 const RANGES = [
   { label: 'This Week', days: 7 },
@@ -13,6 +14,7 @@ const RANGES = [
 ];
 
 export default function LeaderboardScreen() {
+  const { colors } = useTheme();
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState(0); // index into RANGES
@@ -100,7 +102,7 @@ export default function LeaderboardScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+    <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
       <GoBackBtn title="Hall of Fame" />
 
       <View style={styles.instructionHint}>
@@ -139,13 +141,13 @@ export default function LeaderboardScreen() {
           contentContainerStyle={{ paddingBottom: 20 }}
           ListEmptyComponent={<EmptyState message="No activity found for this period. Be the first!" />}
           renderItem={({ item, index }) => (
-            <View style={[styles.card, index < 3 && styles.top3Card]}>
+            <View style={[styles.card, { backgroundColor: colors.surfaceCard }, index < 3 && styles.top3Card]}>
               <View style={styles.rankCol}>
                 <Text style={styles.rankText}>{getMedal(index) || `#${index + 1}`}</Text>
               </View>
 
               <View style={styles.infoCol}>
-                <Text style={styles.name}>{item.full_name || 'Unknown'}</Text>
+                <Text style={[styles.name, { color: colors.onSurface }]}>{item.full_name || 'Unknown'}</Text>
                 <Text style={styles.xpText}>
                   {RANGES[range].days === null
                     ? `${item.xp} XP (all time)`

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  StatusBar, Animated, Alert, ActivityIndicator,
+  Animated, Alert, ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
@@ -383,6 +383,7 @@ const game = StyleSheet.create({
 // ─── Finish Screen ─────────────────────────────────────────────────────────────
 
 function FinishScreen({ score, total, onBack }) {
+  const { colors } = useTheme();
   const percent = Math.round((score / total) * 100);
   const msg = percent >= 80 ? '🌟 Spelling Star!' : percent >= 50 ? '👏 Nice Work!' : '📚 Keep Practising!';
 
@@ -391,7 +392,7 @@ function FinishScreen({ score, total, onBack }) {
   }, []);
 
   return (
-    <View style={fin.container}>
+    <View style={[fin.container, { backgroundColor: colors.surface }]}>
       <LinearGradient colors={['#2196F3', '#1565C0']} style={fin.header}>
         <Text style={fin.headerTitle}>Results</Text>
       </LinearGradient>
@@ -415,7 +416,7 @@ function FinishScreen({ score, total, onBack }) {
 }
 
 const fin = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF5F1' },
+  container: { flex: 1 },
   header: { paddingTop: 70, paddingBottom: 20, alignItems: 'center' },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   card: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 28, padding: 32, alignItems: 'center', elevation: 4 },
@@ -433,7 +434,7 @@ const fin = StyleSheet.create({
 
 export default function SpellingScreen() {
   const { profile } = useAuth();
-  const { getOverlayColor, getDyslexiaTextStyle } = useTheme();
+  const { colors, getOverlayColor, getDyslexiaTextStyle } = useTheme();
   const [mode, setMode] = useState(null);
   const [wordBank, setWordBank] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -449,9 +450,7 @@ export default function SpellingScreen() {
   const handleBack = () => setMode(null);
 
   return (
-    <View style={root.container}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={{ flex: 1 }}>
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
         <GoBackBtn title="Spelling Practice" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -477,16 +476,14 @@ export default function SpellingScreen() {
             <ModeSelector onSelect={setMode} />
           </>
         )}
-      </SafeAreaView>
       {overlayColor && (
         <View style={[root.overlay, { backgroundColor: overlayColor, pointerEvents: 'none' }]} />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const root = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF5F1' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
   instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, margin: 16, marginBottom: 4, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
   instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, Image, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, Image, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import Sidebar from '../../../components/Sidebar';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -19,7 +21,7 @@ const DAILY_TIPS = [
 ];
 
 export default function TeacherDashboardScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
@@ -109,8 +111,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                      contentStats.phonicsActivities + contentStats.phonological;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDesktop ? '#f0f4f8' : theme.bgColor }]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── HEADER ── */}
@@ -322,7 +323,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 

@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 export default function AdminSettingsScreen({ navigation }) {
-  const { theme, updateTheme } = useTheme(); 
+  const { theme, colors, updateTheme } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
@@ -37,8 +38,7 @@ export default function AdminSettingsScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       
       {/* HEADER */}
       <LinearGradient colors={['#607D8B', '#455A64']} style={styles.header}>
@@ -129,12 +129,12 @@ export default function AdminSettingsScreen({ navigation }) {
 
           <View style={{height: 150}} /> 
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#ECEFF1' },
+  mainContainer: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { alignItems: 'center', marginTop: 10 },
   headerTitle: { fontSize: 26, fontWeight: 'bold', color: '#fff' },

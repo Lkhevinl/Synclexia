@@ -1,30 +1,21 @@
 import React, { useState, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   FlatList,
   StatusBar,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { useTheme } from '../context/ThemeContext';
+import ScreenWrapper from '../components/ScreenWrapper';
+import AppText from '../components/AppText';
+import CustomButton from '../components/CustomButton';
+import tokens from '../theme/tokens';
 
 const ONBOARDING_KEY = '@synclexia_onboarding_complete';
-
-// Synclexia App Colors
-const COLORS = {
-  background: '#F4F1DE',
-  textPrimary: '#3A3A3A',
-  textSecondary: '#6B6B6B',
-  primary: '#F28C82',
-  blue: '#6FA8DC',
-  green: '#93C47D',
-  lavender: '#B4A7D6',
-};
 
 const onboardingData = [
   {
@@ -56,6 +47,8 @@ const onboardingData = [
 export default function OnboardingScreen({ navigation }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
+  const { colors } = useTheme();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
 
   const handleScroll = (event) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
@@ -63,67 +56,35 @@ export default function OnboardingScreen({ navigation }) {
   };
 
   const completeOnboarding = async () => {
-    try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-    } catch (e) {
-      console.log('Error saving onboarding state:', e);
-    }
+    try { await AsyncStorage.setItem(ONBOARDING_KEY, 'true'); } catch (_) {}
   };
 
   const handleLogin = async () => {
     await completeOnboarding();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
   const handleCreateAccount = async () => {
     await completeOnboarding();
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'SignUp' }],
-    });
+    navigation.reset({ index: 0, routes: [{ name: 'SignUp' }] });
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.slide}>
-      {/* Illustration Area */}
-      <View style={styles.illustrationArea}>
-        <Image
-          source={item.image}
-          style={styles.illustration}
-          resizeMode="contain"
-        />
+    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
+      <View style={[styles.illustrationArea, { height: SCREEN_HEIGHT * 0.4 }]}>
+        <Image source={item.image} style={styles.illustration} resizeMode="contain" />
       </View>
-
-      {/* Content */}
       <View style={styles.contentArea}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
+        <AppText variant="display" style={[styles.title, { color: colors.onSurface }]}>{item.title}</AppText>
+        <AppText variant="body" style={[styles.description, { color: colors.onSurfaceMuted }]}>{item.description}</AppText>
       </View>
-    </View>
-  );
-
-  const renderDots = () => (
-    <View style={styles.dotsContainer}>
-      {onboardingData.map((_, index) => (
-        <View
-          key={index}
-          style={[
-            styles.dot,
-            currentIndex === index ? styles.dotActive : styles.dotInactive,
-          ]}
-        />
-      ))}
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    <ScreenWrapper padded={false}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
 
-      {/* Slides */}
       <FlatList
         ref={flatListRef}
         data={onboardingData}
@@ -137,134 +98,44 @@ export default function OnboardingScreen({ navigation }) {
         style={styles.flatList}
       />
 
-      {/* Bottom Section */}
       <View style={styles.bottomSection}>
-        {renderDots()}
+        {/* Dots */}
+        <View style={styles.dotsContainer}>
+          {onboardingData.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                currentIndex === index
+                  ? [styles.dotActive, { backgroundColor: colors.primary }]
+                  : styles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
 
-        {/* Login Button */}
-        <TouchableOpacity
-          style={styles.loginBtn}
-          onPress={handleLogin}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.loginBtnText}>Login</Text>
-        </TouchableOpacity>
-
-        {/* Create Account Button */}
-        <TouchableOpacity
-          style={styles.createBtn}
-          onPress={handleCreateAccount}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.createBtnText}>Create an Account</Text>
-        </TouchableOpacity>
+        <CustomButton title="Login" onPress={handleLogin} size="lg" style={styles.actionBtn} />
+        <CustomButton title="Create an Account" onPress={handleCreateAccount} type="secondary" size="lg" style={styles.actionBtn} />
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  flatList: {
-    flex: 1,
-  },
+  flatList:   { flex: 1 },
+  slide:      { paddingHorizontal: tokens.spacing.xl, paddingTop: 60 },
 
-  // Slide
-  slide: {
-    width: SCREEN_WIDTH,
-    paddingHorizontal: 30,
-    paddingTop: 60,
-  },
+  illustrationArea: { justifyContent: 'center', alignItems: 'center' },
+  illustration:     { width: '100%', height: '100%' },
 
-  // Illustration
-  illustrationArea: {
-    height: SCREEN_HEIGHT * 0.4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  illustration: {
-    width: '100%',
-    height: '100%',
-  },
+  contentArea:  { alignItems: 'center', paddingTop: tokens.spacing.lg, paddingHorizontal: tokens.spacing.sm },
+  title:        { textAlign: 'center', marginBottom: tokens.spacing.md },
+  description:  { textAlign: 'center', lineHeight: 24 },
 
-  // Content
-  contentArea: {
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingHorizontal: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.textPrimary,
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  description: {
-    fontSize: 15,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-
-  // Bottom Section
-  bottomSection: {
-    paddingHorizontal: 30,
-    paddingBottom: 50,
-  },
-
-  // Dots
-  dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  dot: {
-    height: 10,
-    borderRadius: 5,
-    marginHorizontal: 5,
-  },
-  dotActive: {
-    backgroundColor: COLORS.primary,
-    width: 25,
-  },
-  dotInactive: {
-    backgroundColor: '#D9D9D9',
-    width: 10,
-  },
-
-  // Login Button
-  loginBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  loginBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-
-  // Create Account Button
-  createBtn: {
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  createBtnText: {
-    color: COLORS.primary,
-    fontSize: 18,
-    fontWeight: '600',
-  },
+  bottomSection: { paddingHorizontal: tokens.spacing.xl, paddingBottom: tokens.spacing.xxl },
+  dotsContainer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: tokens.spacing.lg },
+  dot:           { height: 10, borderRadius: 5, marginHorizontal: 5 },
+  dotActive:     { width: 25 },
+  dotInactive:   { backgroundColor: '#D9D9D9', width: 10 },
+  actionBtn:     { marginBottom: tokens.spacing.sm },
 });

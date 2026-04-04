@@ -6,9 +6,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function QuestScreen() {
   const { profile, fetchProfile } = useAuth();
+  const { colors } = useTheme();
   const [quests, setQuests] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,7 +63,7 @@ export default function QuestScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+    <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
       <GoBackBtn title="Quest Board" />
 
       <View style={styles.instructionHint}>
@@ -82,11 +84,11 @@ export default function QuestScreen() {
 
           return (
             <TouchableOpacity 
-              style={[styles.card, item.claimed && styles.cardClaimed]} 
+              style={[styles.card, { backgroundColor: colors.surfaceCard }, item.claimed && styles.cardClaimed]}
               disabled={true} 
             >
               <View style={{flex: 1}}>
-                 <Text style={[styles.questTitle, item.claimed && {textDecorationLine: 'line-through'}]}>{item.title}</Text>
+                 <Text style={[styles.questTitle, { color: colors.onSurface }, item.claimed && {textDecorationLine: 'line-through'}]}>{item.title}</Text>
                  
                  <View style={styles.rewards}>
                     <Text style={styles.rewardTag}>⚡ {item.xp_reward} XP</Text>

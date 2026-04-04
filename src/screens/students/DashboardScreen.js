@@ -7,6 +7,8 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import Sidebar from '../../components/Sidebar';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import tokens from '../../theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -19,10 +21,10 @@ const DAILY_TIPS = [
 ];
 
 // Loading Screen Component
-const LoadingScreen = ({ progress }) => {
+const LoadingScreen = ({ surfaceColor }) => {
   return (
-    <View style={styles.loadingScreenContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAF5F1" />
+    <View style={[styles.loadingScreenContainer, { backgroundColor: surfaceColor }]}>
+      <StatusBar barStyle="dark-content" backgroundColor={surfaceColor} />
       <Image
         source={require('../../../assets/synclexia-logo2-removebg-preview.png')}
         style={styles.loadingLogo}
@@ -33,10 +35,8 @@ const LoadingScreen = ({ progress }) => {
 };
 
 export default function DashboardScreen({ navigation }) {
-  const { theme, a11yTextStyle, getBgColor, getHeaderGradient, getPrimaryColor, getThemeColors } = useTheme();
+  const { theme, colors, a11yTextStyle } = useTheme();
   const { profile, fetchProfile } = useAuth();
-  const themeColors = getThemeColors();
-  const bgColor = getBgColor();
 
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -181,12 +181,12 @@ export default function DashboardScreen({ navigation }) {
 
 
   return (
-    <View style={[styles.mainContainer, { backgroundColor: bgColor }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={bgColor} translucent={false} />
+    <ScreenWrapper role="student" padded={false}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} translucent={false} />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {loading ? (
-        <LoadingScreen />
+        <LoadingScreen surfaceColor={colors.surface} />
       ) : error ? (
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
@@ -200,7 +200,7 @@ export default function DashboardScreen({ navigation }) {
       ) : (
         <>
           {/* MODERN HEADER */}
-          <View style={[styles.modernHeader, { backgroundColor: bgColor }]}>
+          <View style={[styles.modernHeader, { backgroundColor: colors.surface }]}>
             <View style={styles.modernHeaderContent}>
               {/* Avatar */}
               <TouchableOpacity
@@ -442,7 +442,7 @@ export default function DashboardScreen({ navigation }) {
 
         </>
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
@@ -452,7 +452,6 @@ const styles = StyleSheet.create({
   // Loading Screen Styles
   loadingScreenContainer: {
     flex: 1,
-    backgroundColor: '#FAF5F1',
     justifyContent: 'center',
     alignItems: 'center',
   },

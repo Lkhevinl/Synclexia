@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image, Alert,
+  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
 import Sidebar from '../../components/Sidebar';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import tokens from '../../theme/tokens';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import { analyzeStudentProfile, ACTIVITY_META } from '../../lib/strengthsAnalysis';
 
@@ -26,8 +28,7 @@ const ACTIVITY_LABELS = {
 
 export default function ParentDashboardScreen({ navigation }) {
   const { profile } = useAuth();
-  const { theme, getBgColor, getHeaderGradient, getThemeColors, a11yTextStyle } = useTheme();
-  const themeColors = getThemeColors();
+  const { theme, colors, a11yTextStyle } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [children, setChildren] = useState([]);
@@ -207,17 +208,19 @@ export default function ParentDashboardScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={[s.loadingContainer, { backgroundColor: getBgColor() }]}>
-        <ActivityIndicator size="large" color={themeColors.primaryColor} />
-        <Text style={[s.loadingText, { fontSize: theme.fontSize }, a11yTextStyle]}>Loading your children's data...</Text>
-      </View>
+      <ScreenWrapper role="parent" padded={false}>
+        <View style={s.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[s.loadingText, { fontSize: theme.fontSize }, a11yTextStyle]}>Loading your children's data...</Text>
+        </View>
+      </ScreenWrapper>
     );
   }
 
   if (error) {
     return (
-      <View style={[s.errorContainer, { backgroundColor: getBgColor() }]}>
-        <LinearGradient colors={['#E8927C', '#C87456']} style={s.errorHeader}>
+      <ScreenWrapper role="parent" padded={false}>
+        <LinearGradient colors={colors.headerGradient} style={s.errorHeader}>
           <Text style={[s.errorHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.errorBody, { paddingBottom: insets.bottom + 20 }]}>
@@ -229,14 +232,14 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={[s.retryBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (children.length === 0) {
     return (
-      <View style={[s.emptyContainer, { backgroundColor: getBgColor() }]}>
-        <LinearGradient colors={['#E8927C', '#C87456']} style={s.emptyHeader}>
+      <ScreenWrapper role="parent" padded={false}>
+        <LinearGradient colors={colors.headerGradient} style={s.emptyHeader}>
           <Text style={[s.emptyHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
@@ -248,17 +251,17 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={[s.linkChildBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Link a Child</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={[s.container, { backgroundColor: getBgColor() }]}>
-      <StatusBar barStyle="dark-content" backgroundColor={getBgColor()} />
+    <ScreenWrapper role="parent" padded={false}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── Header (matches learner style) ── */}
-      <View style={[s.header, { backgroundColor: getBgColor() }]}>
+      <View style={[s.header, { backgroundColor: colors.surface }]}>
         <View style={s.headerContent}>
           {/* Avatar */}
           <TouchableOpacity style={s.avatarWrapper} activeOpacity={0.8}>
@@ -524,68 +527,67 @@ export default function ParentDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const s = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: '#FAF5F1' },
-  loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FAF5F1' },
-  loadingText:        { marginTop: 12, color: '#E8927C', fontWeight: '600' },
-  emptyContainer:     { flex: 1, backgroundColor: '#FAF5F1' },
-  emptyHeader:        { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20 },
+  container:          { flex: 1 },
+  loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText:        { marginTop: tokens.spacing.md, color: '#E8927C', fontWeight: '600' },
+  emptyHeader:        { paddingTop: 60, paddingBottom: 30, paddingHorizontal: tokens.spacing.lg },
   emptyHeaderTitle:   { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   emptyBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
   emptyTitle:         { fontSize: 20, fontWeight: 'bold', color: '#555', marginTop: 20 },
-  emptyHint:          { fontSize: 14, color: '#999', marginTop: 8, textAlign: 'center', lineHeight: 22 },
-  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8927C', borderRadius: 25, paddingHorizontal: 24, paddingVertical: 14, marginTop: 24, elevation: 3 },
+  emptyHint:          { fontSize: 14, color: '#999', marginTop: tokens.spacing.sm, textAlign: 'center', lineHeight: 22 },
+  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#E8927C', borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.lg, elevation: 3 },
   linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
-  header:             { paddingTop: 50, paddingBottom: 16, paddingHorizontal: 16 },
+  header:             { paddingTop: 50, paddingBottom: tokens.spacing.md, paddingHorizontal: tokens.spacing.md },
   headerContent:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatarWrapper:      { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', flexShrink: 0 },
   avatarImg:          { width: 48, height: 48, borderRadius: 24 },
   avatarPlaceholder:  { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center' },
   avatarInitial:      { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  welcomeCard:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: '#E8927C', elevation: 2, shadowColor: '#E8927C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+  welcomeCard:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: tokens.radius.lg, paddingVertical: 14, paddingHorizontal: tokens.spacing.md, backgroundColor: '#E8927C', ...tokens.shadows.low },
   welcomeTitle:       { fontSize: 14, fontWeight: '700', color: '#fff' },
   welcomeSub:         { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
-  iconBtn:            { width: 42, height: 42, borderRadius: 21, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, flexShrink: 0, position: 'relative' },
+  iconBtn:            { width: 42, height: 42, borderRadius: 21, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...tokens.shadows.low, flexShrink: 0, position: 'relative' },
   redDot:             { position: 'absolute', top: 8, right: 8, width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF5252', borderWidth: 2, borderColor: '#fff' },
-  badge:              { position: 'absolute', top: 0, right: 0, backgroundColor: '#F44336', borderRadius: 8, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
+  badge:              { position: 'absolute', top: 0, right: 0, backgroundColor: '#F44336', borderRadius: tokens.spacing.sm, minWidth: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
   badgeText:          { color: '#fff', fontSize: 9, fontWeight: 'bold' },
   childTabs:          { marginBottom: 14 },
-  childTab:           { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', marginRight: 8, elevation: 1, borderWidth: 1.5, borderColor: '#E0D8D4' },
+  childTab:           { paddingHorizontal: tokens.spacing.md, paddingVertical: tokens.spacing.sm, borderRadius: tokens.radius.lg, backgroundColor: '#fff', marginRight: tokens.spacing.sm, elevation: 1, borderWidth: 1.5, borderColor: '#E0D8D4' },
   childTabActive:     { backgroundColor: '#E8927C', borderColor: '#E8927C' },
   childTabText:       { color: '#888', fontWeight: '600', fontSize: 13 },
   childTabTextActive: { color: '#fff' },
 
-  scroll:             { padding: 16 },
+  scroll:             { padding: tokens.spacing.md },
 
-  heroCard:           { backgroundColor: '#fff', borderRadius: 20, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, elevation: 3, gap: 14, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
+  heroCard:           { backgroundColor: '#fff', borderRadius: tokens.radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, ...tokens.shadows.mid, gap: 14, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
   heroAvatar:         { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
   heroAvatarImg:      { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#E8927C' },
   heroAvatarText:     { color: '#fff', fontSize: 28, fontWeight: 'bold' },
   heroName:           { fontSize: 18, fontWeight: '800', color: '#222' },
   heroEmail:          { fontSize: 12, color: '#aaa', marginTop: 3 },
-  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF0EB', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start' },
+  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.xs, backgroundColor: '#FFF0EB', borderRadius: tokens.radius.lg, paddingHorizontal: tokens.spacing.md, paddingVertical: 7, alignSelf: 'flex-start' },
   editChildBtnText:   { color: '#E8927C', fontWeight: '700', fontSize: 13 },
 
-  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 20, marginBottom: 16, elevation: 2, overflow: 'hidden' },
-  statBox:            { flex: 1, alignItems: 'center', paddingVertical: 16 },
-  statDivider:        { width: 1, backgroundColor: '#F0F0F0', marginVertical: 12 },
+  statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: tokens.radius.lg, marginBottom: tokens.spacing.md, ...tokens.shadows.low, overflow: 'hidden' },
+  statBox:            { flex: 1, alignItems: 'center', paddingVertical: tokens.spacing.md },
+  statDivider:        { width: 1, backgroundColor: '#F0F0F0', marginVertical: tokens.spacing.md },
   statVal:            { fontSize: 20, fontWeight: 'bold', marginTop: 5 },
   statLbl:            { fontSize: 10, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
 
-  sectionTitle:       { fontSize: 15, fontWeight: '800', color: '#333', marginBottom: 10, marginTop: 4 },
+  sectionTitle:       { fontSize: 15, fontWeight: '800', color: '#333', marginBottom: 10, marginTop: tokens.spacing.xs },
 
-  navList:            { gap: 10, marginBottom: 16 },
-  navCard:            { backgroundColor: '#fff', borderRadius: 18, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, elevation: 2, borderLeftWidth: 4, borderLeftColor: '#E8927C', shadowColor: '#E8927C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
-  navIconSquare:      { width: 48, height: 48, borderRadius: 14, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  navList:            { gap: 10, marginBottom: tokens.spacing.md },
+  navCard:            { backgroundColor: '#fff', borderRadius: tokens.radius.md, padding: tokens.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14, ...tokens.shadows.low, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
+  navIconSquare:      { width: 48, height: 48, borderRadius: tokens.radius.md, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   navLabel:           { fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 2 },
   navDesc:            { fontSize: 12, color: '#888' },
 
-  card:               { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 14, elevation: 2 },
+  card:               { backgroundColor: '#fff', borderRadius: tokens.radius.md, padding: 18, marginBottom: 14, ...tokens.shadows.low },
   snapRow:            { flexDirection: 'row', justifyContent: 'space-around', paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', marginBottom: 14 },
   snapItem:           { alignItems: 'center' },
   snapVal:            { fontSize: 22, fontWeight: 'bold', color: '#333' },
@@ -596,10 +598,10 @@ const s = StyleSheet.create({
   actTop:             { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   actLabel:           { fontSize: 13, fontWeight: '600', color: '#333' },
   actAcc:             { fontSize: 13, fontWeight: 'bold' },
-  barBg:              { height: 8, backgroundColor: '#F0F0F0', borderRadius: 4, overflow: 'hidden' },
-  barFill:            { height: '100%', borderRadius: 4 },
-  emptySnap:          { alignItems: 'center', paddingVertical: 24 },
-  emptySnapText:      { color: '#bbb', marginTop: 8, fontSize: 13 },
+  barBg:              { height: 8, backgroundColor: '#F0F0F0', borderRadius: tokens.spacing.xs, overflow: 'hidden' },
+  barFill:            { height: '100%', borderRadius: tokens.spacing.xs },
+  emptySnap:          { alignItems: 'center', paddingVertical: tokens.spacing.lg },
+  emptySnapText:      { color: '#bbb', marginTop: tokens.spacing.sm, fontSize: 13 },
   viewAll:            { marginTop: 14, alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F5F5F5' },
   viewAllText:        { color: '#E8927C', fontWeight: 'bold', fontSize: 13 },
 
@@ -607,45 +609,44 @@ const s = StyleSheet.create({
   assignIcon:         { fontSize: 24 },
   assignName:         { fontSize: 14, fontWeight: '600', color: '#333' },
   assignNote:         { fontSize: 11, color: '#999', marginTop: 2 },
-  diffBadge:          { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  diffBadge:          { borderRadius: 10, paddingHorizontal: 10, paddingVertical: tokens.spacing.xs },
   diffText:           { fontSize: 11, fontWeight: 'bold' },
 
   // AI Insights panel
-  aiCard:             { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginBottom: 14, elevation: 2 },
-  aiCardHeader:       { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  aiCard:             { backgroundColor: '#fff', borderRadius: tokens.radius.md, padding: 18, marginBottom: 14, ...tokens.shadows.low },
+  aiCardHeader:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.md, marginBottom: 14, paddingBottom: tokens.spacing.md, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
   aiCardIcon:         { fontSize: 30 },
   aiCardTitle:        { fontSize: 15, fontWeight: '800', color: '#333' },
   aiCardSub:          { fontSize: 11, color: '#999', marginTop: 2 },
-  aiSection:          { marginBottom: 12 },
-  aiSectionLabel:     { fontSize: 11, fontWeight: '800', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.6 },
-  aiRow:              { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: 8 },
+  aiSection:          { marginBottom: tokens.spacing.md },
+  aiSectionLabel:     { fontSize: 11, fontWeight: '800', marginBottom: tokens.spacing.sm, textTransform: 'uppercase', letterSpacing: 0.6 },
+  aiRow:              { flexDirection: 'row', alignItems: 'center', paddingVertical: 5, gap: tokens.spacing.sm },
   aiRowIcon:          { fontSize: 16, width: 22 },
   aiRowLabel:         { flex: 1, fontSize: 13, color: '#444' },
   aiRowScore:         { fontSize: 13, fontWeight: 'bold' },
-  aiNotPracticedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: 4 },
+  aiNotPracticedRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: tokens.spacing.xs },
   aiNotPracticedText: { flex: 1, fontSize: 11, color: '#F57C00', lineHeight: 16 },
 
   // Notification bell
-  notifBadgeBtn:      { position: 'relative', padding: 4 },
+  notifBadgeBtn:      { position: 'relative', padding: tokens.spacing.xs },
 
   // Notification modal
   notifOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '75%' },
-  notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: 12 },
+  notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: tokens.radius.xl, borderTopRightRadius: tokens.radius.xl, padding: tokens.spacing.lg, maxHeight: '75%' },
+  notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.md, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: tokens.spacing.md },
   notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#E8927C' },
-  notifItem:          { backgroundColor: '#FFF5F0', borderRadius: 14, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  notifItem:          { backgroundColor: '#FFF5F0', borderRadius: tokens.radius.md, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: tokens.spacing.md },
   notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFE0D0', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#C87456', marginBottom: 4 },
+  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#C87456', marginBottom: tokens.spacing.xs },
   notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
   notifItemDate:      { fontSize: 11, color: '#aaa' },
 
   // Error state
-  errorContainer:     { flex: 1 },
-  errorHeader:        { paddingTop: 55, paddingBottom: 28, paddingHorizontal: 22, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
+  errorHeader:        { paddingTop: 55, paddingBottom: tokens.spacing.xl, paddingHorizontal: 22, borderBottomLeftRadius: tokens.radius.md, borderBottomRightRadius: tokens.radius.md },
   errorHeaderTitle:   { fontSize: 24, fontWeight: '900', color: '#fff', textAlign: 'center' },
-  errorBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
-  errorTitle:         { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: 24, marginBottom: 12 },
-  errorMessage:       { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: 32 },
-  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8927C', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 16, elevation: 3 },
+  errorBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: tokens.spacing.xl },
+  errorTitle:         { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: tokens.spacing.lg, marginBottom: tokens.spacing.md },
+  errorMessage:       { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: tokens.spacing.xl },
+  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8927C', paddingVertical: 14, paddingHorizontal: tokens.spacing.xl, borderRadius: tokens.radius.md, ...tokens.shadows.mid },
   retryBtnText:       { color: '#fff', fontWeight: 'bold' },
 });

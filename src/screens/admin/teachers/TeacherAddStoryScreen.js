@@ -8,10 +8,14 @@ import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
 import CustomButton from '../../../components/CustomButton';
 import CustomInput from '../../../components/CustomInput';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const LEVEL_COLORS = ['', '#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'];
 
 export default function TeacherAddStoryScreen() {
+  const { colors } = useTheme();
   const [stories, setStories] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -83,7 +87,7 @@ export default function TeacherAddStoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <View style={styles.header}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>📖 Story Library</Text>
@@ -154,12 +158,12 @@ export default function TeacherAddStoryScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F8E9' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 55, paddingBottom: 16, paddingHorizontal: 16,

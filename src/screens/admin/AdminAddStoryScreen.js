@@ -9,11 +9,14 @@ import GoBackBtn from '../../components/GoBackBtn';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const LEVEL_COLORS = ['', '#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'];
 
 export default function AdminAddStoryScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [stories, setStories] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -109,7 +112,7 @@ export default function AdminAddStoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       {/* Header */}
       <View style={styles.header}>
         <GoBackBtn />
@@ -198,12 +201,12 @@ export default function AdminAddStoryScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F8FF' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 55, paddingBottom: 16, paddingHorizontal: 16,

@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  StatusBar, Animated, Alert, ActivityIndicator,
+  Animated, Alert, ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
@@ -661,7 +661,7 @@ const ss = StyleSheet.create({
 
 export default function PhonicsActivityScreen() {
   const { profile } = useAuth();
-  const { getOverlayColor } = useTheme();
+  const { colors, getOverlayColor } = useTheme();
   const [mode, setMode] = useState(null);
   const [contentMap, setContentMap] = useState({ blend: [], rhyme: [], segment: [] });
   const [loading, setLoading] = useState(true);
@@ -688,9 +688,7 @@ export default function PhonicsActivityScreen() {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={{ flex: 1 }}>
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
         <GoBackBtn title="Phonics Activities" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -698,15 +696,13 @@ export default function PhonicsActivityScreen() {
             <Text style={{ marginTop: 10, color: '#78909C' }}>Loading activities...</Text>
           </View>
         ) : mode ? renderGame() : <ModeSelector onSelect={setMode} />}
-      </SafeAreaView>
       {overlayColor && (
         <View style={[styles.overlay, { backgroundColor: overlayColor, pointerEvents: 'none' }]} />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAF5F1' },
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
 });

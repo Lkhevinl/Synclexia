@@ -5,12 +5,15 @@ import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { showAlert } from '../../lib/uiAlert';
 
 export default function TextToSpeechScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [text, setText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const startTimeRef = useRef(null);
@@ -154,7 +157,8 @@ export default function TextToSpeechScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }} padded={false}>
+      <View style={styles.content}>
        <GoBackBtn title="Text-to-Speech" />
 
       <View style={styles.instructionHint}>
@@ -199,19 +203,20 @@ export default function TextToSpeechScreen() {
 
       <View style={styles.controls}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleUpload}>
-              <Ionicons name="document-attach-outline" size={24} color="#333" />
+              <Ionicons name="document-attach-outline" size={24} color={colors.onSurface} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.playBtn, isSpeaking && styles.stopBtn]} onPress={speak}>
               <Ionicons name={isSpeaking ? "stop" : "play"} size={32} color="#fff" />
           </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF5F1', padding: 20, paddingTop: 50 },
+  content: { flex: 1, padding: 20, paddingTop: 16 },
   instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
   instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
   textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },

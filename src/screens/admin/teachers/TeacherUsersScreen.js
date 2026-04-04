@@ -6,6 +6,9 @@ import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import GoBackBtn from '../../../components/GoBackBtn';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800','#795548'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
@@ -90,8 +93,10 @@ export default function TeacherUsersScreen() {
     );
   };
 
+  const { colors } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="teacher">
       <LinearGradient colors={['#f9a8c9', '#f7c5a0']} style={styles.header} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <View style={styles.headerRow}>
           <GoBackBtn />
@@ -102,72 +107,70 @@ export default function TeacherUsersScreen() {
         </View>
       </LinearGradient>
 
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#C06080" style={{ marginRight: 8 }} />
+      <View style={[styles.searchBox, { backgroundColor: colors.surfaceCard }]}>
+        <Ionicons name="search" size={18} color={colors.primary} style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Search by name or email..."
-          placeholderTextColor="#bbb"
+          placeholderTextColor={colors.onSurfaceMuted}
           value={search}
           onChangeText={setSearch}
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.onSurface }]}
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#ccc" />
+            <Ionicons name="close-circle" size={18} color={colors.onSurfaceMuted} />
           </TouchableOpacity>
         )}
       </View>
 
       {loading ? (
         <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#C06080" />
-          <Text style={styles.loadingText}>Loading students…</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.onSurfaceMuted }]}>Loading students…</Text>
         </View>
       ) : (
         <FlatList
           data={filteredUsers}
           keyExtractor={item => item.enrollmentId?.toString()}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchUsers} tintColor="#C06080" />}
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchUsers} tintColor={colors.primary} />}
+          contentContainerStyle={{ padding: tokens.spacing.md, paddingBottom: 40 }}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Ionicons name="people-outline" size={60} color="#ddd" />
-              <Text style={styles.emptyText}>{search ? 'No student found.' : 'No enrolled students yet.'}</Text>
+              <Ionicons name="people-outline" size={60} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.onSurfaceMuted }]}>{search ? 'No student found.' : 'No enrolled students yet.'}</Text>
             </View>
           }
           renderItem={({ item }) => <StudentCard item={item} />}
         />
       )}
-
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF0F5' },
-  header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
+  header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: tokens.spacing.lg, borderBottomLeftRadius: tokens.radius.lg, borderBottomRightRadius: tokens.radius.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: '900', color: '#7B2D52' },
   headerSub: { fontSize: 12, color: '#9E5070', marginTop: 2 },
 
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, margin: 16, paddingHorizontal: 14, paddingVertical: 10, elevation: 2, borderWidth: 1, borderColor: '#f9a8c9' },
-  searchInput: { flex: 1, fontSize: 14, color: '#333' },
+  searchBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, margin: tokens.spacing.md, paddingHorizontal: 14, paddingVertical: 10, elevation: 2, borderWidth: 1, borderColor: '#f9a8c9' },
+  searchInput: { flex: 1, fontSize: 14 },
 
   loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: 12, color: '#9E5070', fontSize: 14 },
+  loadingText: { marginTop: tokens.spacing.md, fontSize: 14 },
 
   emptyBox: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { color: '#bbb', fontSize: 15, marginTop: 12 },
+  emptyText: { fontSize: 15, marginTop: tokens.spacing.md },
 
   card: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 18, padding: 14, marginBottom: 10, elevation: 2, alignItems: 'center' },
-  avatar: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  avatar: { width: 46, height: 46, borderRadius: 23, justifyContent: 'center', alignItems: 'center', marginRight: tokens.spacing.md },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   cardInfo: { flex: 1 },
   cardName: { fontSize: 15, fontWeight: 'bold', color: '#333' },
   cardEmail: { fontSize: 11, color: '#999', marginTop: 2 },
   cardDate: { fontSize: 10, color: '#bbb', marginTop: 2 },
   cardRight: { alignItems: 'center', gap: 4 },
-  lvlBadge: { backgroundColor: '#EDE7F6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  lvlBadge: { backgroundColor: '#EDE7F6', paddingHorizontal: tokens.spacing.sm, paddingVertical: 3, borderRadius: 10 },
   lvlText: { fontSize: 11, fontWeight: 'bold', color: '#7B1FA2' },
   xpText: { fontSize: 10, color: '#999', fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 6, marginTop: 4 },

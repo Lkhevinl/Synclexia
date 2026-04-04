@@ -9,14 +9,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Animated, StatusBar, ActivityIndicator,
+  ScrollView, Animated, ActivityIndicator,
 } from 'react-native';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useAdaptive } from '../../context/AdaptiveContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
@@ -161,6 +162,7 @@ const ms = StyleSheet.create({
 // ─── Syllable Game ─────────────────────────────────────────────────────────────
 
 function SyllableGame({ onBack, userId, level, items: rawItems }) {
+  const { colors } = useTheme();
   const count = level === 1 ? 6 : level === 2 ? 8 : 10;
   const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
   const [idx, setIdx] = useState(0);
@@ -206,7 +208,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#2196F3" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
+    <View style={[g.container, { backgroundColor: colors.surface }]}>
       <LinearGradient colors={['#2196F3', '#1565C0']} style={g.header}>
         <Text style={g.headerTitle}>Syllable Clapping 👏</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -242,6 +244,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
 // ─── Rime Game ────────────────────────────────────────────────────────────────
 
 function RimeGame({ onBack, userId, level, items: rawItems }) {
+  const { colors } = useTheme();
   const count = level === 1 ? 5 : level === 2 ? 7 : 8;
   const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
   const [idx, setIdx] = useState(0);
@@ -283,7 +286,7 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#9C27B0" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
+    <View style={[g.container, { backgroundColor: colors.surface }]}>
       <LinearGradient colors={['#9C27B0', '#6A1B9A']} style={g.header}>
         <Text style={g.headerTitle}>Onset-Rime 🎵</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -319,6 +322,7 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
 // ─── Phoneme Game ─────────────────────────────────────────────────────────────
 
 function PhonemeGame({ onBack, userId, level, items: rawItems }) {
+  const { colors } = useTheme();
   const count = level === 1 ? 5 : level === 2 ? 6 : 8;
   const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
   const [idx, setIdx] = useState(0);
@@ -358,7 +362,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#E91E63" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
+    <View style={[g.container, { backgroundColor: colors.surface }]}>
       <LinearGradient colors={['#E91E63', '#AD1457']} style={g.header}>
         <Text style={g.headerTitle}>Phoneme Isolation 🔤</Text>
         <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
@@ -440,6 +444,7 @@ const g = StyleSheet.create({
 
 export default function PhonologicalAwarenessScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const { refreshLevel, getLevel } = useAdaptive();
   const [mode, setMode] = useState(null);
   const [contentMap, setContentMap] = useState({ syllable: [], rime: [], phoneme: [] });
@@ -470,10 +475,10 @@ export default function PhonologicalAwarenessScreen() {
 
   if (contentLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1', justifyContent: 'center', alignItems: 'center' }}>
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6A1B9A" />
         <Text style={{ marginTop: 12, color: '#78909C' }}>Loading activities…</Text>
-      </SafeAreaView>
+      </ScreenWrapper>
     );
   }
 
@@ -482,8 +487,7 @@ export default function PhonologicalAwarenessScreen() {
   if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} level={level} items={contentMap.phoneme} />;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1' }}>
-      <StatusBar barStyle="dark-content" />
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn title="Phonological Awareness" />
       <View style={paRoot.instructionHint}>
         <Ionicons name="information-circle" size={22} color="#E8927C" />
@@ -493,7 +497,7 @@ export default function PhonologicalAwarenessScreen() {
         </Text>
       </View>
       <ModeSelector onSelect={setMode} level={level} />
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

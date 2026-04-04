@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -17,7 +16,7 @@ const storyColor = (level) => LEVEL_COLORS[((parseInt(level) || 1) - 1) % LEVEL_
 
 export default function ReadingScreen() {
   const { profile } = useAuth();
-  const { getDyslexiaTextStyle } = useTheme();
+  const { colors, getDyslexiaTextStyle } = useTheme();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -133,17 +132,8 @@ export default function ReadingScreen() {
   const storyTokens = selectedStory?.content ? tokenize(selectedStory.content).tokens : [];
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
-
-      {/* 1. LIBRARY HEADER */}
-      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-        <GoBackBtn />
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>My Library</Text>
-          <Text style={styles.headerSub}>Tap a book cover to open it, then tap "Read to Me" to hear it read aloud with highlighted words!</Text>
-        </View>
-      </LinearGradient>
+    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <AppHeader title="My Library" subtitle='Tap a book cover to open it, then tap "Read to Me" to hear it!' />
 
       {/* 2. LOADING / BOOKSHELF GRID */}
       {loading ? (
@@ -217,16 +207,11 @@ export default function ReadingScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
-  header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
-  headerTitleBox: { alignItems: 'center', marginTop: 10 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
   shelfContainer: { padding: 20, paddingTop: 30 },
   bookCover: { width: '47%', aspectRatio: 0.7, borderRadius: 12, marginBottom: 20, elevation: 6, borderRightWidth: 5, borderRightColor: 'rgba(0,0,0,0.1)', borderBottomWidth: 5, borderBottomColor: 'rgba(0,0,0,0.1)' },
   spine: { position: 'absolute', left: 10, top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(255,255,255,0.3)' },

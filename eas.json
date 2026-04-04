@@ -41,6 +41,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+       "android": {
+        "serviceAccountKeyPath": "./ServiceAccountSynclexia.json",
+        "track": "internal"
+       }
+      }
+    }
   }
-}
+   

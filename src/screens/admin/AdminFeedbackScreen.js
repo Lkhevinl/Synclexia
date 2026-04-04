@@ -2,8 +2,11 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminFeedbackScreen({ navigation }) {
+  const { colors } = useTheme();
   useEffect(() => {
     // Show redirect message and navigate to maintenance logs
     const timer = setTimeout(() => {
@@ -23,7 +26,7 @@ export default function AdminFeedbackScreen({ navigation }) {
   }, [navigation]);
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
       <View style={styles.content}>
         <View style={styles.iconContainer}>
@@ -53,15 +56,12 @@ export default function AdminFeedbackScreen({ navigation }) {
           <Text style={[styles.buttonText, styles.secondaryButtonText]}>Add New Entry</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA'
-  },
+  container: { flex: 1 },
   content: {
     flex: 1,
     justifyContent: 'center',

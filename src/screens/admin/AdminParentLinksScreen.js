@@ -4,15 +4,18 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Alert, ActivityIndicator, TextInput, RefreshControl, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { supabase } from '../../lib/supabase';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminParentLinksScreen({ navigation }) {
+  const { colors } = useTheme();
   const [links, setLinks] = useState([]);
   const [parents, setParents] = useState([]);
   const [students, setStudents] = useState([]);
@@ -206,16 +209,14 @@ export default function AdminParentLinksScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#4c669f" />
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <LinearGradient colors={['#4c669f', '#3b5998', '#192f6a']} style={styles.header}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Parent-Student Links</Text>
@@ -409,12 +410,12 @@ export default function AdminParentLinksScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },

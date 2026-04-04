@@ -12,8 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminManageContentsScreen({ navigation }) {
+  const { colors } = useTheme();
   const [contentStats, setContentStats] = useState({
     stories: 0,
     phonics: 0,
@@ -110,18 +113,18 @@ export default function AdminManageContentsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+      <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+        <AppHeader title="Manage Contents" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#607D8B" />
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <AppHeader title="Manage Contents" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -169,15 +172,12 @@ export default function AdminManageContentsScreen({ navigation }) {
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
+  container: { flex: 1 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

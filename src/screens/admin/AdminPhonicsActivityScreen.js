@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const GAME_TYPES = [
   { id: 'blend',   label: 'Blend It 🔗',        color: '#FF9800' },
@@ -34,6 +36,7 @@ const rhymeToForm   = (d) => ({ phonemes: '', word: '', emoji: d.emoji || '', ta
 const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: d.count?.toString() || '' });
 
 export default function AdminPhonicsActivityScreen() {
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [gameType, setGameType] = useState('blend');
@@ -128,7 +131,7 @@ export default function AdminPhonicsActivityScreen() {
   const gameColor = GAME_TYPES.find(g => g.id === gameType)?.color || '#2196F3';
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
       <Text style={styles.header}>Phonics Activity Content</Text>
 
@@ -221,12 +224,12 @@ export default function AdminPhonicsActivityScreen() {
           }}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
   form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 400, elevation: 2 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },

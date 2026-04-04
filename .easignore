@@ -9,6 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 
+ServiceAccountSynclexia.json
 
 # Native
 .kotlin/
@@ -44,4 +45,3 @@ yarn-error.*
 
 
 /docs*
-ServiceAccountSynclexia.json

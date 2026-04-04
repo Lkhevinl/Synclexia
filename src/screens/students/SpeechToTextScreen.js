@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import GoBackBtn from '../../components/GoBackBtn';
+import AppHeader from '../../components/AppHeader';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 
 // expo-speech-recognition requires a dev/production build (not Expo Go).
@@ -23,6 +24,7 @@ const AVAILABLE = !!ExpoSpeechRecognitionModule;
 
 export default function SpeechToTextScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
@@ -112,14 +114,8 @@ export default function SpeechToTextScreen() {
   const handleClear = () => { transcriptRef.current = ''; setTranscript(''); setError(null); };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-        <GoBackBtn />
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>Speech to Text</Text>
-          <Text style={styles.headerSub}>Tap the microphone button below and speak clearly — your words will appear as text on screen!</Text>
-        </View>
-      </LinearGradient>
+    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']}>
+      <AppHeader title="Speech to Text" subtitle="Tap the microphone button below and speak clearly — your words will appear as text on screen!" />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.transcriptBox}>
@@ -157,16 +153,11 @@ export default function SpeechToTextScreen() {
           <Text style={styles.devNote}>⚙️ Install expo-speech-recognition for live recognition</Text>
         )}
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF5F1' },
-  header: { paddingTop: 50, paddingBottom: 18, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerTitleBox: { alignItems: 'center', marginTop: 6 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4, textAlign: 'center', lineHeight: 17 },
   scrollContent: { flexGrow: 1 },
   transcriptBox: { height: 280, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
   scrollView: { flex: 1 },

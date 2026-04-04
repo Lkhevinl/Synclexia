@@ -1,12 +1,15 @@
 // ...existing code from AdminEnrollmentScreen.js...
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import AppHeader from '../../../components/AppHeader';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -123,40 +126,42 @@ export default function TeacherEnrollmentScreen() {
     ]);
   };
 
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="teacher" scrollable>
       <AppHeader
         title="Class Enrollment"
         subtitle="QR Code & Student Management"
         colors={['#0288D1', '#01579B']}
       />
       <View style={styles.innerContent}>
-      <View style={styles.qrCard}>
-        <Text style={styles.qrTitle}>Your Class QR Code</Text>
-        <Text style={styles.qrSubtitle}>Students scan this to enroll</Text>
+      <View style={[styles.qrCard, { backgroundColor: colors.surfaceCard }]}>
+        <Text style={[styles.qrTitle, { color: colors.onSurface }]}>Your Class QR Code</Text>
+        <Text style={[styles.qrSubtitle, { color: colors.onSurfaceMuted }]}>Students scan this to enroll</Text>
         {generatingCode ? (
-          <ActivityIndicator size="large" color="#0288D1" style={{ marginVertical: 20 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: tokens.spacing.lg }} />
         ) : qrValue ? (
           <View style={styles.qrWrapper}>
             <QRCode value={qrValue} size={200} />
           </View>
         ) : (
-          <ActivityIndicator size="large" color="#0288D1" style={{ marginVertical: 20 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: tokens.spacing.lg }} />
         )}
 
         {/* Permanent unique code for manual entry */}
         <View style={styles.codeBox}>
           <View>
             <Text style={styles.codeLabel}>Manual Enrollment Code</Text>
-            <Text style={styles.codeHint}>Students without a camera can type this</Text>
+            <Text style={[styles.codeHint, { color: colors.onSurfaceMuted }]}>Students without a camera can type this</Text>
           </View>
           <TouchableOpacity style={styles.codeValueRow} onPress={copyCode} activeOpacity={0.7}>
-            <Text style={styles.codeValue} selectable>{teacherCode || '------'}</Text>
+            <Text style={[styles.codeValue, { color: colors.onSurface }]} selectable>{teacherCode || '------'}</Text>
             <Ionicons
               name={codeCopied ? 'checkmark-circle' : 'copy-outline'}
               size={20}
-              color={codeCopied ? '#4CAF50' : '#0288D1'}
-              style={{ marginLeft: 8 }}
+              color={codeCopied ? '#4CAF50' : colors.primary}
+              style={{ marginLeft: tokens.spacing.sm }}
             />
           </TouchableOpacity>
         </View>
@@ -167,17 +172,16 @@ export default function TeacherEnrollmentScreen() {
         </TouchableOpacity>
       </View>
       <View style={styles.studentsSection}>
-        <Text style={styles.sectionTitle}>
-
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
           Enrolled Students ({enrolledStudents.length})
         </Text>
         {loading ? (
-          <ActivityIndicator size="large" color="#0288D1" style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: tokens.spacing.lg }} />
         ) : enrolledStudents.length === 0 ? (
-          <Text style={styles.emptyText}>No students enrolled yet.</Text>
+          <Text style={[styles.emptyText, { color: colors.onSurfaceMuted }]}>No students enrolled yet.</Text>
         ) : (
           enrolledStudents.map((enrollment) => (
-            <View key={enrollment.id} style={styles.studentCard}>
+            <View key={enrollment.id} style={[styles.studentCard, { backgroundColor: colors.surfaceCard }]}>
               <View style={styles.studentInfo}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
@@ -185,10 +189,10 @@ export default function TeacherEnrollmentScreen() {
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.studentName}>
+                  <Text style={[styles.studentName, { color: colors.onSurface }]}>
                     {enrollment.profiles?.full_name || 'Unknown'}
                   </Text>
-                  <Text style={styles.studentEmail}>{enrollment.profiles?.email}</Text>
+                  <Text style={[styles.studentEmail, { color: colors.onSurfaceMuted }]}>{enrollment.profiles?.email}</Text>
                   <Text style={styles.studentLevel}>
                     Level {Math.floor((enrollment.profiles?.xp || 0) / 100) + 1}
                   </Text>
@@ -205,25 +209,23 @@ export default function TeacherEnrollmentScreen() {
         )}
       </View>
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  innerContent: { flex: 1, padding: 20 },
+  innerContent: { flex: 1, padding: tokens.spacing.lg },
   qrCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.lg,
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: tokens.spacing.lg,
     elevation: 3,
   },
-  qrTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  qrSubtitle: { fontSize: 13, color: '#666', marginBottom: 20 },
+  qrTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 5 },
+  qrSubtitle: { fontSize: 13, marginBottom: tokens.spacing.lg },
   qrWrapper: {
-    padding: 20,
+    padding: tokens.spacing.lg,
     backgroundColor: '#fff',
     borderRadius: 15,
     borderWidth: 2,
@@ -233,38 +235,36 @@ const styles = StyleSheet.create({
   refreshBtn: {
     flexDirection: 'row',
     backgroundColor: '#0288D1',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.lg,
     borderRadius: 10,
     alignItems: 'center',
-    gap: 8,
+    gap: tokens.spacing.sm,
   },
   refreshText: { color: '#fff', fontWeight: 'bold' },
   codeBox: {
     width: '100%',
     backgroundColor: '#EEF7FF',
-    borderRadius: 12,
+    borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: '#B3D9F5',
     padding: 14,
     marginBottom: 14,
   },
   codeLabel: { fontSize: 13, fontWeight: 'bold', color: '#0288D1' },
-  codeHint: { fontSize: 11, color: '#888', marginTop: 2, marginBottom: 10 },
+  codeHint: { fontSize: 11, marginTop: 2, marginBottom: 10 },
   codeValueRow: { flexDirection: 'row', alignItems: 'center' },
   codeValue: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#222',
     letterSpacing: 6,
   },
   studentsSection: { flex: 1 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 15 },
   studentCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     padding: 15,
-    borderRadius: 12,
+    borderRadius: tokens.radius.md,
     marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -278,12 +278,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#0288D1',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: tokens.spacing.md,
   },
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-  studentName: { fontWeight: 'bold', color: '#333', fontSize: 15 },
-  studentEmail: { fontSize: 12, color: '#666', marginTop: 2 },
+  studentName: { fontWeight: 'bold', fontSize: 15 },
+  studentEmail: { fontSize: 12, marginTop: 2 },
   studentLevel: { fontSize: 11, color: '#0288D1', marginTop: 3 },
   removeBtn: { padding: 5 },
-  emptyText: { textAlign: 'center', color: '#888', marginTop: 20, fontSize: 14 },
+  emptyText: { textAlign: 'center', marginTop: tokens.spacing.lg, fontSize: 14 },
 });

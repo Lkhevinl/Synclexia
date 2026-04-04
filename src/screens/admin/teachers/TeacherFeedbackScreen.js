@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import AppHeader from '../../../components/AppHeader';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function TeacherFeedbackScreen() {
   const { profile } = useAuth();
@@ -58,8 +61,10 @@ export default function TeacherFeedbackScreen() {
     }
   };
 
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="teacher">
       <AppHeader
         title="Student Feedback"
         subtitle="Review & reply to student feedback"
@@ -68,9 +73,9 @@ export default function TeacherFeedbackScreen() {
       <FlatList
         data={feedbacks}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={{ padding: tokens.spacing.md }}
         renderItem={({item}) => (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
              <View style={styles.row}>
                  <View style={styles.avatar}>
                     <Text style={{color:'#fff', fontWeight:'bold'}}>
@@ -78,14 +83,14 @@ export default function TeacherFeedbackScreen() {
                     </Text>
                  </View>
                  <View style={{flex: 1, marginLeft: 10}}>
-                     <Text style={styles.name}>{item.profiles?.full_name || "Unknown"}</Text>
+                     <Text style={[styles.name, { color: colors.onSurface }]}>{item.profiles?.full_name || "Unknown"}</Text>
                      <View style={{flexDirection:'row'}}>
                         {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)}
                      </View>
                  </View>
-                 <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                 <Text style={[styles.date, { color: colors.onSurfaceMuted }]}>{new Date(item.created_at).toLocaleDateString()}</Text>
              </View>
-             <Text style={styles.message}>{item.message}</Text>
+             <Text style={[styles.message, { color: colors.onSurface }]}>{item.message}</Text>
              {item.reply ? (
                  <View style={styles.adminReply}>
                      <Text style={styles.replyLabel}>You replied:</Text>
@@ -95,7 +100,8 @@ export default function TeacherFeedbackScreen() {
                  <View style={styles.replyBox}>
                      <TextInput 
                         placeholder="Write a reply..." 
-                        style={styles.input}
+                        placeholderTextColor={colors.onSurfaceMuted}
+                        style={[styles.input, { color: colors.onSurface }]}
                         value={selectedId === item.id ? replyText : ""}
                         onChangeText={(t) => {
                             setSelectedId(item.id);
@@ -116,28 +122,27 @@ export default function TeacherFeedbackScreen() {
                              }
                            });
                      }}>
-                         <Ionicons name="send" size={24} color="#0288D1" />
+                         <Ionicons name="send" size={24} color={colors.primary} />
                      </TouchableOpacity>
                  </View>
              )}
           </View>
         )}
       />
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  card: { padding: 15, borderBottomWidth: 1, borderColor: '#eee', marginBottom: 10 },
+  card: { padding: 15, borderBottomWidth: 1, marginBottom: 10, borderRadius: tokens.radius.md },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center' },
-  name: { fontWeight: 'bold', color: '#333' },
-  date: { fontSize: 12, color: '#999' },
-  message: { fontSize: 16, color: '#444', marginBottom: 10 },
-  adminReply: { backgroundColor: '#E1F5FE', padding: 10, borderRadius: 8, marginTop: 5 },
+  name: { fontWeight: 'bold' },
+  date: { fontSize: 12 },
+  message: { fontSize: 16, marginBottom: 10 },
+  adminReply: { backgroundColor: '#E1F5FE', padding: 10, borderRadius: tokens.radius.sm, marginTop: 5 },
   replyLabel: { fontSize: 10, fontWeight: 'bold', color: '#0277BD' },
   replyText: { color: '#01579B' },
   replyBox: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  input: { flex: 1, backgroundColor: '#f9f9f9', padding: 8, borderRadius: 20, marginRight: 10 }
+  input: { flex: 1, backgroundColor: '#f9f9f9', padding: tokens.spacing.sm, borderRadius: tokens.radius.lg, marginRight: 10 }
 });

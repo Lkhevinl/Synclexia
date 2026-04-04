@@ -132,11 +132,6 @@ export const ThemeProvider = ({ children }) => {
     });
   };
 
-  // Get the complete color theme based on colorOverlay selection
-  const getThemeColors = () => {
-    return COLOR_THEMES[theme.colorOverlay] || COLOR_THEMES.none;
-  };
-
   // Computed helpers consumed throughout the app
   const getLetterSpacingValue = () => {
     if (theme.letterSpacing === 'wide') return 1;
@@ -147,30 +142,6 @@ export const ThemeProvider = ({ children }) => {
   // Keep overlay color for backward compatibility (applies a tint on top)
   const getOverlayColor = () => {
     return null; // No longer using overlay - using full theme colors instead
-  };
-
-  // Dynamic background color based on theme selection
-  const getBgColor = () => {
-    const colors = getThemeColors();
-    return colors.bgColor;
-  };
-
-  // Dynamic primary/accent color based on theme selection
-  const getPrimaryColor = () => {
-    const colors = getThemeColors();
-    return colors.primaryColor;
-  };
-
-  // Get header gradient colors
-  const getHeaderGradient = () => {
-    const colors = getThemeColors();
-    return colors.headerGradient;
-  };
-
-  // Get card background color
-  const getCardBg = () => {
-    const colors = getThemeColors();
-    return colors.cardBg;
   };
 
   /**
@@ -248,9 +219,23 @@ export const ThemeProvider = ({ children }) => {
     inputScale: combinedInputScale,
   };
 
+  // Semantic color tokens — screens read these instead of raw theme.* fields or helper functions
+  const colors = {
+    surface:        theme.bgColor,
+    surfaceCard:    theme.cardBg,
+    primary:        theme.primaryColor,
+    primaryLight:   theme.accentLight,
+    onPrimary:      '#ffffff',
+    onSurface:      theme.textPrimary,
+    onSurfaceMuted: theme.textSecondary,
+    border:         theme.textSecondary + '40', // ~25% opacity
+    headerGradient: theme.headerGradient,
+  };
+
   return (
     <ThemeContext.Provider value={{
       theme,
+      colors,
       updateTheme,
       getLetterSpacingValue,
       getOverlayColor, // kept for backward compatibility — always returns null
@@ -261,11 +246,6 @@ export const ThemeProvider = ({ children }) => {
       getFontFamily,
       fontFamilyStyle,
       a11yTextStyle,
-      getThemeColors,
-      getBgColor,
-      getPrimaryColor,
-      getHeaderGradient,
-      getCardBg,
     }}>
       {children}
     </ThemeContext.Provider>

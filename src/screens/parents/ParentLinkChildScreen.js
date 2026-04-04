@@ -1,18 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, StatusBar, KeyboardAvoidingView,
-  Platform, ScrollView,
+  ActivityIndicator, Alert, Platform,
 } from 'react-native';
 
 const showAlert = (title, message, onOk) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); onOk?.(); }
   else { Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]); }
 };
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import tokens from '../../theme/tokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
@@ -23,8 +23,7 @@ const avatarColor = (name) =>
 
 export default function ParentLinkChildScreen({ navigation }) {
   const { profile } = useAuth();
-  const { theme, a11yTextStyle, getOverlayColor } = useTheme();
-  const insets = useSafeAreaInsets();
+  const { theme, colors, a11yTextStyle } = useTheme();
 
   const [code, setCode]         = useState('');
   const [found, setFound]       = useState(null);
@@ -46,7 +45,6 @@ export default function ParentLinkChildScreen({ navigation }) {
 
   // ── Base font size driven by theme ──────────────────────────────────
   const fs = theme.fontSize || 14;
-  const overlayColor = getOverlayColor();
 
   // ── text helper: merge a11yTextStyle with local style ───────────────
   const tx = (extra) => [a11yTextStyle, extra];
@@ -116,19 +114,9 @@ export default function ParentLinkChildScreen({ navigation }) {
   const firstName = found?.full_name?.split(' ')[0] ?? '';
 
   return (
-    <KeyboardAvoidingView
-      style={[s.root, { backgroundColor: theme.bgColor || '#F5F0FF' }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <StatusBar barStyle="light-content" />
-
-      {/* ── Colour overlay (dyslexia setting) ── */}
-      {overlayColor && (
-        <View pointerEvents="none" style={[s.overlay, { backgroundColor: overlayColor }]} />
-      )}
-
+    <ScreenWrapper role="parent" scrollable>
       {/* ── Header ── */}
-      <LinearGradient colors={['#7B1FA2', '#4A148C']} style={s.header}>
+      <LinearGradient colors={colors.headerGradient} style={s.header}>
         <GoBackBtn />
         <Text style={tx(s.headerTitle)}>Link a Child</Text>
         <Text style={tx([s.headerSub, { fontSize: fs }])}>
@@ -136,20 +124,12 @@ export default function ParentLinkChildScreen({ navigation }) {
         </Text>
       </LinearGradient>
 
-      {/* ── Body ── */}
-      <ScrollView
-        style={s.scroll}
-        contentContainerStyle={[s.body, { paddingBottom: insets.bottom + 20 }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-
-        {/* How it works */}
-        <View style={s.infoCard}>
-          <Ionicons name="information-circle" size={22} color="#7B1FA2" style={s.infoIcon} />
-          <Text style={tx([s.infoText, { fontSize: fs }])}>
-            Ask your child to open{' '}
-            <Text style={tx(s.infoBold)}>Synclexia</Text>
+      {/* How it works */}
+      <View style={s.infoCard}>
+        <Ionicons name="information-circle" size={22} color={colors.primary} style={s.infoIcon} />
+        <Text style={tx([s.infoText, { fontSize: fs }])}>
+          Ask your child to open{' '}
+          <Text style={tx(s.infoBold)}>Synclexia</Text>
             {' '}and share their{' '}
             <Text style={tx(s.infoBold)}>Link Code</Text>
             {' '}shown on their dashboard.
@@ -320,30 +300,22 @@ export default function ParentLinkChildScreen({ navigation }) {
         )}
 
         <View style={{ height: 40 }} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </ScreenWrapper>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  root:               { flex: 1 },
-  overlay:            { ...StyleSheet.absoluteFillObject, zIndex: 10 },
-
   // Header
-  header:             { paddingTop: 55, paddingBottom: 28, paddingHorizontal: 22 },
+  header:             { paddingTop: 55, paddingBottom: tokens.spacing.xl, paddingHorizontal: 22, marginHorizontal: -tokens.spacing.md },
   headerTitle:        { fontSize: 24, fontWeight: '900', color: '#fff', marginTop: 14, letterSpacing: 0.5 },
   headerSub:          { color: 'rgba(255,255,255,0.85)', marginTop: 6, lineHeight: 22 },
-
-  // Scroll / body
-  scroll:             { flex: 1 },
-  body:               { padding: 22, paddingBottom: 10 },
 
   // Info card
   infoCard:           {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#EDE7F6', borderRadius: 16,
-    padding: 16, marginBottom: 16,
+    backgroundColor: '#EDE7F6', borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md, marginBottom: tokens.spacing.md, marginTop: tokens.spacing.md,
     borderLeftWidth: 4, borderLeftColor: '#7B1FA2',
   },
   infoIcon:           { marginTop: 2, marginRight: 10 },
@@ -352,71 +324,71 @@ const s = StyleSheet.create({
 
   // Steps
   stepsCard:          {
-    backgroundColor: '#F3E5F5', borderRadius: 16,
-    padding: 16, marginBottom: 24, gap: 14,
+    backgroundColor: '#F3E5F5', borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md, marginBottom: tokens.spacing.lg, gap: 14,
   },
-  stepRow:            { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  stepRow:            { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.spacing.md },
   stepBadge:          {
     width: 30, height: 30, borderRadius: 15,
     backgroundColor: '#7B1FA2', justifyContent: 'center', alignItems: 'center',
   },
   stepNum:            { color: '#fff', fontWeight: '900', fontSize: 14 },
-  stepTxt:            { flex: 1, color: '#4A148C', lineHeight: 22, paddingTop: 4 },
+  stepTxt:            { flex: 1, color: '#4A148C', lineHeight: 22, paddingTop: tokens.spacing.xs },
 
   // Divider
-  divider:            { height: 1, backgroundColor: '#E0D0F5', marginBottom: 24 },
+  divider:            { height: 1, backgroundColor: '#E0D0F5', marginBottom: tokens.spacing.lg },
 
   // Input section
   label:              { fontWeight: '800', color: '#4A148C', marginBottom: 10, letterSpacing: 0.4 },
   codeBox:            {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 18,
+    backgroundColor: '#fff', borderRadius: tokens.radius.md,
     borderWidth: 2.5, borderColor: '#CE93D8',
-    paddingHorizontal: 20, paddingVertical: 6,
-    elevation: 2,
+    paddingHorizontal: tokens.spacing.lg, paddingVertical: 6,
+    ...tokens.shadows.low,
   },
   codeBoxError:       { borderColor: '#D32F2F' },
   codeInput:          {
     flex: 1, fontWeight: '900', color: '#6A1B9A',
-    letterSpacing: 10, paddingVertical: 16, textAlign: 'center',
+    letterSpacing: 10, paddingVertical: tokens.spacing.md, textAlign: 'center',
   },
 
   // Dot indicators
-  hintRow:            { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 10, marginBottom: 6 },
+  hintRow:            { flexDirection: 'row', justifyContent: 'center', gap: tokens.spacing.sm, marginTop: 10, marginBottom: 6 },
   hintDot:            { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E0D0F5' },
   hintDotFilled:      { backgroundColor: '#7B1FA2' },
 
   // Error
-  errorRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, marginTop: 4 },
+  errorRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, marginTop: tokens.spacing.xs },
   errorText:          { color: '#D32F2F', flex: 1, lineHeight: 20 },
 
   // Find button
   lookupBtn:          {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#7B1FA2', borderRadius: 18,
-    paddingVertical: 18, marginTop: 10, elevation: 4,
+    backgroundColor: '#7B1FA2', borderRadius: tokens.radius.md,
+    paddingVertical: 18, marginTop: 10, ...tokens.shadows.mid,
   },
-  lookupBtnDisabled:  { backgroundColor: '#CE93D8', elevation: 0 },
+  lookupBtnDisabled:  { backgroundColor: '#CE93D8', elevation: 0, shadowOpacity: 0 },
   lookupBtnText:      { color: '#fff', fontWeight: '900', letterSpacing: 0.5 },
 
   // Found card
   foundCard:          {
-    backgroundColor: '#fff', borderRadius: 22,
-    padding: 20, marginTop: 28, elevation: 5,
+    backgroundColor: '#fff', borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.lg, marginTop: tokens.spacing.xl, ...tokens.shadows.mid,
     borderWidth: 2.5, borderColor: '#4CAF50',
   },
 
   // Verified badge
   verifiedBadge:      {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#E8F5E9', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 5,
-    alignSelf: 'flex-start', marginBottom: 16,
+    backgroundColor: '#E8F5E9', borderRadius: tokens.radius.lg,
+    paddingHorizontal: tokens.spacing.md, paddingVertical: 5,
+    alignSelf: 'flex-start', marginBottom: tokens.spacing.md,
   },
   verifiedText:       { color: '#2E7D32', fontWeight: '700' },
 
   // Avatar row
-  foundRow:           { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  foundRow:           { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.md, marginBottom: tokens.spacing.lg },
   avatar:             { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
   avatarText:         { color: '#fff', fontSize: 26, fontWeight: '900' },
 
@@ -426,24 +398,24 @@ const s = StyleSheet.create({
   foundEmail:         { color: '#888', marginTop: 2, lineHeight: 20 },
   levelRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   levelText:          { color: '#E65100', fontWeight: '700' },
-  xpBadge:            { backgroundColor: '#FFF3E0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  xpBadge:            { backgroundColor: '#FFF3E0', borderRadius: 10, paddingHorizontal: tokens.spacing.sm, paddingVertical: 2 },
   xpText:             { color: '#E65100', fontWeight: '700' },
 
   // Confirm button
   confirmBtn:         {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#388E3C', borderRadius: 16,
-    paddingVertical: 16, elevation: 3,
+    backgroundColor: '#388E3C', borderRadius: tokens.radius.md,
+    paddingVertical: tokens.spacing.md, ...tokens.shadows.mid,
   },
-  confirmBtnDisabled: { backgroundColor: '#A5D6A7', elevation: 0 },
+  confirmBtnDisabled: { backgroundColor: '#A5D6A7', elevation: 0, shadowOpacity: 0 },
   confirmBtnText:     { color: '#fff', fontWeight: '900', letterSpacing: 0.5 },
 
   // Cancel
   cancelLink:         { alignItems: 'center', marginTop: 14, paddingVertical: 6 },
 
-  linkErrorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFEBEE', borderRadius: 10, padding: 12, marginTop: 10 },
+  linkErrorBox:  { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#FFEBEE', borderRadius: 10, padding: tokens.spacing.md, marginTop: 10 },
   linkErrorText: { flex: 1, color: '#C62828', fontWeight: '500' },
-  linkSuccessBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8F5E9', borderRadius: 10, padding: 12, marginTop: 10 },
+  linkSuccessBox: { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#E8F5E9', borderRadius: 10, padding: tokens.spacing.md, marginTop: 10 },
   linkSuccessText: { flex: 1, color: '#2E7D32', fontWeight: '600' },
   cancelLinkText:     { color: '#9E9E9E', textDecorationLine: 'underline', lineHeight: 22 },
 });

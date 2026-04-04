@@ -4,8 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminUsersScreen({ route }) {
+  const { colors } = useTheme();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [search, setSearch] = useState('');
@@ -102,11 +105,10 @@ export default function AdminUsersScreen({ route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="User Management"
         subtitle="Students · Parents"
-        colors={['#4c669f', '#192f6a']}
       />
       <View style={styles.innerContent}>
 
@@ -238,12 +240,12 @@ export default function AdminUsersScreen({ route }) {
         </View>
       </Modal>
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   innerContent: { flex: 1, padding: 16 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
   

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../../components/GoBackBtn';
@@ -7,6 +7,9 @@ import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { getStudentProgress } from '../../../lib/analyticsHelper';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const ACTIVITY_ICONS = {
   phonics:                  '🗣️',
@@ -22,6 +25,7 @@ const ACTIVITY_ICONS = {
 
 export default function TeacherProgressScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -113,15 +117,15 @@ export default function TeacherProgressScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#4c669f" />
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (students.length === 0) {
     return (
-      <View style={styles.container}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
         <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
           <GoBackBtn />
           <Text style={styles.headerTitle}>Student Progress</Text>
@@ -132,13 +136,12 @@ export default function TeacherProgressScreen() {
             No students enrolled yet
           </Text>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Student Progress</Text>
@@ -268,12 +271,12 @@ export default function TeacherProgressScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },

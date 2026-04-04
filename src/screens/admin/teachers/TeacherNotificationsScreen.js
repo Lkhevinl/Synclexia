@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import GoBackBtn from '../../../components/GoBackBtn';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const showAlert = (title, msg) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }
@@ -89,10 +92,12 @@ export default function TeacherNotificationsScreen() {
     }
   };
 
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="teacher" scrollable>
       <GoBackBtn />
-      <Text style={styles.headerTitle}>Notification Manager</Text>
+      <Text style={[styles.headerTitle, { color: colors.primary }]}>Notification Manager</Text>
       <View style={styles.tabContainer}>
         <TouchableOpacity onPress={() => { setActiveTab('Posted'); setEditingId(null); setTitle(''); setContent(''); }} style={[styles.tab, activeTab === 'Posted' && styles.activeTab]}>
            <Text style={[styles.tabText, activeTab === 'Posted' && styles.activeTabText]}>Posted</Text>
@@ -104,17 +109,19 @@ export default function TeacherNotificationsScreen() {
       <View style={styles.inputBox}>
         <Text style={styles.inputLabel}>{editingId ? "Editing Post..." : "New Announcement"}</Text>
         <TextInput 
-            placeholder="Enter Title" 
+            placeholder="Enter Title"
+            placeholderTextColor={colors.onSurfaceMuted}
             value={title} 
             onChangeText={setTitle} 
-            style={styles.input} 
+            style={[styles.input, { color: colors.onSurface, borderColor: colors.border }]} 
         />
         <TextInput 
-            placeholder="Message content..." 
+            placeholder="Message content..."
+            placeholderTextColor={colors.onSurfaceMuted}
             value={content} 
             onChangeText={setContent} 
             multiline 
-            style={[styles.input, {height: 80, textAlignVertical: 'top'}]} 
+            style={[styles.input, { height: 80, textAlignVertical: 'top', color: colors.onSurface, borderColor: colors.border }]} 
         />
         <Text style={styles.inputLabel}>Send To</Text>
         <View style={styles.roleContainer}>
@@ -146,25 +153,26 @@ export default function TeacherNotificationsScreen() {
             </TouchableOpacity>
         )}
       </View>
-      {loading ? <ActivityIndicator size="large" color="#0288D1" /> : (
+      {loading ? <ActivityIndicator size="large" color={colors.primary} /> : (
         <FlatList 
             data={notifications}
             keyExtractor={item => item.id.toString()}
+            scrollEnabled={false}
             renderItem={({item}) => (
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: colors.surfaceCard, borderColor: colors.border }]}>
                 <View style={{flex: 1}}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
-                    <Text style={styles.cardBody}>{item.content}</Text>
+                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>{item.title}</Text>
+                    <Text style={[styles.cardBody, { color: colors.onSurfaceMuted }]}>{item.content}</Text>
                     <View style={{flexDirection:'row', alignItems:'center', gap:8, marginTop:5}}>
                       <Text style={styles.targetBadge}>
                         {item.target_role === 'all' ? 'Students & Parents' : item.target_role === 'student' ? 'Students Only' : item.target_role === 'parent' ? 'Parents Only' : item.target_role ?? 'All'}
                       </Text>
-                      <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString()}</Text>
+                      <Text style={[styles.date, { color: colors.onSurfaceMuted }]}>{new Date(item.created_at).toLocaleDateString()}</Text>
                     </View>
                 </View>
                 <View style={styles.cardActions}>
                     <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                        <Ionicons name="pencil" size={22} color="#0288D1" />
+                        <Ionicons name="pencil" size={22} color={colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
                         <Ionicons name="trash-outline" size={22} color="red" />
@@ -172,37 +180,36 @@ export default function TeacherNotificationsScreen() {
                 </View>
             </View>
             )}
-            ListEmptyComponent={<Text style={{textAlign:'center', marginTop: 20, color:'#888'}}>No notifications found.</Text>}
+            ListEmptyComponent={<Text style={{textAlign:'center', marginTop: tokens.spacing.lg, color: colors.onSurfaceMuted}}>No notifications found.</Text>}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#fff' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#0277BD', marginBottom: 20, textAlign: 'center' },
-  tabContainer: { flexDirection: 'row', backgroundColor: '#E1F5FE', borderRadius: 10, padding: 5, marginBottom: 20 },
-  tab: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 8 },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: tokens.spacing.lg, textAlign: 'center' },
+  tabContainer: { flexDirection: 'row', backgroundColor: '#E1F5FE', borderRadius: 10, padding: 5, marginBottom: tokens.spacing.lg },
+  tab: { flex: 1, padding: 10, alignItems: 'center', borderRadius: tokens.radius.sm },
   activeTab: { backgroundColor: '#0288D1' },
   tabText: { color: '#0288D1', fontWeight: 'bold' },
   activeTabText: { color: '#fff' },
-  inputBox: { backgroundColor: '#FFF9C4', padding: 15, borderRadius: 10, marginBottom: 20, elevation: 2 },
+  inputBox: { backgroundColor: '#FFF9C4', padding: 15, borderRadius: 10, marginBottom: tokens.spacing.lg, elevation: 2 },
   inputLabel: { fontWeight: 'bold', color: '#FBC02D', marginBottom: 10 },
-  input: { backgroundColor: '#fff', borderRadius: 8, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
+  input: { backgroundColor: '#fff', borderRadius: tokens.radius.sm, padding: 10, marginBottom: 10, borderWidth: 1 },
   actionRow: { flexDirection: 'row', gap: 10 },
-  postBtn: { flex: 1, backgroundColor: '#0288D1', padding: 12, borderRadius: 8, alignItems: 'center' },
-  draftBtn: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#0288D1', padding: 12, borderRadius: 8, alignItems: 'center' },
+  postBtn: { flex: 1, backgroundColor: '#0288D1', padding: tokens.spacing.md, borderRadius: tokens.radius.sm, alignItems: 'center' },
+  draftBtn: { flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#0288D1', padding: tokens.spacing.md, borderRadius: tokens.radius.sm, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: 'bold' },
   btnTextDraft: { color: '#0288D1', fontWeight: 'bold' },
-  card: { flexDirection: 'row', padding: 15, backgroundColor: '#fff', borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#eee', elevation: 1 },
-  cardTitle: { fontWeight: 'bold', fontSize: 16, color: '#333' },
-  cardBody: { color: '#555', marginTop: 4 },
-  date: { fontSize: 10, color: '#999' },
+  card: { flexDirection: 'row', padding: 15, borderRadius: 10, marginBottom: 10, borderWidth: 1, elevation: 1 },
+  cardTitle: { fontWeight: 'bold', fontSize: 16 },
+  cardBody: { marginTop: 4 },
+  date: { fontSize: 10 },
   cardActions: { justifyContent: 'space-around', paddingLeft: 10 },
   iconBtn: { padding: 5 },
-  roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  roleBtn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, backgroundColor: '#eee' },
+  roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: tokens.spacing.sm, marginBottom: 10 },
+  roleBtn: { paddingVertical: 6, paddingHorizontal: tokens.spacing.md, borderRadius: tokens.radius.lg, backgroundColor: '#eee' },
   roleBtnActive: { backgroundColor: '#0288D1' },
   roleText: { color: '#555', fontSize: 13 },
   roleTextActive: { color: '#fff', fontWeight: 'bold' },

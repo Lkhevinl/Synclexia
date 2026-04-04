@@ -6,6 +6,9 @@ import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { scheduleDeadlineReminder } from '../../../lib/pushNotificationHelper';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const ACTIVITIES = [
   { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },
@@ -26,6 +29,7 @@ const DIFFICULTY_LABELS = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 
 export default function TeacherAssignActivitiesScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [assignments, setAssignments] = useState({}); // { activityId: true/false } for quick toggles
@@ -232,19 +236,16 @@ export default function TeacherAssignActivitiesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading...</Text>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (students.length === 0) {
     return (
-      <View style={styles.container}>
-        <AppHeader
-          title="Assign Activities"
-          colors={['#4c669f', '#3b5998']}
-        />
+      <ScreenWrapper role="teacher" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+        <AppHeader title="Assign Activities" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
           <Ionicons name="people" size={80} color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
@@ -254,18 +255,13 @@ export default function TeacherAssignActivitiesScreen() {
             Once students enroll, you can assign them activities here.
           </Text>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <AppHeader
-        title="Assign Activities"
-        subtitle="Select a student, configure & assign"
-        colors={['#4c669f', '#3b5998']}
-      />
+    <ScreenWrapper role="teacher" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <AppHeader title="Assign Activities" subtitle="Select a student, configure & assign" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.sectionLabel}>Select Student</Text>
         <FlatList
@@ -360,12 +356,12 @@ export default function TeacherAssignActivitiesScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, paddingRight: 20 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },

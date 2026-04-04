@@ -5,13 +5,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, ScrollView, StatusBar,
+  TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const TASK_TYPES = [
   { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
@@ -27,6 +30,7 @@ const FORM_HINTS = {
 
 export default function TeacherPhonologicalScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [taskType, setTaskType]   = useState('syllable');
@@ -141,8 +145,7 @@ export default function TeacherPhonologicalScreen() {
   ].filter(f => f.show.includes(taskType));
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#7B1FA2', '#4A148C']} style={styles.header}>
@@ -256,12 +259,12 @@ export default function TeacherPhonologicalScreen() {
           }
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

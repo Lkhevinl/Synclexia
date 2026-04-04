@@ -13,6 +13,7 @@ import { showAlert } from '../../lib/uiAlert';
 
 export default function ScanScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [image, setImage] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scannedText, setScannedText] = useState("");
@@ -129,7 +130,7 @@ export default function ScanScreen() {
   };
 
   return (
-    <ScreenWrapper style={{ backgroundColor: '#FAF5F1' }}>
+    <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
       <GoBackBtn title="Magic Scanner" />
 
       <View style={styles.instructionHint}>
@@ -142,7 +143,7 @@ export default function ScanScreen() {
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
         {/* 1. SCANNER VIEWFINDER CARD */}
-        <View style={styles.cardContainer}>
+        <View style={[styles.cardContainer, { backgroundColor: colors.surfaceCard }]}>
           <View style={styles.previewBox}>
             {image ? (
               <Image source={{ uri: image }} style={styles.image} resizeMode="contain" />

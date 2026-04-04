@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800','#F44336','#FF5722'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
@@ -466,10 +468,11 @@ function ChatView({ profile, conversation, onBack }) {
 // ──────────────────────────────────────────────────────────────────────────────
 export default function TeacherMessagesScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [selectedConversation, setSelectedConversation] = useState(null);
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <LinearGradient colors={['#2E7D32', '#1B5E20']} style={s.header}>
         <View style={s.headerRow}>
           {selectedConversation
@@ -501,12 +504,12 @@ export default function TeacherMessagesScreen() {
           onSelectConversation={setSelectedConversation}
         />
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const s = StyleSheet.create({
-  container:           { flex: 1, backgroundColor: '#F9FBF9' },
+  container:           { flex: 1 },
   centered:            { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
 
   // Header

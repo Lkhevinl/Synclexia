@@ -14,9 +14,12 @@ import { supabase } from '../lib/supabase';
 import AppHeader from '../components/AppHeader';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { useTheme } from '../context/ThemeContext';
 
 export default function MaintenanceLogsScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -421,25 +424,23 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
         <AppHeader
           title="System Maintenance"
-          colors={['#607D8B', '#455A64']}
           rightIcon={profile?.id ? 'add' : null}
           rightAction={() => navigation?.navigate('AddMaintenanceLog')}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#607D8B" />
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="System Maintenance"
-        colors={['#607D8B', '#455A64']}
         rightIcon={profile?.id ? 'add' : null}
         rightAction={() => navigation?.navigate('AddMaintenanceLog')}
       />
@@ -512,14 +513,13 @@ export default function MaintenanceLogsScreen({ navigation }) {
           />
         }
       />
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
   loadingContainer: {
     flex: 1,

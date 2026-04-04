@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Alert, ScrollView, Image, ActivityIndicator, Platform, StatusBar,
+  Alert, ScrollView, Image, ActivityIndicator, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import tokens from '../../theme/tokens';
 import { useTheme } from '../../context/ThemeContext';
 
 const showAlert = (title, message, onOk) => {
@@ -19,7 +21,7 @@ const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF980
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 export default function ParentEditChildScreen({ route, navigation }) {
-  const { theme, a11yTextStyle, getBgColor } = useTheme();
+  const { theme, colors, a11yTextStyle } = useTheme();
   const { child } = route.params;
   const childProfile = child?.profiles;
   const studentId    = childProfile?.id ?? child?.student_id;
@@ -153,29 +155,25 @@ export default function ParentEditChildScreen({ route, navigation }) {
   const displayName = fullName || childProfile?.full_name || 'Child';
 
   return (
-    <View style={[styles.container, { backgroundColor: getBgColor() }]}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="parent" scrollable>
+      {/* ── Banner + Avatar hero ── */}
+      <View style={styles.bannerWrapper}>
+        <TouchableOpacity onPress={pickBanner} disabled={bannerUploading} activeOpacity={0.85} style={{ flex: 1 }}>
+          {bannerUrl ? (
+            <Image source={{ uri: bannerUrl }} style={styles.bannerImg} />
+          ) : (
+            <LinearGradient colors={colors.headerGradient} style={styles.bannerImg} />
+          )}
+          <View style={styles.bannerEditBtn}>
+            {bannerUploading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="image-outline" size={14} color="#fff" />}
+            <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : 'Edit Cover'}</Text>
+          </View>
+        </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-
-        {/* ── Banner + Avatar hero ── */}
-        <View style={styles.bannerWrapper}>
-          <TouchableOpacity onPress={pickBanner} disabled={bannerUploading} activeOpacity={0.85} style={{ flex: 1 }}>
-            {bannerUrl ? (
-              <Image source={{ uri: bannerUrl }} style={styles.bannerImg} />
-            ) : (
-              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
-            )}
-            <View style={styles.bannerEditBtn}>
-              {bannerUploading
-                ? <ActivityIndicator size="small" color="#fff" />
-                : <Ionicons name="image-outline" size={14} color="#fff" />}
-              <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : 'Edit Cover'}</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Back button on top of banner */}
-          <View style={styles.backBtnOnBanner}>
+        {/* Back button on top of banner */}
+        <View style={styles.backBtnOnBanner}>
             <GoBackBtn tintColor="#fff" />
           </View>
 
@@ -260,27 +258,23 @@ export default function ParentEditChildScreen({ route, navigation }) {
         </View>
 
         <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  body:       { paddingBottom: 40 },
-
   // Banner hero
-  bannerWrapper:  { width: '100%', height: 200, position: 'relative', marginBottom: 60 },
+  bannerWrapper:  { width: '100%', height: 200, position: 'relative', marginBottom: 60, marginHorizontal: -tokens.spacing.md },
   bannerImg:      { width: '100%', height: 200 },
   bannerEditBtn:  {
     position: 'absolute', bottom: 72, right: 12,
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: 'rgba(0,0,0,0.4)', paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20,
+    borderRadius: tokens.radius.lg,
   },
   bannerEditText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  backBtnOnBanner: { position: 'absolute', top: 44, left: 12 },
-  avatarOnBanner:  { position: 'absolute', bottom: -50, left: 20 },
+  backBtnOnBanner: { position: 'absolute', top: 44, left: tokens.spacing.md },
+  avatarOnBanner:  { position: 'absolute', bottom: -50, left: tokens.spacing.lg },
   avatarWrapper:   { position: 'relative' },
   avatar:          { width: 96, height: 96, borderRadius: 48, borderWidth: 3, borderColor: '#fff' },
   avatarPlaceholder: {
@@ -296,36 +290,35 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#fff',
   },
 
-  pageTitle:  { fontSize: 20, fontWeight: '800', color: '#222', marginHorizontal: 20, marginBottom: 2 },
-  avatarHint: { fontSize: 12, color: '#aaa', marginHorizontal: 20, marginBottom: 16 },
+  pageTitle:  { fontSize: 20, fontWeight: '800', color: '#222', marginBottom: 2 },
+  avatarHint: { fontSize: 12, color: '#aaa', marginBottom: tokens.spacing.md },
 
   noticeBox: {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#FFF0EB', borderRadius: 14,
-    padding: 14, marginHorizontal: 20, marginBottom: 20,
+    backgroundColor: '#FFF0EB', borderRadius: tokens.radius.md,
+    padding: 14, marginBottom: tokens.spacing.lg,
     borderWidth: 1, borderColor: '#F5C4B0',
   },
   noticeText: { flex: 1, color: '#C87456', fontSize: 13, lineHeight: 19 },
 
-  form:       { paddingHorizontal: 20 },
-  fieldLabel: { fontSize: 11, fontWeight: '800', color: '#E8927C', letterSpacing: 1, marginBottom: 6, marginTop: 16 },
+  form:       { },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: '#E8927C', letterSpacing: 1, marginBottom: 6, marginTop: tokens.spacing.md },
   inputBox:   {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 14,
+    backgroundColor: '#fff', borderRadius: tokens.radius.md,
     paddingHorizontal: 14, paddingVertical: 13,
     borderWidth: 1.5, borderColor: '#E8D5CC',
-    gap: 10, elevation: 1,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3,
+    gap: 10, ...tokens.shadows.low,
   },
   input:      { flex: 1, fontSize: 15, color: '#333' },
-  hintText:   { fontSize: 12, color: '#aaa', marginTop: 6, marginLeft: 4 },
+  hintText:   { fontSize: 12, color: '#aaa', marginTop: 6, marginLeft: tokens.spacing.xs },
 
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, backgroundColor: '#E8927C',
-    borderRadius: 16, paddingVertical: 16, marginTop: 28,
-    elevation: 3, shadowColor: '#E8927C', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6,
+    gap: tokens.spacing.sm, backgroundColor: '#E8927C',
+    borderRadius: tokens.radius.md, paddingVertical: tokens.spacing.md, marginTop: tokens.spacing.xl,
+    ...tokens.shadows.mid,
   },
-  saveBtnDisabled: { backgroundColor: '#F5C4B0', elevation: 0 },
+  saveBtnDisabled: { backgroundColor: '#F5C4B0', elevation: 0, shadowOpacity: 0 },
   saveBtnText:     { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

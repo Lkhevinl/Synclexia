@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 // Helper for colors
 const getGradientColors = (hexColor) => {
@@ -28,6 +29,7 @@ const getGradientColors = (hexColor) => {
 
 export default function PhonicsScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   // Throttle logging — at most one session every 60 s to prevent XP farming
@@ -67,10 +69,7 @@ export default function PhonicsScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={styles.safeArea}>
-        
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
         <GoBackBtn title="Phonics Fun" />
 
         <View style={styles.headerContainer}>
@@ -130,15 +129,11 @@ export default function PhonicsScreen({ navigation }) {
               }}
             />
         )}
-      </SafeAreaView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
-  safeArea: { flex: 1 },
-
   headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 },
   header: { fontSize: 28, fontWeight: '800', color: '#333', letterSpacing: 0.5 },
   subHeader: { fontSize: 15, color: '#777', marginTop: 5, marginBottom: 14, letterSpacing: 0.2 },

@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 
 // Optional dependency: expo-speech-recognition (dev/production build, not Expo Go)
@@ -156,7 +157,7 @@ const compareTexts = (original, studentText) => {
 
 export default function WritingScreen() {
   const { profile } = useAuth();
-  const { a11yTextStyle } = useTheme();
+  const { colors, a11yTextStyle } = useTheme();
 
   // Mode: tracing, story selection, or composition
   const [mode, setMode] = useState('trace'); // 'trace' | 'stories' | 'compose'
@@ -638,8 +639,8 @@ export default function WritingScreen() {
   // --- RENDER: STORIES SELECTION ---
   if (mode === 'stories') {
     return (
-      <View style={styles.mainContainer}>
-        <StatusBar barStyle="light-content" />
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
         <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
           <TouchableOpacity onPress={() => setMode('trace')} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={20} color="#fff" />
@@ -696,15 +697,15 @@ export default function WritingScreen() {
             </>
           )}
         </ScrollView>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   // --- RENDER: COMPOSE MODE ---
   if (mode === 'compose') {
     return (
-      <View style={styles.composeContainer}>
-        <StatusBar barStyle="light-content" />
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
         <LinearGradient colors={['#E8927C', '#C87456']} style={styles.composeHeader}>
           <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.backBtn}>
             <Ionicons name="chevron-back" size={20} color="#fff" />
@@ -932,14 +933,14 @@ export default function WritingScreen() {
             </View>
           </View>
         </Modal>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (!selectedItem) {
     return (
-      <View style={styles.mainContainer}>
-        <StatusBar barStyle="light-content" />
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
         <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
             <GoBackBtn />
             <View style={styles.headerContent}>
@@ -987,14 +988,14 @@ export default function WritingScreen() {
                </TouchableOpacity>
            ))}
         </ScrollView>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   // --- RENDER 2: CANVAS ---
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
       
       {/* Header */}
       <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.canvasHeader}>
@@ -1223,12 +1224,12 @@ export default function WritingScreen() {
           </View>
       </Modal>
 
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
+  mainContainer: { flex: 1 },
   
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
   canvasHeader: { paddingTop: 50, paddingBottom: 12, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, elevation: 5 },
@@ -1350,7 +1351,7 @@ const styles = StyleSheet.create({
   demoCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // ── Compose mode styles ───────────────────────────────────────────
-  composeContainer: { flex: 1, backgroundColor: '#FAF5F1' },
+  composeContainer: { flex: 1 },
   composeHeader: { paddingTop: 60, paddingBottom: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   composeTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   composeSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },

@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const showAlert = (title, msg) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }
@@ -10,6 +12,7 @@ const showAlert = (title, msg) => {
 };
 
 export default function AdminNotificationsScreen() {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState('Posted'); // 'Posted' | 'Drafts'
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
@@ -102,11 +105,10 @@ export default function AdminNotificationsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="Notification Manager"
         subtitle="Post announcements to users"
-        colors={['#0288D1', '#01579B']}
       />
       <View style={styles.innerContent}>
       {/* TABS */}
@@ -205,12 +207,12 @@ export default function AdminNotificationsScreen() {
         />
       )}
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   innerContent: { flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
   tabContainer: { flexDirection: 'row', backgroundColor: '#E1F5FE', borderRadius: 10, padding: 5, marginBottom: 20 },
   tab: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 8 },

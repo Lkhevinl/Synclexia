@@ -12,6 +12,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const GAME_TYPES = [
   { id: 'blend',   label: 'Blend It 🔗',    color: '#FF9800' },
@@ -35,6 +38,7 @@ const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.w
 
 export default function TeacherPhonicsActivityScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [gameType, setGameType]   = useState('blend');
@@ -126,8 +130,7 @@ export default function TeacherPhonicsActivityScreen() {
   const gameColor = GAME_TYPES.find(g => g.id === gameType)?.color || '#FF9800';
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#F57C00', '#E65100']} style={styles.header}>
@@ -241,12 +244,12 @@ export default function TeacherPhonicsActivityScreen() {
           }
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

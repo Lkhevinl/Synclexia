@@ -4,9 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminPhonicsScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
@@ -86,7 +89,7 @@ export default function AdminPhonicsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <View style={styles.headerRow}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Phonics Manager</Text>
@@ -154,12 +157,12 @@ export default function AdminPhonicsScreen() {
           ListEmptyComponent={<Text style={styles.emptyText}>No phonics items yet.</Text>}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, padding: 20, paddingTop: 50 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
 

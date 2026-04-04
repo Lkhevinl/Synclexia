@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
-
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import Sidebar from '../../components/Sidebar';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 export default function AdminDashboardScreen({ navigation }) {
-  const { theme, getBgColor, getHeaderGradient, getThemeColors, getPrimaryColor } = useTheme();
+  const { theme, colors } = useTheme();
   const { profile } = useAuth();
-  const themeColors = getThemeColors();
   const [notifications, setNotifications] = useState([]);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -148,13 +147,12 @@ export default function AdminDashboardScreen({ navigation }) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: getBgColor() }]}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={getPrimaryColor()} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading admin dashboard...</Text>
         </View>
       ) : error ? (
@@ -170,7 +168,7 @@ export default function AdminDashboardScreen({ navigation }) {
       ) : (
         <>
           {/* HEADER */}
-          <LinearGradient colors={getHeaderGradient()} style={styles.enhancedHeader}>
+          <LinearGradient colors={theme.headerGradient} style={styles.enhancedHeader}>
         <View style={styles.enhancedHeaderContent}>
           <View style={styles.headerTextSection}>
             <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 👋</Text>
@@ -231,7 +229,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
         {/* QUICK ACTIONS SECTION */}
         <View style={styles.sectionHeader}>
-          <Ionicons name="flash" size={20} color={getPrimaryColor()} />
+          <Ionicons name="flash" size={20} color={colors.primary} />
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
@@ -401,7 +399,7 @@ export default function AdminDashboardScreen({ navigation }) {
       </Modal>
       </>
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 

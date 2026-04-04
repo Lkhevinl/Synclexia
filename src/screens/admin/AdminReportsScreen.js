@@ -14,6 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 import {
   BarChart,
   StatCard,
@@ -29,6 +31,7 @@ import {
 } from '../../lib/analyticsHelper';
 
 export default function AdminReportsScreen() {
+  const { colors } = useTheme();
   const [tab, setTab] = useState('overview'); // overview, progress, performance, engagement, trends
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -399,10 +402,9 @@ export default function AdminReportsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="Reports & Analytics"
-        colors={['#607D8B', '#455A64']}
         right={
           <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
             <Ionicons name="download-outline" size={24} color="#fff" />
@@ -434,15 +436,12 @@ export default function AdminReportsScreen() {
 
       {/* Tab Content */}
       {renderContent()}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
+  container: { flex: 1 },
   exportBtn: {
     padding: 4,
   },
