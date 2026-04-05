@@ -100,7 +100,7 @@ export default function ParentProgressScreen({ route }) {
           <Text style={s.errorTitle}>Connection Error</Text>
           <Text style={s.errorMessage}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => load(daysBack)}>
-            <Ionicons name="refresh" size={18} color="#fff" />
+            <Ionicons name="refresh" size={22} color="#fff" />
             <Text style={s.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>

@@ -167,7 +167,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
           <View style={styles.bannerEditBtn}>
             {bannerUploading
               ? <ActivityIndicator size="small" color="#fff" />
-              : <Ionicons name="image-outline" size={14} color="#fff" />}
+              : <Ionicons name="image-outline" size={18} color="#fff" />}
             <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : 'Edit Cover'}</Text>
           </View>
         </TouchableOpacity>
@@ -190,7 +190,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
               <View style={styles.cameraOverlay}>
                 {uploading
                   ? <ActivityIndicator size="small" color="#fff" />
-                  : <Ionicons name="camera" size={14} color="#fff" />}
+                  : <Ionicons name="camera" size={18} color="#fff" />}
               </View>
             </TouchableOpacity>
           </View>
@@ -204,7 +204,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
         {/* ── Parental guidance notice ── */}
         <View style={styles.noticeBox}>
-          <Ionicons name="shield-checkmark" size={18} color="#E8927C" style={{ marginRight: 8, marginTop: 1 }} />
+          <Ionicons name="shield-checkmark" size={22} color="#E8927C" style={{ marginRight: 8, marginTop: 1 }} />
           <Text style={[styles.noticeText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>
             As the parent/guardian, you can update your child's display name and email address.
           </Text>
@@ -214,7 +214,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
         <View style={styles.form}>
           <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S DISPLAY NAME</Text>
           <View style={styles.inputBox}>
-            <Ionicons name="person-outline" size={18} color="#90A4AE" />
+            <Ionicons name="person-outline" size={22} color="#90A4AE" />
             <TextInput
               style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
               value={fullName}
@@ -226,7 +226,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
           <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S EMAIL</Text>
           <View style={styles.inputBox}>
-            <Ionicons name="mail-outline" size={18} color="#90A4AE" />
+            <Ionicons name="mail-outline" size={22} color="#90A4AE" />
             <TextInput
               style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
               value={email}

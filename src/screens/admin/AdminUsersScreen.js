@@ -174,12 +174,12 @@ export default function AdminUsersScreen({ route }) {
                 <View style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
                     <TouchableOpacity onPress={() => openEditModal(item)}>
                         <View style={styles.editBtn}>
-                            <Ionicons name="pencil" size={16} color="white" />
+                            <Ionicons name="pencil" size={20} color="white" />
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteUser(item.id)}>
                         <View style={styles.trashBtn}>
-                            <Ionicons name="ban" size={16} color="white" />
+                            <Ionicons name="ban" size={20} color="white" />
                         </View>
                     </TouchableOpacity>
                 </View>

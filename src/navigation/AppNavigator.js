@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
+import c from '../components/student/candyTokens';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
 import LexiCompanion from '../components/LexiCompanion';
@@ -86,22 +87,24 @@ const Tab = createBottomTabNavigator();
 // doubles the bottom gap and pushes labels off-screen on iPhone.
 const TAB_BAR_STYLE = {
   position: 'absolute',
-  backgroundColor: '#F5EDE6',
-  height: 64,
+  backgroundColor: '#FFF4F0',
+  height: 68,
   borderRadius: 50,
-  marginHorizontal: 20,
+  marginHorizontal: 16,
   marginBottom: 20,
   paddingTop: 10,
   paddingBottom: 10,
   paddingLeft: 10,
-  paddingRight: 20,
+  paddingRight: 10,
   borderTopWidth: 0,
   overflow: 'hidden',
-  elevation: 12,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.12,
-  shadowRadius: 20,
+  elevation: 14,
+  shadowColor: c.primaryDark,
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.18,
+  shadowRadius: 24,
+  borderWidth: 2,
+  borderColor: c.primary + '20',
 };
 
 function StudentTabs() {
@@ -123,15 +126,23 @@ function StudentTabs() {
 
           return (
             <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: focused ? '#E8735A' : 'transparent',
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: focused ? c.primary : 'transparent',
               justifyContent: 'center',
               alignItems: 'center',
               flexShrink: 0,
+              borderWidth: focused ? 2.5 : 0,
+              borderColor: focused ? c.primaryDark : 'transparent',
+              borderBottomWidth: focused ? 4 : 0,
+              elevation: focused ? 4 : 0,
+              shadowColor: focused ? c.primaryDark : 'transparent',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
             }}>
-              <Ionicons name={iconName} size={20} color={focused ? '#fff' : '#bbb'} />
+              <Ionicons name={iconName} size={26} color={focused ? '#fff' : c.textMuted} />
             </View>
           );
         },
@@ -152,7 +163,7 @@ function StudentTabs() {
               onPress={() => DeviceEventEmitter.emit('openSidebar')}
               activeOpacity={0.7}
             >
-              <Ionicons name="menu-outline" size={20} color="#bbb" />
+              <Ionicons name="menu-outline" size={26} color="#bbb" />
             </TouchableOpacity>
           ),
         }}

@@ -85,7 +85,7 @@ export default function TeacherUsersScreen() {
           <Text style={styles.xpText}>{item.xp} XP</Text>
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.trashBtn} onPress={() => removeStudent(item.enrollmentId, item.full_name)}>
-              <Ionicons name="person-remove" size={14} color="#fff" />
+              <Ionicons name="person-remove" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -108,7 +108,7 @@ export default function TeacherUsersScreen() {
       </LinearGradient>
 
       <View style={[styles.searchBox, { backgroundColor: colors.surfaceCard }]}>
-        <Ionicons name="search" size={18} color={colors.primary} style={{ marginRight: 8 }} />
+        <Ionicons name="search" size={22} color={colors.primary} style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Search by name or email..."
           placeholderTextColor={colors.onSurfaceMuted}
@@ -118,7 +118,7 @@ export default function TeacherUsersScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color={colors.onSurfaceMuted} />
+            <Ionicons name="close-circle" size={22} color={colors.onSurfaceMuted} />
           </TouchableOpacity>
         )}
       </View>

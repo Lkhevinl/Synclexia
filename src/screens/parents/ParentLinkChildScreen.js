@@ -197,7 +197,7 @@ export default function ParentLinkChildScreen({ navigation }) {
         {/* Error */}
         {error ? (
           <View style={s.errorRow}>
-            <Ionicons name="alert-circle" size={16} color="#D32F2F" />
+            <Ionicons name="alert-circle" size={20} color="#D32F2F" />
             <Text style={tx([s.errorText, { fontSize: fs - 1 }])}>{error}</Text>
           </View>
         ) : null}
@@ -225,7 +225,7 @@ export default function ParentLinkChildScreen({ navigation }) {
 
             {/* Verified badge */}
             <View style={s.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={16} color="#388E3C" />
+              <Ionicons name="checkmark-circle" size={20} color="#388E3C" />
               <Text style={tx([s.verifiedText, { fontSize: fs - 1 }])}>Student found!</Text>
             </View>
 
@@ -241,7 +241,7 @@ export default function ParentLinkChildScreen({ navigation }) {
                   {found.email || 'Student account'}
                 </Text>
                 <View style={s.levelRow}>
-                  <Ionicons name="star" size={14} color="#FF9800" />
+                  <Ionicons name="star" size={18} color="#FF9800" />
                   <Text style={tx([s.levelText, { fontSize: fs - 1 }])}>Level {level}</Text>
                   <View style={s.xpBadge}>
                     <Text style={tx([s.xpText, { fontSize: fs - 2 }])}>{found.xp ?? 0} XP</Text>
@@ -272,7 +272,7 @@ export default function ParentLinkChildScreen({ navigation }) {
             {/* Inline error */}
             {linkError ? (
               <View style={s.linkErrorBox}>
-                <Ionicons name="alert-circle" size={16} color="#C62828" />
+                <Ionicons name="alert-circle" size={20} color="#C62828" />
                 <Text style={tx([s.linkErrorText, { fontSize: fs - 1 }])}>{linkError}</Text>
               </View>
             ) : null}
@@ -280,7 +280,7 @@ export default function ParentLinkChildScreen({ navigation }) {
             {/* Inline success */}
             {linkSuccess ? (
               <View style={s.linkSuccessBox}>
-                <Ionicons name="checkmark-circle" size={18} color="#2E7D32" />
+                <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
                 <Text style={tx([s.linkSuccessText, { fontSize: fs }])}>
                   {found?.full_name} linked! Returning to dashboard…
                 </Text>

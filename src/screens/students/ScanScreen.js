@@ -3,8 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Scr
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
 import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -131,15 +134,17 @@ export default function ScanScreen() {
 
   return (
     <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
-      <GoBackBtn title="Magic Scanner" />
+      <StudentPageHeader title="Magic Scanner" />
 
-      <View style={styles.instructionHint}>
-        <Ionicons name="information-circle" size={22} color="#E8927C" />
-        <Text style={styles.instructionHintText}>
-          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-          Tap "Take Photo" or the gallery icon to pick an image. Then tap "Listen Now" to hear the scanned text read aloud!
-        </Text>
-      </View>
+      <StudentCard variant="tinted" style={styles.hintCard}>
+        <View style={styles.hintRow}>
+          <Ionicons name="information-circle" size={22} color={c.primary} />
+          <Text style={styles.hintText}>
+            <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+            Tap "Take Photo" or the gallery icon, then tap "Listen Now" to hear the text read aloud!
+          </Text>
+        </View>
+      </StudentCard>
 
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
         {/* 1. SCANNER VIEWFINDER CARD */}
@@ -150,7 +155,7 @@ export default function ScanScreen() {
             ) : (
               <View style={styles.placeholderState}>
                 <View style={styles.iconCircle}>
-                  <Ionicons name="scan" size={50} color="#E8927C" />
+                  <Ionicons name="scan" size={50} color={c.primary} />
                 </View>
                 <Text style={styles.placeholderTitle}>Ready to Scan</Text>
                 <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
@@ -169,47 +174,41 @@ export default function ScanScreen() {
 
         {/* 2. ACTION BUTTONS */}
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.btnCamera} onPress={() => onScanPress('camera')} disabled={isScanning}>
-            <Ionicons name="camera" size={26} color="#fff" />
-            <Text style={styles.btnTextMain}>Take Photo</Text>
-          </TouchableOpacity>
+          <StudentButton variant="primary" onPress={() => onScanPress('camera')} disabled={isScanning} style={styles.btnCamera}>
+            <Ionicons name="camera" size={22} color="#fff" />
+            <Text style={styles.btnText}>Take Photo</Text>
+          </StudentButton>
 
           <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
-            <Ionicons name="images" size={26} color="#E8927C" />
+            <Ionicons name="images" size={26} color={c.primary} />
           </TouchableOpacity>
         </View>
 
         {/* 3. RESULT CARD */}
         {!isScanning && (
-          <View style={styles.resultCard}>
+          <StudentCard style={styles.resultCard}>
             <View style={styles.resultHeader}>
-              <Ionicons name="text-outline" size={20} color="#666" />
+              <Ionicons name="text-outline" size={22} color={c.textMuted} />
               <Text style={styles.resultLabel}>Detected Text</Text>
             </View>
-
-            <ScrollView 
-              style={styles.resultScroll} 
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-            >
+            <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator nestedScrollEnabled>
               <Text style={styles.resultText}>{scannedText || 'Scan an image to extract text here.'}</Text>
             </ScrollView>
-
             <View style={styles.divider} />
-
-            <TouchableOpacity
+            <StudentButton
+              variant="primary"
+              disabled={!scannedText.trim()}
               onPress={() => {
                 if (!scannedText.trim()) return;
                 const speakText = scannedText.length > 900 ? scannedText.slice(0, 900) + '…' : scannedText;
                 Speech.speak(speakText);
               }}
-              style={[styles.speakBtn, !scannedText.trim() && styles.speakBtnDisabled]}
-              disabled={!scannedText.trim()}
+              style={styles.speakBtn}
             >
-              <Ionicons name="volume-high" size={24} color="#fff" />
+              <Ionicons name="volume-high" size={22} color="#fff" />
               <Text style={styles.speakText}>Listen Now</Text>
-            </TouchableOpacity>
-          </View>
+            </StudentButton>
+          </StudentCard>
         )}
       </ScrollView>
     </ScreenWrapper>
@@ -217,39 +216,37 @@ export default function ScanScreen() {
 }
 
 const styles = StyleSheet.create({
-  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  hintCard: { marginBottom: 14 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
 
   body: { flex: 1 },
   bodyContent: { paddingBottom: 100 },
-  
-  cardContainer: { backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, marginBottom: 16, justifyContent: 'center' },
-  previewBox: { height: 260, backgroundColor: '#F5F7FA', borderRadius: 15, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
+
+  cardContainer: { backgroundColor: '#fff', borderRadius: 28, borderWidth: 4, borderColor: '#fff', padding: 10, elevation: 8, shadowColor: c.primary, shadowOffset:{width:0,height:4}, shadowOpacity:0.15, shadowRadius:10, marginBottom: 16, justifyContent: 'center' },
+  previewBox: { height: 260, backgroundColor: '#F5F7FA', borderRadius: 18, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
-  
+
   placeholderState: { alignItems: 'center', padding: 20 },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-  placeholderTitle: { fontSize: 18, fontWeight: 'bold', color: '#455A64' },
+  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primaryLight, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  placeholderTitle: { fontSize: 18, fontWeight: '800', color: '#455A64' },
   placeholderSub: { fontSize: 12, color: '#90A4AE', textAlign: 'center', marginTop: 5 },
 
-  loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 20, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
+  loadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 28, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   loadingText: { color: '#fff', fontWeight: 'bold', marginTop: 15, fontSize: 16 },
 
-  controls: { flexDirection: 'row', gap: 15, marginBottom: 16 },
-  btnCamera: { flex: 1, backgroundColor: '#E8927C', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, borderRadius: 15, elevation: 3 },
-  btnGallery: { width: 70, backgroundColor: '#FFF0E8', alignItems: 'center', justifyContent: 'center', borderRadius: 15, borderWidth: 1, borderColor: '#E8927C' },
-  btnTextMain: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 },
+  controls: { flexDirection: 'row', gap: 12, marginBottom: 16, alignItems: 'center' },
+  btnCamera: { flex: 1, alignSelf: 'stretch' },
+  btnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  btnGallery: { width: 60, height: 52, backgroundColor: c.primaryLight, alignItems: 'center', justifyContent: 'center', borderRadius: 18, borderWidth: 2, borderColor: c.primary },
 
-  resultCard: { backgroundColor: '#fff', borderRadius: 20, padding: 16, elevation: 2 },
-  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, opacity: 0.7 },
-  resultLabel: { fontWeight: 'bold', color: '#555', marginLeft: 8, fontSize: 12, textTransform: 'uppercase' },
-  // Do not set fontFamily here so global Font Style can apply.
-  resultText: { fontSize: 18, color: '#333', lineHeight: 28 },
+  resultCard: { marginBottom: 20 },
+  resultHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 },
+  resultLabel: { fontWeight: '700', color: c.textMuted, fontSize: 12, textTransform: 'uppercase' },
+  resultText: { fontSize: 18, color: c.text, lineHeight: 28 },
   resultScroll: { maxHeight: 200 },
-  
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
-  
-  speakBtn: { backgroundColor: '#FF7043', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 15, borderRadius: 12, elevation: 3 },
-  speakBtnDisabled: { backgroundColor: '#FFAB91' },
-  speakText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 10 }
+
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 16 },
+  speakBtn: { alignSelf: 'stretch' },
+  speakText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 });

@@ -25,7 +25,7 @@ const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder
   <View style={styles.fieldGroup}>
     <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>{label}</AppText>
     <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-      <Ionicons name="lock-closed-outline" size={18} color={colors.onSurfaceMuted} />
+      <Ionicons name="lock-closed-outline" size={22} color={colors.onSurfaceMuted} />
       <TextInput
         style={[styles.input, { color: colors.onSurface }]}
         value={value}

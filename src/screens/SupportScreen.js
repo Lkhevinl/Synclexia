@@ -93,7 +93,7 @@ export default function SupportScreen({ route }) {
           <AppText variant="body" style={{ fontWeight: 'bold', color: colors.onPrimary }}>Submit</AppText>
         </TouchableOpacity>
         <View style={[styles.infoBox, { backgroundColor: colors.primaryLight }]}>
-          <Ionicons name="information-circle" size={16} color={colors.primary} />
+          <Ionicons name="information-circle" size={20} color={colors.primary} />
           <AppText variant="caption" style={[styles.infoText, { color: colors.primary }]}>
             Your feedback is logged in our maintenance system for better tracking and response.
           </AppText>

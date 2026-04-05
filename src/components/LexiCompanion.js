@@ -338,14 +338,14 @@ export default function LexiCompanion() {
             <Text style={styles.bubbleText}>{currentMessage}</Text>
             <View style={styles.bubbleFooter}>
               <TouchableOpacity onPress={toggleMute} style={styles.muteRow} activeOpacity={0.7}>
-                <Ionicons name={muted ? 'volume-mute-outline' : 'volume-medium-outline'} size={13} color="#B0BEC5" />
+                <Ionicons name={muted ? 'volume-mute-outline' : 'volume-medium-outline'} size={18} color="#B0BEC5" />
                 <Text style={styles.muteTxt}>{muted ? 'Unmute' : 'Mute'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => dismissBubble()}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={15} color="#CFD8DC" />
+                <Ionicons name="close" size={18} color="#CFD8DC" />
               </TouchableOpacity>
             </View>
           </View>

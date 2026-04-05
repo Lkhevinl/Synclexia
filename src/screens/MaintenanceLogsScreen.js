@@ -385,7 +385,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
               )}
               {(item.admin_comment || item.legacyReply) && (
                 <View style={styles.commentBadge}>
-                  <Ionicons name="chatbubble" size={10} color="#4CAF50" />
+                  <Ionicons name="chatbubble" size={14} color="#4CAF50" />
                   <Text style={styles.commentBadgeText}>REPLIED</Text>
                 </View>
               )}
@@ -403,7 +403,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
         {/* Enhanced footer with status and category */}
         <View style={styles.logFooter}>
           <View style={styles.logFooterLeft}>
-            <Ionicons name="person-outline" size={14} color="#90A4AE" />
+            <Ionicons name="person-outline" size={18} color="#90A4AE" />
             <Text style={styles.logPerformer}>{performedBy}</Text>
             {item.category && (
               <>

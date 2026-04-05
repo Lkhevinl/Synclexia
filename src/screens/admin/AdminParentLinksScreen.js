@@ -244,7 +244,7 @@ export default function AdminParentLinksScreen({ navigation }) {
       {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#999" />
+          <Ionicons name="search" size={22} color="#999" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search links..."
@@ -274,7 +274,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                 {/* Parent */}
                 <View style={styles.linkPerson}>
                   <View style={[styles.personAvatar, { backgroundColor: '#6A1B9A' }]}>
-                    <Ionicons name="person" size={18} color="#fff" />
+                    <Ionicons name="person" size={22} color="#fff" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.personName}>{link.parent_profile?.full_name || 'Unknown'}</Text>
@@ -287,7 +287,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                 {/* Student */}
                 <View style={styles.linkPerson}>
                   <View style={[styles.personAvatar, { backgroundColor: '#FF9800' }]}>
-                    <Ionicons name="school" size={18} color="#fff" />
+                    <Ionicons name="school" size={22} color="#fff" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.personName}>{link.student_profile?.full_name || 'Unknown'}</Text>
@@ -304,7 +304,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                   style={styles.removeBtn}
                   onPress={() => removeLink(link)}
                 >
-                  <Ionicons name="trash-outline" size={16} color="#E53935" />
+                  <Ionicons name="trash-outline" size={20} color="#E53935" />
                   <Text style={styles.removeTxt}>Remove</Text>
                 </TouchableOpacity>
               </View>

@@ -294,7 +294,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             <Text style={styles.cardTitle}>Admin Response</Text>
             <View style={styles.adminReplyContainer}>
               <View style={styles.adminReplyHeader}>
-                <Ionicons name="chatbubble-outline" size={16} color="#2196F3" />
+                <Ionicons name="chatbubble-outline" size={20} color="#2196F3" />
                 <Text style={styles.adminReplyLabel}>Admin replied:</Text>
               </View>
               <Text style={styles.adminReplyText}>{log.legacyReply}</Text>
@@ -308,7 +308,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             <Text style={styles.cardTitle}>Admin Comment</Text>
             <View style={styles.adminReplyContainer}>
               <View style={styles.adminReplyHeader}>
-                <Ionicons name="chatbubble-outline" size={16} color="#2196F3" />
+                <Ionicons name="chatbubble-outline" size={20} color="#2196F3" />
                 <Text style={styles.adminReplyLabel}>Admin commented:</Text>
               </View>
               <Text style={styles.adminReplyText}>{log.admin_comment}</Text>
@@ -362,7 +362,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                     onPress={submitAdminComment}
                     disabled={submittingComment}
                   >
-                    <Ionicons name="send" size={16} color="#fff" />
+                    <Ionicons name="send" size={20} color="#fff" />
                     <Text style={styles.submitCommentText}>
                       {submittingComment ? 'Sending...' : 'Send Comment'}
                     </Text>
@@ -386,7 +386,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Additional Information</Text>
 
           <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={16} color="#607D8B" />
+            <Ionicons name="person-outline" size={20} color="#607D8B" />
             <Text style={styles.infoLabel}>Reported by:</Text>
             <Text style={styles.infoValue}>{reporterName}</Text>
             {log.reporter_role && (
@@ -398,7 +398,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.category && (
             <View style={styles.infoRow}>
-              <Ionicons name="folder-outline" size={16} color="#607D8B" />
+              <Ionicons name="folder-outline" size={20} color="#607D8B" />
               <Text style={styles.infoLabel}>Category:</Text>
               <Text style={styles.infoValue}>{log.category}</Text>
             </View>
@@ -406,7 +406,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.device_info && !log.device_info.legacy && (
             <View style={styles.infoRow}>
-              <Ionicons name="phone-portrait-outline" size={16} color="#607D8B" />
+              <Ionicons name="phone-portrait-outline" size={20} color="#607D8B" />
               <Text style={styles.infoLabel}>Device:</Text>
               <Text style={styles.infoValue}>
                 {log.device_info.platform} {log.device_info.platformVersion}
@@ -419,7 +419,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.device_info?.legacy && (
             <View style={styles.infoRow}>
-              <Ionicons name="archive-outline" size={16} color="#607D8B" />
+              <Ionicons name="archive-outline" size={20} color="#607D8B" />
               <Text style={styles.infoLabel}>Source:</Text>
               <Text style={styles.infoValue}>Legacy Feedback System</Text>
             </View>

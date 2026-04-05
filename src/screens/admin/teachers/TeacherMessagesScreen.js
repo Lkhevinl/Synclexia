@@ -178,7 +178,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'messages' && s.tabBtnActive]}
           onPress={() => setActiveTab('messages')}
         >
-          <Ionicons name="chatbubbles" size={16} color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
+          <Ionicons name="chatbubbles" size={20} color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'messages' ? s.tabTxtActive : s.tabTxt}>Messages</Text>
           {unreadCount > 0 && (
             <View style={s.tabBadge}><Text style={s.tabBadgeText}>{unreadCount}</Text></View>
@@ -188,7 +188,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'parents' && s.tabBtnActive]}
           onPress={() => setActiveTab('parents')}
         >
-          <Ionicons name="people" size={16} color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
+          <Ionicons name="people" size={20} color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'parents' ? s.tabTxtActive : s.tabTxt}>Parents</Text>
         </TouchableOpacity>
       </View>

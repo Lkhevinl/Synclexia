@@ -131,7 +131,7 @@ export default function ProfileScreen({ navigation }) {
               : <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
             }
             <View style={styles.bannerEditBtn}>
-              {bannerUploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="image-outline" size={15} color="#fff" />}
+              {bannerUploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="image-outline" size={18} color="#fff" />}
               <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : isStudent ? 'View Cover' : 'Edit Cover'}</Text>
             </View>
           </TouchableOpacity>
@@ -149,7 +149,7 @@ export default function ProfileScreen({ navigation }) {
                   </View>
               }
               <View style={[styles.cameraOverlay, { backgroundColor: colors.primary }]}>
-                {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Ionicons name="camera" size={14} color={colors.onPrimary} />}
+                {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Ionicons name="camera" size={18} color={colors.onPrimary} />}
               </View>
             </TouchableOpacity>
           </View>
@@ -163,13 +163,13 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.form, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
           <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>FULL NAME</AppText>
           <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="person-outline" size={18} color={colors.onSurfaceMuted} />
+            <Ionicons name="person-outline" size={22} color={colors.onSurfaceMuted} />
             <TextInput style={[styles.input, { color: colors.onSurface }]} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={colors.onSurfaceMuted} editable={!isStudent} returnKeyType="next" autoComplete="name" />
           </View>
 
           <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>EMAIL</AppText>
           <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="mail-outline" size={18} color={colors.onSurfaceMuted} />
+            <Ionicons name="mail-outline" size={22} color={colors.onSurfaceMuted} />
             <TextInput style={[styles.input, { color: colors.onSurface }]} value={email} onChangeText={setEmail} placeholder="Your email address" placeholderTextColor={colors.onSurfaceMuted} editable={!isStudent} keyboardType="email-address" autoCapitalize="none" returnKeyType="done" autoComplete="email" />
           </View>
           {!isStudent && <AppText variant="caption" style={{ color: colors.onSurfaceMuted, marginTop: tokens.spacing.xs, marginLeft: tokens.spacing.xs, marginBottom: tokens.spacing.xs }}>⚠️ Changing email requires confirmation via the new address.</AppText>}
@@ -193,7 +193,7 @@ export default function ProfileScreen({ navigation }) {
             <TouchableOpacity style={[styles.changePassBtn, { backgroundColor: colors.primaryLight }]} onPress={() => navigation.navigate('ChangePassword')}>
               <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
               <AppText variant="body" style={{ flex: 1, color: colors.primary, fontWeight: 'bold', marginLeft: tokens.spacing.sm }}>Change Password</AppText>
-              <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} />
+              <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
             </TouchableOpacity>
           )}
         </View>

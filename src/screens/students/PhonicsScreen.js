@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
-import ScreenWrapper from '../../components/ScreenWrapper';
-import { checkQuestProgress } from '../../lib/questHelper';
-import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { logSession } from '../../lib/analyticsHelper';
+import { checkQuestProgress } from '../../lib/questHelper';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 
 // Helper for colors
 const getGradientColors = (hexColor) => {
@@ -27,7 +31,8 @@ const getGradientColors = (hexColor) => {
   return [hexColor, hexColor];
 };
 
-export default function PhonicsScreen({ navigation }) {
+export default function PhonicsScreen() {
+  const navigation = useNavigation();
   const { profile } = useAuth();
   const { colors } = useTheme();
   const [items, setItems] = useState([]);
@@ -52,45 +57,48 @@ export default function PhonicsScreen({ navigation }) {
     }
   };
 
-  const handlePlay = (text) => {
-    Speech.speak(text, { rate: 0.9, pitch: 1.1 });
+  const handlePress = (item) => {
+    Speech.speak(item.label, { rate: 0.9, pitch: 1.1 });
     if (profile?.id) {
-        checkQuestProgress(profile.id, 'Phonics');
-        checkQuestProgress(profile.id, 'Practice');
-        tapCountRef.current += 1;
-        const now = Date.now();
-        // Log a batch session every 60 seconds (score = taps since last log)
-        if (now - lastLogRef.current >= 60000) {
-          logSession({ studentId: profile.id, activityType: 'phonics', score: tapCountRef.current, total: tapCountRef.current, details: { label: text } });
-          lastLogRef.current = now;
-          tapCountRef.current = 0;
-        }
+      checkQuestProgress(profile.id, 'Phonics');
+      checkQuestProgress(profile.id, 'Practice');
+      tapCountRef.current += 1;
+      const now = Date.now();
+      // Log a batch session every 60 seconds (score = taps since last log)
+      if (now - lastLogRef.current >= 60000) {
+        logSession({ studentId: profile.id, activityType: 'phonics', score: tapCountRef.current, total: tapCountRef.current, details: { label: item.label } });
+        lastLogRef.current = now;
+        tapCountRef.current = 0;
+      }
     }
   };
 
   return (
-    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
-        <GoBackBtn title="Phonics Fun" />
-
-        <View style={styles.headerContainer}>
-           <Text style={styles.subHeader}>Tap a card to hear the sound!</Text>
-           <View style={styles.instructionHint}>
-             <Ionicons name="hand-left" size={18} color="#E8927C" />
-             <Text style={styles.instructionHintText}>Tap any card to hear how the letter or sound is pronounced. Keep tapping to practice!</Text>
-           </View>
-           <TouchableOpacity
-             style={styles.activitiesBtn}
-             onPress={() => navigation.navigate('PhonicsActivity')}
-             activeOpacity={0.8}
-           >
-             <Ionicons name="game-controller-outline" size={20} color="#fff" />
-             <Text style={styles.activitiesBtnText}>Phonics Activities</Text>
-           </TouchableOpacity>
-        </View>
+    <ScreenWrapper role="student" padded={false} edges={['left','right','bottom']} style={{ backgroundColor: colors.surface }}>
+      <View style={{ paddingHorizontal: 16 }}>
+        <StudentPageHeader title="Phonics" />
+        <StudentCard variant="tinted" style={styles.hintCard}>
+          <View style={styles.hintRow}>
+            <Ionicons name="information-circle" size={22} color={c.primary} />
+            <Text style={styles.hintText}>
+              <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+              Tap any card to hear the sound! Use "Phonics Activities" to play interactive games.
+            </Text>
+          </View>
+        </StudentCard>
+        <StudentButton
+          variant="primary"
+          onPress={() => navigation.navigate('PhonicsActivity')}
+          style={styles.activitiesBtn}
+        >
+          <Ionicons name="game-controller" size={22} color="#fff" />
+          <Text style={styles.activitiesBtnText}>Phonics Activities</Text>
+        </StudentButton>
+      </View>
         
         {loading ? (
-            <ActivityIndicator size="large" color="#FF9800" style={{marginTop: 50}} />
-        ) : items.length === 0 ? (
+        <ActivityIndicator size="large" color={c.primary} style={{ margin: 40 }} />
+      ) : items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🗣️</Text>
               <Text style={styles.emptyTitle}>No phonics items yet</Text>
@@ -109,21 +117,15 @@ export default function PhonicsScreen({ navigation }) {
 
                 return (
                   <TouchableOpacity 
-                    style={styles.cardContainer} 
-                    onPress={() => handlePlay(item.label)}
-                    activeOpacity={0.7}
+                    style={[styles.card, { backgroundColor: gradientColors[0], borderRadius: 25, elevation: 8, shadowColor: gradientColors[0], shadowOffset:{width:0,height:4}, shadowOpacity:0.25, shadowRadius:8 }]}
+                    onPress={() => handlePress(item)}
+                    activeOpacity={0.8}
                   >
-                    <LinearGradient
-                      colors={gradientColors}
-                      style={styles.cardGradient}
-                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    >
-                      <Text style={styles.icon}>{item.icon}</Text>
-                      <Text style={styles.label}>{item.label}</Text>
-                      
-                      {/* Glossy shine overlay */}
-                      <View style={styles.shine} />
-                    </LinearGradient>
+                    <View style={styles.cardInner}>
+                      <Text style={styles.cardLetter}>{item.icon}</Text>
+                      <Text style={styles.cardPhonetic}>{item.label}</Text>
+                      <Ionicons name="volume-high" size={22} color="rgba(255,255,255,0.8)" style={{ marginTop: 8 }} />
+                    </View>
                   </TouchableOpacity>
                 );
               }}
@@ -134,25 +136,25 @@ export default function PhonicsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  headerContainer: { alignItems: 'center', marginTop: 10, marginBottom: 20, paddingTop: 60 },
-  header: { fontSize: 28, fontWeight: '800', color: '#333', letterSpacing: 0.5 },
-  subHeader: { fontSize: 15, color: '#777', marginTop: 5, marginBottom: 14, letterSpacing: 0.2 },
-  activitiesBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E8927C', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 },
-  activitiesBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-
+  hintCard: { marginBottom: 12 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  activitiesBtn: { marginBottom: 16, alignSelf: 'stretch' },
+  activitiesBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
   listContent: { paddingBottom: 40, paddingHorizontal: 20 },
   columnWrapper: { justifyContent: 'space-between' },
-
-  cardContainer: { 
+  card: { 
     width: '47%', 
     aspectRatio: 1, 
     marginBottom: 20, 
     borderRadius: 25, 
     elevation: 8,
-    boxShadow: '0px 4px 5px rgba(0,0,0,0.2)',
+    shadowColor: c.primary,
+    shadowOffset:{width:0,height:4},
+    shadowOpacity:0.25,
+    shadowRadius:8,
   },
-  
-  cardGradient: { 
+  cardInner: { 
     flex: 1, 
     borderRadius: 25, 
     justifyContent: 'center', 
@@ -161,24 +163,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.4)',
     overflow: 'hidden' // Keeps the shine inside
   },
-  
-  icon: { fontSize: 50, marginBottom: 10, textShadow: 'rgba(0,0,0,0.1) 0px 0px 4px' },
-  label: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadow: 'rgba(0,0,0,0.2) 0px 0px 2px' },
-  
-  shine: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-  },
-
-  instructionHint: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E8', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, gap: 8, borderWidth: 1, borderColor: '#E8927C30', marginTop: 10 },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
-
+  cardLetter: { fontSize: 50, marginBottom: 10, textShadow: 'rgba(0,0,0,0.1) 0px 0px 4px' },
+  cardPhonetic: { fontSize: 22, fontWeight: 'bold', color: '#fff', textShadow: 'rgba(0,0,0,0.2) 0px 0px 2px' },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',

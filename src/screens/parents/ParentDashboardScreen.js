@@ -333,7 +333,7 @@ export default function ParentDashboardScreen({ navigation }) {
             style={s.editChildBtn}
             onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
           >
-            <Ionicons name="create-outline" size={16} color="#E8927C" />
+            <Ionicons name="create-outline" size={20} color="#E8927C" />
             <Text style={[s.editChildBtnText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -374,7 +374,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 <Text style={[s.navLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.label}</Text>
                 <Text style={[s.navDesc, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{item.desc}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#E8927C" />
+              <Ionicons name="chevron-forward" size={22} color="#E8927C" />
             </TouchableOpacity>
           ))}
         </View>
@@ -422,7 +422,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
               {aiInsights.notPracticed.length > 0 && (
                 <View style={s.aiNotPracticedRow}>
-                  <Ionicons name="alert-circle-outline" size={14} color="#FF9800" />
+                  <Ionicons name="alert-circle-outline" size={18} color="#FF9800" />
                   <Text style={[s.aiNotPracticedText, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
                     Not tried yet: {aiInsights.notPracticed.map(a => ACTIVITY_META[a]?.label).filter(Boolean).join(', ')}
                   </Text>
@@ -514,7 +514,7 @@ export default function ParentDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <TouchableOpacity style={s.notifItem} activeOpacity={0.7}>
                   <View style={s.notifItemIconBox}>
-                    <Ionicons name="megaphone" size={18} color="#E8927C" />
+                    <Ionicons name="megaphone" size={22} color="#E8927C" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.notifItemTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.title}</Text>

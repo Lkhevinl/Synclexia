@@ -4,9 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useFocusEffect } from '@react-navigation/native';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentIconBadge from '../../components/student/StudentIconBadge';
+import StudentProgressBar from '../../components/student/StudentProgressBar';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 
 export default function QuestScreen() {
   const { profile, fetchProfile } = useAuth();
@@ -64,55 +69,60 @@ export default function QuestScreen() {
 
   return (
     <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
-      <GoBackBtn title="Quest Board" />
+      <StudentPageHeader title="Quest Board" />
 
-      <View style={styles.instructionHint}>
-        <Ionicons name="information-circle" size={22} color="#E8927C" />
-        <Text style={styles.instructionHintText}>
-          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-          Complete activities (Reading, Phonics, Spelling, etc.) to fill up quest progress bars. When a quest is full, tap "CLAIM" to earn your XP reward!
-        </Text>
-      </View>
+      <StudentCard variant="tinted" style={styles.hintCard}>
+        <View style={styles.hintRow}>
+          <Ionicons name="information-circle" size={22} color={c.primary} />
+          <Text style={styles.hintText}>
+            <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+            Complete activities to fill progress bars. When full, tap <Text style={{ fontWeight: 'bold' }}>Claim</Text> to earn XP!
+          </Text>
+        </View>
+      </StudentCard>
 
       <FlatList
         data={quests}
         keyExtractor={item => item.id.toString()}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadQuests} />}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={loadQuests} tintColor={c.primary} />}
         renderItem={({ item }) => {
           const isComplete = item.current >= item.target_count;
-          const progressPercent = (item.current / item.target_count) * 100;
+          const progressPercent = Math.min(100, (item.current / item.target_count) * 100);
 
           return (
-            <TouchableOpacity 
-              style={[styles.card, { backgroundColor: colors.surfaceCard }, item.claimed && styles.cardClaimed]}
-              disabled={true} 
+            <StudentCard
+              variant={item.claimed ? 'muted' : 'default'}
+              style={styles.questCard}
             >
-              <View style={{flex: 1}}>
-                 <Text style={[styles.questTitle, { color: colors.onSurface }, item.claimed && {textDecorationLine: 'line-through'}]}>{item.title}</Text>
-                 
-                 <View style={styles.rewards}>
-                    <Text style={styles.rewardTag}>⚡ {item.xp_reward} XP</Text>
-                 </View>
-
-                 <View style={styles.barBg}>
-                    <View style={[styles.barFill, { width: `${progressPercent}%`, backgroundColor: isComplete ? '#4CAF50' : '#FF9800' }]} />
-                 </View>
-                 <Text style={styles.progressText}>{item.current} / {item.target_count}</Text>
-              </View>
-
-              {item.claimed ? (
-                  <Ionicons name="checkmark-circle" size={40} color="#aaa" />
-              ) : isComplete ? (
-                  <TouchableOpacity style={styles.claimBtn} onPress={() => handleClaim(item)}>
-                      <Text style={styles.claimText}>CLAIM</Text>
-                  </TouchableOpacity>
-              ) : (
-                  <View style={{alignItems:'center'}}>
-                      <Ionicons name="lock-closed-outline" size={24} color="#ccc" />
-                      <Text style={{fontSize:10, color:'#ccc', marginTop: 2}}>Locked</Text>
+              <View style={styles.questRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.questTitle, item.claimed && styles.questTitleClaimed]}>
+                    {item.title}
+                  </Text>
+                  <StudentIconBadge icon="flash" label={`${item.xp_reward} XP`} variant="score" />
+                  <View style={styles.barWrap}>
+                    <StudentProgressBar progress={progressPercent} height={12} showLabel={false} />
+                    <Text style={styles.progressText}>{item.current} / {item.target_count}</Text>
                   </View>
-              )}
-            </TouchableOpacity>
+                </View>
+
+                <View style={styles.actionCol}>
+                  {item.claimed ? (
+                    <Ionicons name="checkmark-circle" size={38} color="#ccc" />
+                  ) : isComplete ? (
+                    <StudentButton variant="success" onPress={() => handleClaim(item)}>
+                      <Text style={styles.claimText}>Claim</Text>
+                    </StudentButton>
+                  ) : (
+                    <View style={styles.lockedWrap}>
+                      <Ionicons name="lock-closed-outline" size={24} color="#ccc" />
+                      <Text style={styles.lockedText}>Locked</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </StudentCard>
           );
         }}
       />
@@ -121,21 +131,22 @@ export default function QuestScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontWeight: 'bold', color: '#E8927C' },
-  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  hintCard: { marginBottom: 14 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
 
-  card: { flexDirection: 'row', backgroundColor: '#fff', padding: 15, borderRadius: 15, marginBottom: 15, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#E8927C' },
-  cardClaimed: { opacity: 0.6, backgroundColor: '#eee', borderColor: '#ccc' },
-  
-  questTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 5 },
-  rewards: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  rewardTag: { fontSize: 12, fontWeight: 'bold', color: '#555', backgroundColor: '#f0f0f0', paddingHorizontal: 6, borderRadius: 5 },
-  
-  barBg: { height: 10, backgroundColor: '#eee', borderRadius: 5, overflow: 'hidden' },
-  barFill: { height: '100%' },
-  progressText: { fontSize: 10, color: '#888', marginTop: 3, textAlign: 'right' },
-  
-  claimBtn: { backgroundColor: '#4CAF50', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 10, elevation: 5 },
-  claimText: { color: '#fff', fontWeight: 'bold', fontSize: 12 }
+  list: { paddingBottom: 100 },
+
+  questCard: { marginBottom: 14 },
+  questRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  questTitle: { fontSize: 16, fontWeight: '800', color: c.text, marginBottom: 6 },
+  questTitleClaimed: { textDecorationLine: 'line-through', color: '#aaa' },
+
+  barWrap: { marginTop: 10 },
+  progressText: { fontSize: 10, color: c.textMuted, marginTop: 4, textAlign: 'right' },
+
+  actionCol: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  claimText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  lockedWrap: { alignItems: 'center' },
+  lockedText: { fontSize: 10, color: '#ccc', marginTop: 2 },
 });

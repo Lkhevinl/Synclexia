@@ -15,6 +15,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { analyzeStudentProfile, applyLearningPath, ACTIVITY_META } from '../../lib/strengthsAnalysis';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
 import tokens from '../../theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -113,22 +116,22 @@ export default function AIInsightsScreen({ navigation }) {
             </View>
           </View>
           <View style={styles.trendBadge}>
-            <Ionicons name={TREND_ICON[item.trend]} size={14} color={TREND_COLOR[item.trend]} />
+            <Ionicons name={TREND_ICON[item.trend]} size={18} color={TREND_COLOR[item.trend]} />
           </View>
         </View>
 
         <View style={styles.activityCardBottom}>
           <View style={styles.statPill}>
-            <Ionicons name="layers-outline" size={11} color="#666" />
+            <Ionicons name="layers-outline" size={14} color="#666" />
             <Text style={styles.statPillText}>{LEVEL_LABELS[item.adaptiveLevel] ?? 'Easy'}</Text>
           </View>
           <View style={styles.statPill}>
-            <Ionicons name="checkmark-done-outline" size={11} color="#666" />
+            <Ionicons name="checkmark-done-outline" size={14} color="#666" />
             <Text style={styles.statPillText}>{item.totalSessions} sessions</Text>
           </View>
           {item.daysSinceLastSession != null && (
             <View style={styles.statPill}>
-              <Ionicons name="time-outline" size={11} color="#666" />
+              <Ionicons name="time-outline" size={14} color="#666" />
               <Text style={styles.statPillText}>
                 {item.daysSinceLastSession === 0 ? 'Today' : `${item.daysSinceLastSession}d ago`}
               </Text>
@@ -202,7 +205,7 @@ export default function AIInsightsScreen({ navigation }) {
           <Ionicons name="alert-circle-outline" size={64} color="#EF5350" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={load}>
-            <Ionicons name="refresh" size={18} color="#fff" />
+            <Ionicons name="refresh" size={22} color="#fff" />
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -219,19 +222,14 @@ export default function AIInsightsScreen({ navigation }) {
 
   return (
     <ScreenWrapper role="student" padded={false}>
-      {/* HEADER */}
-      <LinearGradient colors={colors.headerGradient} style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>AI Learning Insights</Text>
-          <Text style={styles.headerSub}>Personalized for {profile?.full_name?.split(' ')[0] ?? 'you'}</Text>
-        </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={load}>
-          <Ionicons name="refresh-outline" size={22} color="rgba(255,255,255,0.8)" />
-        </TouchableOpacity>
-      </LinearGradient>
+      <StudentPageHeader
+        title="AI Learning Insights"
+        right={
+          <TouchableOpacity onPress={load}>
+            <Ionicons name="refresh-outline" size={22} color={c.primary} />
+          </TouchableOpacity>
+        }
+      />
 
       <Animated.ScrollView
         style={{ opacity: fadeAnim }}
@@ -260,7 +258,7 @@ export default function AIInsightsScreen({ navigation }) {
 
           {p.totalSessions === 0 && (
             <View style={styles.noDataBanner}>
-              <Ionicons name="information-circle-outline" size={18} color="#1976D2" />
+              <Ionicons name="information-circle-outline" size={22} color="#1976D2" />
               <Text style={styles.noDataText}>Complete some activities to see your personalized insights!</Text>
             </View>
           )}
@@ -271,7 +269,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.sectionIconGradient}>
-                <Ionicons name="star" size={14} color="#fff" />
+                <Ionicons name="star" size={18} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Your Strengths</Text>
             </View>
@@ -286,7 +284,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#FF9800', '#E65100']} style={styles.sectionIconGradient}>
-                <Ionicons name="fitness" size={14} color="#fff" />
+                <Ionicons name="fitness" size={18} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Areas to Improve</Text>
             </View>
@@ -301,7 +299,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
-                <Ionicons name="rocket" size={14} color="#fff" />
+                <Ionicons name="rocket" size={18} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Not Explored Yet</Text>
             </View>
@@ -336,7 +334,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
-                <Ionicons name="bulb" size={14} color="#fff" />
+                <Ionicons name="bulb" size={18} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
             </View>
@@ -351,7 +349,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#00BFA5', '#00796B']} style={styles.sectionIconGradient}>
-                <Ionicons name="map" size={14} color="#fff" />
+                <Ionicons name="map" size={18} color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Suggested Learning Path</Text>
             </View>

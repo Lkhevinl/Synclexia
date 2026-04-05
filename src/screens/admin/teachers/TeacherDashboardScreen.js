@@ -101,7 +101,7 @@ export default function TeacherDashboardScreen({ navigation }) {
         </View>
         <View style={styles.cardFooter}>
           <Text style={styles.itemsLabel}>items</Text>
-          <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.9)" />
+          <Ionicons name="arrow-forward" size={22} color="rgba(255,255,255,0.9)" />
         </View>
       </LinearGradient>
     </TouchableOpacity>

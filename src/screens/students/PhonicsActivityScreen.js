@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
@@ -81,16 +81,16 @@ function ModeSelector({ onSelect }) {
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
-        <LinearGradient colors={['#FF9800', '#E65100']} style={ms.headerCard}>
+        <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
           <Text style={ms.headerEmoji}>🎮</Text>
           <Text style={ms.title}>Phonics Activities</Text>
           <Text style={ms.sub}>Choose a game to play</Text>
-        </LinearGradient>
+        </View>
       </Animated.View>
 
       {modes.map((m, index) => (
         <AnimatedCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
-          <LinearGradient colors={m.gradient} style={ms.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
                 <Text style={ms.cardEmoji}>{m.emoji}</Text>
@@ -104,7 +104,7 @@ function ModeSelector({ onSelect }) {
               </View>
             </View>
             <View style={ms.cardShine} />
-          </LinearGradient>
+          </View>
         </AnimatedCard>
       ))}
     </ScrollView>
@@ -289,15 +289,15 @@ function BlendGame({ onBack, userId, items }) {
 
   return (
     <View style={bg.container}>
-      <LinearGradient colors={['#FF9800', '#F57C00']} style={bg.header}>
-        <Text style={bg.headerTitle}>Blend It! 🔗</Text>
-        <View style={bg.headerRow}>
-          <Text style={bg.headerSub}>{idx + 1} / {words.length}</Text>
+      <StudentPageHeader
+        title="Blend It! 🔗"
+        onBack={onBack}
+        right={
           <TouchableOpacity onPress={speakInstruction} style={bg.helpBtn}>
-            <Ionicons name="help-circle" size={24} color="#fff" />
+            <Ionicons name="help-circle" size={24} color={c.primary} />
           </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       <View style={bg.card}>
         <Text style={bg.emoji}>{current.emoji}</Text>
@@ -398,15 +398,15 @@ function RhymeGame({ onBack, userId, items }) {
 
   return (
     <View style={rg.container}>
-      <LinearGradient colors={['#E91E63', '#C2185B']} style={rg.header}>
-        <Text style={rg.headerTitle}>Rhyme Time! 🎵</Text>
-        <View style={rg.headerRow}>
-          <Text style={rg.headerSub}>{idx + 1} / {rounds.length}</Text>
+      <StudentPageHeader
+        title="Rhyme Time! 🎵"
+        onBack={onBack}
+        right={
           <TouchableOpacity onPress={speakInstruction} style={rg.helpBtn}>
-            <Ionicons name="help-circle" size={24} color="#fff" />
+            <Ionicons name="help-circle" size={24} color={c.primary} />
           </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        }
+      />
 
       <View style={rg.card}>
         <TouchableOpacity onPress={() => speak(current.target)} activeOpacity={0.8} style={rg.targetBox}>
@@ -548,10 +548,11 @@ function SegmentGame({ onBack, userId, items }) {
 
   return (
     <View style={sg.container}>
-      <LinearGradient colors={['#4CAF50', '#388E3C']} style={sg.header}>
-        <Text style={sg.headerTitle}>Count the Sounds! 🔢</Text>
-        <Text style={sg.headerSub}>{idx + 1} / {segWords.length}</Text>
-      </LinearGradient>
+      <StudentPageHeader
+        title="Count the Sounds! 🔢"
+        onBack={onBack}
+        right={<Text style={sg.headerSub}>{idx + 1} / {segWords.length}</Text>}
+      />
 
       <View style={sg.card}>
         <TouchableOpacity onPress={speakWord} style={sg.wordBox} activeOpacity={0.7}>
@@ -689,7 +690,7 @@ export default function PhonicsActivityScreen() {
 
   return (
     <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
-        <GoBackBtn title="Phonics Activities" />
+        <StudentPageHeader title="Phonics Activities" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#FF9800" />

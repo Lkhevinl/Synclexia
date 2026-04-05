@@ -192,7 +192,7 @@ export default function TeacherPhonicsActivityScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.saveBtn, { backgroundColor: gameColor }]} onPress={handleSave}>
-            <Ionicons name={editingId ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+            <Ionicons name={editingId ? 'checkmark-circle' : 'add-circle'} size={22} color="#fff" />
             <Text style={styles.saveBtnText}>{editingId ? 'Update' : 'Add Item'}</Text>
           </TouchableOpacity>
         </View>

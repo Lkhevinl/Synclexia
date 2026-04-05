@@ -5,6 +5,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import StudentBadge from './student/StudentBadge';
+import StudentIconBadge from './student/StudentIconBadge';
+import c from './student/candyTokens';
 
 const FONT_STYLES = [
   { label: 'System',         value: 'System'        },
@@ -80,7 +83,7 @@ export default function Sidebar({ visible, onClose }) {
               <View style={s.headerOverlay} />
 
               <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-                <Ionicons name="close" size={24} color="#fff" />
+                <Ionicons name="close" size={26} color="#fff" />
               </TouchableOpacity>
               {profile?.avatar_url ? (
                 <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} />
@@ -89,8 +92,9 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.avatarText}>{profile?.full_name?.charAt(0).toUpperCase() || 'U'}</Text>
                 </View>
               )}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={s.name}>{profile?.full_name || 'User'}</Text>
+                {isStudent && <StudentBadge variant="level">Student</StudentBadge>}
               </View>
               <Text style={s.email}>{profile?.email}</Text>
 
@@ -98,7 +102,7 @@ export default function Sidebar({ visible, onClose }) {
               {isStudent && profile?.unique_code && (
                 <View style={s.parentLinkSection}>
                   <View style={s.parentLinkHeader}>
-                    <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
+                    <Ionicons name="people" size={18} color="rgba(255,255,255,0.9)" />
                     <Text style={s.parentLinkLabel}>Parent Link Code</Text>
                   </View>
                   <Text style={s.parentLinkCode}>{profile.unique_code}</Text>
@@ -108,21 +112,47 @@ export default function Sidebar({ visible, onClose }) {
 
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
+              {/* STUDENT QUICK NAV */}
+              {isStudent && (
+                <>
+                  <Text style={s.groupLabel}>MY LEARNING</Text>
+                  <View style={s.card}>
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Quests')}>
+                      <View style={[s.iconWrap, { backgroundColor: c.primary + '20' }]}><Ionicons name="trophy-outline" size={20} color={c.primary} /></View>
+                      <Text style={s.rowLabel}>My Quests</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => navigate('Leaderboard')}>
+                      <View style={[s.iconWrap, { backgroundColor: c.level + '30' }]}><Ionicons name="podium-outline" size={20} color={c.level} /></View>
+                      <Text style={s.rowLabel}>Leaderboard</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
+                    </TouchableOpacity>
+                    <View style={s.divider} />
+                    <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
+                      <View style={[s.iconWrap, { backgroundColor: c.achievement + '30' }]}><Ionicons name="sparkles-outline" size={20} color={c.achievement} /></View>
+                      <Text style={s.rowLabel}>AI Insights</Text>
+                      <StudentIconBadge icon="star" label="New" variant="achievement" />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+
               {/* ACCOUNT */}
               {!isStudent && (
                 <>
                   <Text style={s.groupLabel}>ACCOUNT</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('Profile')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="create-outline" size={18} color="#0288D1" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="create-outline" size={20} color="#0288D1" /></View>
                       <Text style={s.rowLabel}>Edit Profile</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('ChangePassword')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="lock-closed-outline" size={18} color="#7B1FA2" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="lock-closed-outline" size={20} color="#7B1FA2" /></View>
                       <Text style={s.rowLabel}>Change Password</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -157,12 +187,12 @@ export default function Sidebar({ visible, onClose }) {
 
                 {/* Font Style */}
                 <TouchableOpacity style={s.row} onPress={() => setFontModalVisible(true)}>
-                  <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="text" size={18} color="#7B1FA2" /></View>
+                  <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="text" size={20} color="#7B1FA2" /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.rowLabel}>Font Style</Text>
                     <Text style={s.rowDesc}>{currentFont.label}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                  <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                 </TouchableOpacity>
 
                 <View style={s.divider} />
@@ -192,15 +222,15 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.groupLabel}>SYSTEM MAINTENANCE</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('MaintenanceLogs')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#607D8B18' }]}><Ionicons name="list-outline" size={18} color="#607D8B" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#607D8B18' }]}><Ionicons name="list-outline" size={20} color="#607D8B" /></View>
                       <Text style={s.rowLabel}>View Maintenance Logs</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('AddMaintenanceLog')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Ionicons name="add-circle-outline" size={18} color="#4CAF50" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Ionicons name="add-circle-outline" size={20} color="#4CAF50" /></View>
                       <Text style={s.rowLabel}>Add Maintenance Log</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -212,15 +242,15 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.groupLabel}>SUPPORT</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'About' })}>
-                      <View style={[s.iconWrap, { backgroundColor: '#1976D218' }]}><Ionicons name="information-circle-outline" size={18} color="#1976D2" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#1976D218' }]}><Ionicons name="information-circle-outline" size={20} color="#1976D2" /></View>
                       <Text style={s.rowLabel}>About</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'Rate' })}>
-                      <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Ionicons name="chatbubble-ellipses-outline" size={18} color="#2E7D32" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Ionicons name="chatbubble-ellipses-outline" size={20} color="#2E7D32" /></View>
                       <Text style={s.rowLabel}>Send Feedback to Admin</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -243,7 +273,7 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               ) : (
                 <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-                  <Ionicons name="exit-outline" size={20} color="#EF5350" />
+                  <Ionicons name="exit-outline" size={22} color="#EF5350" />
                   <Text style={s.logoutText}>Log Out</Text>
                 </TouchableOpacity>
               )}
@@ -276,7 +306,7 @@ export default function Sidebar({ visible, onClose }) {
                 ]}>
                   {f.label}
                 </Text>
-                {theme.fontStyle === f.value && <Ionicons name="checkmark-circle" size={20} color="#546E7A" />}
+                {theme.fontStyle === f.value && <Ionicons name="checkmark-circle" size={22} color="#546E7A" />}
               </TouchableOpacity>
             ))}
           </View>

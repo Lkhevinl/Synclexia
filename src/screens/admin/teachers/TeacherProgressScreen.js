@@ -218,7 +218,7 @@ export default function TeacherProgressScreen() {
 
             {/* Export Button */}
             <TouchableOpacity style={styles.exportBtn} onPress={exportReport}>
-              <Ionicons name="download-outline" size={18} color="#fff" />
+              <Ionicons name="download-outline" size={22} color="#fff" />
               <Text style={styles.exportText}>Export Report</Text>
             </TouchableOpacity>
 

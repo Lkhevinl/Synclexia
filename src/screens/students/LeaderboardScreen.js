@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
-import EmptyState from '../../components/EmptyState';
 import { useTheme } from '../../context/ThemeContext';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentSectionTitle from '../../components/student/StudentSectionTitle';
+import c from '../../components/student/candyTokens';
 
 const RANGES = [
   { label: 'This Week', days: 7 },
@@ -13,19 +16,22 @@ const RANGES = [
   { label: 'All Time', days: null },
 ];
 
+const RANGE_LABELS = { week: 'This Week', month: 'This Month', all: 'All Time' };
+const BORDER_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
+
 export default function LeaderboardScreen() {
   const { colors } = useTheme();
   const [leaders, setLeaders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState(0); // index into RANGES
+  const [selectedRange, setSelectedRange] = useState('week');
 
   useEffect(() => {
     fetchLeaders();
-  }, [range]);
+  }, [selectedRange]);
 
   const fetchLeaders = async () => {
     setLoading(true);
-    const { days } = RANGES[range];
+    const { days } = RANGES.find(range => RANGE_LABELS[range.label] === RANGE_LABELS[selectedRange]);
 
     if (days === null) {
       // All-time: top 10 by total XP in profiles
@@ -35,7 +41,7 @@ export default function LeaderboardScreen() {
         .eq('role', 'student')
         .order('xp', { ascending: false })
         .limit(10);
-      if (data) setLeaders(data.map(u => ({ ...u, periodXp: u.xp })));
+      if (data) setLeaders(data.map(u => ({ ...u, total_xp: u.xp })));
     } else {
       // Filtered: sum XP earned from session_logs in the past N days
       const since = new Date();
@@ -83,9 +89,9 @@ export default function LeaderboardScreen() {
       const profMap = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
 
-      const result = sorted.map(([id, periodXp]) => ({
+      const result = sorted.map(([id, total_xp]) => ({
         ...(profMap[id] || { id, full_name: 'Unknown', xp: 0 }),
-        periodXp,
+        total_xp,
       }));
 
       setLeaders(result);
@@ -94,68 +100,63 @@ export default function LeaderboardScreen() {
     setLoading(false);
   };
 
-  const getMedal = (index) => {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return null;
-  };
-
   return (
     <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }}>
-      <GoBackBtn title="Hall of Fame" />
+      <StudentPageHeader title="Leaderboard" />
 
-      <View style={styles.instructionHint}>
-        <Ionicons name="information-circle" size={22} color="#E8927C" />
-        <Text style={styles.instructionHintText}>
-          <Text style={{ fontWeight: 'bold' }}>How it works: </Text>
-          Students who practice the most earn the most XP and climb the leaderboard. Keep doing activities to move up!
-        </Text>
-      </View>
+      <StudentCard variant="tinted" style={styles.hintCard}>
+        <View style={styles.hintRow}>
+          <Ionicons name="information-circle" size={22} color={c.primary} />
+          <Text style={styles.hintText}>
+            <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+            Keep completing activities to climb to the top!
+          </Text>
+        </View>
+      </StudentCard>
 
-      <Text style={styles.subtitle}>
-        {RANGES[range].days === null ? 'All-Time Top Students' : `Top Students — ${RANGES[range].label}`}
-      </Text>
-
-      {/* Range Selector */}
-      <View style={styles.rangeRow}>
-        {RANGES.map((r, i) => (
-          <TouchableOpacity
-            key={r.label}
-            style={[styles.rangeBtn, i === range && styles.rangeBtnActive]}
-            onPress={() => setRange(i)}
-          >
-            <Text style={[styles.rangeBtnText, i === range && styles.rangeBtnTextActive]}>
-              {r.label}
-            </Text>
-          </TouchableOpacity>
+      {/* TIME RANGE TABS */}
+      <View style={styles.tabs}>
+        {['week', 'month', 'all'].map(range => (
+          selectedRange === range ? (
+            <StudentButton key={range} variant="primary" onPress={() => setSelectedRange(range)} style={styles.tabBtn}>
+              <Text style={styles.tabTextActive}>{RANGE_LABELS[range]}</Text>
+            </StudentButton>
+          ) : (
+            <StudentButton key={range} variant="outline" onPress={() => setSelectedRange(range)} style={styles.tabBtn}>
+              <Text style={styles.tabTextInactive}>{RANGE_LABELS[range]}</Text>
+            </StudentButton>
+          )
         ))}
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#E8927C" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={leaders}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          ListEmptyComponent={<EmptyState message="No activity found for this period. Be the first!" />}
-          renderItem={({ item, index }) => (
-            <View style={[styles.card, { backgroundColor: colors.surfaceCard }, index < 3 && styles.top3Card]}>
-              <View style={styles.rankCol}>
-                <Text style={styles.rankText}>{getMedal(index) || `#${index + 1}`}</Text>
-              </View>
-
-              <View style={styles.infoCol}>
-                <Text style={[styles.name, { color: colors.onSurface }]}>{item.full_name || 'Unknown'}</Text>
-                <Text style={styles.xpText}>
-                  {RANGES[range].days === null
-                    ? `${item.xp} XP (all time)`
-                    : `${item.periodXp} XP earned`}
-                </Text>
-              </View>
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="podium-outline" size={64} color="#ddd" />
+              <Text style={styles.emptyText}>No data yet for this period.</Text>
             </View>
-          )}
+          }
+          renderItem={({ item, index }) => {
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : null;
+            const borderColor = BORDER_COLORS[index] || c.primary;
+            return (
+              <StudentCard
+                style={[styles.row, { borderLeftColor: borderColor, borderLeftWidth: 4 }]}
+              >
+                <Text style={styles.rank}>{medal || `#${index + 1}`}</Text>
+                <View style={styles.info}>
+                  <Text style={styles.name}>{item.full_name || 'Unknown'}</Text>
+                  <Text style={styles.xp}>{item.total_xp || 0} XP</Text>
+                </View>
+              </StudentCard>
+            );
+          }}
         />
       )}
     </ScreenWrapper>
@@ -163,30 +164,21 @@ export default function LeaderboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 12, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
-  subtitle: { color: '#888', textAlign: 'center', marginBottom: 12 },
+  hintCard: { marginBottom: 14 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
 
-  rangeRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
-  rangeBtn: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#E8927C',
-    backgroundColor: '#fff',
-  },
-  rangeBtnActive: { backgroundColor: '#E8927C', borderColor: '#E8927C' },
-  rangeBtnText: { fontSize: 12, fontWeight: 'bold', color: '#E8927C' },
-  rangeBtnTextActive: { color: '#fff' },
+  tabs: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  tabBtn: { flex: 1, alignSelf: 'stretch' },
+  tabTextActive: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  tabTextInactive: { color: c.primary, fontWeight: '700', fontSize: 12 },
 
-  card: {
-    flexDirection: 'row', backgroundColor: '#fff', padding: 15,
-    borderRadius: 15, marginBottom: 10, alignItems: 'center', elevation: 2,
-  },
-  top3Card: { borderWidth: 2, borderColor: '#E8927C', backgroundColor: '#FFF5F0' },
+  row: { marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
+  rank: { fontSize: 24, minWidth: 36, textAlign: 'center' },
+  info: { flex: 1 },
+  name: { fontSize: 16, fontWeight: '800', color: c.text },
+  xp: { fontSize: 13, color: c.textMuted, marginTop: 2 },
 
-  rankCol: { width: 50, alignItems: 'center' },
-  rankText: { fontSize: 24, fontWeight: 'bold', color: '#333' },
-
-  infoCol: { flex: 1 },
-  name: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  xpText: { fontSize: 12, color: '#E8927C', fontWeight: 'bold' },
+  empty: { alignItems: 'center', paddingTop: 60 },
+  emptyText: { color: '#aaa', marginTop: 12, fontSize: 15 },
 });

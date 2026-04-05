@@ -2,14 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
 import Svg, { Path, Circle, G, Polygon, Text as SvgText } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
 import { useTheme } from '../../context/ThemeContext';
 
 // Optional dependency: expo-speech-recognition (dev/production build, not Expo Go)
@@ -641,19 +642,15 @@ export default function WritingScreen() {
     return (
       <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
 
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-          <TouchableOpacity onPress={() => setMode('trace')} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Story Writing</Text>
-            <Text style={styles.headerSub}>Choose a story to practice writing</Text>
-          </View>
-          <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePill}>
-            <Ionicons name="brush-outline" size={16} color="#fff" />
-            <Text style={styles.modePillText}>Trace</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        <StudentPageHeader
+          title="Story Writing"
+          onBack={() => setMode('trace')}
+          right={
+            <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePillCandy}>
+              <Ionicons name="brush-outline" size={20} color={c.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView contentContainerStyle={styles.storiesContainer}>
           {loadingStories ? (
@@ -690,7 +687,7 @@ export default function WritingScreen() {
                   <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
                   <View style={styles.storyMeta}>
                     <Text style={styles.storyMetaText}>{story.content.split(' ').length} words</Text>
-                    <Ionicons name="chevron-forward" size={18} color="#9575CD" />
+                    <Ionicons name="chevron-forward" size={22} color="#9575CD" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -706,23 +703,15 @@ export default function WritingScreen() {
     return (
       <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
 
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.composeHeader}>
-          <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
-          </TouchableOpacity>
-          <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={[styles.composeTitle, a11yTextStyle]} numberOfLines={1}>
-              {selectedStory ? selectedStory.title : 'Free Writing'}
-            </Text>
-            <Text style={[styles.composeSub, a11yTextStyle]}>
-              {selectedStory ? 'Copy the story below' : 'Dictate, type, then review corrections'}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePill}>
-            <Ionicons name="library-outline" size={16} color="#fff" />
-            <Text style={styles.modePillText}>Stories</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        <StudentPageHeader
+          title={selectedStory ? selectedStory.title : 'Free Writing'}
+          onBack={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }}
+          right={
+            <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePillCandy}>
+              <Ionicons name="library-outline" size={20} color={c.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView contentContainerStyle={styles.composeBody} keyboardShouldPersistTaps="handled">
           {/* Story Reference Card */}
@@ -739,7 +728,7 @@ export default function WritingScreen() {
                 style={styles.speakStoryBtn}
                 onPress={() => Speech.speak(selectedStory.content, { rate: 0.85 })}
               >
-                <Ionicons name="volume-high" size={16} color="#fff" />
+                <Ionicons name="volume-high" size={20} color="#fff" />
                 <Text style={styles.speakStoryText}>Hear Story</Text>
               </TouchableOpacity>
             </View>
@@ -910,7 +899,7 @@ export default function WritingScreen() {
                     draftRef.current = '';
                   }}
                 >
-                  <Ionicons name="refresh" size={18} color="#fff" />
+                  <Ionicons name="refresh" size={22} color="#fff" />
                   <Text style={styles.tryAgainText}>Try Again</Text>
                 </TouchableOpacity>
 
@@ -926,7 +915,7 @@ export default function WritingScreen() {
                     }}
                   >
                     <Text style={styles.nextStoryText}>Next Story</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    <Ionicons name="arrow-forward" size={22} color="#fff" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -941,17 +930,14 @@ export default function WritingScreen() {
     return (
       <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
 
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-            <GoBackBtn />
-            <View style={styles.headerContent}>
-                <Text style={styles.headerTitle}>Writing Lab</Text>
-                <Text style={styles.headerSub}>Trace letters or practice stories</Text>
-            </View>
-            <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePill}>
-              <Ionicons name="library-outline" size={16} color="#fff" />
-              <Text style={styles.modePillText}>Stories</Text>
+        <StudentPageHeader
+          title="Writing Lab"
+          right={
+            <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePillCandy}>
+              <Ionicons name="library-outline" size={20} color={c.primary} />
             </TouchableOpacity>
-        </LinearGradient>
+          }
+        />
 
         {/* Instruction hint + video tutorial button */}
         <View style={styles.mainHintRow}>
@@ -960,7 +946,7 @@ export default function WritingScreen() {
             <Text style={styles.mainHintText}>Tap a letter to start tracing, or tap "Stories" to practice copying.</Text>
           </View>
           <TouchableOpacity style={styles.watchVideoBtn} onPress={() => Linking.openURL(VIDEO_TUTORIAL_URL)} activeOpacity={0.85}>
-            <Ionicons name="play-circle" size={18} color="#fff" />
+            <Ionicons name="play-circle" size={22} color="#fff" />
             <Text style={styles.watchVideoBtnText}>Watch Tutorial</Text>
           </TouchableOpacity>
         </View>
@@ -998,20 +984,15 @@ export default function WritingScreen() {
 
       
       {/* Header */}
-      <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.canvasHeader}>
-         <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.backBtn}>
-             <Ionicons name="grid-outline" size={24} color="#fff" />
-             <Text style={styles.backText}>Letters</Text>
-         </TouchableOpacity>
-
-         <Text style={styles.canvasHeaderLetter}>{selectedItem.label}</Text>
-
-         {/* DEMO BUTTON */}
-         <TouchableOpacity onPress={playDemo} style={styles.demoBtnLarge}>
-             <Ionicons name="play-circle" size={32} color="#fff" />
-             <Text style={styles.demoHint}>Watch</Text>
-         </TouchableOpacity>
-      </LinearGradient>
+      <View style={styles.canvasHeaderCandy}>
+        <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.candyNavBtn}>
+          <Ionicons name="chevron-back" size={20} color={c.primary} />
+        </TouchableOpacity>
+        <Text style={styles.canvasLetterTitle}>{selectedItem.label}</Text>
+        <TouchableOpacity onPress={playDemo} style={styles.candyNavBtn}>
+          <Ionicons name="play-circle" size={24} color={c.primary} />
+        </TouchableOpacity>
+      </View>
 
       {/* DRAWING AREA */}
       <View
@@ -1181,7 +1162,7 @@ export default function WritingScreen() {
                       <Text style={styles.videoBtnTitle}>Watch Video Tutorial</Text>
                       <Text style={styles.videoBtnSub}>See how to trace letters step by step</Text>
                     </View>
-                    <Ionicons name="open-outline" size={18} color="rgba(255,255,255,0.8)" />
+                    <Ionicons name="open-outline" size={22} color="rgba(255,255,255,0.8)" />
                   </TouchableOpacity>
 
                   <ScrollView style={styles.demoContent}>
@@ -1208,7 +1189,7 @@ export default function WritingScreen() {
                         "Don't worry about being perfect — just keep practicing!",
                       ].map((tip, i) => (
                         <View key={i} style={styles.demoTip}>
-                          <Ionicons name="bulb-outline" size={16} color="#E8927C" />
+                          <Ionicons name="bulb-outline" size={20} color="#E8927C" />
                           <Text style={[styles.demoText, { flex: 1 }]}>{tip}</Text>
                         </View>
                       ))}
@@ -1231,9 +1212,10 @@ export default function WritingScreen() {
 const styles = StyleSheet.create({
   mainContainer: { flex: 1 },
   
-  header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
-  canvasHeader: { paddingTop: 50, paddingBottom: 12, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, elevation: 5 },
-  canvasHeaderLetter: { fontSize: 42, fontWeight: '900', color: '#fff', letterSpacing: 2 },
+  canvasHeaderCandy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, backgroundColor: '#FFF0E8', borderBottomWidth: 2, borderBottomColor: '#E8927C20' },
+  canvasLetterTitle: { fontSize: 42, fontWeight: '900', color: '#E8927C', letterSpacing: 2 },
+  candyNavBtn: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40', elevation: 2 },
+  modePillCandy: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40' },
   headerContent: { alignItems: 'center' },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },

@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AppHeader from '../../components/AppHeader';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
@@ -115,34 +117,44 @@ export default function SpeechToTextScreen() {
 
   return (
     <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']}>
-      <AppHeader title="Speech to Text" subtitle="Tap the microphone button below and speak clearly — your words will appear as text on screen!" />
+      <View style={styles.padded}>
+        <StudentPageHeader title="Speech to Text" />
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.transcriptBox}>
+        <StudentCard style={styles.transcriptCard}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.transcriptContent}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
           >
             {transcript ? (
               <Text style={styles.transcriptText}>{transcript}</Text>
             ) : (
               <Text style={styles.placeholderText}>
-                {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
+                {isListening ? 'Listening… speak now 🎙️' : 'Your spoken words will appear here.'}
               </Text>
             )}
             {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
           </ScrollView>
-        </View>
+        </StudentCard>
 
         <View style={styles.controls}>
-          <TouchableOpacity style={[styles.clearBtn, !transcript && styles.clearBtnHidden]} onPress={handleClear} disabled={!transcript}>
-            <Ionicons name="trash-outline" size={22} color="#78909C" />
+          <TouchableOpacity
+            style={[styles.clearBtn, !transcript && styles.clearBtnHidden]}
+            onPress={handleClear}
+            disabled={!transcript}
+          >
+            <Ionicons name="trash-outline" size={22} color={c.textMuted} />
             <Text style={styles.clearBtnText}>Clear</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.micBtn, isListening && styles.micBtnActive]} onPress={toggleListening} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.micBtn, isListening && styles.micBtnActive]}
+            onPress={toggleListening}
+            activeOpacity={0.8}
+          >
             <Ionicons name={isListening ? 'stop' : 'mic'} size={36} color="#fff" />
           </TouchableOpacity>
 
@@ -158,18 +170,19 @@ export default function SpeechToTextScreen() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1 },
-  transcriptBox: { height: 280, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
+  padded: { paddingHorizontal: 20 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
+  transcriptCard: { height: 280, marginBottom: 20, padding: 0 },
   scrollView: { flex: 1 },
-  transcriptContent: { padding: 24, flexGrow: 1 },
-  transcriptText: { fontSize: 22, color: '#333', lineHeight: 36 },
+  transcriptContent: { padding: 20, flexGrow: 1 },
+  transcriptText: { fontSize: 22, color: c.text, lineHeight: 36 },
   placeholderText: { fontSize: 16, color: '#B0BEC5', textAlign: 'center', marginTop: 40, lineHeight: 26 },
   errorText: { fontSize: 14, color: '#F44336', marginTop: 16, textAlign: 'center' },
-  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 100 },
-  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', elevation: 8 },
+  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 100 },
+  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: c.primaryDark, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:6 },
   micBtnActive: { backgroundColor: '#C62828' },
   clearBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#ECEFF1', justifyContent: 'center', alignItems: 'center' },
   clearBtnHidden: { opacity: 0 },
-  clearBtnText: { fontSize: 11, color: '#78909C', fontWeight: 'bold', marginTop: 2 },
+  clearBtnText: { fontSize: 11, color: c.textMuted, fontWeight: '700', marginTop: 2 },
   devNote: { textAlign: 'center', fontSize: 12, color: '#90A4AE', paddingBottom: 16, paddingHorizontal: 20 },
 });

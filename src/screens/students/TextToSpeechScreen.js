@@ -4,8 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
@@ -159,57 +162,63 @@ export default function TextToSpeechScreen() {
   return (
     <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }} padded={false}>
       <View style={styles.content}>
-       <GoBackBtn title="Text-to-Speech" />
+        <StudentPageHeader title="Text-to-Speech" />
 
-      <View style={styles.instructionHint}>
-        <Ionicons name="information-circle" size={22} color="#E8927C" />
-        <Text style={styles.instructionHintText}>
-          <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-          Type or paste any text in the box, then tap the Play button to hear it read aloud. Each word lights up as it is spoken!
-        </Text>
-      </View>
-
-      <View style={styles.textBox}>
-        <TextInput 
-          multiline 
-          placeholder="Type something here..." 
-          style={styles.input} 
-          value={text} 
-          onChangeText={(t) => { setText(t); if (!isSpeaking) setActiveWordIndex(-1); }}
-          nativeID="tts-input"
-          textAlignVertical="top"
-        />
-      </View>
-
-      {/* Read-along preview (highlighted as it speaks) */}
-      {text.trim().length > 0 && (
-        <View style={styles.previewBox}>
-          <Text style={styles.previewLabel}>Read-along Preview</Text>
-          <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={true}>
-            <Text style={styles.previewText}>
-              {tokenize(text).tokens.map((t, i) => {
-                if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
-                const isActive = isSpeaking && t.wordIndex === activeWordIndex;
-                return (
-                  <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
-                    {t.text}
-                  </Text>
-                );
-              })}
+        <StudentCard variant="tinted" style={styles.hintCard}>
+          <View style={styles.hintRow}>
+            <Ionicons name="information-circle" size={22} color={c.primary} />
+            <Text style={styles.hintText}>
+              <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+              Type or paste text, then tap Play to hear it. Each word lights up as it's spoken!
             </Text>
-          </ScrollView>
-        </View>
-      )}
+          </View>
+        </StudentCard>
 
-      <View style={styles.controls}>
+        <StudentCard style={styles.textBox}>
+          <TextInput
+            multiline
+            placeholder="Type something here..."
+            style={styles.input}
+            value={text}
+            onChangeText={(t) => { setText(t); if (!isSpeaking) setActiveWordIndex(-1); }}
+            nativeID="tts-input"
+            textAlignVertical="top"
+          />
+        </StudentCard>
+
+        {/* Read-along preview (highlighted as it speaks) */}
+        {text.trim().length > 0 && (
+          <View style={styles.previewBox}>
+            <Text style={styles.previewLabel}>Read-along Preview</Text>
+            <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={true}>
+              <Text style={styles.previewText}>
+                {tokenize(text).tokens.map((t, i) => {
+                  if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
+                  const isActive = isSpeaking && t.wordIndex === activeWordIndex;
+                  return (
+                    <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
+                      {t.text}
+                    </Text>
+                  );
+                })}
+              </Text>
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.controls}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleUpload}>
-              <Ionicons name="document-attach-outline" size={24} color={colors.onSurface} />
+            <Ionicons name="document-attach-outline" size={24} color={c.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.playBtn, isSpeaking && styles.stopBtn]} onPress={speak}>
-              <Ionicons name={isSpeaking ? "stop" : "play"} size={32} color="#fff" />
+          <TouchableOpacity
+            style={[styles.playBtn, isSpeaking && styles.stopBtn]}
+            onPress={speak}
+            activeOpacity={0.85}
+          >
+            <Ionicons name={isSpeaking ? 'stop' : 'play'} size={32} color="#fff" />
           </TouchableOpacity>
-      </View>
+        </View>
       </View>
     </ScreenWrapper>
   );
@@ -217,17 +226,18 @@ export default function TextToSpeechScreen() {
 
 const styles = StyleSheet.create({
   content: { flex: 1, padding: 20, paddingTop: 16 },
-  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
-  textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
-  input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28 },
-  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 15, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, maxHeight: 120 },
-  previewLabel: { fontSize: 12, fontWeight: 'bold', color: '#78909C', marginBottom: 6, textTransform: 'uppercase' },
+  hintCard: { marginBottom: 14 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  textBox: { flex: 1, marginBottom: 16, padding: 16 },
+  input: { flex: 1, fontSize: 18, color: c.text, lineHeight: 28, minHeight: 120 },
+  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, maxHeight: 120 },
+  previewLabel: { fontSize: 12, fontWeight: '700', color: c.textMuted, marginBottom: 6, textTransform: 'uppercase' },
   previewScroll: { maxHeight: 80 },
-  previewText: { fontSize: 16, color: '#333', lineHeight: 24 },
+  previewText: { fontSize: 16, color: c.text, lineHeight: 24 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
   controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 100 },
-  actionBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#FFE082', justifyContent: 'center', alignItems: 'center' },
-  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  stopBtn: { backgroundColor: '#C62828' },
+  actionBtn: { width: 60, height: 60, borderRadius: 18, backgroundColor: c.primaryLight, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: c.primary },
+  playBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: c.primaryDark, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:6, borderBottomWidth: 4, borderBottomColor: c.primaryDark },
+  stopBtn: { backgroundColor: '#C62828', borderBottomColor: '#8B0000' },
 });

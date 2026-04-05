@@ -154,7 +154,7 @@ export default function AdminReportsScreen() {
           </View>
           {item.streak > 0 && (
             <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={16} color="#FF5722" />
+              <Ionicons name="flame" size={20} color="#FF5722" />
               <Text style={styles.streakText}>{item.streak}d</Text>
             </View>
           )}

@@ -147,7 +147,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
               {!!inputError && (
                 <View style={styles.errorRow}>
-                  <Ionicons name="alert-circle" size={13} color={ERROR_RED} />
+                  <Ionicons name="alert-circle" size={18} color={ERROR_RED} />
                   <Text style={[styles.errorTxt, { color: ERROR_RED }]}>{inputError}</Text>
                 </View>
               )}
@@ -162,14 +162,14 @@ export default function ForgotPasswordScreen({ navigation }) {
                 {loading
                   ? <ActivityIndicator color={colors.onPrimary} />
                   : <>
-                      <Ionicons name="send" size={16} color={colors.onPrimary} style={{ marginRight: 8 }} />
+                      <Ionicons name="send" size={20} color={colors.onPrimary} style={{ marginRight: 8 }} />
                       <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Send Reset Link</Text>
                     </>
                 }
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.goBack()} style={styles.secondaryLink}>
-                <Ionicons name="arrow-back" size={14} color={colors.primary} />
+                <Ionicons name="arrow-back" size={18} color={colors.primary} />
                 <AppText variant="caption" style={{ color: colors.primary, fontWeight: '600' }}> Back to Login</AppText>
               </TouchableOpacity>
             </>
@@ -180,7 +180,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                   <Ionicons name="mail" size={38} color={colors.onPrimary} />
                 </View>
                 <View style={[styles.checkBadge, { backgroundColor: SUCCESS_GREEN }]}>
-                  <Ionicons name="checkmark" size={12} color="#fff" />
+                  <Ionicons name="checkmark" size={16} color="#fff" />
                 </View>
               </View>
 
@@ -202,14 +202,14 @@ export default function ForgotPasswordScreen({ navigation }) {
                   : cooldown > 0
                     ? <Text style={styles.resendTxtDisabled}>Resend in {cooldown}s</Text>
                     : <>
-                        <Ionicons name="refresh" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+                        <Ionicons name="refresh" size={18} color={colors.primary} style={{ marginRight: 6 }} />
                         <Text style={[styles.resendTxt, { color: colors.primary }]}>Resend Email</Text>
                       </>
                 }
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-                <Ionicons name="log-in-outline" size={17} color={colors.onPrimary} style={{ marginRight: 8 }} />
+                <Ionicons name="log-in-outline" size={20} color={colors.onPrimary} style={{ marginRight: 8 }} />
                 <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Back to Login</Text>
               </TouchableOpacity>
 

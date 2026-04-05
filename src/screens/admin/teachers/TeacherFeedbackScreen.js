@@ -85,7 +85,7 @@ export default function TeacherFeedbackScreen() {
                  <View style={{flex: 1, marginLeft: 10}}>
                      <Text style={[styles.name, { color: colors.onSurface }]}>{item.profiles?.full_name || "Unknown"}</Text>
                      <View style={{flexDirection:'row'}}>
-                        {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={12} color="#FBC02D"/>)}
+                        {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={16} color="#FBC02D"/>)}
                      </View>
                  </View>
                  <Text style={[styles.date, { color: colors.onSurfaceMuted }]}>{new Date(item.created_at).toLocaleDateString()}</Text>

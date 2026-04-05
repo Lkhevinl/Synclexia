@@ -5,10 +5,11 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
 import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
@@ -87,16 +88,16 @@ function ModeSelector({ onSelect }) {
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
-        <LinearGradient colors={['#2196F3', '#1565C0']} style={ms.headerCard}>
+        <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
           <Text style={ms.headerEmoji}>🔤</Text>
           <Text style={ms.title}>Spelling Practice</Text>
           <Text style={ms.sub}>Choose how you want to learn</Text>
-        </LinearGradient>
+        </View>
       </Animated.View>
 
       {modes.map((m, index) => (
         <AnimatedModeCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
-          <LinearGradient colors={m.gradient} style={ms.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
                 <Text style={ms.cardEmoji}>{m.emoji}</Text>
@@ -110,7 +111,7 @@ function ModeSelector({ onSelect }) {
               </View>
             </View>
             <View style={ms.cardShine} />
-          </LinearGradient>
+          </View>
         </AnimatedModeCard>
       ))}
     </ScrollView>
@@ -249,10 +250,11 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
   return (
     <View style={[game.container, { backgroundColor: accentColor + '10' }]}>
       {/* Header */}
-      <LinearGradient colors={[accentColor, accentColor + 'CC']} style={game.header}>
-        <Text style={game.headerTitle}>{mode === 'dictation' ? 'Listen & Spell 🔊' : 'Picture Spelling 💡'}</Text>
-        <Text style={game.headerSub}>{wordIdx + 1} / {wordList.length}   ⭐ {score}</Text>
-      </LinearGradient>
+      <StudentPageHeader
+        title={mode === 'dictation' ? 'Listen & Spell 🔊' : 'Picture Spelling 💡'}
+        onBack={onBack}
+        right={<Text style={game.headerSub}>{wordIdx + 1} / {wordList.length}  ⭐ {score}</Text>}
+      />
 
       <ScrollView contentContainerStyle={game.body} keyboardShouldPersistTaps="always">
         {/* Word Card */}
@@ -393,9 +395,10 @@ function FinishScreen({ score, total, onBack }) {
 
   return (
     <View style={[fin.container, { backgroundColor: colors.surface }]}>
-      <LinearGradient colors={['#2196F3', '#1565C0']} style={fin.header}>
-        <Text style={fin.headerTitle}>Results</Text>
-      </LinearGradient>
+      <StudentPageHeader
+        title="Results 🏆"
+        onBack={onBack}
+      />
       <View style={fin.card}>
         <Text style={fin.trophyEmoji}>🏆</Text>
         <Text style={fin.msg}>{msg}</Text>
@@ -451,10 +454,10 @@ export default function SpellingScreen() {
 
   return (
     <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
-        <GoBackBtn title="Spelling Practice" />
+        <StudentPageHeader title="Spelling Practice" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#2196F3" />
+            <ActivityIndicator size="large" color={c.primary} />
             <Text style={{ marginTop: 10, color: '#78909C' }}>Loading words...</Text>
           </View>
         ) : wordBank.length === 0 ? (
@@ -466,13 +469,15 @@ export default function SpellingScreen() {
           <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />
         ) : (
           <>
-            <View style={root.instructionHint}>
-              <Ionicons name="information-circle" size={22} color="#E8927C" />
-              <Text style={root.instructionHintText}>
-                <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-                Choose a mode: "Picture Spelling" shows a hint image, "Listen & Spell" plays the word aloud. Tap the letters in order to spell the word correctly!
-              </Text>
-            </View>
+            <StudentCard variant="tinted" style={root.hintCard}>
+              <View style={root.hintRow}>
+                <Ionicons name="information-circle" size={22} color={c.primary} />
+                <Text style={root.hintText}>
+                  <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+                  Choose a mode — "Listen & Spell" plays the word aloud, "Picture Spelling" shows a hint. Tap letters in order to spell!
+                </Text>
+              </View>
+            </StudentCard>
             <ModeSelector onSelect={setMode} />
           </>
         )}
@@ -485,6 +490,7 @@ export default function SpellingScreen() {
 
 const root = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
-  instructionHint: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFF0E8', borderRadius: 14, padding: 12, margin: 16, marginBottom: 4, gap: 10, borderWidth: 1, borderColor: '#E8927C30' },
-  instructionHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  hintCard: { margin: 16, marginBottom: 4 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
 });
