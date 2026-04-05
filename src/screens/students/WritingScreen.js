@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -430,7 +429,6 @@ export default function WritingScreen() {
       durationSeconds,
       details: { word_count: wordCount, char_count: (draftRef.current || '').length },
     });
-    checkQuestProgress(profile.id, 'Writing');
   };
 
   // Check student's copy against the original story
@@ -466,15 +464,10 @@ export default function WritingScreen() {
         },
       });
       if (result.isPassing) {
-        checkQuestProgress(profile.id, 'Writing');
+        Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
+      } else {
+        Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
       }
-    }
-
-    // Speak feedback
-    if (result.isPassing) {
-      Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
-    } else {
-      Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
     }
   };
 
@@ -611,7 +604,6 @@ export default function WritingScreen() {
     Speech.speak(`Great job! You wrote the letter ${selectedItem.label}!`, { rate: 0.9 });
     setSuccessVisible(true);
     if (profile?.id) {
-      checkQuestProgress(profile.id, 'Writing');
       logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
     }
   };

@@ -10,7 +10,6 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
 import c from '../../components/student/candyTokens';
-import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -188,10 +187,6 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
 
     if (isCorrect) {
       setScore(s => s + 1);
-      if (userId) {
-        checkQuestProgress(userId, 'Writing');
-        checkQuestProgress(userId, 'Spelling');
-      }
       Speech.speak('Correct! Well done!', { rate: 0.85 });
       // Bounce animation
       Animated.spring(bounceAnim, { toValue: 1, useNativeDriver: true, friction: 4 }).start();

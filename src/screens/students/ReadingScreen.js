@@ -11,7 +11,6 @@ import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
-import { checkQuestProgress } from '../../lib/questHelper';
 import { supabase } from '../../lib/supabase';
 
 // Color palette — cycled by level number
@@ -128,7 +127,6 @@ export default function ReadingScreen() {
         durationSeconds: duration,
         details: { storyId: selectedStory.id, storyTitle: selectedStory.title, level: selectedStory.level },
       });
-      checkQuestProgress(profile.id, 'Reading');
     }
     setSelectedStory(null);
   };

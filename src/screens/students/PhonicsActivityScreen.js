@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import c from '../../components/student/candyTokens';
-import { checkQuestProgress } from '../../lib/questHelper';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -263,7 +262,6 @@ function BlendGame({ onBack, userId, items }) {
     speakPhonemeSequenceThenWord(current.phonemes, current.word);
     setBlended(true);
     setScore(s => s + 1);
-    if (userId) checkQuestProgress(userId, 'Phonics');
   };
 
   const handleNext = () => {
@@ -377,7 +375,6 @@ function RhymeGame({ onBack, userId, items }) {
     if (isCorrect) {
       Speech.speak('Great job! They rhyme!', { rate: 0.85 });
       setScore(s => s + 1);
-      if (userId) checkQuestProgress(userId, 'Phonics');
     } else {
       Speech.speak(`Not quite! ${current.correct} rhymes with ${current.target}.`, { rate: 0.85 });
     }
@@ -535,7 +532,6 @@ function SegmentGame({ onBack, userId, items }) {
     if (isCorrect) {
       Speech.speak(`That's right! ${current.word} has ${current.count} sounds.`, { rate: 0.85 });
       setScore(s => s + 1);
-      if (userId) checkQuestProgress(userId, 'Phonics');
     } else {
       Speech.speak(`${current.word} has ${current.count} sounds. Let's try again next time!`, { rate: 0.85 });
     }

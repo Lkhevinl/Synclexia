@@ -8,7 +8,6 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
-import { checkQuestProgress } from '../../lib/questHelper';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
 import StudentButton from '../../components/student/StudentButton';
@@ -60,8 +59,6 @@ export default function PhonicsScreen() {
   const handlePress = (item) => {
     Speech.speak(item.label, { rate: 0.9, pitch: 1.1 });
     if (profile?.id) {
-      checkQuestProgress(profile.id, 'Phonics');
-      checkQuestProgress(profile.id, 'Practice');
       tapCountRef.current += 1;
       const now = Date.now();
       // Log a batch session every 60 seconds (score = taps since last log)
