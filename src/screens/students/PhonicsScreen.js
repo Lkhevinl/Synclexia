@@ -119,9 +119,9 @@ export default function PhonicsScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.cardInner}>
-                      <Icon name={item.icon || 'mic'} size={80} color="#fff" />
-                      <Text style={{ fontSize: 48, fontWeight: 'bold', marginTop: 12, marginBottom: 8, color: '#fff' }}>{item.label}</Text>
-                      <Icon name="volume-2" size={28} color="rgba(255,255,255,0.8)" />
+                      <Icon name={item.icon || 'mic'} size={50} color="#fff" />
+                      <Text style={styles.cardPhonetic}>{item.label}</Text>
+                      <Icon name="volume-2" size="md" color="rgba(255,255,255,0.8)" style={{ marginTop: 8 }} />
                     </View>
                   </TouchableOpacity>
                 );
