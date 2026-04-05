@@ -117,18 +117,6 @@ export default function Sidebar({ visible, onClose }) {
                 <>
                   <Text style={s.groupLabel}>MY LEARNING</Text>
                   <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => navigate('Quests')}>
-                      <View style={[s.iconWrap, { backgroundColor: c.primary + '20' }]}><Ionicons name="trophy-outline" size={20} color={c.primary} /></View>
-                      <Text style={s.rowLabel}>My Quests</Text>
-                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
-                    </TouchableOpacity>
-                    <View style={s.divider} />
-                    <TouchableOpacity style={s.row} onPress={() => navigate('Leaderboard')}>
-                      <View style={[s.iconWrap, { backgroundColor: c.level + '30' }]}><Ionicons name="podium-outline" size={20} color={c.level} /></View>
-                      <Text style={s.rowLabel}>Leaderboard</Text>
-                      <Ionicons name="chevron-forward" size={20} color="#D0D9E0" />
-                    </TouchableOpacity>
-                    <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
                       <View style={[s.iconWrap, { backgroundColor: c.achievement + '30' }]}><Ionicons name="sparkles-outline" size={20} color={c.achievement} /></View>
                       <Text style={s.rowLabel}>AI Insights</Text>

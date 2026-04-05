@@ -54,16 +54,6 @@ const MESSAGES = {
     "Clap along to the syllables to feel the rhythm of each word! 👏",
     "Can you hear the sound at the start of each word? Focus! 🦻",
   ],
-  Quests: [
-    "Quest time! 🏆 Complete activities to earn rewards and level up!",
-    "Each quest you finish brings you closer to becoming a reading champion! 🌟",
-    "Which quest will you tackle today? Pick your favourite! 🎯",
-  ],
-  Leaderboard: [
-    "See how you rank! 🏅 Keep practicing to climb higher!",
-    "The more you practice, the more XP you earn — keep going! ⚡",
-    "You're competing with yourself too — can you beat your last score? 🔥",
-  ],
   AIInsights: [
     "This is your full learning report! 📊 Check your strengths and focus areas.",
     "Tap any activity to jump straight to practicing it! 🚀",

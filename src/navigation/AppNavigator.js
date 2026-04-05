@@ -33,8 +33,6 @@ import PhonicsScreen from '../screens/students/PhonicsScreen';
 import WritingScreen from '../screens/students/WritingScreen';
 import ReadingScreen from '../screens/students/ReadingScreen';
 import ScanScreen from '../screens/students/ScanScreen';
-import QuestsScreen from '../screens/students/QuestScreen';
-import LeaderboardScreen from '../screens/students/LeaderboardScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
@@ -42,8 +40,6 @@ import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
 import AIInsightsScreen from '../screens/students/AIInsightsScreen';
-
-const ONBOARDING_KEY = '@synclexia_onboarding_complete';
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
@@ -249,8 +245,6 @@ function AppScreens() {
       <Stack.Screen name="Writing"                 component={withLexi(WritingScreen)} />
       <Stack.Screen name="Reading"                 component={withLexi(ReadingScreen)} />
       <Stack.Screen name="Scan"                    component={ScanScreen} />
-      <Stack.Screen name="Quests"                  component={withLexi(QuestsScreen)} />
-      <Stack.Screen name="Leaderboard"             component={withLexi(LeaderboardScreen)} />
       <Stack.Screen name="Support"                 component={SupportScreen} />
       <Stack.Screen name="About"                   component={AboutScreen} />
       <Stack.Screen name="Settings"                component={SettingsScreen} />
