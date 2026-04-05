@@ -88,7 +88,6 @@ export default function TeacherProgressScreen() {
     csv += `Period: Last ${daysBack} days\n\n`;
     csv += `Summary\n`;
     csv += `Total Sessions,${progress.totalSessions}\n`;
-    csv += `Total XP Earned,${progress.totalXP}\n`;
     csv += `Average Accuracy,${progress.avgAccuracy}%\n\n`;
     csv += `Activity Breakdown\n`;
     csv += `Activity Type,Sessions,Average Accuracy\n`;
@@ -99,9 +98,9 @@ export default function TeacherProgressScreen() {
     });
     
     csv += `\nRecent Sessions\n`;
-    csv += `Date,Activity,Score,Total,Accuracy,XP\n`;
+    csv += `Date,Activity,Score,Total,Accuracy\n`;
     progress.recentSessions.forEach(session => {
-      csv += `${new Date(session.created_at).toLocaleDateString()},${session.activity_type},${session.score},${session.total},${session.accuracy}%,${session.xp_earned || 0}\n`;
+      csv += `${new Date(session.created_at).toLocaleDateString()},${session.activity_type},${session.score},${session.total},${session.accuracy}%\n`;
     });
 
     try {

@@ -142,10 +142,6 @@ export default function ParentActivityLogScreen({ route }) {
             <Text style={s.summaryText}>{sessions.length} sessions</Text>
           </View>
           <View style={s.summaryItem}>
-            <Ionicons name="star-outline" size={20} color="#FF9800" />
-            <Text style={s.summaryText}>{totalXP} XP earned</Text>
-          </View>
-          <View style={s.summaryItem}>
             <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
             <Text style={s.summaryText}>{avgAcc}% avg</Text>
           </View>
@@ -206,7 +202,6 @@ const s = StyleSheet.create({
   sessionIcon:   { fontSize: 24, marginRight: tokens.spacing.md },
   sessionType:   { fontSize: 13, fontWeight: '600', color: '#333' },
   sessionScore:  { fontSize: 11, color: '#999', marginTop: 2 },
-  sessionXP:     { fontSize: 13, fontWeight: 'bold', color: '#7B1FA2', marginBottom: tokens.spacing.xs },
   accBadge:      { borderWidth: 1, borderRadius: 10, paddingHorizontal: tokens.spacing.sm, paddingVertical: 2 },
   accText:       { fontSize: 11, fontWeight: 'bold' },
   emptyBox:      { alignItems: 'center', paddingTop: 60 },
