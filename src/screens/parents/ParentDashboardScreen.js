@@ -167,7 +167,7 @@ export default function ParentDashboardScreen({ navigation }) {
     profileSubRef.current?.unsubscribe();
     sessionSubRef.current?.unsubscribe();
 
-    // Child profile changes (XP, level, streak)
+    // Child profile changes (streak updates)
     profileSubRef.current = supabase
       .channel(`parent-child-profile-${sid}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${sid}` },
@@ -446,11 +446,6 @@ export default function ParentDashboardScreen({ navigation }) {
                 <View style={s.snapItem}>
                   <Text style={[s.snapVal, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalSessions}</Text>
                   <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Sessions</Text>
-                </View>
-                <View style={s.snapDiv} />
-                <View style={s.snapItem}>
-                  <Text style={[s.snapVal, { color: '#4CAF50', fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalXP}</Text>
-                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>XP Earned</Text>
                 </View>
                 <View style={s.snapDiv} />
                 <View style={s.snapItem}>

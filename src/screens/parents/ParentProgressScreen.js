@@ -48,7 +48,7 @@ export default function ParentProgressScreen({ route }) {
     } catch (error) {
       console.warn('[ParentProgressScreen] load failed:', error);
       setError('Failed to load progress data. Please check your connection and try again.');
-      setProgress({ totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
+      setProgress({ totalSessions: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
       setAdaptive([]);
       setAiProfile(null);
     } finally {
@@ -113,11 +113,6 @@ export default function ParentProgressScreen({ route }) {
               <View style={s.summaryItem}>
                 <Text style={s.summaryVal}>{progress?.totalSessions ?? 0}</Text>
                 <Text style={s.summaryLbl}>Sessions</Text>
-              </View>
-              <View style={s.summaryDiv} />
-              <View style={s.summaryItem}>
-                <Text style={[s.summaryVal, { color: '#4CAF50' }]}>{progress?.totalXP ?? 0}</Text>
-                <Text style={s.summaryLbl}>XP Earned</Text>
               </View>
               <View style={s.summaryDiv} />
               <View style={s.summaryItem}>
@@ -259,7 +254,6 @@ export default function ParentProgressScreen({ route }) {
                     <Text style={s.sessionDate}>{new Date(session.created_at).toLocaleDateString()} · {session.score}/{session.total}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.sessionXP}>+{session.xp_earned} XP</Text>
                     <Text style={[s.sessionAcc, {
                       color: session.accuracy >= 70 ? '#4CAF50' : session.accuracy >= 40 ? '#FF9800' : '#F44336'
                     }]}>{session.accuracy}%</Text>

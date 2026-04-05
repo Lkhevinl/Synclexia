@@ -87,7 +87,6 @@ export default function ParentActivityLogScreen({ route }) {
 
   const groupedList = Object.entries(grouped).map(([date, items]) => ({ date, items }));
 
-  const totalXP = sessions.reduce((sum, s) => sum + (s.xp_earned || 0), 0);
   const avgAcc = sessions.length > 0
     ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / sessions.length)
     : 0;
@@ -108,7 +107,6 @@ export default function ParentActivityLogScreen({ route }) {
               <Text style={s.sessionScore}>{session.score}/{session.total} correct</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.sessionXP}>+{session.xp_earned} XP</Text>
               <View style={[s.accBadge, { backgroundColor: accColor + '20', borderColor: accColor }]}>
                 <Text style={[s.accText, { color: accColor }]}>{session.accuracy}%</Text>
               </View>
