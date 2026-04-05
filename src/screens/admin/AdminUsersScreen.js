@@ -219,14 +219,6 @@ export default function AdminUsersScreen({ route }) {
                 ))}
               </View>
               
-              <Text style={styles.inputLabel}>XP</Text>
-              <TextInput 
-                style={styles.input} 
-                value={String(editForm.xp)} 
-                onChangeText={(t) => setEditForm({...editForm, xp: t})}
-                keyboardType="numeric"
-              />
-              
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.saveBtn} onPress={saveUserEdit}>
                   <Text style={styles.saveBtnText}>Save Changes</Text>
@@ -258,9 +250,6 @@ const styles = StyleSheet.create({
   cellName: { fontWeight: 'bold', color: '#333' },
   cellDate: { fontSize: 10, color: '#999' },
   cell: { color: '#333' },
-  
-  lvlBadge: { backgroundColor: '#E3F2FD', width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  lvlText: { fontSize: 12, fontWeight: 'bold', color: '#1565C0' },
   
   trashBtn: { backgroundColor: '#EF5350', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   editBtn: { backgroundColor: '#0288D1', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },

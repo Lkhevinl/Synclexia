@@ -60,7 +60,6 @@ export default function TeacherAssignActivitiesScreen() {
   const getStudentId = (student) => student.profiles?.id ?? student.student_id;
   const getStudentName = (student) => student.profiles?.full_name ?? 'Student';
   const getStudentEmail = (student) => student.profiles?.email ?? '';
-  const getStudentXP = (student) => student.profiles?.xp ?? 0;
 
   const selectStudent = async (student) => {
     setSelectedStudent(student);
@@ -193,9 +192,6 @@ export default function TeacherAssignActivitiesScreen() {
         </Text>
         <Text style={styles.studentEmail}>{getStudentEmail(item) || 'No email'}</Text>
       </View>
-      <Text style={[styles.studentXP, isSelected && styles.studentXPActive]}>
-        {getStudentXP(item)} XP
-      </Text>
     </TouchableOpacity>
   );
 

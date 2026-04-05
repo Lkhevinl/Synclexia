@@ -43,7 +43,7 @@ export default function TeacherUsersScreen() {
       studentId:    e.profiles?.id        ?? e.student_id,
       full_name:    e.profiles?.full_name ?? 'Unknown',
       email:        e.profiles?.email     ?? '—',
-      xp:           e.profiles?.xp        ?? 0,
+      xp:           0,
     }));
     setUsers(students);
     setFilteredUsers(students);
@@ -66,7 +66,6 @@ export default function TeacherUsersScreen() {
 
 
   const StudentCard = ({ item }) => {
-    const level = Math.floor((item.xp || 0) / 100) + 1;
     const initial = (item.full_name || '?')[0].toUpperCase();
     return (
       <View style={styles.card}>
@@ -79,10 +78,6 @@ export default function TeacherUsersScreen() {
           <Text style={styles.cardDate}>Enrolled: {new Date(item.enrolledAt).toLocaleDateString()}</Text>
         </View>
         <View style={styles.cardRight}>
-          <View style={styles.lvlBadge}>
-            <Text style={styles.lvlText}>Lv {level}</Text>
-          </View>
-          <Text style={styles.xpText}>{item.xp} XP</Text>
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.trashBtn} onPress={() => removeStudent(item.enrollmentId, item.full_name)}>
               <Ionicons name="person-remove" size={18} color="#fff" />

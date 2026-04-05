@@ -85,11 +85,6 @@ export default function AdminSettingsScreen({ navigation }) {
               </View>
               <View style={styles.divider} />
               <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Level</Text>
-                  <Text style={styles.infoValue}>{Math.floor((profile?.xp || 0)/100) + 1}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Role</Text>
                   <View style={styles.roleBadge}>
                        <Text style={styles.roleText}>{profile?.role?.toUpperCase() || "USER"}</Text>

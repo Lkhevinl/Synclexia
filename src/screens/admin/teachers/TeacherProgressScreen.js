@@ -40,7 +40,6 @@ export default function TeacherProgressScreen() {
   // Null-safe helpers — profiles can be null if RLS blocks the query
   const getStudentId   = (s) => s?.profiles?.id   ?? s?.student_id;
   const getStudentName = (s) => s?.profiles?.full_name ?? 'Student';
-  const getStudentXP   = (s) => s?.profiles?.xp   ?? 0;
 
   const fetchStudents = async () => {
     const data = await fetchEnrollmentsWithProfiles(profile?.id);
@@ -171,9 +170,6 @@ export default function TeacherProgressScreen() {
                 <Text style={[styles.chipName, isActive && styles.chipNameActive]}>
                   {getStudentName(item).split(' ')[0]}
                 </Text>
-                <Text style={[styles.chipXP, isActive && styles.chipXPActive]}>
-                  {getStudentXP(item)} XP
-                </Text>
               </TouchableOpacity>
             );
           }}
@@ -203,10 +199,6 @@ export default function TeacherProgressScreen() {
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryValue}>{progress.totalSessions}</Text>
                 <Text style={styles.summaryLabel}>Sessions</Text>
-              </View>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>{progress.totalXP}</Text>
-                <Text style={styles.summaryLabel}>XP Earned</Text>
               </View>
               <View style={styles.summaryCard}>
                 <Text style={[styles.summaryValue, { color: progress.avgAccuracy >= 70 ? '#4CAF50' : '#FF9800' }]}>
@@ -258,7 +250,6 @@ export default function TeacherProgressScreen() {
                   <Text style={styles.sessionType}>{session.activity_type}</Text>
                   <Text style={styles.sessionScore}>
                     {session.score}/{session.total} ({session.accuracy}%)
-                    {session.xp_earned ? ` • +${session.xp_earned} XP` : ''}
                   </Text>
                 </View>
                 <Text style={styles.sessionTime}>
@@ -290,8 +281,6 @@ const styles = StyleSheet.create({
   chipAvatarText: { fontWeight: 'bold', color: '#3b5998', fontSize: 15 },
   chipName: { fontWeight: 'bold', color: '#333', fontSize: 13 },
   chipNameActive: { color: '#fff' },
-  chipXP: { fontSize: 11, color: '#999', marginTop: 2 },
-  chipXPActive: { color: 'rgba(255,255,255,0.8)' },
 
   // Time Range
   timeRow: { flexDirection: 'row', gap: 10, marginTop: 15 },

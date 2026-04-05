@@ -193,9 +193,6 @@ export default function TeacherEnrollmentScreen() {
                     {enrollment.profiles?.full_name || 'Unknown'}
                   </Text>
                   <Text style={[styles.studentEmail, { color: colors.onSurfaceMuted }]}>{enrollment.profiles?.email}</Text>
-                  <Text style={styles.studentLevel}>
-                    Level {Math.floor((enrollment.profiles?.xp || 0) / 100) + 1}
-                  </Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -283,7 +280,6 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   studentName: { fontWeight: 'bold', fontSize: 15 },
   studentEmail: { fontSize: 12, marginTop: 2 },
-  studentLevel: { fontSize: 11, color: '#0288D1', marginTop: 3 },
   removeBtn: { padding: 5 },
   emptyText: { textAlign: 'center', marginTop: tokens.spacing.lg, fontSize: 14 },
 });

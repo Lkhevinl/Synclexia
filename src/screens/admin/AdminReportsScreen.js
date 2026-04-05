@@ -166,12 +166,8 @@ export default function AdminReportsScreen() {
             <Text style={styles.metricValue}>{item.totalSessions}</Text>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Accuracy</Text>
+            <Text style={styles.metricLabel}>Avg Accuracy</Text>
             <Text style={styles.metricValue}>{item.avgAccuracy.toFixed(1)}%</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Total XP</Text>
-            <Text style={styles.metricValue}>{item.totalXP}</Text>
           </View>
         </View>
 
@@ -242,12 +238,6 @@ export default function AdminReportsScreen() {
                   label="Avg Accuracy"
                   value={`${activity.avgAccuracy.toFixed(1)}%`}
                   color={activity.avgAccuracy >= 80 ? '#4CAF50' : '#FF9800'}
-                />
-                <MetricRow
-                  icon="trophy"
-                  label="Total XP"
-                  value={activity.totalXP}
-                  color="#FF9800"
                 />
                 <MetricRow
                   icon="checkmark-circle"
@@ -354,7 +344,6 @@ export default function AdminReportsScreen() {
                   value={`${item.avgAccuracy.toFixed(1)}%`}
                   color="#2196F3"
                 />
-                <MetricRow icon="trophy" label="Total XP" value={item.totalXP} color="#FF9800" />
               </View>
             )}
           />
