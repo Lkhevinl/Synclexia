@@ -1,7 +1,7 @@
 // ...existing code from AdminEnrollmentScreen.js...
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
@@ -157,9 +157,9 @@ export default function TeacherEnrollmentScreen() {
           </View>
           <TouchableOpacity style={styles.codeValueRow} onPress={copyCode} activeOpacity={0.7}>
             <Text style={[styles.codeValue, { color: colors.onSurface }]} selectable>{teacherCode || '------'}</Text>
-            <Ionicons
-              name={codeCopied ? 'checkmark-circle' : 'copy-outline'}
-              size={20}
+            <Icon
+              name={codeCopied ? 'check-circle' : 'copy'}
+              size="md"
               color={codeCopied ? '#4CAF50' : colors.primary}
               style={{ marginLeft: tokens.spacing.sm }}
             />
@@ -167,7 +167,7 @@ export default function TeacherEnrollmentScreen() {
         </View>
 
         <TouchableOpacity style={styles.refreshBtn} onPress={regenerateTeacherCode} disabled={generatingCode}>
-          <Ionicons name="refresh" size={20} color="#fff" />
+          <Icon name="refresh-cw" size="md" color="#fff" />
           <Text style={styles.refreshText}>Generate New Code</Text>
         </TouchableOpacity>
       </View>
@@ -199,7 +199,7 @@ export default function TeacherEnrollmentScreen() {
                 style={styles.removeBtn}
                 onPress={() => removeStudent(enrollment.id)}
               >
-                <Ionicons name="close-circle" size={24} color="#E53935" />
+                <Icon name="x-circle" size="md" color="#E53935" />
               </TouchableOpacity>
             </View>
           ))

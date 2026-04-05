@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, DeviceEventEmitter } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -138,7 +138,7 @@ function StudentTabs() {
               shadowOpacity: 0.3,
               shadowRadius: 4,
             }}>
-              <Ionicons name={iconName} size={26} color={focused ? '#fff' : c.textMuted} />
+              <Icon name={iconName} size="lg" color={focused ? '#fff' : c.textMuted} />
             </View>
           );
         },
@@ -159,7 +159,7 @@ function StudentTabs() {
               onPress={() => DeviceEventEmitter.emit('openSidebar')}
               activeOpacity={0.7}
             >
-              <Ionicons name="menu-outline" size={26} color="#bbb" />
+              <Icon name="menu" size="lg" color="#bbb" />
             </TouchableOpacity>
           ),
         }}
@@ -209,7 +209,7 @@ function AppScreens() {
   if ((profileError || timedOut) && !profile) {
     return (
       <View style={navStyles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color="#E53935" />
+        <Icon name="alert-circle" size="xl" color="#E53935" />
         <Text style={navStyles.errorTitle}>Couldn't Load Your Profile</Text>
         <Text style={navStyles.errorMsg}>
           {timedOut

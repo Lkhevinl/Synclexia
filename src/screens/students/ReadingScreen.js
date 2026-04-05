@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -145,7 +145,7 @@ export default function ReadingScreen() {
         </View>
       ) : stories.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 40 }}>📚</Text>
+          <Icon name="book-open" size="xl" color="#78909C" />
           <Text style={{ color: '#78909C', marginTop: 10 }}>No stories yet. Ask an admin to add content.</Text>
         </View>
       ) : (
@@ -166,7 +166,7 @@ export default function ReadingScreen() {
               <View style={styles.bookContent}>
                 <Text style={styles.bookLevel}>Lvl {item.level}</Text>
                 <Text style={styles.bookTitle}>{item.title}</Text>
-                <Ionicons name="book" size={24} color="rgba(255,255,255,0.5)" style={{ marginTop: 10 }} />
+                <Icon name="book-open" size="md" color="rgba(255,255,255,0.5)" style={{ marginTop: 10 }} />
               </View>
             </TouchableOpacity>
           )}
@@ -180,7 +180,7 @@ export default function ReadingScreen() {
             <View style={[styles.readerHeader, { backgroundColor: selectedStory ? storyColor(selectedStory.level) : c.primaryDark }]}>
               <Text style={styles.readerTitle} numberOfLines={1}>{selectedStory?.title}</Text>
               <TouchableOpacity onPress={closeBook} style={styles.closeBtn}>
-                <Ionicons name="close" size={22} color="#fff" />
+                <Icon name="x" size="md" color="#fff" />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.readerContent}>
@@ -206,7 +206,7 @@ export default function ReadingScreen() {
                 onPress={handleSpeak}
                 style={styles.speakBtn}
               >
-                <Ionicons name={isSpeaking ? 'stop' : 'volume-high'} size={22} color="#fff" />
+                <Icon name={isSpeaking ? 'square' : 'volume-2'} size="md" color="#fff" />
                 <Text style={styles.speakText}>{isSpeaking ? 'Stop' : 'Read to Me'}</Text>
               </StudentButton>
             </View>

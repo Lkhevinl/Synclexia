@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
 import StudentButton from '../../components/student/StudentButton';
@@ -138,7 +138,7 @@ export default function ScanScreen() {
 
       <StudentCard variant="tinted" style={styles.hintCard}>
         <View style={styles.hintRow}>
-          <Ionicons name="information-circle" size={22} color={c.primary} />
+          <Icon name="info" size="md" color={c.primary} />
           <Text style={styles.hintText}>
             <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
             Tap "Take Photo" or the gallery icon, then tap "Listen Now" to hear the text read aloud!
@@ -155,7 +155,7 @@ export default function ScanScreen() {
             ) : (
               <View style={styles.placeholderState}>
                 <View style={styles.iconCircle}>
-                  <Ionicons name="scan" size={50} color={c.primary} />
+                  <Icon name="scan-line" size="lg" color={c.primary} />
                 </View>
                 <Text style={styles.placeholderTitle}>Ready to Scan</Text>
                 <Text style={styles.placeholderSub}>Take a photo of a book or worksheet</Text>
@@ -175,12 +175,12 @@ export default function ScanScreen() {
         {/* 2. ACTION BUTTONS */}
         <View style={styles.controls}>
           <StudentButton variant="primary" onPress={() => onScanPress('camera')} disabled={isScanning} style={styles.btnCamera}>
-            <Ionicons name="camera" size={22} color="#fff" />
+            <Icon name="camera" size="md" color="#fff" />
             <Text style={styles.btnText}>Take Photo</Text>
           </StudentButton>
 
           <TouchableOpacity style={styles.btnGallery} onPress={() => onScanPress('gallery')} disabled={isScanning}>
-            <Ionicons name="images" size={26} color={c.primary} />
+            <Icon name="images" size="lg" color={c.primary} />
           </TouchableOpacity>
         </View>
 
@@ -188,7 +188,7 @@ export default function ScanScreen() {
         {!isScanning && (
           <StudentCard style={styles.resultCard}>
             <View style={styles.resultHeader}>
-              <Ionicons name="text-outline" size={22} color={c.textMuted} />
+              <Icon name="text" size="md" color={c.textMuted} />
               <Text style={styles.resultLabel}>Detected Text</Text>
             </View>
             <ScrollView style={styles.resultScroll} showsVerticalScrollIndicator nestedScrollEnabled>
@@ -205,7 +205,7 @@ export default function ScanScreen() {
               }}
               style={styles.speakBtn}
             >
-              <Ionicons name="volume-high" size={22} color="#fff" />
+              <Icon name="volume-2" size="md" color="#fff" />
               <Text style={styles.speakText}>Listen Now</Text>
             </StudentButton>
           </StudentCard>

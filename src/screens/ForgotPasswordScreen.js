@@ -4,7 +4,7 @@ import {
   Image, ActivityIndicator, Animated, ScrollView, StatusBar,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         <View style={[styles.illustrationArea, { height: SH * 0.4, backgroundColor: colors.surface }]}>
           <Image source={require('../../assets/7-removebg-preview.png')} style={styles.illustration} resizeMode="contain" />
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={22} color={colors.onSurface} />
+            <Icon name="chevron-left" size="md" color={colors.onSurface} />
           </TouchableOpacity>
         </View>
 
@@ -123,11 +123,7 @@ export default function ForgotPasswordScreen({ navigation }) {
                   focused    && { borderColor: colors.primary },
                   inputError && { borderColor: ERROR_RED },
                 ]}>
-                  <Ionicons
-                    name="mail-outline" size={20}
-                    color={inputError ? ERROR_RED : focused ? colors.primary : colors.onSurfaceMuted}
-                    style={styles.inputIcon}
-                  />
+                  <Icon name="mail" size="sm" color={inputError ? ERROR_RED : focused ? colors.primary : colors.onSurfaceMuted} style={styles.inputIcon} />
                   <TextInput
                     style={[styles.input, { color: colors.onSurface }]}
                     placeholder="Enter your email"
@@ -147,7 +143,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
               {!!inputError && (
                 <View style={styles.errorRow}>
-                  <Ionicons name="alert-circle" size={18} color={ERROR_RED} />
+                  <Icon name="alert-circle" size="sm" color={ERROR_RED} />
                   <Text style={[styles.errorTxt, { color: ERROR_RED }]}>{inputError}</Text>
                 </View>
               )}
@@ -162,14 +158,14 @@ export default function ForgotPasswordScreen({ navigation }) {
                 {loading
                   ? <ActivityIndicator color={colors.onPrimary} />
                   : <>
-                      <Ionicons name="send" size={20} color={colors.onPrimary} style={{ marginRight: 8 }} />
+                      <Icon name="send" size="md" color={colors.onPrimary} style={{ marginRight: 8 }} />
                       <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Send Reset Link</Text>
                     </>
                 }
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => navigation.goBack()} style={styles.secondaryLink}>
-                <Ionicons name="arrow-back" size={18} color={colors.primary} />
+                <Icon name="arrow-left" size="md" color={colors.primary} />
                 <AppText variant="caption" style={{ color: colors.primary, fontWeight: '600' }}> Back to Login</AppText>
               </TouchableOpacity>
             </>
@@ -177,10 +173,10 @@ export default function ForgotPasswordScreen({ navigation }) {
             <Animated.View style={{ opacity: successFade, transform: [{ translateY: successSlide }], alignItems: 'center' }}>
               <View style={styles.envelopeWrap}>
                 <View style={[styles.envelopeCircle, { backgroundColor: colors.primary, shadowColor: colors.primary }]}>
-                  <Ionicons name="mail" size={38} color={colors.onPrimary} />
+                  <Icon name="mail" size="xl" color={colors.onPrimary} />
                 </View>
                 <View style={[styles.checkBadge, { backgroundColor: SUCCESS_GREEN }]}>
-                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Icon name="check" size="sm" color="#fff" />
                 </View>
               </View>
 
@@ -202,14 +198,14 @@ export default function ForgotPasswordScreen({ navigation }) {
                   : cooldown > 0
                     ? <Text style={styles.resendTxtDisabled}>Resend in {cooldown}s</Text>
                     : <>
-                        <Ionicons name="refresh" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                        <Icon name="refresh-cw" size="md" color={colors.primary} style={{ marginRight: 6 }} />
                         <Text style={[styles.resendTxt, { color: colors.primary }]}>Resend Email</Text>
                       </>
                 }
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-                <Ionicons name="log-in-outline" size={20} color={colors.onPrimary} style={{ marginRight: 8 }} />
+                <Icon name="log-in" size="md" color={colors.onPrimary} style={{ marginRight: 8 }} />
                 <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>Back to Login</Text>
               </TouchableOpacity>
 

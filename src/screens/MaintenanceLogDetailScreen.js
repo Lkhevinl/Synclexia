@@ -10,7 +10,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import AppHeader from '../components/AppHeader';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -219,7 +219,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
         <View style={styles.headerCard}>
           <View style={styles.headerTop}>
             <View style={[styles.iconBadge, { backgroundColor: typeConfig.color + '20' }]}>
-              <Ionicons name={typeConfig.icon} size={32} color={typeConfig.color} />
+              <Icon name={typeConfig.icon} size="lg" color={typeConfig.color} />
             </View>
             <View style={styles.headerText}>
               <Text style={styles.title} numberOfLines={3}>
@@ -272,10 +272,10 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             <View style={styles.ratingContainer}>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Ionicons
+                  <Icon
                     key={star}
-                    name={star <= log.device_info.rating ? "star" : "star-outline"}
-                    size={24}
+                    name={star <= log.device_info.rating ? 'star' : 'star-off'}
+                    size="md"
                     color="#FBC02D"
                     style={styles.star}
                   />
@@ -294,7 +294,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             <Text style={styles.cardTitle}>Admin Response</Text>
             <View style={styles.adminReplyContainer}>
               <View style={styles.adminReplyHeader}>
-                <Ionicons name="chatbubble-outline" size={20} color="#2196F3" />
+                <Icon name="message-square" size="md" color="#2196F3" />
                 <Text style={styles.adminReplyLabel}>Admin replied:</Text>
               </View>
               <Text style={styles.adminReplyText}>{log.legacyReply}</Text>
@@ -308,7 +308,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
             <Text style={styles.cardTitle}>Admin Comment</Text>
             <View style={styles.adminReplyContainer}>
               <View style={styles.adminReplyHeader}>
-                <Ionicons name="chatbubble-outline" size={20} color="#2196F3" />
+                <Icon name="message-square" size="md" color="#2196F3" />
                 <Text style={styles.adminReplyLabel}>Admin commented:</Text>
               </View>
               <Text style={styles.adminReplyText}>{log.admin_comment}</Text>
@@ -325,9 +325,9 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                 onPress={() => setShowCommentSection(!showCommentSection)}
                 style={styles.toggleButton}
               >
-                <Ionicons
+                <Icon
                   name={showCommentSection ? "chevron-up" : "chevron-down"}
-                  size={20}
+                  size="md"
                   color="#607D8B"
                 />
               </TouchableOpacity>
@@ -362,7 +362,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                     onPress={submitAdminComment}
                     disabled={submittingComment}
                   >
-                    <Ionicons name="send" size={20} color="#fff" />
+                    <Icon name="send" size="md" color="#fff" />
                     <Text style={styles.submitCommentText}>
                       {submittingComment ? 'Sending...' : 'Send Comment'}
                     </Text>
@@ -386,7 +386,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
           <Text style={styles.cardTitle}>Additional Information</Text>
 
           <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={20} color="#607D8B" />
+            <Icon name="user" size="md" color="#607D8B" />
             <Text style={styles.infoLabel}>Reported by:</Text>
             <Text style={styles.infoValue}>{reporterName}</Text>
             {log.reporter_role && (
@@ -398,7 +398,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.category && (
             <View style={styles.infoRow}>
-              <Ionicons name="folder-outline" size={20} color="#607D8B" />
+              <Icon name="folder" size="md" color="#607D8B" />
               <Text style={styles.infoLabel}>Category:</Text>
               <Text style={styles.infoValue}>{log.category}</Text>
             </View>
@@ -406,7 +406,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.device_info && !log.device_info.legacy && (
             <View style={styles.infoRow}>
-              <Ionicons name="phone-portrait-outline" size={20} color="#607D8B" />
+              <Icon name="smartphone" size="md" color="#607D8B" />
               <Text style={styles.infoLabel}>Device:</Text>
               <Text style={styles.infoValue}>
                 {log.device_info.platform} {log.device_info.platformVersion}
@@ -419,7 +419,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
 
           {log.device_info?.legacy && (
             <View style={styles.infoRow}>
-              <Ionicons name="archive-outline" size={20} color="#607D8B" />
+              <Icon name="archive" size="md" color="#607D8B" />
               <Text style={styles.infoLabel}>Source:</Text>
               <Text style={styles.infoValue}>Legacy Feedback System</Text>
             </View>
@@ -435,7 +435,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
               onPress={() => setShowStatusModal(true)}
               disabled={updating}
             >
-              <Ionicons name="create-outline" size={20} color="#fff" />
+              <Icon name="pencil" size="md" color="#fff" />
               <Text style={styles.actionBtnText}>
                 {updating ? 'Updating...' : 'Update Status'}
               </Text>
@@ -448,7 +448,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
           <View style={styles.actionCard}>
             <Text style={styles.cardTitle}>Update Your Report</Text>
             <TouchableOpacity style={[styles.actionBtn, styles.updateBtn]}>
-              <Ionicons name="add-outline" size={20} color="#fff" />
+              <Icon name="plus" size="md" color="#fff" />
               <Text style={styles.actionBtnText}>Add More Details</Text>
             </TouchableOpacity>
           </View>
@@ -470,7 +470,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                 onPress={() => setShowStatusModal(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
 
@@ -491,12 +491,12 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
                   disabled={updating || log.status === option.value}
                 >
                   <View style={styles.statusOptionContent}>
-                    <Ionicons name={option.icon} size={24} color={option.color} />
+                    <Icon name={option.icon} size="md" color={option.color} />
                     <Text style={[styles.statusOptionText, { color: option.color }]}>
                       {option.label}
                     </Text>
                     {log.status === option.value && (
-                      <Ionicons name="checkmark-circle" size={20} color={option.color} />
+                      <Icon name="check-circle" size="md" color={option.color} />
                     )}
                   </View>
                 </TouchableOpacity>

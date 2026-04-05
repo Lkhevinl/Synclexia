@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import AppHeader from '../../../components/AppHeader';
@@ -85,7 +85,7 @@ export default function TeacherFeedbackScreen() {
                  <View style={{flex: 1, marginLeft: 10}}>
                      <Text style={[styles.name, { color: colors.onSurface }]}>{item.profiles?.full_name || "Unknown"}</Text>
                      <View style={{flexDirection:'row'}}>
-                        {[...Array(item.rating || 5)].map((_,i)=><Ionicons key={i} name="star" size={16} color="#FBC02D"/>)}
+                        {[...Array(item.rating || 5)].map((_,i)=><Icon key={i} name="star" size="sm" color="#FBC02D"/>)}
                      </View>
                  </View>
                  <Text style={[styles.date, { color: colors.onSurfaceMuted }]}>{new Date(item.created_at).toLocaleDateString()}</Text>
@@ -122,7 +122,7 @@ export default function TeacherFeedbackScreen() {
                              }
                            });
                      }}>
-                         <Ionicons name="send" size={24} color={colors.primary} />
+                         <Icon name="send" size="lg" color={colors.primary} />
                      </TouchableOpacity>
                  </View>
              )}

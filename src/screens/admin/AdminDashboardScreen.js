@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -108,7 +108,7 @@ export default function AdminDashboardScreen({ navigation }) {
   const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.iconBox, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={32} color="#fff" />
+        <Icon name={icon} size="lg" color="#fff" />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{title}</Text>
@@ -119,7 +119,7 @@ export default function AdminDashboardScreen({ navigation }) {
           <Text style={styles.badgeText}>{badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={24} color="#CFD8DC" />
+      <Icon name="chevron-forward" size="md" color="#CFD8DC" />
     </TouchableOpacity>
   );
 
@@ -157,11 +157,11 @@ export default function AdminDashboardScreen({ navigation }) {
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={styles.errorTitle}>Connection Error</Text>
           <Text style={styles.errorMessage}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={initializeAdminDashboard}>
-            <Ionicons name="refresh" size={20} color="#fff" />
+            <Icon name="refresh-cw" size="sm" color="#fff" />
             <Text style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -171,16 +171,16 @@ export default function AdminDashboardScreen({ navigation }) {
           <LinearGradient colors={theme.headerGradient} style={styles.enhancedHeader}>
         <View style={styles.enhancedHeaderContent}>
           <View style={styles.headerTextSection}>
-            <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 👋</Text>
+            <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}!</Text>
             <Text style={styles.enhancedSubGreeting}>Manage platform content and users</Text>
           </View>
           <View style={styles.enhancedHeaderIcons}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.enhancedIconBtn}>
-              <Ionicons name="notifications-outline" size={28} color="#fff" />
+              <Icon name="bell" size="md" color="#fff" />
               {notifications.length > 0 && <View style={styles.enhancedRedDot} />}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.enhancedIconBtn}>
-              <Ionicons name="menu-outline" size={30} color="#fff" />
+              <Icon name="menu" size="lg" color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -192,7 +192,7 @@ export default function AdminDashboardScreen({ navigation }) {
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: '#E8F5E9' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="people" size={24} color="#4CAF50" />
+              <Icon name="users" size="md" color="#4CAF50" />
             </View>
             <Text style={[styles.statNumber, { color: '#4CAF50' }]}>{studentCount}</Text>
             <Text style={styles.statLabel}>Students</Text>
@@ -201,7 +201,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#F3E5F5' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="heart" size={24} color="#9C27B0" />
+              <Icon name="heart" size="md" color="#9C27B0" />
             </View>
             <Text style={[styles.statNumber, { color: '#9C27B0' }]}>{parentCount}</Text>
             <Text style={styles.statLabel}>Parents</Text>
@@ -210,7 +210,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="library" size={24} color="#2196F3" />
+              <Icon name="library" size="md" color="#2196F3" />
             </View>
             <Text style={[styles.statNumber, { color: '#2196F3' }]}>{Object.values(contentStats).reduce((a, b) => a + b, 0)}</Text>
             <Text style={styles.statLabel}>Content</Text>
@@ -219,7 +219,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#FFF3E0' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="trending-up" size={24} color="#FF9800" />
+              <Icon name="trending-up" size="md" color="#FF9800" />
             </View>
             <Text style={[styles.statNumber, { color: '#FF9800' }]}>98%</Text>
             <Text style={styles.statLabel}>Uptime</Text>
@@ -229,7 +229,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
         {/* QUICK ACTIONS SECTION */}
         <View style={styles.sectionHeader}>
-          <Ionicons name="flash" size={20} color={colors.primary} />
+          <Icon name="zap" size="sm" color={colors.primary} />
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
@@ -244,7 +244,7 @@ export default function AdminDashboardScreen({ navigation }) {
             <LinearGradient colors={['#667eea', '#764ba2']} style={styles.enhancedCardGradient}>
               <View style={styles.enhancedCardHeader}>
                 <View style={styles.enhancedIconWrap}>
-                  <Ionicons name="layers" size={32} color="#fff" />
+                  <Icon name="layers" size="lg" color="#fff" />
                 </View>
                 <Text style={styles.enhancedCardTitle}>Manage Contents</Text>
               </View>
@@ -253,7 +253,7 @@ export default function AdminDashboardScreen({ navigation }) {
               </Text>
               <View style={styles.enhancedCardFooter}>
                 <Text style={styles.enhancedCardStats}>{Object.values(contentStats).reduce((a, b) => a + b, 0)} total items</Text>
-                <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.8)" />
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -266,7 +266,7 @@ export default function AdminDashboardScreen({ navigation }) {
           >
             <LinearGradient colors={['#f093fb', '#f5576c']} style={styles.enhancedCardGradient}>
               <View style={styles.enhancedIconWrap}>
-                <Ionicons name="people" size={32} color="#fff" />
+                <Icon name="users" size="lg" color="#fff" />
               </View>
               <Text style={styles.enhancedCardTitle}>Users</Text>
               <Text style={styles.enhancedCardSubtitle}>{studentCount + parentCount} total</Text>
@@ -281,7 +281,7 @@ export default function AdminDashboardScreen({ navigation }) {
           >
             <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.enhancedCardGradient}>
               <View style={styles.enhancedIconWrap}>
-                <Ionicons name="construct" size={32} color="#fff" />
+                <Icon name="wrench" size="lg" color="#fff" />
               </View>
               <Text style={styles.enhancedCardTitle}>Maintenance</Text>
               <Text style={styles.enhancedCardSubtitle}>Logs & Issues</Text>
@@ -297,7 +297,7 @@ export default function AdminDashboardScreen({ navigation }) {
             <View style={styles.submenuHeader}>
               <Text style={styles.submenuTitle}>User Management</Text>
               <TouchableOpacity onPress={() => setUsersModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -306,13 +306,13 @@ export default function AdminDashboardScreen({ navigation }) {
                 onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'student' }); }}
               >
                 <View style={[styles.submenuIcon, { backgroundColor: '#C8E6C9' }]}>
-                  <Ionicons name="school" size={24} color="#2E7D32" />
+                  <Icon name="graduation-cap" size="md" color="#2E7D32" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.submenuItemTitle}>Learners (Students)</Text>
                   <Text style={styles.submenuItemSub}>{studentCount} total</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                <Icon name="chevron-forward" size="sm" color="#ccc" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -320,13 +320,13 @@ export default function AdminDashboardScreen({ navigation }) {
                 onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'parent' }); }}
               >
                 <View style={[styles.submenuIcon, { backgroundColor: '#F8BBD0' }]}>
-                  <Ionicons name="people" size={24} color="#C2185B" />
+                  <Icon name="users" size="md" color="#C2185B" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.submenuItemTitle}>Parents</Text>
                   <Text style={styles.submenuItemSub}>{parentCount} total</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                <Icon name="chevron-forward" size="sm" color="#ccc" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -334,13 +334,13 @@ export default function AdminDashboardScreen({ navigation }) {
                 onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminParentLinks'); }}
               >
                 <View style={[styles.submenuIcon, { backgroundColor: '#E1BEE7' }]}>
-                  <Ionicons name="people-circle" size={24} color="#6A1B9A" />
+                  <Icon name="users" size="md" color="#6A1B9A" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.submenuItemTitle}>Parent Links</Text>
                   <Text style={styles.submenuItemSub}>Manage relationships</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                <Icon name="chevron-forward" size="sm" color="#ccc" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -348,13 +348,13 @@ export default function AdminDashboardScreen({ navigation }) {
                 onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminNotifications'); }}
               >
                 <View style={[styles.submenuIcon, { backgroundColor: '#FFCCBC' }]}>
-                  <Ionicons name="megaphone" size={24} color="#D84315" />
+                  <Icon name="megaphone" size="md" color="#D84315" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.submenuItemTitle}>Send Announcements</Text>
                   <Text style={styles.submenuItemSub}>Notify all users</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
+                <Icon name="chevron-forward" size="sm" color="#ccc" />
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -368,7 +368,7 @@ export default function AdminDashboardScreen({ navigation }) {
             <View style={styles.modalHeaderContent}>
               <Text style={styles.modalTitle}>Notifications 🔔</Text>
               <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -377,14 +377,14 @@ export default function AdminDashboardScreen({ navigation }) {
               contentContainerStyle={{ paddingBottom: 10 }}
               ListEmptyComponent={
                 <View style={styles.emptyNotifContainer}>
-                  <Ionicons name="notifications-off-outline" size={48} color="#ddd" />
+                  <Icon name="bell-off" size="lg" color="#ddd" />
                   <Text style={styles.emptyNotifText}>No notifications yet</Text>
                 </View>
               }
               renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <View style={styles.notifIconBox}>
-                    <Ionicons name="megaphone" size={20} color="#4c669f" />
+                    <Icon name="megaphone" size="md" color="#4c669f" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.notifTitle}>{item.title}</Text>

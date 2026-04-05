@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
@@ -80,15 +80,15 @@ function ModeSelector({ onSelect }) {
   }, []);
 
   const modes = [
-    { id: 'dictation', emoji: '🔊', label: 'Listen & Spell',   desc: 'Hear the word, then tap the letters to spell it', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'hint',      emoji: '💡', label: 'Picture Spelling',  desc: 'See the picture and hint, then spell the word',    gradient: ['#9C27B0', '#6A1B9A'] },
+    { id: 'dictation', icon: 'volume-2',  label: 'Listen & Spell',   desc: 'Hear the word, then tap the letters to spell it', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'hint',      icon: 'lightbulb', label: 'Picture Spelling',  desc: 'See the picture and hint, then spell the word',    gradient: ['#9C27B0', '#6A1B9A'] },
   ];
 
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
         <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
-          <Text style={ms.headerEmoji}>🔤</Text>
+          <Icon name="type" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Spelling Practice</Text>
           <Text style={ms.sub}>Choose how you want to learn</Text>
         </View>
@@ -99,14 +99,14 @@ function ModeSelector({ onSelect }) {
           <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
-                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+                <Icon name={m.icon} size="md" color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={ms.cardLabel}>{m.label}</Text>
                 <Text style={ms.cardDesc}>{m.desc}</Text>
               </View>
               <View style={ms.playBtn}>
-                <Ionicons name="play" size={20} color="#fff" />
+                <Icon name="play" size="md" color="#fff" />
               </View>
             </View>
             <View style={ms.cardShine} />
@@ -246,9 +246,9 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
     <View style={[game.container, { backgroundColor: accentColor + '10' }]}>
       {/* Header */}
       <StudentPageHeader
-        title={mode === 'dictation' ? 'Listen & Spell 🔊' : 'Picture Spelling 💡'}
+        title={mode === 'dictation' ? 'Listen & Spell' : 'Picture Spelling'}
         onBack={onBack}
-        right={<Text style={game.headerSub}>{wordIdx + 1} / {wordList.length}  ⭐ {score}</Text>}
+        right={<Text style={game.headerSub}>{wordIdx + 1} / {wordList.length}  {score}</Text>}
       />
 
       <ScrollView contentContainerStyle={game.body} keyboardShouldPersistTaps="always">
@@ -269,7 +269,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
 
           {/* Speak button */}
           <TouchableOpacity style={[game.speakBtn, { borderColor: accentColor }]} onPress={speakWord}>
-            <Ionicons name="volume-high" size={22} color={accentColor} />
+            <Icon name="volume-2" size="md" color={accentColor} />
             <Text style={[game.speakBtnText, { color: accentColor }]}>
               {mode === 'dictation' ? 'Hear the word again' : 'Hear how it sounds'}
             </Text>
@@ -291,7 +291,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
           {/* Feedback */}
           {checked && (
             <Text style={[game.feedback, correct ? game.feedbackCorrect : game.feedbackWrong]}>
-              {correct ? '🎉 Correct!' : `The word is  "${current.word}"`}
+              {correct ? 'Correct!' : `The word is "${current.word}"`}
             </Text>
           )}
 
@@ -300,7 +300,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
             {!checked ? (
               <>
                 <TouchableOpacity style={[game.clearBtn]} onPress={handleClear}>
-                  <Ionicons name="backspace-outline" size={20} color="#78909C" />
+                  <Icon name="delete" size="md" color="#78909C" />
                   <Text style={game.clearBtnText}>Clear</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -314,7 +314,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
             ) : (
               <TouchableOpacity style={[game.nextBtn, { backgroundColor: accentColor }]} onPress={handleNext}>
                 <Text style={game.nextBtnText}>
-                  {wordIdx + 1 >= wordList.length ? 'See Results 🏆' : 'Next Word →'}
+                  {wordIdx + 1 >= wordList.length ? 'See Results' : 'Next Word'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -382,7 +382,7 @@ const game = StyleSheet.create({
 function FinishScreen({ score, total, onBack }) {
   const { colors } = useTheme();
   const percent = Math.round((score / total) * 100);
-  const msg = percent >= 80 ? '🌟 Spelling Star!' : percent >= 50 ? '👏 Nice Work!' : '📚 Keep Practising!';
+  const msg = percent >= 80 ? 'Spelling Star!' : percent >= 50 ? 'Nice Work!' : 'Keep Practising!';
 
   useEffect(() => {
     Speech.speak(`${msg.replace(/[^\w\s!]/g, '')}. You spelled ${score} out of ${total} words correctly!`, { rate: 0.85 });
@@ -391,11 +391,11 @@ function FinishScreen({ score, total, onBack }) {
   return (
     <View style={[fin.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Results 🏆"
+        title="Results"
         onBack={onBack}
       />
       <View style={fin.card}>
-        <Text style={fin.trophyEmoji}>🏆</Text>
+        <Icon name="trophy" size="xl" color="#FF9800" />
         <Text style={fin.msg}>{msg}</Text>
         <Text style={fin.scoreText}>{score} / {total} words</Text>
         <Text style={fin.percentText}>{percent}% Accuracy</Text>
@@ -406,7 +406,7 @@ function FinishScreen({ score, total, onBack }) {
         </View>
 
         <TouchableOpacity style={fin.btn} onPress={onBack}>
-          <Text style={fin.btnText}>Play Again 🔄</Text>
+          <Text style={fin.btnText}>Play Again</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -457,7 +457,7 @@ export default function SpellingScreen() {
           </View>
         ) : wordBank.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: 40 }}>🔤</Text>
+            <Icon name="type" size="xl" color="#78909C" />
             <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask an admin to add content.</Text>
           </View>
         ) : mode ? (
@@ -466,7 +466,7 @@ export default function SpellingScreen() {
           <>
             <StudentCard variant="tinted" style={root.hintCard}>
               <View style={root.hintRow}>
-                <Ionicons name="information-circle" size={22} color={c.primary} />
+                <Icon name="info" size="md" color={c.primary} />
                 <Text style={root.hintText}>
                   <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
                   Choose a mode — "Listen & Spell" plays the word aloud, "Picture Spelling" shows a hint. Tap letters in order to spell!

@@ -14,7 +14,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -185,31 +185,31 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Email */}
       <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="mail-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+        <Icon name="mail" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Email Address" placeholderTextColor={colors.onSurfaceMuted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
       </View>
 
       {/* Username */}
       <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="person-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+        <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Username" placeholderTextColor={colors.onSurfaceMuted} value={fullName} onChangeText={setFullName} />
       </View>
 
       {/* Password */}
       <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+        <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Password" placeholderTextColor={colors.onSurfaceMuted} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
         <TouchableOpacity onPress={() => setShowPassword(p => !p)}>
-          <Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.onSurfaceMuted} />
+          <Icon name={showPassword ? 'eye' : 'eye-off'} size="sm" color={colors.onSurfaceMuted} />
         </TouchableOpacity>
       </View>
 
       {/* Confirm Password */}
       <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Ionicons name="lock-closed-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+        <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Password Again" placeholderTextColor={colors.onSurfaceMuted} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showConfirmPassword} />
         <TouchableOpacity onPress={() => setShowConfirmPassword(p => !p)}>
-          <Ionicons name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.onSurfaceMuted} />
+          <Icon name={showConfirmPassword ? 'eye' : 'eye-off'} size="sm" color={colors.onSurfaceMuted} />
         </TouchableOpacity>
       </View>
 
@@ -230,7 +230,7 @@ export default function SignUpScreen({ navigation }) {
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
+        <Icon name="arrow-left" size="md" color="#fff" />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -245,7 +245,7 @@ export default function SignUpScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surfaceCard, width: SCREEN_WIDTH - 60 }]}>
             <View style={[styles.checkmarkContainer, { borderColor: SUCCESS_GREEN }]}>
-              <Ionicons name="checkmark" size={44} color={SUCCESS_GREEN} />
+              <Icon name="check" size="xl" color={SUCCESS_GREEN} />
             </View>
             <AppText variant="heading" style={styles.modalTitle}>Account created successfully!</AppText>
             <AppText variant="caption" style={[styles.modalMessage, { color: colors.onSurfaceMuted }]}>

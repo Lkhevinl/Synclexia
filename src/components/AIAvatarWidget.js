@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   ScrollView, ActivityIndicator, Animated, Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -13,7 +13,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const scoreColor  = s => s >= 75 ? '#4CAF50' : s >= 50 ? '#FF9800' : '#EF5350';
-const scoreLabel  = s => s >= 75 ? 'Strong Learner! 🌟' : s >= 50 ? 'Making Progress! 💪' : 'Keep Going! 🚀';
+const scoreLabel  = s => s >= 75 ? 'Strong Learner!' : s >= 50 ? 'Making Progress!' : 'Keep Going!';
 
 // ── sub-components ─────────────────────────────────────────────────────────
 function ProgressBar({ value, color }) {
@@ -184,7 +184,7 @@ export default function AIAvatarWidget() {
                 <Text style={styles.lexiRole}>Your AI Learning Buddy</Text>
               </View>
               <TouchableOpacity onPress={close} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color="#90A4AE" />
+                <Icon name="x" size="md" color="#90A4AE" />
               </TouchableOpacity>
             </LinearGradient>
 
@@ -225,11 +225,14 @@ export default function AIAvatarWidget() {
                     {/* ── Strengths ── */}
                     {data.strengths.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>✅  Your Strengths</Text>
+                        <View style={styles.sectionTitleRow}>
+                          <Icon name="check-circle" size="sm" color="#4CAF50" />
+                          <Text style={styles.sectionTitle}>  Your Strengths</Text>
+                        </View>
                         {data.strengths.slice(0, 3).map(item => (
                           <View key={item.activity} style={styles.itemRow}>
                             <View style={[styles.itemIconWrap, { backgroundColor: '#E8F5E9' }]}>
-                              <Text style={styles.itemIcon}>{item.icon}</Text>
+                              <Icon name={item.icon} size="sm" color="#4CAF50" />
                             </View>
                             <View style={{ flex: 1 }}>
                               <Text style={styles.itemLabel}>{item.label}</Text>
@@ -244,11 +247,14 @@ export default function AIAvatarWidget() {
                     {/* ── Weaknesses ── */}
                     {data.weaknesses.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>❌  Areas to Focus</Text>
+                        <View style={styles.sectionTitleRow}>
+                          <Icon name="x-circle" size="sm" color="#EF5350" />
+                          <Text style={styles.sectionTitle}>  Areas to Focus</Text>
+                        </View>
                         {data.weaknesses.slice(0, 3).map(item => (
                           <View key={item.activity} style={styles.itemRow}>
                             <View style={[styles.itemIconWrap, { backgroundColor: '#FFF3E0' }]}>
-                              <Text style={styles.itemIcon}>{item.icon}</Text>
+                              <Icon name={item.icon} size="sm" color="#FF9800" />
                             </View>
                             <View style={{ flex: 1 }}>
                               <Text style={styles.itemLabel}>{item.label}</Text>
@@ -262,7 +268,7 @@ export default function AIAvatarWidget() {
                   </>
                 ) : (
                   <View style={styles.emptyWrap}>
-                    <Text style={styles.emptyEmoji}>🎯</Text>
+                    <Icon name="target" size="xl" color="#E8927C" />
                     <Text style={styles.emptyText}>
                       Complete some activities and I'll track your strengths and focus areas!
                     </Text>
@@ -276,9 +282,9 @@ export default function AIAvatarWidget() {
                   activeOpacity={0.85}
                 >
                   <LinearGradient colors={['#FF8C69', '#C87456']} style={styles.reportGradient}>
-                    <Ionicons name="analytics-outline" size={20} color="#fff" />
+                    <Icon name="bar-chart" size="md" color="#fff" />
                     <Text style={styles.reportText}>View Full Report</Text>
-                    <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.75)" />
+                    <Icon name="arrow-right" size="xs" color="rgba(255,255,255,0.75)" />
                   </LinearGradient>
                 </TouchableOpacity>
               </ScrollView>
@@ -437,7 +443,8 @@ const styles = StyleSheet.create({
 
   /* Sections */
   section: { marginBottom: 18 },
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: '#455A64', marginBottom: 10, letterSpacing: 0.2 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  sectionTitle: { fontSize: 13, fontWeight: '800', color: '#455A64', letterSpacing: 0.2 },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -451,7 +458,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  itemIcon: { fontSize: 20 },
   itemLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 5 },
   itemPct: { fontSize: 13, fontWeight: '800', minWidth: 38, textAlign: 'right' },
 

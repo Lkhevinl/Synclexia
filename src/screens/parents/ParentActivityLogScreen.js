@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -10,10 +10,16 @@ import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 
 const ACTIVITY_LABELS = {
-  phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
-  phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
-  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
+  phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
+  phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
+  reading: 'Reading', phonological_awareness: 'Phonological',
+  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
+};
+const ACTIVITY_ICON_NAMES = {
+  phonics: 'mic', phonics_blend: 'link-2', phonics_rhyme: 'music',
+  phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
+  reading: 'book-open', phonological_awareness: 'headphones',
+  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
 };
 
 export default function ParentActivityLogScreen({ route }) {
@@ -101,7 +107,7 @@ export default function ParentActivityLogScreen({ route }) {
         const accColor = session.accuracy >= 70 ? '#4CAF50' : session.accuracy >= 40 ? '#FF9800' : '#F44336';
         return (
           <View key={session.id || i} style={s.sessionCard}>
-            <Text style={s.sessionIcon}>{ACTIVITY_LABELS[session.activity_type]?.split(' ')[0] || '📊'}</Text>
+            <Icon name={ACTIVITY_ICON_NAMES[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
             <View style={{ flex: 1 }}>
               <Text style={s.sessionType}>{ACTIVITY_LABELS[session.activity_type] || session.activity_type}</Text>
               <Text style={s.sessionScore}>{session.score}/{session.total} correct</Text>
@@ -138,11 +144,11 @@ export default function ParentActivityLogScreen({ route }) {
       {sessions.length > 0 && (
         <View style={s.summaryBar}>
           <View style={s.summaryItem}>
-            <Ionicons name="layers-outline" size={20} color={colors.primary} />
+            <Icon name="layers" size="md" color={colors.primary} />
             <Text style={s.summaryText}>{sessions.length} sessions</Text>
           </View>
           <View style={s.summaryItem}>
-            <Ionicons name="checkmark-circle-outline" size={20} color="#4CAF50" />
+            <Icon name="check-circle" size="md" color="#4CAF50" />
             <Text style={s.summaryText}>{avgAcc}% avg</Text>
           </View>
         </View>
@@ -152,11 +158,11 @@ export default function ParentActivityLogScreen({ route }) {
         <View style={s.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : error ? (
         <View style={s.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={s.errorTitle}>Connection Error</Text>
           <Text style={s.errorMessage}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => fetchSessions(daysBack)}>
-            <Ionicons name="refresh" size={22} color="#fff" />
+            <Icon name="refresh-cw" size="md" color="#fff" />
             <Text style={s.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -169,7 +175,7 @@ export default function ParentActivityLogScreen({ route }) {
           contentContainerStyle={s.list}
           ListEmptyComponent={
             <View style={s.emptyBox}>
-              <Ionicons name="time-outline" size={60} color="#ddd" />
+              <Icon name="clock" size="lg" color="#ddd" />
               <Text style={s.emptyTitle}>No activity in this period</Text>
               <Text style={s.emptyHint}>Encourage {name} to practice daily!</Text>
             </View>

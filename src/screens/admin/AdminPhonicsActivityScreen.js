@@ -7,16 +7,16 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 
 const GAME_TYPES = [
-  { id: 'blend',   label: 'Blend It 🔗',        color: '#FF9800' },
-  { id: 'rhyme',   label: 'Rhyme Time 🎵',       color: '#E91E63' },
-  { id: 'segment', label: 'Count Sounds 🔢',     color: '#4CAF50' },
+  { id: 'blend',   label: 'Blend It',      color: '#FF9800' },
+  { id: 'rhyme',   label: 'Rhyme Time',     color: '#E91E63' },
+  { id: 'segment', label: 'Count Sounds',   color: '#4CAF50' },
 ];
 const LEVELS = [1, 2, 3];
 
@@ -211,13 +211,13 @@ export default function AdminPhonicsActivityScreen() {
                   <Text style={styles.cardLevel}>L{item.difficulty_level ?? '—'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );

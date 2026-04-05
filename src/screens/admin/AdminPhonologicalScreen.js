@@ -7,16 +7,16 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 
 const TASK_TYPES = [
-  { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
-  { id: 'rime',     label: 'Rime 🎵',     color: '#9C27B0' },
-  { id: 'phoneme',  label: 'Phoneme 🔤',  color: '#E91E63' },
+  { id: 'syllable', label: 'Syllable', color: '#2196F3' },
+  { id: 'rime',     label: 'Rime',     color: '#9C27B0' },
+  { id: 'phoneme',  label: 'Phoneme',  color: '#E91E63' },
 ];
 
 const FORM_HINTS = {
@@ -137,7 +137,7 @@ export default function AdminPhonologicalScreen() {
   return (
     <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
-      <Text style={styles.header}>Phonological Content 🎧</Text>
+      <Text style={styles.header}>Phonological Content</Text>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
@@ -213,13 +213,13 @@ export default function AdminPhonologicalScreen() {
                   <Text style={styles.cardLevel}>L{item.difficulty_level ?? 'All'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );

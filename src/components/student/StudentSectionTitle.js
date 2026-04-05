@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../icons/Icon';
 import c from './candyTokens';
 
 export default function StudentSectionTitle({ title, subtitle, iconName }) {
@@ -10,7 +10,7 @@ export default function StudentSectionTitle({ title, subtitle, iconName }) {
         <Text style={styles.title}>{title}</Text>
         {iconName ? (
           <View style={styles.iconBadge}>
-            <Ionicons name={iconName} size={20} color={c.primary} />
+            <Icon name={iconName} size="md" color={c.primary} />
           </View>
         ) : null}
       </View>

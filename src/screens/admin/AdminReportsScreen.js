@@ -11,7 +11,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -91,7 +91,7 @@ export default function AdminReportsScreen() {
         style={[styles.tabBtn, isActive && styles.tabBtnActive]}
         onPress={() => setTab(value)}
       >
-        <Ionicons name={icon} size={20} color={isActive ? '#fff' : '#607D8B'} />
+        <Icon name={icon} size="md" color={isActive ? '#fff' : '#607D8B'} />
         <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -154,7 +154,7 @@ export default function AdminReportsScreen() {
           </View>
           {item.streak > 0 && (
             <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={20} color="#FF5722" />
+              <Icon name="flame" size="md" color="#FF5722" />
               <Text style={styles.streakText}>{item.streak}d</Text>
             </View>
           )}
@@ -396,7 +396,7 @@ export default function AdminReportsScreen() {
         title="Reports & Analytics"
         right={
           <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
-            <Ionicons name="download-outline" size={24} color="#fff" />
+            <Icon name="download" size="md" color="#fff" />
           </TouchableOpacity>
         }
       />

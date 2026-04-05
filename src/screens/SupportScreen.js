@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, TouchableOpacity, ScrollView, TextInput, StyleSheet, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import AppHeader from '../components/AppHeader';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
@@ -77,7 +77,7 @@ export default function SupportScreen({ route }) {
         <View style={{ flexDirection: 'row', marginBottom: tokens.spacing.md }}>
           {[1, 2, 3, 4, 5].map(star => (
             <TouchableOpacity key={star} onPress={() => setRating(star)}>
-              <Ionicons name={star <= rating ? 'star' : 'star-outline'} size={40} color="#FBC02D" />
+              <Icon name={star <= rating ? 'star' : 'star-off'} size="xl" color="#FBC02D" />
             </TouchableOpacity>
           ))}
         </View>
@@ -93,7 +93,7 @@ export default function SupportScreen({ route }) {
           <AppText variant="body" style={{ fontWeight: 'bold', color: colors.onPrimary }}>Submit</AppText>
         </TouchableOpacity>
         <View style={[styles.infoBox, { backgroundColor: colors.primaryLight }]}>
-          <Ionicons name="information-circle" size={20} color={colors.primary} />
+          <Icon name="info" size="md" color={colors.primary} />
           <AppText variant="caption" style={[styles.infoText, { color: colors.primary }]}>
             Your feedback is logged in our maintenance system for better tracking and response.
           </AppText>
@@ -111,20 +111,20 @@ export default function SupportScreen({ route }) {
         <View style={styles.teamGrid}>
           <View style={styles.memberCard}>
             <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-              <Ionicons name="person" size={30} color="#fff" />
+              <Icon name="user" size="lg" color="#fff" />
             </View>
             <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Project Manager</AppText>
           </View>
           <View style={styles.row}>
             <View style={styles.memberCard}>
               <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Ionicons name="person" size={30} color="#fff" />
+                <Icon name="user" size="lg" color="#fff" />
               </View>
               <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Lead Developer</AppText>
             </View>
             <View style={styles.memberCard}>
               <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Ionicons name="person" size={30} color="#fff" />
+                <Icon name="user" size="lg" color="#fff" />
               </View>
               <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>UI/UX Designer</AppText>
             </View>
@@ -132,13 +132,13 @@ export default function SupportScreen({ route }) {
           <View style={styles.row}>
             <View style={styles.memberCard}>
               <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Ionicons name="person" size={30} color="#fff" />
+                <Icon name="user" size="lg" color="#fff" />
               </View>
               <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Business Analyst</AppText>
             </View>
             <View style={styles.memberCard}>
               <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Ionicons name="person" size={30} color="#fff" />
+                <Icon name="user" size="lg" color="#fff" />
               </View>
               <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>QA Tester</AppText>
             </View>

@@ -3,7 +3,7 @@ import {
   View, StyleSheet, TouchableOpacity, TextInput,
   Alert, ScrollView, ActivityIndicator, Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import AppHeader from '../components/AppHeader';
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -25,7 +25,7 @@ const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder
   <View style={styles.fieldGroup}>
     <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>{label}</AppText>
     <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-      <Ionicons name="lock-closed-outline" size={22} color={colors.onSurfaceMuted} />
+      <Icon name="lock" size="md" color={colors.onSurfaceMuted} />
       <TextInput
         style={[styles.input, { color: colors.onSurface }]}
         value={value}
@@ -38,7 +38,7 @@ const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder
         returnKeyType="next"
       />
       <TouchableOpacity onPress={onToggle} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.onSurfaceMuted} />
+        <Icon name={show ? 'eye-off' : 'eye'} size="sm" color={colors.onSurfaceMuted} />
       </TouchableOpacity>
     </View>
   </View>
@@ -104,7 +104,7 @@ export default function ChangePasswordScreen({ navigation }) {
         {/* Banner */}
         <View style={[styles.banner, { backgroundColor: colors.primaryLight }]}>
           <View style={[styles.bannerIcon, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
-            <Ionicons name="shield-checkmark" size={40} color={colors.primary} />
+            <Icon name="shield-check" size="lg" color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText variant="body" style={{ fontWeight: 'bold', color: colors.primary }}>Secure Your Account</AppText>
@@ -144,9 +144,9 @@ export default function ChangePasswordScreen({ navigation }) {
 
           {confirm.length > 0 && (
             <View style={styles.matchRow}>
-              <Ionicons
-                name={newPass === confirm ? 'checkmark-circle' : 'close-circle'}
-                size={16}
+              <Icon
+                name={newPass === confirm ? 'check-circle' : 'x-circle'}
+                size="xs"
                 color={newPass === confirm ? '#4CAF50' : '#F44336'}
               />
               <AppText variant="caption" style={{ color: newPass === confirm ? '#4CAF50' : '#F44336' }}>
@@ -164,7 +164,7 @@ export default function ChangePasswordScreen({ navigation }) {
               <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color={colors.onPrimary} />
+                <Icon name="check-circle" size="md" color={colors.onPrimary} />
                 <AppText variant="body" style={{ color: colors.onPrimary, fontWeight: 'bold', marginLeft: tokens.spacing.sm }}>Update Password</AppText>
               </>
             )}

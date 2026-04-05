@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -76,7 +76,7 @@ export default function PhonicsScreen() {
         <StudentPageHeader title="Phonics" />
         <StudentCard variant="tinted" style={styles.hintCard}>
           <View style={styles.hintRow}>
-            <Ionicons name="information-circle" size={22} color={c.primary} />
+            <Icon name="info" size="md" color={c.primary} />
             <Text style={styles.hintText}>
               <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
               Tap any card to hear the sound! Use "Phonics Activities" to play interactive games.
@@ -88,7 +88,7 @@ export default function PhonicsScreen() {
           onPress={() => navigation.navigate('PhonicsActivity')}
           style={styles.activitiesBtn}
         >
-          <Ionicons name="game-controller" size={22} color="#fff" />
+          <Icon name="gamepad-2" size="md" color="#fff" />
           <Text style={styles.activitiesBtnText}>Phonics Activities</Text>
         </StudentButton>
       </View>
@@ -97,7 +97,7 @@ export default function PhonicsScreen() {
         <ActivityIndicator size="large" color={c.primary} style={{ margin: 40 }} />
       ) : items.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>🗣️</Text>
+              <Icon name="mic" size="xl" color="#9575CD" />
               <Text style={styles.emptyTitle}>No phonics items yet</Text>
               <Text style={styles.emptyHint}>Ask your teacher to add phonics cards!</Text>
             </View>
@@ -119,9 +119,9 @@ export default function PhonicsScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={styles.cardInner}>
-                      <Text style={styles.cardLetter}>{item.icon}</Text>
-                      <Text style={styles.cardPhonetic}>{item.label}</Text>
-                      <Ionicons name="volume-high" size={22} color="rgba(255,255,255,0.8)" style={{ marginTop: 8 }} />
+                      <Icon name={item.icon || 'mic'} size={80} color="#fff" />
+                      <Text style={{ fontSize: 48, fontWeight: 'bold', marginTop: 12, marginBottom: 8, color: '#fff' }}>{item.label}</Text>
+                      <Icon name="volume-2" size={28} color="rgba(255,255,255,0.8)" />
                     </View>
                   </TouchableOpacity>
                 );
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  emptyIcon: { fontSize: 64, marginBottom: 16 },
+  emptyIcon: { marginBottom: 12 },
   emptyTitle: { fontSize: 20, fontWeight: 'bold', color: '#37474F', marginBottom: 8 },
   emptyHint:  { fontSize: 14, color: '#78909C', textAlign: 'center', lineHeight: 20 },
 });

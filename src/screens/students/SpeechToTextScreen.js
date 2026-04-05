@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -133,10 +133,15 @@ export default function SpeechToTextScreen() {
               <Text style={styles.transcriptText}>{transcript}</Text>
             ) : (
               <Text style={styles.placeholderText}>
-                {isListening ? 'Listening… speak now 🎙️' : 'Your spoken words will appear here.'}
+                {isListening ? 'Listening… speak now' : 'Your spoken words will appear here.'}
               </Text>
             )}
-            {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
+            {error && (
+              <View style={styles.errorRow}>
+                <Icon name="alert-triangle" size="sm" color="#F44336" />
+                <Text style={styles.errorText}> {error}</Text>
+              </View>
+            )}
           </ScrollView>
         </StudentCard>
 
@@ -146,7 +151,7 @@ export default function SpeechToTextScreen() {
             onPress={handleClear}
             disabled={!transcript}
           >
-            <Ionicons name="trash-outline" size={22} color={c.textMuted} />
+            <Icon name="trash" size="md" color={c.textMuted} />
             <Text style={styles.clearBtnText}>Clear</Text>
           </TouchableOpacity>
 
@@ -155,14 +160,14 @@ export default function SpeechToTextScreen() {
             onPress={toggleListening}
             activeOpacity={0.8}
           >
-            <Ionicons name={isListening ? 'stop' : 'mic'} size={36} color="#fff" />
+            <Icon name={isListening ? 'square' : 'mic'} size="xl" color="#fff" />
           </TouchableOpacity>
 
           <View style={styles.clearBtn} />
         </View>
 
         {!AVAILABLE && (
-          <Text style={styles.devNote}>⚙️ Install expo-speech-recognition for live recognition</Text>
+          <Text style={styles.devNote}>Install expo-speech-recognition for live recognition</Text>
         )}
       </ScrollView>
     </ScreenWrapper>
@@ -177,7 +182,8 @@ const styles = StyleSheet.create({
   transcriptContent: { padding: 20, flexGrow: 1 },
   transcriptText: { fontSize: 22, color: c.text, lineHeight: 36 },
   placeholderText: { fontSize: 16, color: '#B0BEC5', textAlign: 'center', marginTop: 40, lineHeight: 26 },
-  errorText: { fontSize: 14, color: '#F44336', marginTop: 16, textAlign: 'center' },
+  errorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, justifyContent: 'center' },
+  errorText: { fontSize: 14, color: '#F44336', textAlign: 'center' },
   controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 100 },
   micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: c.primaryDark, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:6 },
   micBtnActive: { backgroundColor: '#C62828' },

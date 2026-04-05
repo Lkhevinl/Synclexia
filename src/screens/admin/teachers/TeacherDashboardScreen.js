@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, Image, Platform, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -89,7 +89,7 @@ export default function TeacherDashboardScreen({ navigation }) {
       >
         <View style={styles.cardTop}>
           <View style={styles.gridIconWrapper}>
-            <Ionicons name={icon} size={isDesktop ? 34 : 30} color="#fff" />
+            <Icon name={icon} size={isDesktop ? 'xl' : 'lg'} color="#fff" />
           </View>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{count}</Text>
@@ -101,7 +101,7 @@ export default function TeacherDashboardScreen({ navigation }) {
         </View>
         <View style={styles.cardFooter}>
           <Text style={styles.itemsLabel}>items</Text>
-          <Ionicons name="arrow-forward" size={22} color="rgba(255,255,255,0.9)" />
+          <Icon name="arrow-right" size={22} color="rgba(255,255,255,0.9)" />
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -140,7 +140,7 @@ export default function TeacherDashboardScreen({ navigation }) {
 
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
-                <Ionicons name="notifications" size={23} color="#fff" />
+                <Icon name="bell" size="md" color="#fff" />
                 {notifications.length > 0 && (
                   <View style={styles.notifBadge}>
                     <Text style={styles.notifBadgeText}>{notifications.length > 9 ? '9+' : notifications.length}</Text>
@@ -148,7 +148,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
-                <Ionicons name="menu" size={25} color="#fff" />
+                <Icon name="menu" size="md" color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -160,7 +160,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                 <Text style={styles.greeting}>
                   Hello, {profile?.full_name?.split(' ')[0] || 'Teacher'}!
                 </Text>
-                <Text style={styles.waveEmoji}>👋</Text>
+                <Icon name="hand" size="lg" color="#FF9800" />
               </View>
               <Text style={styles.subGreeting}>
                 Welcome back! Manage learning content for all students.
@@ -168,7 +168,7 @@ export default function TeacherDashboardScreen({ navigation }) {
             </View>
             {profile?.status === 'active' && (
               <View style={styles.statusBadge}>
-                <Ionicons name="shield-checkmark" size={isDesktop ? 16 : 14} color="#4CAF50" />
+                <Icon name="shield-check" size={isDesktop ? 'sm' : 'xs'} color="#4CAF50" />
                 <Text style={styles.statusText}>Active</Text>
               </View>
             )}
@@ -188,7 +188,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           end={{ x: 1, y: 0 }}
         >
           <View style={styles.tipIcon}>
-            <Ionicons name="bulb" size={isDesktop ? 24 : 20} color="#FFD700" />
+            <Icon name="lightbulb" size={isDesktop ? 'lg' : 'md'} color="#FFD700" />
           </View>
           <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
         </LinearGradient>
@@ -200,7 +200,7 @@ export default function TeacherDashboardScreen({ navigation }) {
             <Text style={styles.sectionSubtitle}>Click any card to manage content</Text>
           </View>
           <TouchableOpacity style={styles.refreshBtn} onPress={fetchContentStats}>
-            <Ionicons name="refresh" size={isDesktop ? 20 : 18} color="#9C27B0" />
+            <Icon name="refresh-cw" size={isDesktop ? 'md' : 'sm'} color="#9C27B0" />
           </TouchableOpacity>
         </View>
 
@@ -253,28 +253,28 @@ export default function TeacherDashboardScreen({ navigation }) {
           <View style={[styles.statsContainer, isDesktop && styles.statsContainerDesktop]}>
             <View style={[styles.statCard, styles.statCardPrimary]}>
               <LinearGradient colors={['#667eea', '#764ba2']} style={styles.statGradient}>
-                <Ionicons name="albums" size={32} color="#fff" />
+                <Icon name="layers" size="lg" color="#fff" />
                 <Text style={styles.statValue}>{totalItems}</Text>
                 <Text style={styles.statLabel}>Total Items</Text>
               </LinearGradient>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="text" size={28} color="#4CAF50" />
+                <Icon name="type" size="lg" color="#4CAF50" />
                 <Text style={[styles.statValue, { color: '#4CAF50' }]}>{contentStats.spelling}</Text>
                 <Text style={[styles.statLabel, { color: '#2E7D32' }]}>Spelling Words</Text>
               </View>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#E3F2FD' }]}>
-                <Ionicons name="volume-high" size={28} color="#2196F3" />
+                <Icon name="volume-2" size="lg" color="#2196F3" />
                 <Text style={[styles.statValue, { color: '#2196F3' }]}>{contentStats.phonics}</Text>
                 <Text style={[styles.statLabel, { color: '#1565C0' }]}>Phonics Items</Text>
               </View>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="musical-notes" size={28} color="#FF9800" />
+                <Icon name="music" size="lg" color="#FF9800" />
                 <Text style={[styles.statValue, { color: '#FF9800' }]}>{contentStats.phonicsActivities}</Text>
                 <Text style={[styles.statLabel, { color: '#E65100' }]}>Activities</Text>
               </View>
@@ -291,11 +291,11 @@ export default function TeacherDashboardScreen({ navigation }) {
           <View style={[styles.modalContent, isDesktop && styles.modalContentDesktop]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
-                <Ionicons name="notifications" size={24} color="#9C27B0" />
+                <Icon name="bell" size="md" color="#9C27B0" />
                 <Text style={styles.modalTitle}>Notifications</Text>
               </View>
               <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -304,7 +304,7 @@ export default function TeacherDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <View style={styles.notifIcon}>
-                    <Ionicons name="megaphone" size={22} color="#9C27B0" />
+                    <Icon name="megaphone" size="md" color="#9C27B0" />
                   </View>
                   <View style={styles.notifContent}>
                     <Text style={styles.notifTitle}>{item.title}</Text>
@@ -315,7 +315,7 @@ export default function TeacherDashboardScreen({ navigation }) {
               )}
               ListEmptyComponent={
                 <View style={styles.emptyNotif}>
-                  <Ionicons name="notifications-off-outline" size={48} color="#ccc" />
+                  <Icon name="bell-off" size="lg" color="#ccc" />
                   <Text style={styles.emptyNotifText}>No notifications yet</Text>
                 </View>
               }
@@ -428,9 +428,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.15)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4
-  },
-  waveEmoji: {
-    fontSize: isDesktop ? 24 : 20
   },
   subGreeting: {
     color: 'rgba(255,255,255,0.95)',

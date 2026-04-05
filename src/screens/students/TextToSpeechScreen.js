@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -166,7 +166,7 @@ export default function TextToSpeechScreen() {
 
         <StudentCard variant="tinted" style={styles.hintCard}>
           <View style={styles.hintRow}>
-            <Ionicons name="information-circle" size={22} color={c.primary} />
+            <Icon name="info" size="md" color={c.primary} />
             <Text style={styles.hintText}>
               <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
               Type or paste text, then tap Play to hear it. Each word lights up as it's spoken!
@@ -208,7 +208,7 @@ export default function TextToSpeechScreen() {
 
         <View style={styles.controls}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleUpload}>
-            <Ionicons name="document-attach-outline" size={24} color={c.textMuted} />
+            <Icon name="paperclip" size="md" color={c.textMuted} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -216,7 +216,7 @@ export default function TextToSpeechScreen() {
             onPress={speak}
             activeOpacity={0.85}
           >
-            <Ionicons name={isSpeaking ? 'stop' : 'play'} size={32} color="#fff" />
+            <Icon name={isSpeaking ? 'square' : 'play'} size="lg" color="#fff" />
           </TouchableOpacity>
         </View>
       </View>

@@ -14,7 +14,7 @@ import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
   ScrollView, ActivityIndicator, Animated, Dimensions, PanResponder,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Ellipse, Polygon } from 'react-native-svg';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
@@ -310,7 +310,7 @@ export default function LexiCompanion() {
   const firstName  = profile?.full_name?.split(' ')[0] ?? 'Learner';
   const score      = insightData?.overallScore ?? 0;
   const sColor     = score >= 75 ? '#4CAF50' : score >= 50 ? '#FF9800' : '#EF5350';
-  const sLabel     = score >= 75 ? 'Strong Learner! 🌟' : score >= 50 ? 'Making Progress! 💪' : 'Keep Going! 🚀';
+  const sLabel     = score >= 75 ? 'Strong Learner!' : score >= 50 ? 'Making Progress!' : 'Keep Going!';
   const owlOnLeft  = corner.x < SW / 2;
 
   // bubble slide direction based on owl side
@@ -338,14 +338,14 @@ export default function LexiCompanion() {
             <Text style={styles.bubbleText}>{currentMessage}</Text>
             <View style={styles.bubbleFooter}>
               <TouchableOpacity onPress={toggleMute} style={styles.muteRow} activeOpacity={0.7}>
-                <Ionicons name={muted ? 'volume-mute-outline' : 'volume-medium-outline'} size={18} color="#B0BEC5" />
+                <Icon name={muted ? 'volume-x' : 'volume-1'} size="sm" color="#B0BEC5" />
                 <Text style={styles.muteTxt}>{muted ? 'Unmute' : 'Mute'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => dismissBubble()}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="close" size={18} color="#CFD8DC" />
+                <Icon name="x" size="sm" color="#CFD8DC" />
               </TouchableOpacity>
             </View>
           </View>
@@ -399,14 +399,10 @@ export default function LexiCompanion() {
                 <Text style={styles.lexiRole}>Your AI Learning Buddy</Text>
               </View>
               <TouchableOpacity onPress={toggleMute} style={styles.muteIconBtn} activeOpacity={0.7}>
-                <Ionicons
-                  name={muted ? 'volume-mute-outline' : 'volume-medium-outline'}
-                  size={18}
-                  color={muted ? '#EF5350' : '#90A4AE'}
-                />
+                <Icon name={muted ? 'volume-x' : 'volume-1'} size="sm" color={muted ? '#EF5350' : '#90A4AE'} />
               </TouchableOpacity>
               <TouchableOpacity onPress={closePanel} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color="#90A4AE" />
+                <Icon name="x" size="md" color="#90A4AE" />
               </TouchableOpacity>
             </LinearGradient>
 
@@ -441,11 +437,14 @@ export default function LexiCompanion() {
 
                 {insightData.strengths.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>✅  Your Strengths</Text>
+                    <View style={styles.sectionTitleRow}>
+                      <Icon name="check-circle" size="sm" color="#4CAF50" />
+                      <Text style={styles.sectionTitle}>  Your Strengths</Text>
+                    </View>
                     {insightData.strengths.slice(0, 3).map(item => (
                       <View key={item.activity} style={styles.statRow}>
                         <View style={[styles.statIcon, { backgroundColor: '#E8F5E9' }]}>
-                          <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                          <Icon name={item.icon} size="sm" color="#4CAF50" />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.statLabel}>{item.label}</Text>
@@ -461,11 +460,14 @@ export default function LexiCompanion() {
 
                 {insightData.weaknesses.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>❌  Areas to Focus</Text>
+                    <View style={styles.sectionTitleRow}>
+                      <Icon name="x-circle" size="sm" color="#EF5350" />
+                      <Text style={styles.sectionTitle}>  Areas to Focus</Text>
+                    </View>
                     {insightData.weaknesses.slice(0, 3).map(item => (
                       <View key={item.activity} style={styles.statRow}>
                         <View style={[styles.statIcon, { backgroundColor: '#FFF3E0' }]}>
-                          <Text style={{ fontSize: 20 }}>{item.icon}</Text>
+                          <Icon name={item.icon} size="sm" color="#FF9800" />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.statLabel}>{item.label}</Text>
@@ -481,7 +483,7 @@ export default function LexiCompanion() {
 
                 {insightData.strengths.length === 0 && insightData.weaknesses.length === 0 && (
                   <View style={styles.emptyState}>
-                    <Text style={{ fontSize: 44, marginBottom: 12 }}>🎯</Text>
+                    <Icon name="target" size="xl" color="#E8927C" style={{ marginBottom: 12 }} />
                     <Text style={styles.emptyTxt}>Complete some activities first — I'll track your progress!</Text>
                   </View>
                 )}
@@ -492,9 +494,9 @@ export default function LexiCompanion() {
                   activeOpacity={0.85}
                 >
                   <LinearGradient colors={['#FF8C69', '#C87456']} style={styles.reportGradient}>
-                    <Ionicons name="analytics-outline" size={20} color="#fff" />
+                    <Icon name="bar-chart" size="sm" color="#fff" />
                     <Text style={styles.reportTxt}>View Full Report</Text>
-                    <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.75)" />
+                    <Icon name="arrow-right" size="xs" color="rgba(255,255,255,0.75)" />
                   </LinearGradient>
                 </TouchableOpacity>
               </ScrollView>
@@ -646,8 +648,9 @@ const styles = StyleSheet.create({
   progressTrack: { height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
   progressFill:  { height: '100%', borderRadius: 3 },
 
-  section:      { marginBottom: 18 },
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: '#455A64', marginBottom: 10, letterSpacing: 0.2 },
+  section:         { marginBottom: 18 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  sectionTitle:    { fontSize: 13, fontWeight: '800', color: '#455A64', letterSpacing: 0.2 },
   statRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   statIcon: {
     width: 42, height: 42, borderRadius: 12,

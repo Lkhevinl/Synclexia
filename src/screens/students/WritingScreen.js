@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
 import Svg, { Path, Circle, G, Polygon, Text as SvgText } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
@@ -639,7 +639,7 @@ export default function WritingScreen() {
           onBack={() => setMode('trace')}
           right={
             <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePillCandy}>
-              <Ionicons name="brush-outline" size={20} color={c.primary} />
+              <Icon name="brush" size="md" color={c.primary} />
             </TouchableOpacity>
           }
         />
@@ -652,7 +652,7 @@ export default function WritingScreen() {
             </View>
           ) : stories.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📚</Text>
+              <Icon name="book-open" size="xl" color="#9575CD" />
               <Text style={[styles.emptyText, a11yTextStyle]}>No stories available yet.</Text>
               <Text style={[styles.emptySubtext, a11yTextStyle]}>Ask your teacher to add some stories!</Text>
             </View>
@@ -679,7 +679,7 @@ export default function WritingScreen() {
                   <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
                   <View style={styles.storyMeta}>
                     <Text style={styles.storyMetaText}>{story.content.split(' ').length} words</Text>
-                    <Ionicons name="chevron-forward" size={22} color="#9575CD" />
+                    <Icon name="chevron-forward" size="md" color="#9575CD" />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -700,7 +700,7 @@ export default function WritingScreen() {
           onBack={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }}
           right={
             <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePillCandy}>
-              <Ionicons name="library-outline" size={20} color={c.primary} />
+              <Icon name="library" size="md" color={c.primary} />
             </TouchableOpacity>
           }
         />
@@ -710,7 +710,7 @@ export default function WritingScreen() {
           {selectedStory && (
             <View style={styles.storyRefCard}>
               <View style={styles.storyRefHeader}>
-                <Text style={[styles.storyRefLabel, a11yTextStyle]}>📖 Story to Copy:</Text>
+                <Text style={[styles.storyRefLabel, a11yTextStyle]}>Story to Copy:</Text>
                 <View style={[styles.levelBadge, { backgroundColor: getLevelColor(selectedStory.level) }]}>
                   <Text style={styles.levelText}>Level {selectedStory.level}</Text>
                 </View>
@@ -720,7 +720,7 @@ export default function WritingScreen() {
                 style={styles.speakStoryBtn}
                 onPress={() => Speech.speak(selectedStory.content, { rate: 0.85 })}
               >
-                <Ionicons name="volume-high" size={20} color="#fff" />
+                <Icon name="volume-2" size="md" color="#fff" />
                 <Text style={styles.speakStoryText}>Hear Story</Text>
               </TouchableOpacity>
             </View>
@@ -742,12 +742,12 @@ export default function WritingScreen() {
 
             <View style={styles.composeBtnRow}>
               <TouchableOpacity style={[styles.composeBtn, isListening && styles.composeBtnStop]} onPress={toggleDictation}>
-                <Ionicons name={isListening ? 'stop' : 'mic'} size={20} color="#fff" />
+                <Icon name={isListening ? 'square' : 'mic'} size="md" color="#fff" />
                 <Text style={styles.composeBtnText}>{isListening ? 'Stop' : 'Dictate'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.composeBtn, composeSpeaking && styles.composeBtnStop]} onPress={speakDraft}>
-                <Ionicons name={composeSpeaking ? 'stop' : 'volume-high'} size={20} color="#fff" />
+                <Icon name={composeSpeaking ? 'square' : 'volume-2'} size="md" color="#fff" />
                 <Text style={styles.composeBtnText}>{composeSpeaking ? 'Stop' : 'Read Aloud'}</Text>
               </TouchableOpacity>
 
@@ -757,7 +757,7 @@ export default function WritingScreen() {
                   style={[styles.composeBtn, styles.composeBtnSubmit]}
                   onPress={checkMyCopy}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Icon name="check-circle" size="md" color="#fff" />
                   <Text style={styles.composeBtnText}>Check Copy</Text>
                 </TouchableOpacity>
               ) : (
@@ -770,7 +770,7 @@ export default function WritingScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <>
-                      <Ionicons name="sparkles" size={20} color="#fff" />
+                      <Icon name="sparkles" size="md" color="#fff" />
                       <Text style={styles.composeBtnText}>Check</Text>
                     </>
                   )}
@@ -836,10 +836,10 @@ export default function WritingScreen() {
             <View style={styles.comparisonCard}>
               <View style={styles.comparisonHeader}>
                 <Text style={styles.comparisonTitle}>
-                  {comparisonResult?.isPassing ? '🎉 Great Job!' : '📝 Keep Practicing!'}
+                  {comparisonResult?.isPassing ? 'Great Job!' : 'Keep Practicing!'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowComparisonModal(false)}>
-                  <Ionicons name="close" size={28} color="#333" />
+                  <Icon name="close" size={28} color="#333" />
                 </TouchableOpacity>
               </View>
 
@@ -891,7 +891,7 @@ export default function WritingScreen() {
                     draftRef.current = '';
                   }}
                 >
-                  <Ionicons name="refresh" size={22} color="#fff" />
+                  <Icon name="refresh-cw" size="md" color="#fff" />
                   <Text style={styles.tryAgainText}>Try Again</Text>
                 </TouchableOpacity>
 
@@ -907,7 +907,7 @@ export default function WritingScreen() {
                     }}
                   >
                     <Text style={styles.nextStoryText}>Next Story</Text>
-                    <Ionicons name="arrow-forward" size={22} color="#fff" />
+                    <Icon name="arrow-right" size="md" color="#fff" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -926,7 +926,7 @@ export default function WritingScreen() {
           title="Writing Lab"
           right={
             <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePillCandy}>
-              <Ionicons name="library-outline" size={20} color={c.primary} />
+              <Icon name="library" size="md" color={c.primary} />
             </TouchableOpacity>
           }
         />
@@ -934,11 +934,11 @@ export default function WritingScreen() {
         {/* Instruction hint + video tutorial button */}
         <View style={styles.mainHintRow}>
           <View style={styles.mainHint}>
-            <Ionicons name="information-circle" size={20} color="#E8927C" />
+            <Icon name="info" size="md" color="#E8927C" />
             <Text style={styles.mainHintText}>Tap a letter to start tracing, or tap "Stories" to practice copying.</Text>
           </View>
           <TouchableOpacity style={styles.watchVideoBtn} onPress={() => Linking.openURL(VIDEO_TUTORIAL_URL)} activeOpacity={0.85}>
-            <Ionicons name="play-circle" size={22} color="#fff" />
+            <Icon name="play-circle" size="md" color="#fff" />
             <Text style={styles.watchVideoBtnText}>Watch Tutorial</Text>
           </TouchableOpacity>
         </View>
@@ -978,11 +978,11 @@ export default function WritingScreen() {
       {/* Header */}
       <View style={styles.canvasHeaderCandy}>
         <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.candyNavBtn}>
-          <Ionicons name="chevron-back" size={20} color={c.primary} />
+          <Icon name="chevron-left" size="md" color={c.primary} />
         </TouchableOpacity>
         <Text style={styles.canvasLetterTitle}>{selectedItem.label}</Text>
         <TouchableOpacity onPress={playDemo} style={styles.candyNavBtn}>
-          <Ionicons name="play-circle" size={24} color={c.primary} />
+          <Icon name="play-circle" size="md" color={c.primary} />
         </TouchableOpacity>
       </View>
 
@@ -1098,7 +1098,7 @@ export default function WritingScreen() {
       <Modal visible={successVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
               <View style={styles.successCard}>
-                  <Text style={styles.emoji}>🌟</Text>
+                  <Icon name="star" size="xl" color="#FFD700" />
                   <Text style={styles.successTitle}>Awesome!</Text>
                   <Text style={styles.successSub}>You wrote {selectedItem.label} perfectly!</Text>
                   <TouchableOpacity style={styles.nextBtn} onPress={nextItem}>
@@ -1120,7 +1120,7 @@ export default function WritingScreen() {
                         <Text style={styles.demoTitle}>How to Write "{selectedItem?.label}"</Text>
                       </View>
                       <TouchableOpacity onPress={() => setDemoVisible(false)}>
-                          <Ionicons name="close" size={28} color="#333" />
+                          <Icon name="x" size="xl" color="#333" />
                       </TouchableOpacity>
                   </View>
 
@@ -1148,13 +1148,13 @@ export default function WritingScreen() {
                     activeOpacity={0.85}
                   >
                     <View style={styles.videoBtnIcon}>
-                      <Ionicons name="play-circle" size={32} color="#fff" />
+                      <Icon name="play-circle" size="xl" color="#fff" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.videoBtnTitle}>Watch Video Tutorial</Text>
                       <Text style={styles.videoBtnSub}>See how to trace letters step by step</Text>
                     </View>
-                    <Ionicons name="open-outline" size={22} color="rgba(255,255,255,0.8)" />
+                    <Icon name="external-link" size="md" color="rgba(255,255,255,0.8)" />
                   </TouchableOpacity>
 
                   <ScrollView style={styles.demoContent}>
@@ -1181,7 +1181,7 @@ export default function WritingScreen() {
                         "Don't worry about being perfect — just keep practicing!",
                       ].map((tip, i) => (
                         <View key={i} style={styles.demoTip}>
-                          <Ionicons name="bulb-outline" size={20} color="#E8927C" />
+                          <Icon name="lightbulb" size="md" color="#E8927C" />
                           <Text style={[styles.demoText, { flex: 1 }]}>{tip}</Text>
                         </View>
                       ))}
@@ -1190,7 +1190,7 @@ export default function WritingScreen() {
                   </ScrollView>
 
                   <TouchableOpacity style={styles.demoCloseBtn} onPress={() => setDemoVisible(false)}>
-                      <Ionicons name="pencil" size={20} color="#fff" />
+                      <Icon name="pencil" size="md" color="#fff" />
                       <Text style={styles.demoCloseText}>Got it! Start Tracing</Text>
                   </TouchableOpacity>
               </View>

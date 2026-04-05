@@ -11,7 +11,7 @@ import {
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '../lib/uiAlert';
@@ -128,7 +128,7 @@ export default function LoginScreen({ navigation }) {
 
           {/* Username/Email Input */}
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="person-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+            <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { color: colors.onSurface }]}
               placeholder="Enter Username"
@@ -145,7 +145,7 @@ export default function LoginScreen({ navigation }) {
 
           {/* Password Input */}
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.onSurfaceMuted} style={styles.inputIcon} />
+            <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { color: colors.onSurface }]}
               placeholder="Enter Password"
@@ -158,11 +158,7 @@ export default function LoginScreen({ navigation }) {
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
-              <Ionicons
-                name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-                size={20}
-                color={colors.onSurfaceMuted}
-              />
+              <Icon name={showPassword ? 'eye' : 'eye-off'} size="sm" color={colors.onSurfaceMuted} />
             </TouchableOpacity>
           </View>
 

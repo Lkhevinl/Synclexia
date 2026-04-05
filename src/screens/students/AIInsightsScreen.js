@@ -9,7 +9,7 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -116,22 +116,22 @@ export default function AIInsightsScreen({ navigation }) {
             </View>
           </View>
           <View style={styles.trendBadge}>
-            <Ionicons name={TREND_ICON[item.trend]} size={18} color={TREND_COLOR[item.trend]} />
+            <Icon name={TREND_ICON[item.trend]} size="sm" color={TREND_COLOR[item.trend]} />
           </View>
         </View>
 
         <View style={styles.activityCardBottom}>
           <View style={styles.statPill}>
-            <Ionicons name="layers-outline" size={14} color="#666" />
+            <Icon name="layers" size="xs" color="#666" />
             <Text style={styles.statPillText}>{LEVEL_LABELS[item.adaptiveLevel] ?? 'Easy'}</Text>
           </View>
           <View style={styles.statPill}>
-            <Ionicons name="checkmark-done-outline" size={14} color="#666" />
+            <Icon name="check-check" size="xs" color="#666" />
             <Text style={styles.statPillText}>{item.totalSessions} sessions</Text>
           </View>
           {item.daysSinceLastSession != null && (
             <View style={styles.statPill}>
-              <Ionicons name="time-outline" size={14} color="#666" />
+              <Icon name="clock" size="xs" color="#666" />
               <Text style={styles.statPillText}>
                 {item.daysSinceLastSession === 0 ? 'Today' : `${item.daysSinceLastSession}d ago`}
               </Text>
@@ -202,10 +202,10 @@ export default function AIInsightsScreen({ navigation }) {
     return (
       <ScreenWrapper role="student" padded={false}>
         <View style={[styles.centered, { backgroundColor: colors.surface }]}>
-          <Ionicons name="alert-circle-outline" size={64} color="#EF5350" />
+          <Icon name="alert-circle" size="xl" color="#EF5350" />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={load}>
-            <Ionicons name="refresh" size={22} color="#fff" />
+            <Icon name="refresh-cw" size="md" color="#fff" />
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -226,7 +226,7 @@ export default function AIInsightsScreen({ navigation }) {
         title="AI Learning Insights"
         right={
           <TouchableOpacity onPress={load}>
-            <Ionicons name="refresh-outline" size={22} color={c.primary} />
+            <Icon name="refresh-cw" size="md" color={c.primary} />
           </TouchableOpacity>
         }
       />
@@ -258,7 +258,7 @@ export default function AIInsightsScreen({ navigation }) {
 
           {p.totalSessions === 0 && (
             <View style={styles.noDataBanner}>
-              <Ionicons name="information-circle-outline" size={22} color="#1976D2" />
+              <Icon name="info" size="md" color="#1976D2" />
               <Text style={styles.noDataText}>Complete some activities to see your personalized insights!</Text>
             </View>
           )}
@@ -269,7 +269,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.sectionIconGradient}>
-                <Ionicons name="star" size={18} color="#fff" />
+                <Icon name="star" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Your Strengths</Text>
             </View>
@@ -284,7 +284,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#FF9800', '#E65100']} style={styles.sectionIconGradient}>
-                <Ionicons name="fitness" size={18} color="#fff" />
+                <Icon name="dumbbell" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Areas to Improve</Text>
             </View>
@@ -299,7 +299,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
-                <Ionicons name="rocket" size={18} color="#fff" />
+                <Icon name="rocket" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Not Explored Yet</Text>
             </View>
@@ -334,7 +334,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
-                <Ionicons name="bulb" size={18} color="#fff" />
+                <Icon name="lightbulb" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
             </View>
@@ -349,7 +349,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#00BFA5', '#00796B']} style={styles.sectionIconGradient}>
-                <Ionicons name="map" size={18} color="#fff" />
+                <Icon name="map" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Suggested Learning Path</Text>
             </View>
@@ -377,7 +377,7 @@ export default function AIInsightsScreen({ navigation }) {
                   {applying ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Ionicons name={applied ? 'checkmark-circle' : 'flash'} size={20} color="#fff" />
+                    <Icon name={applied ? 'check-circle' : 'zap'} size="md" color="#fff" />
                   )}
                   <Text style={styles.applyBtnText}>
                     {applying ? 'Applying...' : applied ? 'Learning Path Applied!' : 'Customize My Learning'}

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import c from '../../components/student/candyTokens';
@@ -73,15 +73,15 @@ function ModeSelector({ onSelect }) {
   }, []);
 
   const modes = [
-    { id: 'blend',   label: 'Blend It!',        emoji: '🔗', color: '#FF9800', desc: 'Put sounds together to make a word', gradient: ['#FF9800', '#F57C00'] },
-    { id: 'rhyme',   label: 'Rhyme Time!',       emoji: '🎵', color: '#E91E63', desc: 'Find the word that rhymes', gradient: ['#E91E63', '#C2185B'] },
-    { id: 'segment', label: 'Count the Sounds!', emoji: '🔢', color: '#4CAF50', desc: 'How many sounds does the word have?', gradient: ['#4CAF50', '#388E3C'] },
+    { id: 'blend',   label: 'Blend It!',        icon: 'link-2',    color: '#FF9800', desc: 'Put sounds together to make a word', gradient: ['#FF9800', '#F57C00'] },
+    { id: 'rhyme',   label: 'Rhyme Time!',       icon: 'music',     color: '#E91E63', desc: 'Find the word that rhymes', gradient: ['#E91E63', '#C2185B'] },
+    { id: 'segment', label: 'Count the Sounds!', icon: 'hash',      color: '#4CAF50', desc: 'How many sounds does the word have?', gradient: ['#4CAF50', '#388E3C'] },
   ];
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
         <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
-          <Text style={ms.headerEmoji}>🎮</Text>
+          <Icon name="gamepad-2" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Phonics Activities</Text>
           <Text style={ms.sub}>Choose a game to play</Text>
         </View>
@@ -92,14 +92,14 @@ function ModeSelector({ onSelect }) {
           <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
-                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+                <Icon name={m.icon} size="md" color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={ms.cardLabel}>{m.label}</Text>
                 <Text style={ms.cardDesc}>{m.desc}</Text>
               </View>
               <View style={ms.playBtn}>
-                <Ionicons name="play" size={20} color="#fff" />
+                <Icon name="play" size="md" color="#fff" />
               </View>
             </View>
             <View style={ms.cardShine} />
@@ -288,11 +288,11 @@ function BlendGame({ onBack, userId, items }) {
   return (
     <View style={bg.container}>
       <StudentPageHeader
-        title="Blend It! 🔗"
+        title="Blend It!"
         onBack={onBack}
         right={
           <TouchableOpacity onPress={speakInstruction} style={bg.helpBtn}>
-            <Ionicons name="help-circle" size={24} color={c.primary} />
+            <Icon name="help-circle" size="md" color={c.primary} />
           </TouchableOpacity>
         }
       />
@@ -320,7 +320,7 @@ function BlendGame({ onBack, userId, items }) {
 
         <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
           <TouchableOpacity style={[bg.blendBtn, blended && bg.blendBtnDone]} onPress={blended ? handleNext : handleBlend} activeOpacity={0.8}>
-            <Text style={bg.blendBtnText}>{blended ? `"${current.word}" ✓  →  Next` : '🔗 BLEND!'}</Text>
+            <Text style={bg.blendBtnText}>{blended ? `"${current.word}"  →  Next` : 'BLEND!'}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -396,11 +396,11 @@ function RhymeGame({ onBack, userId, items }) {
   return (
     <View style={rg.container}>
       <StudentPageHeader
-        title="Rhyme Time! 🎵"
+        title="Rhyme Time!"
         onBack={onBack}
         right={
           <TouchableOpacity onPress={speakInstruction} style={rg.helpBtn}>
-            <Ionicons name="help-circle" size={24} color={c.primary} />
+            <Icon name="help-circle" size="md" color={c.primary} />
           </TouchableOpacity>
         }
       />
@@ -409,7 +409,7 @@ function RhymeGame({ onBack, userId, items }) {
         <TouchableOpacity onPress={() => speak(current.target)} activeOpacity={0.8} style={rg.targetBox}>
           <Text style={rg.targetEmoji}>{current.emoji}</Text>
           <Text style={rg.targetWord}>{current.target}</Text>
-          <Text style={rg.tapHint}>🔊 Tap to hear</Text>
+          <Text style={rg.tapHint}>Tap to hear</Text>
         </TouchableOpacity>
 
         <Text style={rg.question}>Which word RHYMES with  "{current.target}"?</Text>
@@ -545,7 +545,7 @@ function SegmentGame({ onBack, userId, items }) {
   return (
     <View style={sg.container}>
       <StudentPageHeader
-        title="Count the Sounds! 🔢"
+        title="Count the Sounds!"
         onBack={onBack}
         right={<Text style={sg.headerSub}>{idx + 1} / {segWords.length}</Text>}
       />
@@ -554,14 +554,14 @@ function SegmentGame({ onBack, userId, items }) {
         <TouchableOpacity onPress={speakWord} style={sg.wordBox} activeOpacity={0.7}>
           <Text style={sg.wordEmoji}>{current.emoji}</Text>
           <Text style={sg.wordText}>{current.word}</Text>
-          <Text style={sg.tapHint}>🔊 Hear the word</Text>
+          <Text style={sg.tapHint}>Hear the word</Text>
         </TouchableOpacity>
 
         <Text style={sg.instruction}>Tap the drum for each sound you hear:</Text>
 
         <Animated.View style={{ transform: [{ scale: tapAnim }] }}>
           <TouchableOpacity style={sg.drum} onPress={handleTap} activeOpacity={0.7}>
-            <Text style={sg.drumText}>🥁</Text>
+            <Icon name="music" size="lg" color="#fff" />
             <Text style={sg.drumCount}>{taps}</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -579,7 +579,7 @@ function SegmentGame({ onBack, userId, items }) {
 
         {answered && (
           <Text style={[sg.result, isCorrect ? sg.resultCorrect : sg.resultWrong]}>
-            {isCorrect ? '🎉 Correct!' : `Not quite — ${current.word} has ${current.count} sounds`}
+            {isCorrect ? 'Correct!' : `Not quite — ${current.word} has ${current.count} sounds`}
           </Text>
         )}
 
@@ -622,14 +622,14 @@ const sg = StyleSheet.create({
 
 function ScoreScreen({ score, total, onBack, label, color }) {
   const percent = Math.round((score / total) * 100);
-  const msg = percent >= 80 ? '🎉 Amazing!' : percent >= 50 ? '👍 Good effort!' : '💪 Keep practising!';
+  const msg = percent >= 80 ? 'Amazing!' : percent >= 50 ? 'Good effort!' : 'Keep practising!';
   React.useEffect(() => {
     Speech.speak(`${msg} You got ${score} out of ${total}.`, { rate: 0.85 });
   }, []);
   return (
     <View style={[ss.container, { backgroundColor: color + '15' }]}>
       <View style={ss.card}>
-        <Text style={ss.topEmoji}>🏆</Text>
+        <Icon name="trophy" size="xl" color="#FF9800" />
         <Text style={ss.label}>{label}</Text>
         <Text style={[ss.score, { color }]}>{score} / {total}</Text>
         <Text style={ss.percent}>{percent}%</Text>

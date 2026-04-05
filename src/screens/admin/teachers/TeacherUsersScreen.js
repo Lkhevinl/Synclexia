@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
@@ -80,7 +80,7 @@ export default function TeacherUsersScreen() {
         <View style={styles.cardRight}>
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.trashBtn} onPress={() => removeStudent(item.enrollmentId, item.full_name)}>
-              <Ionicons name="person-remove" size={18} color="#fff" />
+              <Icon name="user-minus" size="md" color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -103,7 +103,7 @@ export default function TeacherUsersScreen() {
       </LinearGradient>
 
       <View style={[styles.searchBox, { backgroundColor: colors.surfaceCard }]}>
-        <Ionicons name="search" size={22} color={colors.primary} style={{ marginRight: 8 }} />
+        <Icon name="search" size="md" color={colors.primary} style={{ marginRight: 8 }} />
         <TextInput
           placeholder="Search by name or email..."
           placeholderTextColor={colors.onSurfaceMuted}
@@ -113,7 +113,7 @@ export default function TeacherUsersScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={22} color={colors.onSurfaceMuted} />
+            <Icon name="x-circle" size="md" color={colors.onSurfaceMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -131,7 +131,7 @@ export default function TeacherUsersScreen() {
           contentContainerStyle={{ padding: tokens.spacing.md, paddingBottom: 40 }}
           ListEmptyComponent={
             <View style={styles.emptyBox}>
-              <Ionicons name="people-outline" size={60} color={colors.border} />
+              <Icon name="users" size="lg" color={colors.border} />
               <Text style={[styles.emptyText, { color: colors.onSurfaceMuted }]}>{search ? 'No student found.' : 'No enrolled students yet.'}</Text>
             </View>
           }

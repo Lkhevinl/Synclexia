@@ -12,7 +12,7 @@ import {
   ScrollView, Animated, ActivityIndicator,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
@@ -89,27 +89,27 @@ function ModeSelector({ onSelect, level }) {
   const headerAnim = useRef(new Animated.Value(0)).current;
   const levelColors = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
   const levelLabels = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-  const levelEmojis = { 1: '🌱', 2: '🌿', 3: '🌳' };
+  const levelIcons  = { 1: 'signal-low', 2: 'signal-medium', 3: 'signal-high' };
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
   }, []);
 
   const modes = [
-    { id: 'syllable', emoji: '👏', label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'rime',     emoji: '🎵', label: 'Onset-Rime',        desc: 'Find the word that rhymes',            gradient: ['#9C27B0', '#6A1B9A'] },
-    { id: 'phoneme',  emoji: '🔤', label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
+    { id: 'syllable', icon: 'hand-metal',  label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'rime',     icon: 'music',        label: 'Onset-Rime',        desc: 'Find the word that rhymes',            gradient: ['#9C27B0', '#6A1B9A'] },
+    { id: 'phoneme',  icon: 'type',         label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
   ];
 
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
         <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
-          <Text style={ms.headerEmoji}>🎧</Text>
+          <Icon name="headphones" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Phonological Awareness</Text>
           <Text style={ms.sub}>Building blocks of reading & spelling</Text>
           <View style={[ms.levelPill, { backgroundColor: levelColors[level] + '30', borderColor: levelColors[level] }]}>
-            <Text style={ms.levelEmoji}>{levelEmojis[level]}</Text>
+            <Icon name={levelIcons[level]} size="sm" color={levelColors[level]} />
             <Text style={[ms.levelText, { color: levelColors[level] }]}>
               Level: {levelLabels[level]}
             </Text>
@@ -122,14 +122,14 @@ function ModeSelector({ onSelect, level }) {
           <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
-                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+                <Icon name={m.icon} size="md" color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={ms.cardLabel}>{m.label}</Text>
                 <Text style={ms.cardDesc}>{m.desc}</Text>
               </View>
               <View style={ms.playBtn}>
-                <Ionicons name="play" size={20} color="#fff" />
+                <Icon name="play" size="md" color="#fff" />
               </View>
             </View>
             <View style={ms.cardShine} />
@@ -147,7 +147,6 @@ const ms = StyleSheet.create({
   title:       { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
   sub:         { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4, marginBottom: 12 },
   levelPill:   { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  levelEmoji:  { fontSize: 18 },
   levelText:   { fontWeight: 'bold', fontSize: 14 },
   cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   card:        { borderRadius: 20, padding: 20, overflow: 'hidden' },
@@ -211,16 +210,16 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Syllable Clapping 👏"
+        title="Syllable Clapping"
         onBack={onBack}
-        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>}
+        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
       <View style={g.body}>
         <TouchableOpacity onPress={speak} style={g.wordCard}>
           <Animated.Text style={[g.wordEmoji, { transform: [{ scale: bounceAnim }] }]}>{current.emoji}</Animated.Text>
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={22} color="#2196F3" />
+            <Icon name="volume-2" size="md" color="#2196F3" />
             <Text style={[g.speakText, { color: '#2196F3' }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
@@ -290,16 +289,16 @@ function RimeGame({ onBack, userId, level, items: rawItems }) {
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Onset-Rime 🎵"
+        title="Onset-Rime"
         onBack={onBack}
-        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>}
+        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
       <View style={g.body}>
         <TouchableOpacity style={g.wordCard} onPress={() => speak(current.target)}>
-          <Text style={{ fontSize: 40 }}>🎧</Text>
+          <Icon name="headphones" size="xl" color="#9C27B0" />
           <Text style={g.wordText}>{current.target}</Text>
           <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={22} color="#9C27B0" />
+            <Icon name="volume-2" size="md" color="#9C27B0" />
             <Text style={[g.speakText, { color: '#9C27B0' }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
@@ -367,16 +366,16 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Phoneme Isolation 🔤"
+        title="Phoneme Isolation"
         onBack={onBack}
-        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>}
+        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
       <View style={g.body}>
         <TouchableOpacity style={g.wordCard} onPress={() => Speech.speak(current.word, { rate: 0.6 })}>
-          <Text style={{ fontSize: 40 }}>👂</Text>
+          <Icon name="ear" size="xl" color="#E91E63" />
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={22} color="#E91E63" />
+            <Icon name="volume-2" size="md" color="#E91E63" />
             <Text style={[g.speakText, { color: '#E91E63' }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
@@ -407,7 +406,12 @@ function FinishScreen({ score, total, onBack, color }) {
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30, backgroundColor: color }}>
-      <Text style={{ fontSize: 64 }}>{pct >= 70 ? '🏆' : pct >= 40 ? '👍' : '💪'}</Text>
+      {pct >= 70
+        ? <Icon name="trophy" size={64} color="#fff" />
+        : pct >= 40
+        ? <Icon name="thumbs-up" size={64} color="#fff" />
+        : <Icon name="dumbbell" size={64} color="#fff" />
+      }
       <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#fff', marginTop: 16 }}>
         {score} / {total}
       </Text>
@@ -495,7 +499,7 @@ export default function PhonologicalAwarenessScreen() {
       <StudentPageHeader title="Sound Games" />
       <StudentCard variant="tinted" style={paRoot.hintCard}>
         <View style={paRoot.hintRow}>
-          <Ionicons name="information-circle" size={22} color={c.primary} />
+          <Icon name="info" size="md" color={c.primary} />
           <Text style={paRoot.hintText}>
             <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
             Pick a game! Clap Syllables counts word parts, Onset-Rime finds rhyming words, Phoneme Isolation identifies sounds.

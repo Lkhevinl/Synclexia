@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -195,10 +195,10 @@ export default function AdminNotificationsScreen() {
                 
                 <View style={styles.cardActions}>
                     <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                        <Ionicons name="pencil" size={22} color="#0288D1" />
+                        <Icon name="pencil" size="md" color="#0288D1" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                        <Ionicons name="trash-outline" size={22} color="red" />
+                        <Icon name="trash" size="md" color="red" />
                     </TouchableOpacity>
                 </View>
             </View>

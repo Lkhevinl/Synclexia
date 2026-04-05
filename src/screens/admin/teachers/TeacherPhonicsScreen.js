@@ -1,7 +1,7 @@
 // ...existing code from AdminPhonicsScreen.js...
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
 import ScreenWrapper from '../../../components/ScreenWrapper';
@@ -12,7 +12,7 @@ export default function TeacherPhonicsScreen() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
-  const [icon, setIcon] = useState('🔤');
+  const [icon, setIcon] = useState('mic');
   const [bgColor, setBgColor] = useState('#4FC3F7');
   const [editingId, setEditingId] = useState(null);
 
@@ -33,7 +33,7 @@ export default function TeacherPhonicsScreen() {
 
   const resetForm = () => {
     setLabel('');
-    setIcon('🔤');
+    setIcon('mic');
     setBgColor('#4FC3F7');
     setEditingId(null);
   };
@@ -60,7 +60,7 @@ export default function TeacherPhonicsScreen() {
 
   const handleEdit = (item) => {
     setLabel(item.label || '');
-    setIcon(item.icon || '🔤');
+    setIcon(item.icon || 'mic');
     setBgColor(item.bg_color || '#4FC3F7');
     setEditingId(item.id);
   };
@@ -99,7 +99,7 @@ export default function TeacherPhonicsScreen() {
         />
         <TextInput
           style={[styles.input, { color: colors.onSurface, borderColor: colors.border }]}
-          placeholder="Icon (emoji)"
+          placeholder="Icon (Lucide name)"
           placeholderTextColor={colors.onSurfaceMuted}
           value={icon}
           onChangeText={setIcon}
@@ -134,7 +134,7 @@ export default function TeacherPhonicsScreen() {
           renderItem={({ item }) => (
             <View style={[styles.itemRow, { backgroundColor: colors.surfaceCard }]}>
               <View style={styles.itemInfo}>
-                <Text style={styles.itemIcon}>{item.icon || '🔤'}</Text>
+                <Icon name={item.icon || 'mic'} size="md" color={colors.onSurface} />
                 <View>
                   <Text style={[styles.itemLabel, { color: colors.onSurface }]}>{item.label}</Text>
                   <Text style={[styles.itemMeta, { color: colors.onSurfaceMuted }]}>{item.bg_color}</Text>
@@ -142,10 +142,10 @@ export default function TeacherPhonicsScreen() {
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color={colors.primary} />
+                  <Icon name="pencil" size="md" color={colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
+                  <Icon name="trash" size="md" color="#E53935" />
                 </TouchableOpacity>
               </View>
             </View>

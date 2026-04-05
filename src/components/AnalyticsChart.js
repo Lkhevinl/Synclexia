@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 
 /**
  * BarChart Component
@@ -54,9 +54,9 @@ export const TrendIndicator = ({ trend, label }) => {
 
   return (
     <View style={styles.trendContainer}>
-      <Ionicons
-        name={isUp ? 'trending-up' : isFlat ? 'remove' : 'trending-down'}
-        size={20}
+      <Icon
+        name={isUp ? 'trending-up' : isFlat ? 'minus' : 'trending-down'}
+        size="sm"
         color={color}
       />
       <Text style={[styles.trendText, { color }]}>
@@ -74,7 +74,7 @@ export const TrendIndicator = ({ trend, label }) => {
 export const StatCard = ({ title, value, subtitle, color = '#0288D1', icon }) => (
   <View style={styles.statCard}>
     <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
-      <Ionicons name={icon} size={28} color={color} />
+      <Icon name={icon} size="md" color={color} />
     </View>
     <View style={styles.statContent}>
       <Text style={styles.statTitle}>{title}</Text>
@@ -114,7 +114,7 @@ export const MetricRow = ({ icon, label, value, color = '#263238' }) => (
   <View style={styles.metricRow}>
     {icon && (
       <View style={styles.metricIcon}>
-        <Ionicons name={icon} size={18} color={color} />
+        <Icon name={icon} size="sm" color={color} />
       </View>
     )}
     <Text style={styles.metricLabel}>{label}</Text>
@@ -128,7 +128,7 @@ export const MetricRow = ({ icon, label, value, color = '#263238' }) => (
  */
 export const SectionHeader = ({ icon, title, color = '#607D8B' }) => (
   <View style={styles.sectionHeader}>
-    <Ionicons name={icon} size={22} color={color} />
+    <Icon name={icon} size="md" color={color} />
     <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
   </View>
 );

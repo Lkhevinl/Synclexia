@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -13,10 +13,16 @@ import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 
 const ACTIVITY_LABELS = {
-  phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
-  phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
-  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
+  phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
+  phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
+  reading: 'Reading', phonological_awareness: 'Phonological',
+  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
+};
+const ACTIVITY_ICON_NAMES = {
+  phonics: 'mic', phonics_blend: 'link-2', phonics_rhyme: 'music',
+  phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
+  reading: 'book-open', phonological_awareness: 'headphones',
+  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
 };
 
 export default function ParentProgressScreen({ route }) {
@@ -96,11 +102,11 @@ export default function ParentProgressScreen({ route }) {
         <View style={s.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : error ? (
         <View style={s.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={s.errorTitle}>Connection Error</Text>
           <Text style={s.errorMessage}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => load(daysBack)}>
-            <Ionicons name="refresh" size={22} color="#fff" />
+            <Icon name="refresh-cw" size="md" color="#fff" />
             <Text style={s.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -108,7 +114,7 @@ export default function ParentProgressScreen({ route }) {
         <>
           {/* Summary */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>📊 Summary</Text>
+            <Text style={s.cardTitle}>Summary</Text>
             <View style={s.summaryRow}>
               <View style={s.summaryItem}>
                 <Text style={s.summaryVal}>{progress?.totalSessions ?? 0}</Text>
@@ -126,7 +132,7 @@ export default function ParentProgressScreen({ route }) {
 
           {/* Activity Breakdown with bars */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>🎯 Activity Breakdown</Text>
+            <Text style={s.cardTitle}>Activity Breakdown</Text>
             {Object.keys(progress?.byActivity ?? {}).length === 0 ? (
               <Text style={s.emptyText}>No activity in this period.</Text>
             ) : Object.entries(progress.byActivity).map(([type, data]) => {
@@ -134,7 +140,7 @@ export default function ParentProgressScreen({ route }) {
               const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
               return (
                 <View key={type} style={s.breakRow}>
-                  <Text style={s.breakIcon}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
+                  <Icon name={ACTIVITY_ICON_NAMES[type] || 'bar-chart'} size="md" color="#607D8B" />
                   <View style={{ flex: 1 }}>
                     <View style={s.breakTop}>
                       <Text style={s.breakLabel}>{ACTIVITY_LABELS[type] || type}</Text>
@@ -153,7 +159,7 @@ export default function ParentProgressScreen({ route }) {
           {/* Adaptive Difficulty Levels */}
           {adaptive.length > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🎮 Difficulty Levels</Text>
+              <Text style={s.cardTitle}>Difficulty Levels</Text>
               <Text style={s.cardSub}>System-adjusted based on performance</Text>
               {adaptive.map(a => {
                 const color = a.current_level === 1 ? '#4CAF50' : a.current_level === 2 ? '#FF9800' : '#F44336';
@@ -176,7 +182,7 @@ export default function ParentProgressScreen({ route }) {
           {/* AI Strengths & Weaknesses */}
           {aiProfile && aiProfile.totalSessions > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🧠 AI Strength & Weakness Analysis</Text>
+              <Text style={s.cardTitle}>AI Strength & Weakness Analysis</Text>
               <Text style={s.cardSub}>Based on last 60 days of activity</Text>
 
               {/* Overall Score */}
@@ -204,7 +210,7 @@ export default function ParentProgressScreen({ route }) {
                   <Text style={[s.aiGroupLabel, { color: '#2E7D32' }]}>Strengths</Text>
                   {aiProfile.strengths.map(item => (
                     <View key={item.activity} style={s.aiItemRow}>
-                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Icon name={item.icon} size="sm" color="#2E7D32" />
                       <Text style={s.aiItemLabel}>{item.label}</Text>
                       <View style={s.aiBar}>
                         <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#4CAF50' }]} />
@@ -220,7 +226,7 @@ export default function ParentProgressScreen({ route }) {
                   <Text style={[s.aiGroupLabel, { color: '#E65100', marginTop: 10 }]}>Needs Focus</Text>
                   {aiProfile.weaknesses.map(item => (
                     <View key={item.activity} style={s.aiItemRow}>
-                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Icon name={item.icon} size="sm" color="#EF5350" />
                       <Text style={s.aiItemLabel}>{item.label}</Text>
                       <View style={s.aiBar}>
                         <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#EF5350' }]} />
@@ -245,10 +251,10 @@ export default function ParentProgressScreen({ route }) {
           {/* Recent Sessions */}
           {(progress?.recentSessions?.length ?? 0) > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🕐 Recent Sessions</Text>
+              <Text style={s.cardTitle}>Recent Sessions</Text>
               {progress.recentSessions.map((session, i) => (
                 <View key={session.id || i} style={s.sessionRow}>
-                  <Text style={s.sessionIcon}>{ACTIVITY_LABELS[session.activity_type]?.split(' ')[0] || '📊'}</Text>
+                  <Icon name={ACTIVITY_ICON_NAMES[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
                   <View style={{ flex: 1 }}>
                     <Text style={s.sessionType}>{ACTIVITY_LABELS[session.activity_type] || session.activity_type}</Text>
                     <Text style={s.sessionDate}>{new Date(session.created_at).toLocaleDateString()} · {session.score}/{session.total}</Text>
@@ -265,7 +271,7 @@ export default function ParentProgressScreen({ route }) {
 
           {progress?.totalSessions === 0 && (
             <View style={s.emptyCard}>
-              <Ionicons name="bar-chart-outline" size={60} color="#ddd" />
+              <Icon name="bar-chart" size="lg" color="#ddd" />
               <Text style={s.emptyTitle}>No activity yet</Text>
               <Text style={s.emptyHint}>Encourage {name} to complete some activities!</Text>
             </View>

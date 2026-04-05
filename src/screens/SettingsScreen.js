@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Modal, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import AppHeader from '../components/AppHeader';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -56,10 +56,10 @@ export default function SettingsScreen({ navigation }) {
   const SettingRow = ({ icon, iconColor = '#607D8B', label, onPress, children }) => (
     <TouchableOpacity style={styles.settingRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
       <View style={[styles.rowIconWrap, { backgroundColor: iconColor + '18' }]}>
-        <Ionicons name={icon} size={22} color={iconColor} />
+        <Icon name={icon} size="md" color={iconColor} />
       </View>
       <AppText variant="body" style={[styles.rowLabel, { color: colors.onSurface }]}>{label}</AppText>
-      {children ?? <Ionicons name="chevron-forward" size={20} color={colors.border} />}
+      {children ?? <Icon name="chevron-forward" size="sm" color={colors.border} />}
     </TouchableOpacity>
   );
 
@@ -85,7 +85,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           {!isStudent && (
             <TouchableOpacity style={[styles.editAvatarBtn, { backgroundColor: colors.primaryLight }]} onPress={() => navigation.navigate('Profile')}>
-              <Ionicons name="pencil" size={20} color={colors.primary} />
+              <Icon name="pencil" size="md" color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -109,11 +109,11 @@ export default function SettingsScreen({ navigation }) {
             <AppText variant="label" style={[styles.blockLabel, { color: colors.onSurface }]}>Font Size</AppText>
             <View style={styles.sizeRow}>
               <TouchableOpacity style={[styles.sizeBtn, { backgroundColor: colors.surface }]} onPress={() => updateTheme({ fontSize: Math.max(10, theme.fontSize - 1) })}>
-                <Ionicons name="remove" size={22} color={colors.onSurface} />
+                <Icon name="minus" size="md" color={colors.onSurface} />
               </TouchableOpacity>
               <AppText variant="body" style={[styles.sizeVal, { color: colors.onSurface }]}>{theme.fontSize}</AppText>
               <TouchableOpacity style={[styles.sizeBtn, { backgroundColor: colors.surface }]} onPress={() => updateTheme({ fontSize: Math.min(17, theme.fontSize + 1) })}>
-                <Ionicons name="add" size={22} color={colors.onSurface} />
+                <Icon name="plus" size="md" color={colors.onSurface} />
               </TouchableOpacity>
             </View>
           </View>
@@ -133,13 +133,13 @@ export default function SettingsScreen({ navigation }) {
 
           <TouchableOpacity style={styles.settingRow} onPress={() => setFontModalVisible(true)}>
             <View style={[styles.rowIconWrap, { backgroundColor: '#7B1FA218' }]}>
-              <Ionicons name="text" size={22} color="#7B1FA2" />
+              <Icon name="text" size="md" color="#7B1FA2" />
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="body" style={[styles.rowLabel, { color: colors.onSurface }]}>Font Style</AppText>
               <AppText variant="caption" style={{ color: colors.onSurfaceMuted, marginTop: 1 }}>{currentFont.label}</AppText>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.border} />
+            <Icon name="chevron-forward" size="sm" color={colors.border} />
           </TouchableOpacity>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -200,7 +200,7 @@ export default function SettingsScreen({ navigation }) {
                 }}
               >
                 <View style={[styles.rowIconWrap, { backgroundColor: '#FF980018' }]}>
-                  <Ionicons name="swap-horizontal" size={22} color="#F57C00" />
+                  <Icon name="arrow-left-right" size="md" color="#F57C00" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <AppText variant="body" style={[styles.rowLabel, { color: colors.onSurface }]}>Switch View</AppText>
@@ -208,7 +208,7 @@ export default function SettingsScreen({ navigation }) {
                     Current: {dashboardMode === 'admin' ? 'Admin' : 'Student'} — tap to switch
                   </AppText>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.border} />
+                <Icon name="chevron-forward" size="sm" color={colors.border} />
               </TouchableOpacity>
             </View>
           </>
@@ -229,7 +229,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         ) : (
           <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: colors.surfaceCard, borderColor: '#FFCDD2' }]} onPress={handleLogout}>
-            <Ionicons name="exit-outline" size={20} color="#EF5350" />
+            <Icon name="log-out" size="md" color="#EF5350" />
             <AppText variant="body" style={{ fontWeight: '700', color: '#EF5350' }}>Log Out</AppText>
           </TouchableOpacity>
         )}
@@ -256,7 +256,7 @@ export default function SettingsScreen({ navigation }) {
                 ]}>
                   {f.label}
                 </Text>
-                {theme.fontStyle === f.value && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                {theme.fontStyle === f.value && <Icon name="check-circle" size="md" color={colors.primary} />}
               </TouchableOpacity>
             ))}
           </View>

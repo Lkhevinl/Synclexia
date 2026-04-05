@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView,
   FlatList, Modal, ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
 import CustomButton from '../../../components/CustomButton';
@@ -90,9 +90,9 @@ export default function TeacherAddStoryScreen() {
     <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <View style={styles.header}>
         <GoBackBtn />
-        <Text style={styles.headerTitle}>📖 Story Library</Text>
+        <Text style={styles.headerTitle}>Story Library</Text>
         <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
-          <Ionicons name="add" size={22} color="#fff" />
+          <Icon name="plus" size="md" color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -100,7 +100,7 @@ export default function TeacherAddStoryScreen() {
         <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 40 }} />
       ) : stories.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="book-outline" size={64} color="#ccc" />
+          <Icon name="book-open" size="lg" color="#ccc" />
           <Text style={styles.emptyText}>No stories yet. Tap + to add one.</Text>
         </View>
       ) : (
@@ -118,10 +118,10 @@ export default function TeacherAddStoryScreen() {
                 <Text style={styles.storyDate}>{new Date(item.created_at).toLocaleDateString()}</Text>
               </View>
               <TouchableOpacity style={styles.editIconBtn} onPress={() => openEdit(item)}>
-                <Ionicons name="create-outline" size={20} color="#2E7D32" />
+                <Icon name="pencil" size="md" color="#2E7D32" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteIconBtn} onPress={() => handleDelete(item)}>
-                <Ionicons name="trash-outline" size={20} color="#F44336" />
+                <Icon name="trash" size="md" color="#F44336" />
               </TouchableOpacity>
             </View>
           )}
@@ -134,7 +134,7 @@ export default function TeacherAddStoryScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingId ? 'Edit Story' : 'New Story'}</Text>
               <TouchableOpacity onPress={() => setFormVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

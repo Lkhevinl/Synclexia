@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../icons/Icon';
 import { useNavigation } from '@react-navigation/native';
 import c from './candyTokens';
 
@@ -25,7 +25,7 @@ export default function StudentPageHeader({ title, onBack, right, style }) {
         activeOpacity={0.7}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="chevron-back" size={24} color={c.primary} />
+        <Icon name="chevron-left" size="md" color={c.primary} />
       </TouchableOpacity>
 
       <Text style={styles.title} numberOfLines={1}>{title}</Text>

@@ -7,7 +7,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Alert, ActivityIndicator, TextInput, RefreshControl, Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { supabase } from '../../lib/supabase';
@@ -244,7 +244,7 @@ export default function AdminParentLinksScreen({ navigation }) {
       {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={22} color="#999" />
+          <Icon name="search" size="md" color="#999" />
           <TextInput
             style={styles.searchInput}
             placeholder="Search links..."
@@ -253,7 +253,7 @@ export default function AdminParentLinksScreen({ navigation }) {
           />
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setLinkVisible(true)}>
-          <Ionicons name="add" size={24} color="#fff" />
+          <Icon name="plus" size="md" color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -263,7 +263,7 @@ export default function AdminParentLinksScreen({ navigation }) {
       >
         {filteredLinks.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="link-outline" size={60} color="#ccc" />
+            <Icon name="link" size="lg" color="#ccc" />
             <Text style={styles.emptyTitle}>No Links Found</Text>
             <Text style={styles.emptyHint}>Tap + to link a parent to a student</Text>
           </View>
@@ -274,7 +274,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                 {/* Parent */}
                 <View style={styles.linkPerson}>
                   <View style={[styles.personAvatar, { backgroundColor: '#6A1B9A' }]}>
-                    <Ionicons name="person" size={22} color="#fff" />
+                    <Icon name="user" size="md" color="#fff" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.personName}>{link.parent_profile?.full_name || 'Unknown'}</Text>
@@ -282,12 +282,12 @@ export default function AdminParentLinksScreen({ navigation }) {
                   </View>
                 </View>
 
-                <Ionicons name="link" size={20} color="#ccc" style={{ marginHorizontal: 8 }} />
+                <Icon name="link" size="sm" color="#ccc" style={{ marginHorizontal: 8 }} />
 
                 {/* Student */}
                 <View style={styles.linkPerson}>
                   <View style={[styles.personAvatar, { backgroundColor: '#FF9800' }]}>
-                    <Ionicons name="school" size={22} color="#fff" />
+                    <Icon name="graduation-cap" size="md" color="#fff" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.personName}>{link.student_profile?.full_name || 'Unknown'}</Text>
@@ -304,7 +304,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                   style={styles.removeBtn}
                   onPress={() => removeLink(link)}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
+                  <Icon name="trash" size="sm" color="#E53935" />
                   <Text style={styles.removeTxt}>Remove</Text>
                 </TouchableOpacity>
               </View>
@@ -321,7 +321,7 @@ export default function AdminParentLinksScreen({ navigation }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Link Parent to Student</Text>
               <TouchableOpacity onPress={() => setLinkVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
 
@@ -340,11 +340,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                   style={[styles.pickerItem, selectedParent?.id === p.id && styles.pickerItemActive]}
                   onPress={() => setSelectedParent(p)}
                 >
-                  <Ionicons
-                    name={selectedParent?.id === p.id ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
-                    color={selectedParent?.id === p.id ? '#6A1B9A' : '#ccc'}
-                  />
+                  <Icon name={selectedParent?.id === p.id ? 'check-circle' : 'circle'} size="sm" color={selectedParent?.id === p.id ? '#6A1B9A' : '#ccc'} />
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.pickerName}>{p.full_name}</Text>
                     <Text style={styles.pickerEmail}>{p.email}</Text>
@@ -371,11 +367,7 @@ export default function AdminParentLinksScreen({ navigation }) {
                   style={[styles.pickerItem, selectedStudent?.id === s.id && styles.pickerItemActive]}
                   onPress={() => setSelectedStudent(s)}
                 >
-                  <Ionicons
-                    name={selectedStudent?.id === s.id ? 'radio-button-on' : 'radio-button-off'}
-                    size={18}
-                    color={selectedStudent?.id === s.id ? '#FF9800' : '#ccc'}
-                  />
+                  <Icon name={selectedStudent?.id === s.id ? 'check-circle' : 'circle'} size="sm" color={selectedStudent?.id === s.id ? '#FF9800' : '#ccc'} />
                   <View style={{ marginLeft: 10 }}>
                     <Text style={styles.pickerName}>{s.full_name}</Text>
                     <Text style={styles.pickerEmail}>{s.email}</Text>

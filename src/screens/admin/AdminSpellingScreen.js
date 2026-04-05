@@ -7,7 +7,7 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
@@ -105,7 +105,7 @@ export default function AdminSpellingScreen() {
   return (
     <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
-      <Text style={styles.header}>Spelling Words 🔤</Text>
+      <Text style={styles.header}>Spelling Words</Text>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>{editingId ? 'Edit Word' : 'Add New Word'}</Text>
@@ -176,13 +176,13 @@ export default function AdminSpellingScreen() {
                 </View>
               </View>
               <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                <Ionicons name="pencil" size={20} color="#2196F3" />
+                <Icon name="pencil" size="md" color="#2196F3" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                <Ionicons name="trash" size={20} color="#F44336" />
+                <Icon name="trash" size="md" color="#F44336" />
               </TouchableOpacity>
             </View>
           )}

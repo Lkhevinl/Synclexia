@@ -8,7 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
@@ -73,7 +73,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'stories',
       title: 'Writing Practice',
       subtitle: `${contentStats.stories} stories`,
-      emoji: '✍️',
+      icon: 'pencil',
       bgColor: '#E1BEE7',
       route: 'AdminAddStory',
     },
@@ -81,7 +81,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'phonics',
       title: 'Phonics Audio',
       subtitle: `${contentStats.phonics} items`,
-      emoji: '🗣️',
+      icon: 'mic',
       bgColor: '#B3E5FC',
       route: 'AdminPhonics',
     },
@@ -89,7 +89,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'spelling',
       title: 'Spelling Words',
       subtitle: `${contentStats.spelling} words`,
-      emoji: '🔤',
+      icon: 'type',
       bgColor: '#BBDEFB',
       route: 'TeacherSpelling',
     },
@@ -97,7 +97,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'phonicsActivities',
       title: 'Phonics Activity',
       subtitle: `${contentStats.phonicsActivities} activities`,
-      emoji: '🎮',
+      icon: 'gamepad-2',
       bgColor: '#FFE0B2',
       route: 'TeacherPhonicsActivity',
     },
@@ -105,7 +105,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'phonological',
       title: 'Phonological Awareness',
       subtitle: `${contentStats.phonological} items`,
-      emoji: '🎧',
+      icon: 'headphones',
       bgColor: '#E1BEE7',
       route: 'TeacherPhonological',
     },
@@ -135,7 +135,7 @@ export default function AdminManageContentsScreen({ navigation }) {
         {/* Stats Summary */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
-            <Ionicons name="pie-chart" size={24} color="#607D8B" />
+            <Icon name="pie-chart" size="md" color="#607D8B" />
             <Text style={styles.summaryTitle}>Content Overview</Text>
           </View>
           <Text style={styles.summaryText}>
@@ -153,20 +153,20 @@ export default function AdminManageContentsScreen({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={[styles.contentIconWrapper, { backgroundColor: item.bgColor }]}>
-                <Text style={styles.contentEmoji}>{item.emoji}</Text>
+                <Icon name={item.icon} size="md" color="#455A64" />
               </View>
               <View style={styles.contentInfo}>
                 <Text style={styles.contentTitle}>{item.title}</Text>
                 <Text style={styles.contentSubtitle}>{item.subtitle}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#B0BEC5" />
+              <Icon name="chevron-forward" size="md" color="#B0BEC5" />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Help Text */}
         <View style={styles.helpCard}>
-          <Ionicons name="information-circle-outline" size={20} color="#607D8B" />
+          <Icon name="info" size="md" color="#607D8B" />
           <Text style={styles.helpText}>
             Tap any content type to add, edit, or manage items
           </Text>

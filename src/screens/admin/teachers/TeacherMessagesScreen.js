@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, SectionList, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
@@ -178,7 +178,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'messages' && s.tabBtnActive]}
           onPress={() => setActiveTab('messages')}
         >
-          <Ionicons name="chatbubbles" size={20} color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
+          <Icon name="message-square" size="md" color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'messages' ? s.tabTxtActive : s.tabTxt}>Messages</Text>
           {unreadCount > 0 && (
             <View style={s.tabBadge}><Text style={s.tabBadgeText}>{unreadCount}</Text></View>
@@ -188,7 +188,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'parents' && s.tabBtnActive]}
           onPress={() => setActiveTab('parents')}
         >
-          <Ionicons name="people" size={20} color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
+          <Icon name="users" size="md" color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'parents' ? s.tabTxtActive : s.tabTxt}>Parents</Text>
         </TouchableOpacity>
       </View>
@@ -206,7 +206,7 @@ function InboxView({ profile, onSelectConversation }) {
         <TabBar />
         {allLinkedParents.length === 0 ? (
           <View style={s.centered}>
-            <Ionicons name="people-outline" size={64} color="#ddd" />
+            <Icon name="users" size="lg" color="#ddd" />
             <Text style={s.emptyTitle}>No parents linked yet</Text>
             <Text style={s.emptyHint}>Once parents link their children to your class, they will appear here.</Text>
           </View>
@@ -267,7 +267,7 @@ function InboxView({ profile, onSelectConversation }) {
       <TabBar />
       {conversations.length === 0 ? (
         <View style={s.centered}>
-          <Ionicons name="chatbubbles-outline" size={64} color="#ddd" />
+          <Icon name="message-square" size="lg" color="#ddd" />
           <Text style={s.emptyTitle}>No messages yet</Text>
           <Text style={s.emptyHint}>Switch to the Parents tab to see all parents linked to your enrolled students and start a conversation.</Text>
         </View>
@@ -408,7 +408,7 @@ function ChatView({ profile, conversation, onBack }) {
       {/* Chat sub-header */}
       <View style={s.chatHeader}>
         <TouchableOpacity style={s.backArrow} onPress={onBack}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Icon name="arrow-left" size="md" color="#fff" />
         </TouchableOpacity>
         <View style={[s.chatAvatar, { backgroundColor: avatarColor(parentName) }]}>
           <Text style={s.chatAvatarText}>{parentName[0]?.toUpperCase()}</Text>
@@ -431,7 +431,7 @@ function ChatView({ profile, conversation, onBack }) {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={s.emptyChat}>
-              <Ionicons name="chatbubbles-outline" size={60} color="#ddd" />
+              <Icon name="message-square" size="lg" color="#ddd" />
               <Text style={s.emptyChatText}>No messages yet</Text>
               <Text style={s.emptyChatHint}>Send the first reply to {parentName}</Text>
             </View>
@@ -456,7 +456,7 @@ function ChatView({ profile, conversation, onBack }) {
         >
           {sending
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Ionicons name="send" size={20} color="#fff" />}
+            : <Icon name="send" size="md" color="#fff" />}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -477,7 +477,7 @@ export default function TeacherMessagesScreen() {
         <View style={s.headerRow}>
           {selectedConversation
             ? <TouchableOpacity onPress={() => setSelectedConversation(null)} style={s.headerBack}>
-                <Ionicons name="arrow-back" size={22} color="#fff" />
+                <Icon name="arrow-left" size="md" color="#fff" />
               </TouchableOpacity>
             : <GoBackBtn tintColor="#fff" />}
           <Text style={s.headerTitle}>

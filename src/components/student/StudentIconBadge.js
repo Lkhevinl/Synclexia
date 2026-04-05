@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../icons/Icon';
 import c from './candyTokens';
 
 const variantMap = {
@@ -14,7 +14,7 @@ export default function StudentIconBadge({ icon, label, variant = 'tag' }) {
   const v = variantMap[variant] || variantMap.tag;
   return (
     <View style={[styles.pill, { backgroundColor: v.backgroundColor }]}>
-      <Ionicons name={icon} size={18} color={v.iconColor} />
+      <Icon name={icon} size="sm" color={v.iconColor} />
       <Text style={[styles.label, { color: v.textColor }]}>{label}</Text>
     </View>
   );

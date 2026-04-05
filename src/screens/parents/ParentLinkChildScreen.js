@@ -8,7 +8,7 @@ const showAlert = (title, message, onOk) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n\n${message}`); onOk?.(); }
   else { Alert.alert(title, message, [{ text: 'OK', onPress: onOk }]); }
 };
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -125,7 +125,7 @@ export default function ParentLinkChildScreen({ navigation }) {
 
       {/* How it works */}
       <View style={s.infoCard}>
-        <Ionicons name="information-circle" size={22} color={colors.primary} style={s.infoIcon} />
+        <Icon name="info" size="md" color={colors.primary} style={s.infoIcon} />
         <Text style={tx([s.infoText, { fontSize: fs }])}>
           Ask your child to open{' '}
           <Text style={tx(s.infoBold)}>Synclexia</Text>
@@ -178,7 +178,7 @@ export default function ParentLinkChildScreen({ navigation }) {
               onPress={() => { setCode(''); setFound(null); setError(''); }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close-circle" size={24} color="#B0A0C8" />
+              <Icon name="x-circle" size="md" color="#B0A0C8" />
             </TouchableOpacity>
           )}
         </View>
@@ -196,7 +196,7 @@ export default function ParentLinkChildScreen({ navigation }) {
         {/* Error */}
         {error ? (
           <View style={s.errorRow}>
-            <Ionicons name="alert-circle" size={20} color="#D32F2F" />
+            <Icon name="alert-circle" size="md" color="#D32F2F" />
             <Text style={tx([s.errorText, { fontSize: fs - 1 }])}>{error}</Text>
           </View>
         ) : null}
@@ -212,7 +212,7 @@ export default function ParentLinkChildScreen({ navigation }) {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="search" size={20} color="#fff" />
+              <Icon name="search" size="md" color="#fff" />
               <Text style={tx([s.lookupBtnText, { fontSize: fs + 2 }])}>Find Child</Text>
             </>
           )}
@@ -224,7 +224,7 @@ export default function ParentLinkChildScreen({ navigation }) {
 
             {/* Verified badge */}
             <View style={s.verifiedBadge}>
-              <Ionicons name="checkmark-circle" size={20} color="#388E3C" />
+              <Icon name="check-circle" size="md" color="#388E3C" />
               <Text style={tx([s.verifiedText, { fontSize: fs - 1 }])}>Student found!</Text>
             </View>
 
@@ -253,7 +253,7 @@ export default function ParentLinkChildScreen({ navigation }) {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <Ionicons name="link" size={20} color="#fff" />
+                  <Icon name="link" size="md" color="#fff" />
                   <Text style={tx([s.confirmBtnText, { fontSize: fs + 2 }])}>
                     Link {firstName}
                   </Text>
@@ -264,7 +264,7 @@ export default function ParentLinkChildScreen({ navigation }) {
             {/* Inline error */}
             {linkError ? (
               <View style={s.linkErrorBox}>
-                <Ionicons name="alert-circle" size={20} color="#C62828" />
+                <Icon name="alert-circle" size="md" color="#C62828" />
                 <Text style={tx([s.linkErrorText, { fontSize: fs - 1 }])}>{linkError}</Text>
               </View>
             ) : null}
@@ -272,7 +272,7 @@ export default function ParentLinkChildScreen({ navigation }) {
             {/* Inline success */}
             {linkSuccess ? (
               <View style={s.linkSuccessBox}>
-                <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
+                <Icon name="check-circle" size="md" color="#2E7D32" />
                 <Text style={tx([s.linkSuccessText, { fontSize: fs }])}>
                   {found?.full_name} linked! Returning to dashboard…
                 </Text>

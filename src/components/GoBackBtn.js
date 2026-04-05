@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, View, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { useNavigation } from '@react-navigation/native';
 import c from './student/candyTokens';
 
@@ -36,7 +36,7 @@ export default function GoBackBtn({ color = '#333', style, title, right, candy =
       activeOpacity={0.7}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Ionicons name="chevron-back" size={24} color={candy ? c.primary : (isDark ? '#fff' : '#E8927C')} />
+      <Icon name="chevron-left" size="md" color={candy ? c.primary : (isDark ? '#fff' : '#E8927C')} />
     </TouchableOpacity>
   );
 

@@ -4,7 +4,7 @@ import {
   ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
@@ -20,10 +20,16 @@ const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF980
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 const ACTIVITY_LABELS = {
-  phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
-  phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
-  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
+  phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
+  phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
+  reading: 'Reading', phonological_awareness: 'Phonological',
+  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
+};
+const ACTIVITY_ICON_NAMES = {
+  phonics: 'mic', phonics_blend: 'link-2', phonics_rhyme: 'music',
+  phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
+  reading: 'book-open', phonological_awareness: 'headphones',
+  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
 };
 
 export default function ParentDashboardScreen({ navigation }) {
@@ -224,11 +230,11 @@ export default function ParentDashboardScreen({ navigation }) {
           <Text style={[s.errorHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.errorBody, { paddingBottom: insets.bottom + 20 }]}>
-          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={[s.errorTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Connection Error</Text>
           <Text style={[s.errorMessage, { fontSize: theme.fontSize }, a11yTextStyle]}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => refresh(true)}>
-            <Ionicons name="refresh" size={20} color="#fff" />
+            <Icon name="refresh-cw" size="md" color="#fff" />
             <Text style={[s.retryBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -243,11 +249,11 @@ export default function ParentDashboardScreen({ navigation }) {
           <Text style={[s.emptyHeaderTitle, { fontSize: theme.fontSize + 10 }, a11yTextStyle]}>Parent Dashboard</Text>
         </LinearGradient>
         <View style={[s.emptyBody, { paddingBottom: insets.bottom + 20 }]}>
-          <Ionicons name="people-outline" size={80} color="#ddd" />
+          <Icon name="users" size="xl" color="#ddd" />
           <Text style={[s.emptyTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>No children linked yet</Text>
           <Text style={[s.emptyHint, { fontSize: theme.fontSize }, a11yTextStyle]}>Search for your child's account to start monitoring their progress.</Text>
           <TouchableOpacity style={s.linkChildBtn} onPress={() => navigation.navigate('ParentLinkChild')}>
-            <Ionicons name="add-circle" size={20} color="#fff" />
+            <Icon name="plus-circle" size="md" color="#fff" />
             <Text style={[s.linkChildBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Link a Child</Text>
           </TouchableOpacity>
         </View>
@@ -282,18 +288,18 @@ export default function ParentDashboardScreen({ navigation }) {
               </Text>
               <Text style={[s.welcomeSub, a11yTextStyle]} numberOfLines={1}>Monitoring your child's progress</Text>
             </View>
-            <Ionicons name="people" size={22} color="rgba(255,255,255,0.9)" />
+            <Icon name="users" size="md" color="rgba(255,255,255,0.9)" />
           </View>
 
           {/* Bell icon */}
           <TouchableOpacity style={s.iconBtn} onPress={() => setNotifModalVisible(true)}>
-            <Ionicons name="notifications-outline" size={22} color="#333" />
+            <Icon name="bell" size="md" color="#333" />
             {notifCount > 0 && <View style={s.redDot} />}
           </TouchableOpacity>
 
           {/* Menu icon */}
           <TouchableOpacity style={s.iconBtn} onPress={() => setSidebarVisible(true)}>
-            <Ionicons name="menu-outline" size={22} color="#333" />
+            <Icon name="menu" size="md" color="#333" />
           </TouchableOpacity>
         </View>
       </View>
@@ -333,7 +339,7 @@ export default function ParentDashboardScreen({ navigation }) {
             style={s.editChildBtn}
             onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
           >
-            <Ionicons name="create-outline" size={20} color="#E8927C" />
+            <Icon name="pencil" size="md" color="#E8927C" />
             <Text style={[s.editChildBtnText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -341,19 +347,19 @@ export default function ParentDashboardScreen({ navigation }) {
         {/* ── Stats Row ── */}
         <View style={s.statsRow}>
           <View style={s.statBox}>
-            <Ionicons name="flame" size={22} color="#F44336" />
+            <Icon name="flame" size="md" color="#F44336" />
             <Text style={[s.statVal, { color: '#F44336' }, a11yTextStyle]}>{streak}</Text>
             <Text style={[s.statLbl, a11yTextStyle]}>Day Streak</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statBox}>
-            <Ionicons name="checkmark-circle" size={22} color="#4CAF50" />
+            <Icon name="check-circle" size="md" color="#4CAF50" />
             <Text style={[s.statVal, { color: '#4CAF50' }, a11yTextStyle]}>{progress?.totalSessions ?? 0}</Text>
             <Text style={[s.statLbl, a11yTextStyle]}>Sessions</Text>
           </View>
           <View style={s.statDivider} />
           <View style={s.statBox}>
-            <Ionicons name="trophy" size={22} color="#FF9800" />
+            <Icon name="trophy" size="md" color="#FF9800" />
             <Text style={[s.statVal, { color: '#FF9800' }, a11yTextStyle]}>{progress?.avgAccuracy ?? 0}%</Text>
             <Text style={[s.statLbl, a11yTextStyle]}>Accuracy</Text>
           </View>
@@ -368,13 +374,13 @@ export default function ParentDashboardScreen({ navigation }) {
           ].map((item) => (
             <TouchableOpacity key={item.screen} style={s.navCard} onPress={() => navigation.navigate(item.screen, navParams)} activeOpacity={0.85}>
               <View style={s.navIconSquare}>
-                <Ionicons name={item.icon} size={22} color="#fff" />
+                <Icon name={item.icon} size="md" color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.navLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.label}</Text>
                 <Text style={[s.navDesc, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{item.desc}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={22} color="#E8927C" />
+              <Icon name="chevron-forward" size="md" color="#E8927C" />
             </TouchableOpacity>
           ))}
         </View>
@@ -385,7 +391,7 @@ export default function ParentDashboardScreen({ navigation }) {
             <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>AI Learning Insights</Text>
             <View style={s.aiCard}>
               <View style={s.aiCardHeader}>
-                <Text style={s.aiCardIcon}>🧠</Text>
+                <Icon name="brain" size="lg" color="#7C4DFF" />
                 <View style={{ flex: 1 }}>
                   <Text style={[s.aiCardTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>
                     Overall Score: <Text style={{ color: aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#FF9800' : '#EF5350' }}>{aiInsights.overallScore}%</Text>
@@ -399,7 +405,7 @@ export default function ParentDashboardScreen({ navigation }) {
                   <Text style={[s.aiSectionLabel, { color: '#2E7D32', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Strengths</Text>
                   {aiInsights.strengths.slice(0, 2).map(str => (
                     <View key={str.activity} style={s.aiRow}>
-                      <Text style={s.aiRowIcon}>{str.icon}</Text>
+                      <Icon name={str.icon} size="sm" color="#2E7D32" />
                       <Text style={[s.aiRowLabel, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{str.label}</Text>
                       <Text style={[s.aiRowScore, { color: '#2E7D32', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{str.avgAccuracy}%</Text>
                     </View>
@@ -412,7 +418,7 @@ export default function ParentDashboardScreen({ navigation }) {
                   <Text style={[s.aiSectionLabel, { color: '#E65100', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>Needs Practice</Text>
                   {aiInsights.weaknesses.slice(0, 2).map(wk => (
                     <View key={wk.activity} style={s.aiRow}>
-                      <Text style={s.aiRowIcon}>{wk.icon}</Text>
+                      <Icon name={wk.icon} size="sm" color="#E65100" />
                       <Text style={[s.aiRowLabel, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{wk.label}</Text>
                       <Text style={[s.aiRowScore, { color: '#E65100', fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{wk.avgAccuracy}%</Text>
                     </View>
@@ -422,7 +428,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
               {aiInsights.notPracticed.length > 0 && (
                 <View style={s.aiNotPracticedRow}>
-                  <Ionicons name="alert-circle-outline" size={18} color="#FF9800" />
+                  <Icon name="alert-circle" size="md" color="#FF9800" />
                   <Text style={[s.aiNotPracticedText, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
                     Not tried yet: {aiInsights.notPracticed.map(a => ACTIVITY_META[a]?.label).filter(Boolean).join(', ')}
                   </Text>
@@ -437,7 +443,7 @@ export default function ParentDashboardScreen({ navigation }) {
         <View style={s.card}>
           {!progress || progress.totalSessions === 0 ? (
             <View style={s.emptySnap}>
-              <Ionicons name="bar-chart-outline" size={40} color="#ddd" />
+              <Icon name="bar-chart" size="lg" color="#ddd" />
               <Text style={[s.emptySnapText, { fontSize: theme.fontSize }, a11yTextStyle]}>No activity in the last 14 days</Text>
             </View>
           ) : (
@@ -461,7 +467,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
                 return (
                   <View key={type} style={s.actRow}>
-                    <Text style={[s.actIcon, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
+                    <Icon name={ACTIVITY_ICON_NAMES[type] || 'bar-chart'} size="md" color="#607D8B" />
                     <View style={{ flex: 1 }}>
                       <View style={s.actTop}>
                         <Text style={[s.actLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{ACTIVITY_LABELS[type] || type}</Text>
@@ -489,9 +495,9 @@ export default function ParentDashboardScreen({ navigation }) {
         <View style={s.notifOverlay}>
           <View style={s.notifCard}>
             <View style={s.notifHeader}>
-              <Text style={[s.notifTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>📢 Announcements</Text>
+              <Text style={[s.notifTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Announcements</Text>
               <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -500,7 +506,7 @@ export default function ParentDashboardScreen({ navigation }) {
               contentContainerStyle={{ paddingBottom: 20 }}
               ListEmptyComponent={
                 <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Ionicons name="notifications-off-outline" size={48} color="#ddd" />
+                  <Icon name="bell-off" size="lg" color="#ddd" />
                   <Text style={[{ textAlign: 'center', color: '#999', padding: 30, fontSize: theme.fontSize }, a11yTextStyle]}>
                     No announcements yet.
                   </Text>
@@ -509,7 +515,7 @@ export default function ParentDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <TouchableOpacity style={s.notifItem} activeOpacity={0.7}>
                   <View style={s.notifItemIconBox}>
-                    <Ionicons name="megaphone" size={22} color="#E8927C" />
+                    <Icon name="megaphone" size="md" color="#E8927C" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.notifItemTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.title}</Text>

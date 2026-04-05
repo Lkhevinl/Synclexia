@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import GoBackBtn from '../../../components/GoBackBtn';
@@ -172,10 +172,10 @@ export default function TeacherNotificationsScreen() {
                 </View>
                 <View style={styles.cardActions}>
                     <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                        <Ionicons name="pencil" size={22} color={colors.primary} />
+                        <Icon name="pencil" size="md" color={colors.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                        <Ionicons name="trash-outline" size={22} color="red" />
+                        <Icon name="trash" size="md" color="red" />
                     </TouchableOpacity>
                 </View>
             </View>

@@ -1,16 +1,20 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import Icon from '../icons/Icon';
 import c from './candyTokens';
 
-export default function StudentActivityCard({ title, description, tag, iconName, onPress, accentColor }) {
+export default function StudentActivityCard({ title, description, tag, iconName, imageSource, onPress, accentColor }) {
   const accent = accentColor || c.primary;
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={styles.outer}>
       <View style={[styles.card, { backgroundColor: accent + '14', borderColor: accent + '38' }]}>
         <View style={styles.row}>
           <View style={[styles.iconBox, { backgroundColor: accent }]}>
-            <Ionicons name={iconName} size={28} color="#fff" />
+            {imageSource ? (
+              <Image source={imageSource} style={styles.iconImage} resizeMode="contain" />
+            ) : (
+              <Icon name={iconName} size="lg" color="#fff" />
+            )}
           </View>
 
           <View style={styles.body}>
@@ -24,7 +28,7 @@ export default function StudentActivityCard({ title, description, tag, iconName,
           </View>
 
           <View style={[styles.arrow, { backgroundColor: accent + '28' }]}>
-            <Ionicons name="chevron-forward" size={24} color={accent} />
+            <Icon name="chevron-forward" size="md" color={accent} />
           </View>
         </View>
       </View>
@@ -61,6 +65,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+  },
+  iconImage: {
+    width: 32,
+    height: 32,
   },
   body: {
     flex: 1,

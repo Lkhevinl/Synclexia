@@ -7,7 +7,7 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import GoBackBtn from '../../../components/GoBackBtn';
@@ -17,9 +17,9 @@ import tokens from '../../../theme/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 
 const TASK_TYPES = [
-  { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
-  { id: 'rime',     label: 'Rime 🎵',     color: '#9C27B0' },
-  { id: 'phoneme',  label: 'Phoneme 🔤',  color: '#E91E63' },
+  { id: 'syllable', label: 'Syllable', color: '#2196F3' },
+  { id: 'rime',     label: 'Rime',     color: '#9C27B0' },
+  { id: 'phoneme',  label: 'Phoneme',  color: '#E91E63' },
 ];
 
 const FORM_HINTS = {
@@ -105,11 +105,11 @@ export default function TeacherPhonologicalScreen() {
     if (editingId) {
       const { error } = await supabase.from('phonological_content').update(payload).eq('id', editingId);
       if (error) return Alert.alert('Update Error', error.message);
-      Alert.alert('✅ Updated', 'Item updated successfully.');
+      Alert.alert('Updated', 'Item updated successfully.');
     } else {
       const { error } = await supabase.from('phonological_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
-      Alert.alert('✅ Added', 'Item added successfully.');
+      Alert.alert('Added', 'Item added successfully.');
     }
     resetForm();
     fetchItems();
@@ -150,7 +150,7 @@ export default function TeacherPhonologicalScreen() {
       {/* ── HEADER ── */}
       <LinearGradient colors={['#7B1FA2', '#4A148C']} style={styles.header}>
         <GoBackBtn />
-        <Text style={styles.headerTitle}>Phonological Awareness 🎧</Text>
+        <Text style={styles.headerTitle}>Phonological Awareness</Text>
         <Text style={styles.headerSub}>Manage syllable, rime & phoneme tasks</Text>
 
         {/* Task-type pills */}
@@ -169,7 +169,7 @@ export default function TeacherPhonologicalScreen() {
 
       {/* ── ADD / EDIT FORM ── */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        <Text style={styles.formTitle}>{editingId ? '✏️ Edit Item' : '➕ Add New Item'}</Text>
+        <Text style={styles.formTitle}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
 
         <Text style={styles.fieldLabel}>Difficulty Level</Text>
         <View style={styles.levelRow}>
@@ -207,7 +207,7 @@ export default function TeacherPhonologicalScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.saveBtn, { backgroundColor: taskColor }]} onPress={handleSave}>
-            <Ionicons name={editingId ? 'checkmark-circle' : 'add-circle'} size={22} color="#fff" />
+            <Icon name={editingId ? 'check-circle' : 'plus-circle'} size="md" color="#fff" />
             <Text style={styles.saveBtnText}>{editingId ? 'Update' : 'Add Item'}</Text>
           </TouchableOpacity>
         </View>
@@ -240,20 +240,20 @@ export default function TeacherPhonologicalScreen() {
                   <Text style={styles.cardLevel}>Level {item.difficulty_level ?? 'All'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="ear-outline" size={50} color="#E0E0E0" />
+              <Icon name="ear" size="lg" color="#E0E0E0" />
               <Text style={styles.emptyText}>No items yet. Add one above!</Text>
             </View>
           }

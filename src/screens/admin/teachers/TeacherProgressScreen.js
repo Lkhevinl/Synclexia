@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
@@ -12,15 +12,15 @@ import tokens from '../../../theme/tokens';
 import { useTheme } from '../../../context/ThemeContext';
 
 const ACTIVITY_ICONS = {
-  phonics:                  '🗣️',
-  phonics_blend:            '🔗',
-  phonics_rhyme:            '🎵',
-  phonics_segment:          '✂️',
-  spelling:                 '🔤',
-  writing:                  '✍️',
-  reading:                  '📖',
-  scan:                     '📷',
-  phonological_awareness:   '🎧',
+  phonics:                  'mic',
+  phonics_blend:            'link-2',
+  phonics_rhyme:            'music',
+  phonics_segment:          'scissors',
+  spelling:                 'type',
+  writing:                  'pencil',
+  reading:                  'book-open',
+  scan:                     'camera',
+  phonological_awareness:   'headphones',
 };
 
 export default function TeacherProgressScreen() {
@@ -129,7 +129,7 @@ export default function TeacherProgressScreen() {
           <Text style={styles.headerTitle}>Student Progress</Text>
         </LinearGradient>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <Ionicons name="analytics" size={80} color="#ccc" style={{ marginBottom: 20 }} />
+          <Icon name="bar-chart" size="xl" color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
             No students enrolled yet
           </Text>
@@ -209,7 +209,7 @@ export default function TeacherProgressScreen() {
 
             {/* Export Button */}
             <TouchableOpacity style={styles.exportBtn} onPress={exportReport}>
-              <Ionicons name="download-outline" size={22} color="#fff" />
+              <Icon name="download" size="md" color="#fff" />
               <Text style={styles.exportText}>Export Report</Text>
             </TouchableOpacity>
 
@@ -224,7 +224,7 @@ export default function TeacherProgressScreen() {
                 const avgAcc = stats.totalItems > 0 ? Math.round((stats.totalScore / stats.totalItems) * 100) : 0;
                 return (
                   <View key={type} style={styles.breakdownRow}>
-                    <Text style={styles.breakdownIcon}>{ACTIVITY_ICONS[type] || '📊'}</Text>
+                    <Icon name={ACTIVITY_ICONS[type] || 'bar-chart'} size="md" color="#607D8B" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.breakdownType}>{type}</Text>
                       <View style={styles.breakdownBar}>
@@ -244,7 +244,7 @@ export default function TeacherProgressScreen() {
             <Text style={styles.sectionLabel}>Recent Sessions</Text>
             {progress.recentSessions.map((session, idx) => (
               <View key={session.id || idx} style={styles.sessionItem}>
-                <Text style={styles.sessionIcon}>{ACTIVITY_ICONS[session.activity_type] || '📊'}</Text>
+                <Icon name={ACTIVITY_ICONS[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sessionType}>{session.activity_type}</Text>
                   <Text style={styles.sessionScore}>

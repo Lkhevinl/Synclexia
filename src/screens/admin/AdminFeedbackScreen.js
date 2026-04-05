@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,7 +30,7 @@ export default function AdminFeedbackScreen({ navigation }) {
       <GoBackBtn />
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="construct" size={64} color="#607D8B" />
+          <Icon name="wrench" size="xl" color="#607D8B" />
         </View>
         <Text style={styles.title}>Feedback System Updated</Text>
         <Text style={styles.message}>
@@ -44,7 +44,7 @@ export default function AdminFeedbackScreen({ navigation }) {
           style={styles.button}
           onPress={() => navigation.navigate('MaintenanceLogs')}
         >
-          <Ionicons name="list-outline" size={20} color="#fff" />
+          <Icon name="list" size="md" color="#fff" />
           <Text style={styles.buttonText}>View Maintenance Logs</Text>
         </TouchableOpacity>
 
@@ -52,7 +52,7 @@ export default function AdminFeedbackScreen({ navigation }) {
           style={[styles.button, styles.secondaryButton]}
           onPress={() => navigation.navigate('AddMaintenanceLog')}
         >
-          <Ionicons name="add-circle-outline" size={20} color="#607D8B" />
+          <Icon name="plus-circle" size="md" color="#607D8B" />
           <Text style={[styles.buttonText, styles.secondaryButtonText]}>Add New Entry</Text>
         </TouchableOpacity>
       </View>

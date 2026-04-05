@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Platform, ScrollView, Image, ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
@@ -131,7 +131,7 @@ export default function ProfileScreen({ navigation }) {
               : <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
             }
             <View style={styles.bannerEditBtn}>
-              {bannerUploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="image-outline" size={18} color="#fff" />}
+              {bannerUploading ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="image" size="sm" color="#fff" />}
               <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : isStudent ? 'View Cover' : 'Edit Cover'}</Text>
             </View>
           </TouchableOpacity>
@@ -143,13 +143,11 @@ export default function ProfileScreen({ navigation }) {
               {avatarUrl
                 ? <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                 : <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                    <Text style={[styles.avatarInitial, { color: colors.onPrimary }]}>
-                      {fullName?.[0]?.toUpperCase() || profile?.full_name?.[0]?.toUpperCase() || '?'}
-                    </Text>
+                    <Text style={styles.avatarInitial}>{fullName?.[0]?.toUpperCase() || profile?.full_name?.[0]?.toUpperCase() || '?'}</Text>
                   </View>
               }
               <View style={[styles.cameraOverlay, { backgroundColor: colors.primary }]}>
-                {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Ionicons name="camera" size={18} color={colors.onPrimary} />}
+                {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Icon name="camera" size="sm" color={colors.onPrimary} />}
               </View>
             </TouchableOpacity>
           </View>
@@ -163,16 +161,16 @@ export default function ProfileScreen({ navigation }) {
         <View style={[styles.form, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
           <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>FULL NAME</AppText>
           <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="person-outline" size={22} color={colors.onSurfaceMuted} />
+            <Icon name="user" size="md" color={colors.onSurfaceMuted} />
             <TextInput style={[styles.input, { color: colors.onSurface }]} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={colors.onSurfaceMuted} editable={!isStudent} returnKeyType="next" autoComplete="name" />
           </View>
 
           <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>EMAIL</AppText>
           <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Ionicons name="mail-outline" size={22} color={colors.onSurfaceMuted} />
+            <Icon name="mail" size="md" color={colors.onSurfaceMuted} />
             <TextInput style={[styles.input, { color: colors.onSurface }]} value={email} onChangeText={setEmail} placeholder="Your email address" placeholderTextColor={colors.onSurfaceMuted} editable={!isStudent} keyboardType="email-address" autoCapitalize="none" returnKeyType="done" autoComplete="email" />
           </View>
-          {!isStudent && <AppText variant="caption" style={{ color: colors.onSurfaceMuted, marginTop: tokens.spacing.xs, marginLeft: tokens.spacing.xs, marginBottom: tokens.spacing.xs }}>⚠️ Changing email requires confirmation via the new address.</AppText>}
+          {!isStudent && <AppText variant="caption" style={{ color: colors.onSurfaceMuted, marginTop: tokens.spacing.xs, marginLeft: tokens.spacing.xs, marginBottom: tokens.spacing.xs }}>Changing email requires confirmation via the new address.</AppText>}
 
           {!isStudent && (
             <TouchableOpacity
@@ -182,7 +180,7 @@ export default function ProfileScreen({ navigation }) {
             >
               {saving ? <ActivityIndicator color={colors.onPrimary} /> : (
                 <>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.onPrimary} />
+                  <Icon name="check-circle" size="md" color={colors.onPrimary} />
                   <AppText variant="body" style={{ color: colors.onPrimary, fontWeight: 'bold', marginLeft: tokens.spacing.sm }}>Save Changes</AppText>
                 </>
               )}
@@ -191,9 +189,9 @@ export default function ProfileScreen({ navigation }) {
 
           {!isStudent && (
             <TouchableOpacity style={[styles.changePassBtn, { backgroundColor: colors.primaryLight }]} onPress={() => navigation.navigate('ChangePassword')}>
-              <Ionicons name="lock-closed-outline" size={20} color={colors.primary} />
+              <Icon name="lock" size="md" color={colors.primary} />
               <AppText variant="body" style={{ flex: 1, color: colors.primary, fontWeight: 'bold', marginLeft: tokens.spacing.sm }}>Change Password</AppText>
-              <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+              <Icon name="chevron-forward" size="sm" color={colors.onSurfaceMuted} />
             </TouchableOpacity>
           )}
         </View>

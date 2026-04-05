@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import AppHeader from '../../../components/AppHeader';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
@@ -243,7 +243,7 @@ export default function TeacherAssignActivitiesScreen() {
       <ScreenWrapper role="teacher" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
         <AppHeader title="Assign Activities" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <Ionicons name="people" size={80} color="#ccc" style={{ marginBottom: 20 }} />
+          <Icon name="users" size="xl" color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
             No students enrolled yet
           </Text>

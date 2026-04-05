@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +13,7 @@ export default function AdminPhonicsScreen() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
-  const [icon, setIcon] = useState('🔤');
+  const [icon, setIcon] = useState('mic');
   const [bgColor, setBgColor] = useState('#4FC3F7');
   const [editingId, setEditingId] = useState(null);
 
@@ -35,7 +35,7 @@ export default function AdminPhonicsScreen() {
 
   const resetForm = () => {
     setLabel('');
-    setIcon('🔤');
+    setIcon('mic');
     setBgColor('#4FC3F7');
     setEditingId(null);
   };
@@ -67,7 +67,7 @@ export default function AdminPhonicsScreen() {
 
   const handleEdit = (item) => {
     setLabel(item.label || '');
-    setIcon(item.icon || '🔤');
+    setIcon(item.icon || 'mic');
     setBgColor(item.bg_color || '#4FC3F7');
     setEditingId(item.id);
   };
@@ -105,7 +105,7 @@ export default function AdminPhonicsScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Icon (emoji)"
+          placeholder="Icon (Lucide name)"
           value={icon}
           onChangeText={setIcon}
         />
@@ -138,7 +138,7 @@ export default function AdminPhonicsScreen() {
           renderItem={({ item }) => (
             <View style={styles.itemRow}>
               <View style={styles.itemInfo}>
-                <Text style={styles.itemIcon}>{item.icon || '🔤'}</Text>
+                <Icon name={item.icon || 'mic'} size="md" color="#455A64" />
                 <View>
                   <Text style={styles.itemLabel}>{item.label}</Text>
                   <Text style={styles.itemMeta}>{item.bg_color}</Text>
@@ -146,10 +146,10 @@ export default function AdminPhonicsScreen() {
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#0288D1" />
+                  <Icon name="pencil" size="md" color="#0288D1" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
+                  <Icon name="trash" size="md" color="#E53935" />
                 </TouchableOpacity>
               </View>
             </View>

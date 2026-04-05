@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, Modal, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
@@ -128,7 +128,7 @@ export default function AdminUsersScreen({ route }) {
 
       {/* SEARCH BAR */}
       <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#666" style={{marginRight: 10}} />
+          <Icon name="search" size="md" color="#666" style={{marginRight: 10}} />
           <TextInput 
             placeholder="Search by name or email..." 
             value={search} 
@@ -137,7 +137,7 @@ export default function AdminUsersScreen({ route }) {
           />
           {search.length > 0 && (
               <TouchableOpacity onPress={() => setSearch('')}>
-                  <Ionicons name="close-circle" size={20} color="#999" />
+                  <Icon name="x-circle" size="md" color="#999" />
               </TouchableOpacity>
           )}
       </View>
@@ -166,12 +166,12 @@ export default function AdminUsersScreen({ route }) {
                 <View style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
                     <TouchableOpacity onPress={() => openEditModal(item)}>
                         <View style={styles.editBtn}>
-                            <Ionicons name="pencil" size={20} color="white" />
+                            <Icon name="pencil" size="md" color="white" />
                         </View>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteUser(item.id)}>
                         <View style={styles.trashBtn}>
-                            <Ionicons name="ban" size={20} color="white" />
+                            <Icon name="ban" size="md" color="white" />
                         </View>
                     </TouchableOpacity>
                 </View>

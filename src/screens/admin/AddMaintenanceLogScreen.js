@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import AppHeader from '../../components/AppHeader';
@@ -177,13 +177,13 @@ export default function AddMaintenanceLogScreen({ navigation }) {
         onPress={() => setLogType(type.value)}
       >
         <View style={[styles.typeIconWrapper, { backgroundColor: type.color + '20' }]}>
-          <Ionicons name={type.icon} size={24} color={type.color} />
+          <Icon name={type.icon} size="md" color={type.color} />
         </View>
         <Text style={[styles.typeLabel, isSelected && { color: type.color, fontWeight: '600' }]}>
           {type.label}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color={type.color} style={styles.checkIcon} />
+          <Icon name="check-circle" size="md" color={type.color} style={styles.checkIcon} />
         )}
       </TouchableOpacity>
     );
@@ -204,7 +204,7 @@ export default function AddMaintenanceLogScreen({ navigation }) {
           {priorityOption.label}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={priorityOption.color} />
+          <Icon name="check-circle" size="sm" color={priorityOption.color} />
         )}
       </TouchableOpacity>
     );
@@ -223,7 +223,7 @@ export default function AddMaintenanceLogScreen({ navigation }) {
         <View style={styles.formCard}>
           {/* Header Info */}
           <View style={styles.headerInfo}>
-            <Ionicons name="information-circle" size={20} color="#607D8B" />
+            <Icon name="info" size="md" color="#607D8B" />
             <Text style={styles.headerText}>
               {profile?.role === 'admin'
                 ? 'Add system maintenance logs and track user issues'

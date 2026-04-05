@@ -9,7 +9,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import AppHeader from '../components/AppHeader';
 import EmptyState from '../components/EmptyState';
@@ -329,15 +329,13 @@ export default function MaintenanceLogsScreen({ navigation }) {
     const isSelected = selectedFilter === filter.key;
     return (
       <TouchableOpacity
-        key={filter.key}
         style={[styles.filterBtn, isSelected && styles.filterBtnActive]}
         onPress={() => setSelectedFilter(filter.key)}
       >
-        <Ionicons
+        <Icon
           name={filter.icon}
-          size={14}
+          size="sm"
           color={isSelected ? '#fff' : '#607D8B'}
-          style={styles.filterIcon}
         />
         <Text style={[styles.filterText, isSelected && styles.filterTextActive]}>
           {filter.label}
@@ -363,7 +361,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       >
         <View style={styles.logHeader}>
           <View style={[styles.logIconBadge, { backgroundColor: typeConfig.bgColor }]}>
-            <Ionicons name={typeConfig.icon} size={20} color={typeConfig.color} />
+            <Icon name={typeConfig.icon} size="md" color={typeConfig.color} />
           </View>
           <View style={styles.logHeaderText}>
             <View style={styles.logTitleRow}>
@@ -385,7 +383,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
               )}
               {(item.admin_comment || item.legacyReply) && (
                 <View style={styles.commentBadge}>
-                  <Ionicons name="chatbubble" size={14} color="#4CAF50" />
+                  <Icon name="message-square" size="sm" color="#4CAF50" />
                   <Text style={styles.commentBadgeText}>REPLIED</Text>
                 </View>
               )}
@@ -403,7 +401,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
         {/* Enhanced footer with status and category */}
         <View style={styles.logFooter}>
           <View style={styles.logFooterLeft}>
-            <Ionicons name="person-outline" size={18} color="#90A4AE" />
+            <Icon name="user" size="md" color="#90A4AE" />
             <Text style={styles.logPerformer}>{performedBy}</Text>
             {item.category && (
               <>

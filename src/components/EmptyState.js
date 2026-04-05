@@ -1,7 +1,7 @@
 // src/components/EmptyState.js
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { useTheme } from '../context/ThemeContext';
 import AppText from './AppText';
 import tokens from '../theme/tokens';
@@ -14,7 +14,7 @@ export default function EmptyState({
   return (
     <View style={styles.container}>
       <View style={[styles.circle, { backgroundColor: colors.primaryLight }]}>
-        <Ionicons name={icon} size={50} color={colors.onSurfaceMuted} />
+        <Icon name={icon} size="xl" color={colors.onSurfaceMuted} />
       </View>
       <AppText variant="body" style={styles.text}>{message}</AppText>
     </View>
