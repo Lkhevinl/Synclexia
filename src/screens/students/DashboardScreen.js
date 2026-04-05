@@ -22,9 +22,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DAILY_TIPS = [
   "Tip: Reading out loud helps you remember better!",
   "Fact: 'A' is the most common letter used in English.",
-  "Goal: Try to earn 50 XP today!",
   "Tip: Take a break if your eyes get tired.",
-  "Fun: Can you complete all quests this week?"
 ];
 
 // Loading Screen Component
@@ -273,7 +271,7 @@ export default function DashboardScreen({ navigation }) {
               {[
                 { icon: 'finger-print', color: c.primary,  step: '1', text: 'Tap any card below to start an activity' },
                 { icon: 'volume-high',  color: '#FF9800',  step: '2', text: 'Follow the instructions on each screen' },
-                { icon: 'trophy',       color: c.success,  step: '3', text: 'Finish activities to earn XP and complete quests!' },
+                { icon: 'trophy',       color: c.success,  step: '3', text: 'Finish activities and track your progress!' },
               ].map(({ icon, color, step, text }) => (
                 <View key={step} style={styles.guideStep}>
                   <StudentBadge variant="tag" style={{ marginRight: 8 }}>{step}</StudentBadge>
