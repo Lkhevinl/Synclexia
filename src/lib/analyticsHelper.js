@@ -303,12 +303,17 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
 
       const sortedDates = Array.from(activityDates).sort((a, b) => b - a);
 
-      for (let i = 0; i < sortedDates.length; i++) {
-        const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
-        if (daysDiff === streak) {
-          streak++;
-        } else {
-          break;
+      const mostRecentDiff = sortedDates.length > 0
+        ? Math.floor((today - sortedDates[0]) / (1000 * 60 * 60 * 24))
+        : Infinity;
+      if (mostRecentDiff <= 1) {
+        for (let i = 0; i < sortedDates.length; i++) {
+          const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
+          if (daysDiff === streak) {
+            streak++;
+          } else {
+            break;
+          }
         }
       }
 

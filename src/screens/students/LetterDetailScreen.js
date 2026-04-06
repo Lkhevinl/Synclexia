@@ -34,15 +34,25 @@ async function playElevenLabsTTS(text) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = async () => {
+        let sound = null;
         try {
           const base64 = reader.result.split(',')[1];
-          const { sound } = await Audio.Sound.createAsync(
+          ({ sound } = await Audio.Sound.createAsync(
             { uri: `data:audio/mp3;base64,${base64}` },
             { shouldPlay: true, rate: 0.92 }
-          );
-          await sound.playAsync();
+          ));
+          await new Promise((res, rej) => {
+            sound.setOnPlaybackStatusUpdate((st) => {
+              if (st.didJustFinish) res();
+              if (st.error) rej(new Error(st.error));
+            });
+          });
           resolve(true);
-        } catch (e) { reject(e); }
+        } catch (e) {
+          reject(e);
+        } finally {
+          if (sound) sound.unloadAsync().catch(() => {});
+        }
       };
       reader.onerror = reject;
       reader.readAsDataURL(blob);
@@ -89,14 +99,18 @@ export default function LetterDetailScreen() {
       Animated.timing(feedbackAnim, { toValue: 0, duration: 600, useNativeDriver: true, delay: 300 }),
     ]).start();
 
-    const text = `${item.story} ... ${item.sound}! Your turn!`;
-    const ok = await playElevenLabsTTS(text);
-    if (!ok) Speech.speak(item.sound || item.letter, { rate: 0.85, pitch: 1.1 });
-
-    setTimeout(() => {
-      setPlaying(false);
-      setSoundFeedback(false);
-    }, 1200);
+    try {
+      const text = `${item.story} ... ${item.sound}! Your turn!`;
+      const ok = await playElevenLabsTTS(text);
+      if (!ok) Speech.speak(item.sound || item.letter, { rate: 0.85, pitch: 1.1 });
+    } catch {
+      Speech.speak(item.sound || item.letter, { rate: 0.85, pitch: 1.1 });
+    } finally {
+      setTimeout(() => {
+        setPlaying(false);
+        setSoundFeedback(false);
+      }, 1200);
+    }
   };
 
   const handleTabChange = (t) => {

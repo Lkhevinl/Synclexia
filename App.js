@@ -47,8 +47,10 @@ function AppWithTheme() {
     return () => sub.remove();
   }, []);
 
-  Text.defaultProps = Text.defaultProps ?? {};
-  Text.defaultProps.style = Object.keys(a11yTextStyle).length > 0 ? a11yTextStyle : undefined;
+  useEffect(() => {
+    Text.defaultProps = Text.defaultProps ?? {};
+    Text.defaultProps.style = Object.keys(a11yTextStyle).length > 0 ? a11yTextStyle : undefined;
+  }, [a11yTextStyle]);
 
   // Key changes on accessibility setting changes, remounting NavigationContainer
   // so all Text components pick up the updated defaultProps.

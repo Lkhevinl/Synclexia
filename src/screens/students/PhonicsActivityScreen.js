@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Animated, Alert, ActivityIndicator,
@@ -98,12 +98,14 @@ function ModeSelector({ onSelect }) {
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(bounceAnim, { toValue: 1.08, duration: 700, useNativeDriver: true }),
         Animated.timing(bounceAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    loop.start();
+    return () => loop.stop();
   }, []);
 
   const modes = [
@@ -639,6 +641,7 @@ function SegmentGame({ onBack, userId, items }) {
 
   const handleTap = () => {
     if (answered) return;
+    if (taps >= current.count) return;
     const next = taps + 1;
     setTaps(next);
     speechRunIdRef.current += 1;
@@ -929,7 +932,7 @@ function WordBuilderGame({ onBack, userId }) {
   const [finished, setFinished] = useState(false);
 
   const current = words[idx];
-  const shuffledPhonemes = useState(() => shuffleArr(current.phonemes))[0];
+  const shuffledPhonemes = useMemo(() => shuffleArr(current.phonemes), [idx]);
 
   const speak = (text) => Speech.speak(text, { rate: 0.7, pitch: 1.1 });
 
@@ -1051,10 +1054,10 @@ function TrickyWordsGame({ onBack, userId }) {
   const [finished, setFinished] = useState(false);
 
   const current = words[idx];
-  const options = useState(() => {
+  const options = useMemo(() => {
     const wrong = ['was', 'to', 'do', 'are', 'all'].filter(w => w !== current.word).slice(0, 3);
     return shuffleArr([current.word, ...wrong]);
-  })[0];
+  }, [idx]);
 
   const handleSelect = (word) => {
     if (selected) return;

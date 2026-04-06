@@ -10,19 +10,6 @@ import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
 import c from '../components/student/candyTokens';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
-import LexiCompanion from '../components/LexiCompanion';
-
-/** Wraps a student activity screen so Lexi floats over it. */
-function withLexi(ScreenComponent) {
-  const Wrapped = (props) => (
-    <View style={{ flex: 1 }}>
-      <ScreenComponent {...props} />
-      <LexiCompanion />
-    </View>
-  );
-  Wrapped.displayName = `WithLexi(${ScreenComponent.displayName || ScreenComponent.name || 'Screen'})`;
-  return Wrapped;
-}
 
 // Standard Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -169,7 +156,6 @@ function StudentTabs() {
         }}
       />
     </Tab.Navigator>
-    <LexiCompanion />
     </View>
   );
 }
@@ -245,17 +231,17 @@ function AppScreens() {
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {/* User App */}
       <Stack.Screen name="Home" component={HomeComponent} />
-      <Stack.Screen name="Phonics"                 component={withLexi(PhonicsScreen)} />
-      <Stack.Screen name="Writing"                 component={withLexi(WritingScreen)} />
-      <Stack.Screen name="Reading"                 component={withLexi(ReadingScreen)} />
+      <Stack.Screen name="Phonics"                 component={PhonicsScreen} />
+      <Stack.Screen name="Writing"                 component={WritingScreen} />
+      <Stack.Screen name="Reading"                 component={ReadingScreen} />
       <Stack.Screen name="Scan"                    component={ScanScreen} />
       <Stack.Screen name="Support"                 component={SupportScreen} />
       <Stack.Screen name="About"                   component={AboutScreen} />
       <Stack.Screen name="Settings"                component={SettingsScreen} />
-      <Stack.Screen name="PhonicsActivity"         component={withLexi(PhonicsActivityScreen)} />
-      <Stack.Screen name="LetterDetail"             component={withLexi(LetterDetailScreen)} />
-      <Stack.Screen name="Spelling"                component={withLexi(SpellingScreen)} />
-      <Stack.Screen name="PhonologicalAwareness"   component={withLexi(PhonologicalAwarenessScreen)} />
+      <Stack.Screen name="PhonicsActivity"         component={PhonicsActivityScreen} />
+      <Stack.Screen name="LetterDetail"             component={LetterDetailScreen} />
+      <Stack.Screen name="Spelling"                component={SpellingScreen} />
+      <Stack.Screen name="PhonologicalAwareness"   component={PhonologicalAwarenessScreen} />
       <Stack.Screen name="AIInsights" component={AIInsightsScreen} />
       <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />

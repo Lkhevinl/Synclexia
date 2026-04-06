@@ -156,12 +156,15 @@ export default function DashboardScreen({ navigation }) {
 
         const sortedDates = Array.from(activityDates).sort((a, b) => b - a);
 
-        for (let i = 0; i < sortedDates.length; i++) {
-          const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
-          if (daysDiff === streak) {
-            streak++;
-          } else {
-            break;
+        const mostRecentDiff = Math.floor((today - sortedDates[0]) / (1000 * 60 * 60 * 24));
+        if (mostRecentDiff <= 1) {
+          for (let i = 0; i < sortedDates.length; i++) {
+            const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
+            if (daysDiff === streak) {
+              streak++;
+            } else {
+              break;
+            }
           }
         }
       }

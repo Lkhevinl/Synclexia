@@ -24,7 +24,7 @@ const passwordStrength = (pw) => {
 };
 
 export default function UpdatePasswordScreen() {
-  const { signOut } = useAuth();
+  const { signOut, clearRecoveryMode } = useAuth();
   const { colors } = useTheme();
   const { height: SH } = useWindowDimensions();
 
@@ -58,6 +58,7 @@ export default function UpdatePasswordScreen() {
     if (error) {
       Alert.alert('Error', error.message);
     } else {
+      clearRecoveryMode();
       setDone(true);
       setTimeout(() => signOut(), 2000);
     }

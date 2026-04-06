@@ -1,4 +1,5 @@
 import { Audio } from 'expo-av';
+import * as Speech from 'expo-speech';
 
 const SAMPLE_RATE = 22050;
 
@@ -177,10 +178,27 @@ const SYNTH_MAP = {
 // ─── Public player ────────────────────────────────────────────────────────────
 
 let _sound = null;
+let _inflight = null;
 
 export async function playPhoneme(letter) {
+  // Serialize calls: if a previous play is still in progress, wait for it first
+  if (_inflight) {
+    await _inflight.catch(() => {});
+  }
+
   const fn = SYNTH_MAP[letter?.toLowerCase()];
-  if (!fn) return;
+
+  // Fallback: letters without a synthesiser use expo-speech
+  if (!fn) {
+    _inflight = null;
+    Speech.stop();
+    Speech.speak(letter || '', { rate: 0.85, pitch: 1.1 });
+    return;
+  }
+
+  let resolve;
+  _inflight = new Promise((r) => { resolve = r; });
+
   try {
     if (_sound) {
       await _sound.stopAsync().catch(() => {});
@@ -191,9 +209,14 @@ export async function playPhoneme(letter) {
     const { sound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true, volume: 1.0 });
     _sound = sound;
     sound.setOnPlaybackStatusUpdate((st) => {
-      if (st.didJustFinish) { sound.unloadAsync().catch(() => {}); if (_sound === sound) _sound = null; }
+      if (st.didJustFinish) {
+        sound.unloadAsync().catch(() => {});
+        if (_sound === sound) _sound = null;
+        resolve();
+      }
     });
   } catch (e) {
     console.warn('phonicsSynth:', e);
+    resolve();
   }
 }
