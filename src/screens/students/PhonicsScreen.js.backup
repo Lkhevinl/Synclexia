@@ -1,0 +1,773 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  ActivityIndicator, ScrollView, Animated, Modal, Dimensions, Image
+} from 'react-native';
+import Icon from '../../components/icons/Icon';
+import * as Speech from 'expo-speech';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useNavigation } from '@react-navigation/native';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { logSession } from '../../lib/analyticsHelper';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATION COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function FloatingEmoji({ emoji, style, delay = 0 }) {
+  const floatAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, { toValue: -10, duration: 1500, useNativeDriver: true, delay }),
+        Animated.timing(floatAnim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  
+  return (
+    <Animated.Text style={[style, { transform: [{ translateY: floatAnim }] }]}>
+      {emoji}
+    </Animated.Text>
+  );
+}
+
+function PulsingView({ children, style, scale = 1.05 }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: scale, duration: 800, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  
+  return (
+    <Animated.View style={[style, { transform: [{ scale: pulseAnim }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function SoundWave({ isActive, color = '#fff' }) {
+  const waves = useRef([...Array(5)].map(() => new Animated.Value(0))).current;
+  
+  useEffect(() => {
+    if (isActive) {
+      const animations = waves.map((wave, i) =>
+        Animated.loop(
+          Animated.sequence([
+            Animated.delay(i * 100),
+            Animated.timing(wave, { toValue: 1, duration: 400, useNativeDriver: true }),
+            Animated.timing(wave, { toValue: 0, duration: 400, useNativeDriver: true }),
+          ])
+        )
+      );
+      Animated.parallel(animations).start();
+    } else {
+      waves.forEach(wave => wave.setValue(0));
+    }
+  }, [isActive]);
+  
+  return (
+    <View style={sw.container}>
+      {waves.map((wave, i) => (
+        <Animated.View
+          key={i}
+          style={[
+            sw.bar,
+            {
+              backgroundColor: color,
+              transform: [{
+                scaleY: wave.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.3, 1],
+                })
+              }]
+            }
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+const sw = StyleSheet.create({
+  container: { flexDirection: 'row', gap: 3, alignItems: 'center', height: 20 },
+  bar: { width: 4, height: 20, borderRadius: 2 },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// JOLLY PHONICS DATA - 42 letter sounds in 7 groups with actions and stories
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const JOLLY_PHONICS_GROUPS = [
+  {
+    id: 1,
+    name: 'Group 1',
+    color: '#FF6B6B',
+    gradient: ['#FF8A80', '#FF5252'],
+    sounds: [
+      { letter: 's', sound: 'ssss', action: 'Weave hand in an S shape, like a snake, saying sssss.', story: 'A family of snakes hisss in the grass.', example: 'sun, snake, sock' },
+      { letter: 'a', sound: 'a-a-a', action: 'Wiggle fingers above elbow as if ants crawling on you, saying a, a, a.', story: 'Some ants crawl up your arm!', example: 'ant, apple, ax' },
+      { letter: 't', sound: 't-t-t', action: 'Turn head from side to side as if watching tennis, saying t, t, t.', story: 'Watch the tennis ball go back and forth!', example: 'tennis, tent, top' },
+      { letter: 'i', sound: 'i-i-i', action: 'Pretend to be mice by wiggling fingers on nose and squeaking i, i, i.', story: 'Little mice squeak and wiggle their noses!', example: 'ink, igloo, insect' },
+      { letter: 'p', sound: 'p-p-p', action: 'Pretend to puff out candles, saying p, p, p.', story: 'Blow out the birthday candles!', example: 'puff, pen, pig' },
+      { letter: 'n', sound: 'nnn', action: 'Hold arms out and pretend to be an airplane, saying nnn.', story: 'The airplane flies through the sky!', example: 'nose, nut, net' },
+    ]
+  },
+  {
+    id: 2,
+    name: 'Group 2',
+    color: '#4ECDC4',
+    gradient: ['#80CBC4', '#26A69A'],
+    sounds: [
+      { letter: 'c', sound: 'k-k-k', action: 'Raise hands and snap fingers together as if playing castanets, saying c, c, c.', story: 'Click the castanets together!', example: 'castanets, cat, cup' },
+      { letter: 'k', sound: 'k-k-k', action: 'Raise hands and snap fingers together as if playing castanets, saying k, k, k.', story: 'Click the castanets together!', example: 'kite, key, king' },
+      { letter: 'e', sound: 'e-e-e', action: 'Hold one hand to ear and pretend to be an old man, saying e, e, e.', story: 'An old elephant says "Eh? What did you say?"', example: 'egg, elephant, elbow' },
+      { letter: 'h', sound: 'h-h-h', action: 'Hold hand in front of mouth and pant as if out of breath, saying h, h, h.', story: 'You are tired from running fast!', example: 'hot, house, horse' },
+      { letter: 'r', sound: 'rrr', action: 'Pretend to be a puppy holding a piece of rag, shaking head saying rrr.', story: 'The puppy shakes the rag!', example: 'rat, red, rug' },
+      { letter: 'm', sound: 'mmm', action: 'Rub tummy as if seeing tasty food and say mmmmmm.', story: 'Mmm! This food is yummy!', example: 'mum, mat, man' },
+      { letter: 'd', sound: 'd-d-d', action: 'Pretend to beat a drum, moving arms up and down saying d, d, d.', story: 'Beat the drum loudly!', example: 'drum, dog, dad' },
+    ]
+  },
+  {
+    id: 3,
+    name: 'Group 3',
+    color: '#FFD93D',
+    gradient: ['#FFF176', '#FDD835'],
+    sounds: [
+      { letter: 'g', sound: 'g-g-g', action: 'Spiral hand down like water going down the drain, saying g, g, g.', story: 'The water goes gurgle, gurgle, gurgle!', example: 'gurgle, goat, girl' },
+      { letter: 'o', sound: 'o-o-o', action: 'Pretend to turn light switch on and off, saying o, o, o.', story: 'Click! The light goes on and off!', example: 'on, off, orange' },
+      { letter: 'u', sound: 'u-u-u', action: 'Pretend to put up an umbrella and say u, u, u.', story: 'Put up your umbrella when it rains!', example: 'umbrella, up, under' },
+      { letter: 'l', sound: 'l-l-l', action: 'Pretend to lick a lollipop and say l, l, l.', story: 'Lick the lollipop!', example: 'lollipop, leg, lion' },
+      { letter: 'f', sound: 'f-f-f', action: 'Pretend to shape your fingers into a flower and smell it, saying f, f, f.', story: 'A pretty flower for you to smell!', example: 'flower, fish, fan' },
+      { letter: 'b', sound: 'b-b-b', action: 'Pretend to hold a bat and hit a ball, saying b, b, b.', story: 'Hit the ball with the bat!', example: 'bat, ball, bed' },
+    ]
+  },
+  {
+    id: 4,
+    name: 'Group 4',
+    color: '#A78BFA',
+    gradient: ['#B39DDB', '#7E57C2'],
+    sounds: [
+      { letter: 'ai', sound: 'ai', action: 'Cup hand over ear and say ai, as if you have been hurt.', story: '"Ouch! I hurt my arm!"', example: 'rain, pain, train' },
+      { letter: 'j', sound: 'j-j-j', action: 'Pretend to wobble on a plate and say j, j, j.', story: 'The jelly wobbles on the plate!', example: 'jelly, jump, jug' },
+      { letter: 'oa', sound: 'oa', action: 'Pretend to put a cork in a bottle, pushing hand forward and saying oa.', story: 'Pop! The cork goes in the bottle!', example: 'boat, goat, coat' },
+      { letter: 'ie', sound: 'ie', action: 'Stand to attention and salute, saying ie, ie, like a soldier.', story: 'Stand at attention!', example: 'tie, pie, lie' },
+      { letter: 'ee', sound: 'ee', action: 'Put hands on head as if ears on a donkey and say eeyore, eeyore, saying ee.', story: 'The donkey goes eeyore!', example: 'see, bee, tree' },
+      { letter: 'or', sound: 'or', action: 'Pretend to close a door and say or.', story: 'Shut the door!', example: 'door, floor, more' },
+    ]
+  },
+  {
+    id: 5,
+    name: 'Group 5',
+    color: '#FF9F43',
+    gradient: ['#FFCC80', '#FF9800'],
+    sounds: [
+      { letter: 'z', sound: 'z-z-z', action: 'Pretend to be a bee and buzz, saying z-z-z.', story: 'The bee buzzes around!', example: 'buzz, zip, zap' },
+      { letter: 'w', sound: 'w-w-w', action: 'Blow onto open hand as if wind is blowing, saying w, w, w.', story: 'Feel the wind blow!', example: 'wind, wet, wig' },
+      { letter: 'ng', sound: 'ng', action: 'Pretend to be a weightlifter, lifting a heavy weight above head saying ng.', story: 'Lift the heavy weight!', example: 'sing, ring, king' },
+      { letter: 'v', sound: 'v-v-v', action: 'Pretend to be holding the steering wheel of a van and drive, saying v-v-v.', story: 'Drive the van!', example: 'van, vet, vest' },
+      { letter: 'oo', sound: 'oo', action: 'Move head back and forth as if it is the cuckoo in a cuckoo clock, saying oo, oo.', story: 'The cuckoo pops out!', example: 'moon, spoon, zoo' },
+    ]
+  },
+  {
+    id: 6,
+    name: 'Group 6',
+    color: '#FF6B9D',
+    gradient: ['#F48FB1', '#EC407A'],
+    sounds: [
+      { letter: 'y', sound: 'y-y-y', action: 'Pretend to eat a yogurt and say y, y, y.', story: 'Eat the yummy yogurt!', example: 'yogurt, yellow, yes' },
+      { letter: 'x', sound: 'x-x-x', action: 'Pretend to take an x-ray with a camera, saying ks, ks, ks.', story: 'Take a picture with the x-ray camera!', example: 'box, fox, six' },
+      { letter: 'ch', sound: 'ch', action: 'Pretend to be a train, moving arms like wheels and saying ch, ch, ch.', story: 'The train goes choo choo!', example: 'choo, chip, chop' },
+      { letter: 'sh', sound: 'sh', action: 'Put finger to lips as if saying shhh.', story: 'Shhh! Be very quiet!', example: 'ship, shop, shell' },
+      { letter: 'th', sound: 'th', action: 'Pretend to be a clown and stick out tongue, saying th.', story: 'The clown sticks out his tongue!', example: 'thin, thick, thud' },
+    ]
+  },
+  {
+    id: 7,
+    name: 'Group 7',
+    color: '#54A0FF',
+    gradient: ['#90CAF9', '#42A5F5'],
+    sounds: [
+      { letter: 'qu', sound: 'qu', action: 'Pretend to be a duck, opening and closing beak saying qu, qu, qu.', story: 'The duck goes quack quack!', example: 'queen, quack, quick' },
+      { letter: 'ou', sound: 'ou', action: 'Pretend to hit a ball with a bat and say ou, as if you have hurt yourself.', story: 'Ouch! You hurt your hand!', example: 'out, shout, loud' },
+      { letter: 'oi', sound: 'oi', action: 'Cup hands around mouth and shout to another boat saying oi, as if saying ship ahoy!', story: 'Ship ahoy!', example: 'oil, boil, coin' },
+      { letter: 'ue', sound: 'ue', action: 'Pretend to be a statue made out of stone and say ue.', story: 'Stand still like a statue!', example: 'blue, glue, true' },
+      { letter: 'er', sound: 'er', action: 'Roll hands over each other like a mixer and say er, er, er.', story: 'Mix the ingredients!', example: 'mixer, over, under' },
+      { letter: 'ar', sound: 'ar', action: 'Open mouth wide and say ar, as if you are a patient at the doctors.', story: 'Open wide and say "Ahh"', example: 'car, star, jar' },
+    ]
+  }
+];
+
+// Jolly Phonics Tricky Words
+const TRICKY_WORDS = [
+  { word: 'I', level: 1, hint: 'Just the letter I, standing tall!' },
+  { word: 'he', level: 1, hint: 'He has two letters' },
+  { word: 'she', level: 1, hint: 'She has three letters' },
+  { word: 'we', level: 1, hint: 'We work together' },
+  { word: 'me', level: 1, hint: 'All about me!' },
+  { word: 'be', level: 1, hint: 'Just be yourself' },
+  { word: 'was', level: 2, hint: 'W-a-s sounds like woz' },
+  { word: 'to', level: 2, hint: 'To has just two letters' },
+  { word: 'do', level: 2, hint: 'Do rhymes with who' },
+  { word: 'are', level: 2, hint: 'Are sounds like "ar"' },
+  { word: 'all', level: 2, hint: 'All sounds like "orl"' },
+  { word: 'you', level: 3, hint: 'You sounds like "yoo"' },
+  { word: 'your', level: 3, hint: 'Your sounds like "yor"' },
+  { word: 'come', level: 3, hint: 'Come sounds like "cum"' },
+  { word: 'some', level: 3, hint: 'Some sounds like "sum"' },
+  { word: 'said', level: 3, hint: 'Said sounds like "sed"' },
+  { word: 'here', level: 4, hint: 'Here sounds like "heer"' },
+  { word: 'there', level: 4, hint: 'There sounds like "thair"' },
+  { word: 'where', level: 4, hint: 'Where sounds like "wair"' },
+  { word: 'love', level: 4, hint: 'Love sounds like "luv"' },
+  { word: 'one', level: 4, hint: 'One sounds like "wun"' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function AnimatedCard({ children, style, onPress, delay = 0 }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const pressAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, delay }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay }),
+    ]).start();
+  }, []);
+
+  const handlePressIn = () => {
+    Animated.spring(pressAnim, { toValue: 0.95, useNativeDriver: true, friction: 5 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
+  };
+
+  return (
+    <Animated.View style={[style, { transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }], opacity: opacityAnim }]}>
+      <TouchableOpacity onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} activeOpacity={1} style={{ flex: 1 }}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+} // Close AnimatedCard component
+
+function GroupSelector({ onSelectGroup, onSelectTrickyWords, progress = {} }) {
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
+  }, []);
+
+  const totalLearned = Object.values(progress).filter(Boolean).length;
+  const totalSounds = JOLLY_PHONICS_GROUPS.reduce((sum, g) => sum + g.sounds.length, 0);
+  const progressPercent = Math.round((totalLearned / totalSounds) * 100);
+
+  return (
+    <ScrollView contentContainerStyle={gs.container} showsVerticalScrollIndicator={false}>
+      {/* Jolly Header */}
+      <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={gs.headerCard}
+        >
+          <View style={gs.headerContent}>
+            <Text style={gs.headerEmoji}>🎵</Text>
+            <Text style={gs.title}>Jolly Phonics</Text>
+            <Text style={gs.sub}>Learn 42 letter sounds with songs and actions!</Text>
+            
+            {/* Progress Bar */}
+            <View style={gs.progressContainer}>
+              <View style={gs.progressBar}>
+                <View style={[gs.progressFill, { width: `${progressPercent}%` }]} />
+              </View>
+              <Text style={gs.progressText}>{totalLearned}/{totalSounds} sounds learned</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Groups Grid */}
+      <View style={gs.sectionTitle}>
+        <Text style={gs.sectionTitleText}>📚 Letter Groups</Text>
+        <Text style={gs.sectionTitleSub}>Tap a group to explore sounds</Text>
+      </View>
+      
+      <View style={gs.groupsGrid}>
+        {JOLLY_PHONICS_GROUPS.map((group, index) => {
+          const learnedCount = group.sounds.filter(s => progress[s.letter]).length;
+          const isComplete = learnedCount === group.sounds.length;
+          
+          return (
+            <AnimatedCard key={group.id} style={gs.groupCardWrapper} onPress={() => onSelectGroup(group)} delay={index * 80}>
+              <LinearGradient colors={group.gradient} style={gs.groupCard}>
+                {isComplete && (
+                  <View style={gs.completeBadge}>
+                    <Text style={gs.completeBadgeText}>✓</Text>
+                  </View>
+                )}
+                
+                <View style={gs.groupHeader}>
+                  <Text style={gs.groupName}>{group.name}</Text>
+                  <View style={[gs.soundCountBadge, isComplete && gs.soundCountBadgeComplete]}>
+                    <Text style={[gs.soundCountText, isComplete && gs.soundCountTextComplete]}>
+                      {learnedCount}/{group.sounds.length}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={gs.soundLetters}>
+                  {group.sounds.map((sound, i) => (
+                    <View key={i} style={[
+                      gs.letterBadge,
+                      progress[sound.letter] && gs.letterBadgeLearned
+                    ]}>
+                      <Text style={[
+                        gs.letterBadgeText,
+                        progress[sound.letter] && gs.letterBadgeTextLearned
+                      ]}>
+                        {sound.letter}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+                
+                {isComplete && (
+                  <View style={gs.starsContainer}>
+                    <Text style={gs.starsText}>⭐⭐⭐</Text>
+                  </View>
+                )}
+                
+                <View style={gs.groupShine} />
+              </LinearGradient>
+            </AnimatedCard>
+          );
+        })}
+      </View>
+
+      {/* Tricky Words Card */}
+      <AnimatedCard style={gs.trickyCardWrapper} onPress={onSelectTrickyWords} delay={600}>
+        <LinearGradient colors={['#FF8A80', '#E57373']} style={gs.trickyCard}>
+          <View style={gs.trickyLeft}>
+            <View style={gs.trickyIconCircle}>
+              <Text style={gs.trickyIcon}>⚡</Text>
+            </View>
+            <View>
+              <Text style={gs.trickyTitle}>Tricky Words</Text>
+              <Text style={gs.trickyDesc}>Words that don't follow the rules!</Text>
+            </View>
+          </View>
+          <View style={gs.trickyRight}>
+            <View style={gs.trickyCountBadge}>
+              <Text style={gs.trickyCountText}>21</Text>
+            </View>
+            <Icon name="chevron-right" size="md" color="rgba(255,255,255,0.7)" />
+          </View>
+          <View style={gs.trickyShine} />
+        </LinearGradient>
+      </AnimatedCard>
+
+      {/* Quick Stats */}
+      <View style={gs.statsContainer}>
+        <View style={gs.statBox}>
+          <Text style={gs.statNumber}>7</Text>
+          <Text style={gs.statLabel}>Groups</Text>
+        </View>
+        <View style={gs.statDivider} />
+        <View style={gs.statBox}>
+          <Text style={gs.statNumber}>42</Text>
+          <Text style={gs.statLabel}>Sounds</Text>
+        </View>
+        <View style={gs.statDivider} />
+        <View style={gs.statBox}>
+          <Text style={gs.statNumber}>21</Text>
+          <Text style={gs.statLabel}>Tricky Words</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+function SoundDetailModal({ visible, sound, group, onClose, onNext, onPrev, hasNext, hasPrev }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      fadeAnim.setValue(0);
+      slideAnim.setValue(300);
+      Animated.parallel([
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, friction: 8 }),
+      ]).start();
+      if (sound) {
+        Speech.speak(`${sound.letter} says ${sound.sound}`, { rate: 0.8, pitch: 1.1 });
+      }
+    }
+  }, [visible, sound]);
+
+  if (!sound || !group) return null;
+
+  const handleActionPress = () => {
+    Speech.speak(sound.action, { rate: 0.85, pitch: 1.0 });
+  };
+
+  const handleStoryPress = () => {
+    Speech.speak(sound.story, { rate: 0.85, pitch: 1.1 });
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[sd.overlay, { opacity: fadeAnim }]}>
+        <Animated.View style={[sd.container, { transform: [{ translateY: slideAnim }] }]}>
+          <LinearGradient colors={group.gradient} style={sd.header}>
+            <TouchableOpacity onPress={onClose} style={sd.closeBtn}>
+              <Icon name="x" size="md" color="#fff" />
+            </TouchableOpacity>
+            <Text style={sd.headerLetter}>{sound.letter}</Text>
+            <Text style={sd.headerSound}>says "{sound.sound}"</Text>
+          </LinearGradient>
+
+          <ScrollView contentContainerStyle={sd.content} showsVerticalScrollIndicator={false}>
+            {/* Action Section */}
+            <TouchableOpacity style={sd.sectionCard} onPress={handleActionPress} activeOpacity={0.8}>
+              <View style={[sd.sectionIcon, { backgroundColor: group.color }]}>
+                <Icon name="hand" size="lg" color="#fff" />
+              </View>
+              <View style={sd.sectionText}>
+                <Text style={sd.sectionTitle}>Action</Text>
+                <Text style={sd.sectionDesc}>{sound.action}</Text>
+                <Text style={sd.tapHint}>Tap to hear action</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Story Section */}
+            <TouchableOpacity style={sd.sectionCard} onPress={handleStoryPress} activeOpacity={0.8}>
+              <View style={[sd.sectionIcon, { backgroundColor: group.color }]}>
+                <Icon name="book-open" size="lg" color="#fff" />
+              </View>
+              <View style={sd.sectionText}>
+                <Text style={sd.sectionTitle}>Story</Text>
+                <Text style={sd.sectionDesc}>{sound.story}</Text>
+                <Text style={sd.tapHint}>Tap to hear story</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Examples Section */}
+            <View style={sd.examplesCard}>
+              <Text style={sd.examplesTitle}>Example Words</Text>
+              <View style={sd.examplesRow}>
+                {sound.example.split(', ').map((word, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={sd.exampleBadge}
+                    onPress={() => Speech.speak(word, { rate: 0.8 })}
+                  >
+                    <Text style={sd.exampleText}>{word}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Navigation */}
+          <View style={sd.navBar}>
+            <TouchableOpacity
+              style={[sd.navBtn, !hasPrev && sd.navBtnDisabled]}
+              onPress={onPrev}
+              disabled={!hasPrev}
+            >
+              <Icon name="chevron-left" size="lg" color={hasPrev ? group.color : '#ccc'} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[sd.speakBtn, { backgroundColor: group.color }]}
+              onPress={() => Speech.speak(`${sound.letter} says ${sound.sound}`, { rate: 0.8 })}
+            >
+              <Icon name="volume-2" size="md" color="#fff" />
+              <Text style={sd.speakBtnText}>Hear Sound</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[sd.navBtn, !hasNext && sd.navBtnDisabled]}
+              onPress={onNext}
+              disabled={!hasNext}
+            >
+              <Icon name="chevron-right" size="lg" color={hasNext ? group.color : '#ccc'} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+function TrickyWordsModal({ visible, onClose }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [selectedLevel, setSelectedLevel] = useState(1);
+
+  useEffect(() => {
+    if (visible) {
+      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [visible]);
+
+  const filteredWords = TRICKY_WORDS.filter(w => w.level === selectedLevel);
+
+  const handleWordPress = (word) => {
+    Speech.speak(`${word.word}. ${word.hint}`, { rate: 0.8, pitch: 1.1 });
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[tw.overlay, { opacity: fadeAnim }]}>
+        <View style={tw.container}>
+          <LinearGradient colors={['#FF8A80', '#E57373']} style={tw.header}>
+            <TouchableOpacity onPress={onClose} style={tw.closeBtn}>
+              <Icon name="x" size="md" color="#fff" />
+            </TouchableOpacity>
+            <Text style={tw.headerEmoji}>⚡</Text>
+            <Text style={tw.headerTitle}>Tricky Words</Text>
+            <Text style={tw.headerSubtitle}>These words don't follow the rules!</Text>
+          </LinearGradient>
+
+          {/* Level Selector */}
+          <View style={tw.levelSelector}>
+            {[1, 2, 3, 4].map(level => (
+              <TouchableOpacity
+                key={level}
+                style={[tw.levelBtn, selectedLevel === level && tw.levelBtnActive]}
+                onPress={() => setSelectedLevel(level)}
+              >
+                <Text style={[tw.levelBtnText, selectedLevel === level && tw.levelBtnTextActive]}>
+                  Level {level}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Words Grid */}
+          <ScrollView contentContainerStyle={tw.wordsGrid} showsVerticalScrollIndicator={false}>
+            {filteredWords.map((word, index) => (
+              <TouchableOpacity
+                key={word.word}
+                style={tw.wordCard}
+                onPress={() => handleWordPress(word)}
+                activeOpacity={0.8}
+              >
+                <Text style={tw.wordText}>{word.word}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const gs = StyleSheet.create({
+  container: { padding: 16, paddingTop: 20, paddingBottom: 40 },
+  headerCard: { borderRadius: 24, padding: 24, alignItems: 'center', marginBottom: 20, elevation: 6 },
+  headerEmoji: { fontSize: 50, marginBottom: 8 },
+  title: { fontSize: 28, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  sub: { fontSize: 15, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4 },
+  groupsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  groupCardWrapper: { width: '47%', marginBottom: 12, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  groupCard: { borderRadius: 20, padding: 16, overflow: 'hidden', minHeight: 120 },
+  groupHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  groupName: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
+  soundCountBadge: { backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
+  soundCountText: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
+  soundLetters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  letterBadge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, fontSize: 14, fontWeight: 'bold', color: '#fff' },
+  groupShine: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  trickyCardWrapper: { marginTop: 8, marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  trickyCard: { borderRadius: 20, padding: 18, overflow: 'hidden' },
+  trickyContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  trickyEmoji: { fontSize: 32 },
+  trickyTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  trickyDesc: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 2 },
+  trickyCountBadge: { backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 15, width: 30, height: 30, justifyContent: 'center', alignItems: 'center' },
+  trickyCountText: { fontSize: 14, fontWeight: 'bold', color: '#fff' },
+  trickyShine: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  activitiesBtn: { alignSelf: 'stretch', marginHorizontal: 4 },
+  activitiesBtnText: { color: '#fff', fontWeight: '800', fontSize: 15, marginLeft: 8 },
+});
+
+const sd = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  container: { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '90%', overflow: 'hidden' },
+  header: { paddingTop: 50, paddingBottom: 24, paddingHorizontal: 20, alignItems: 'center', borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  closeBtn: { position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerLetter: { fontSize: 80, fontWeight: 'bold', color: '#fff', textShadowColor: 'rgba(0,0,0,0.2)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 },
+  headerSound: { fontSize: 24, color: '#fff', marginTop: 4, opacity: 0.95 },
+  content: { padding: 20, paddingBottom: 100 },
+  sectionCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  sectionIcon: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
+  sectionText: { flex: 1 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#37474F', marginBottom: 4 },
+  sectionDesc: { fontSize: 14, color: '#546E7A', lineHeight: 20 },
+  tapHint: { fontSize: 12, color: '#90A4AE', marginTop: 4, fontStyle: 'italic' },
+  examplesCard: { backgroundColor: '#F5F7FA', borderRadius: 16, padding: 16, marginTop: 4 },
+  examplesTitle: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginBottom: 12, textTransform: 'uppercase' },
+  examplesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  exampleBadge: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, elevation: 1 },
+  exampleText: { fontSize: 16, fontWeight: 'bold', color: '#37474F' },
+  navBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingBottom: 30, borderTopWidth: 1, borderTopColor: '#eee', backgroundColor: '#fff' },
+  navBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center' },
+  navBtnDisabled: { opacity: 0.5 },
+  speakBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 28, elevation: 3 },
+  speakBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16, marginLeft: 8 },
+});
+
+const tw = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  container: { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: '85%', overflow: 'hidden' },
+  header: { paddingTop: 50, paddingBottom: 20, paddingHorizontal: 20, alignItems: 'center', borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  closeBtn: { position: 'absolute', top: 16, right: 16, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' },
+  headerEmoji: { fontSize: 40, marginBottom: 4 },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+  headerSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  levelSelector: { flexDirection: 'row', justifyContent: 'center', gap: 8, padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  levelBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F5F7FA' },
+  levelBtnActive: { backgroundColor: '#FF8A80' },
+  levelBtnText: { fontSize: 14, fontWeight: '600', color: '#78909C' },
+  levelBtnTextActive: { color: '#fff' },
+  wordsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, padding: 16, paddingBottom: 40, justifyContent: 'center' },
+  wordCard: { backgroundColor: '#FFF3E0', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, minWidth: 100, alignItems: 'center', elevation: 2 },
+  wordText: { fontSize: 24, fontWeight: 'bold', color: '#E65100' },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN SCREEN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export default function PhonicsScreen() {
+  const navigation = useNavigation();
+  const { profile } = useAuth();
+  const { colors } = useTheme();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [selectedSound, setSelectedSound] = useState(null);
+  const [soundModalVisible, setSoundModalVisible] = useState(false);
+  const [trickyModalVisible, setTrickyModalVisible] = useState(false);
+  const tapCountRef = React.useRef(0);
+  const lastLogRef = React.useRef(0);
+
+  useEffect(() => {
+    fetchPhonics();
+  }, []);
+
+  const fetchPhonics = async () => {
+    try {
+      const { data, error } = await supabase.from('phonics_items').select('*').order('label');
+      if (error) console.warn('[PhonicsScreen] fetch error:', error.message);
+      if (data) setItems(data);
+    } catch (e) {
+      console.warn('[PhonicsScreen] fetchPhonics failed:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGroupSelect = (group) => {
+    setSelectedGroup(group);
+    if (group.sounds.length > 0) {
+      setSelectedSound(group.sounds[0]);
+      setSoundModalVisible(true);
+    }
+  };
+
+  const handleNextSound = () => {
+    if (!selectedGroup || !selectedSound) return;
+    const currentIndex = selectedGroup.sounds.findIndex(s => s.letter === selectedSound.letter);
+    if (currentIndex < selectedGroup.sounds.length - 1) {
+      setSelectedSound(selectedGroup.sounds[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevSound = () => {
+    if (!selectedGroup || !selectedSound) return;
+    const currentIndex = selectedGroup.sounds.findIndex(s => s.letter === selectedSound.letter);
+    if (currentIndex > 0) {
+      setSelectedSound(selectedGroup.sounds[currentIndex - 1]);
+    }
+  };
+
+  const getCurrentSoundIndex = () => {
+    if (!selectedGroup || !selectedSound) return 0;
+    return selectedGroup.sounds.findIndex(s => s.letter === selectedSound.letter);
+  };
+
+  return (
+    <ScreenWrapper role="student" padded={false} edges={['left','right','bottom']} style={{ backgroundColor: colors.surface }}>
+      <StudentPageHeader title="Jolly Phonics" />
+
+      <StudentCard variant="tinted" style={styles.hintCard}>
+        <View style={styles.hintRow}>
+          <Icon name="music" size="md" color={c.primary} />
+          <Text style={styles.hintText}>
+            <Text style={{ fontWeight: 'bold' }}>How to learn: </Text>
+            Tap a group to explore the sounds! Each sound has a fun action and story to help you remember!
+          </Text>
+        </View>
+      </StudentCard>
+
+      <GroupSelector
+        onSelectGroup={handleGroupSelect}
+        onSelectTrickyWords={() => setTrickyModalVisible(true)}
+      />
+
+      {/* Sound Detail Modal */}
+      <SoundDetailModal
+        visible={soundModalVisible}
+        sound={selectedSound}
+        group={selectedGroup}
+        onClose={() => setSoundModalVisible(false)}
+        onNext={handleNextSound}
+        onPrev={handlePrevSound}
+        hasNext={selectedGroup && getCurrentSoundIndex() < selectedGroup.sounds.length - 1}
+        hasPrev={selectedGroup && getCurrentSoundIndex() > 0}
+      />
+
+      {/* Tricky Words Modal */}
+      <TrickyWordsModal
+        visible={trickyModalVisible}
+        onClose={() => setTrickyModalVisible(false)}
+      />
+    </ScreenWrapper>
+  );
+}
+
+const styles = StyleSheet.create({
+  hintCard: { marginHorizontal: 16, marginBottom: 12 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+});

@@ -1,6 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Text, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import * as Linking from 'expo-linking';
+import { supabase } from './src/lib/supabase';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './src/context/ThemeContext';
@@ -25,6 +27,25 @@ function GlobalOverlay() {
 
 function AppWithTheme() {
   const { theme, a11yTextStyle } = useTheme();
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const handleUrl = async ({ url }) => {
+      if (!url) return;
+      const fragment = url.split('#')[1];
+      if (!fragment) return;
+      const params = Object.fromEntries(new URLSearchParams(fragment));
+      if (params.access_token && params.type === 'recovery') {
+        await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+      }
+    };
+    Linking.getInitialURL().then(url => { if (url) handleUrl({ url }); });
+    const sub = Linking.addEventListener('url', handleUrl);
+    return () => sub.remove();
+  }, []);
 
   Text.defaultProps = Text.defaultProps ?? {};
   Text.defaultProps.style = Object.keys(a11yTextStyle).length > 0 ? a11yTextStyle : undefined;

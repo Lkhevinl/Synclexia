@@ -71,7 +71,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setInputError("That doesn't look like a valid email."); shakeInput(); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo: 'synclexia://update-password' });
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo: 'https://synclexia-password-reset.netlify.app' });
       if (error) { setInputError(error.message); shakeInput(); }
       else        { showSuccess(); }
     } catch {
@@ -84,7 +84,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (cooldown > 0 || loading) return;
     setLoading(true);
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: 'synclexia://update-password' });
+      await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: 'https://synclexia-password-reset.netlify.app' });
       startCooldown();
     } catch (_) {}
     finally { setLoading(false); }

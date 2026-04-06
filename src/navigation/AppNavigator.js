@@ -37,12 +37,14 @@ import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
+import LetterDetailScreen from '../screens/students/LetterDetailScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
 import AIInsightsScreen from '../screens/students/AIInsightsScreen';
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import UpdatePasswordScreen from '../screens/UpdatePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
@@ -77,6 +79,8 @@ import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const ONBOARDING_KEY = '@synclexia_onboarding_complete';
 
 // React Navigation v6 wraps the tab bar in a SafeAreaView that already
 // adds insets.bottom as padding. Do NOT add insets.bottom here too or it
@@ -249,6 +253,7 @@ function AppScreens() {
       <Stack.Screen name="About"                   component={AboutScreen} />
       <Stack.Screen name="Settings"                component={SettingsScreen} />
       <Stack.Screen name="PhonicsActivity"         component={withLexi(PhonicsActivityScreen)} />
+      <Stack.Screen name="LetterDetail"             component={withLexi(LetterDetailScreen)} />
       <Stack.Screen name="Spelling"                component={withLexi(SpellingScreen)} />
       <Stack.Screen name="PhonologicalAwareness"   component={withLexi(PhonologicalAwarenessScreen)} />
       <Stack.Screen name="AIInsights" component={AIInsightsScreen} />
@@ -314,7 +319,7 @@ const navStyles = StyleSheet.create({
 });
 
 export default function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, recoveryMode } = useAuth();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -334,6 +339,14 @@ export default function RootNavigator() {
   };
 
   if (loading || checkingOnboarding) return <LoadingScreen />;
+
+  if (recoveryMode) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
