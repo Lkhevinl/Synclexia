@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [dashboardMode, setDashboardMode] = useState('auto');
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const signingOutRef = useRef(false);
 
   const clearStaleSession = async () => {
@@ -46,11 +47,17 @@ export const AuthProvider = ({ children }) => {
     //    TOKEN_REFRESHED is intentionally ignored: Supabase updates its internal
     //    token automatically; we don't need to update React state for that.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true);
+        setLoading(false);
+        return;
+      }
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setProfile(null);
         setProfileLoaded(false);
         setDashboardMode('auto');
+        setRecoveryMode(false);
         setLoading(false);
         return;
       }
@@ -161,6 +168,7 @@ export const AuthProvider = ({ children }) => {
     setProfile(null);
     setProfileLoaded(false);
     setDashboardMode('auto');
+    setRecoveryMode(false);
     setLoading(false);
     // 2. Background cleanup — fire-and-forget, UI is already on Login
     supabase.auth.signOut({ scope: 'local' }).catch(() => {});
@@ -185,6 +193,8 @@ export const AuthProvider = ({ children }) => {
     signingOutRef.current = false;
   };
 
+  const clearRecoveryMode = () => setRecoveryMode(false);
+
   return (
     <AuthContext.Provider value={{
         session,
@@ -201,6 +211,8 @@ export const AuthProvider = ({ children }) => {
         setProfileError,
         setLoading,
         resetSigningOut,
+        recoveryMode,
+        clearRecoveryMode,
     }}>
       {children}
     </AuthContext.Provider>

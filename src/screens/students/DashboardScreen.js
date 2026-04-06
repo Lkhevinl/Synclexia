@@ -253,16 +253,19 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.section}>
               <StudentSectionTitle title="Explore" subtitle="Learn phonics, reading, and writing" iconName="compass" />
               {[
-                { title: 'Phonics',  imageSource: require('../../../assets/phonics.png'),  desc: 'Tap to hear sounds and learn how to read words!',           route: 'Phonics',  tag: 'Listening'     },
-                { title: 'Reading',  imageSource: require('../../../assets/read.png'), desc: 'Select a book, listen to the story, and follow along!',    route: 'Reading',  tag: 'Comprehension' },
-                { title: 'Writing',  imageSource: require('../../../assets/write.png'), desc: 'Practice writing letters and words to build your skills!', route: 'Writing',  tag: 'Practice'      },
-              ].map(({ title, imageSource, desc, route, tag }) => (
+                { title: 'Phonics',  iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics learner.png'), desc: 'Tap to hear sounds and learn how to read words!',           route: 'Phonics',  tag: 'Listening',     accentColor: '#FF6B6B' },
+                { title: 'Reading',  iconSource: require('../../../assets/read.png'), illustrationSource: require('../../../assets/read leanrers.png'), desc: 'Select a book, listen to the story, and follow along!',    route: 'Reading',  tag: 'Comprehension', accentColor: '#4ECDC4' },
+                { title: 'Writing',  iconSource: require('../../../assets/write.png'), illustrationSource: require('../../../assets/practice writing.png'), desc: 'Practice writing letters and words to build your skills!', route: 'Writing',  tag: 'Practice',      accentColor: '#FFD93D' },
+              ].map(({ title, iconSource, illustrationSource, desc, route, tag, accentColor }) => (
                 <StudentActivityCard
                   key={title}
                   title={title}
                   description={desc}
                   tag={tag}
-                  imageSource={imageSource}
+                  iconSource={iconSource}
+                  illustrationSource={illustrationSource}
+                  accentColor={accentColor}
+                  variant="featured"
                   onPress={() => navigation.navigate(route)}
                 />
               ))}
@@ -272,16 +275,19 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.section}>
               <StudentSectionTitle title="Play & Learn" subtitle="Practice your skills with fun games" iconName="game-controller" />
               {[
-                { title: 'Spelling',      imageSource: require('../../../assets/phonics.png'),  desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words'    },
-                { title: 'Sound Games',   imageSource: require('../../../assets/sound games.png'),       desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening' },
-                { title: 'Phonics Games', imageSource: require('../../../assets/phonics games.png'),      desc: 'Have fun while mastering phonics with interactive games!', route: 'PhonicsActivity',       tag: 'Games'    },
-              ].map(({ title, imageSource, desc, route, tag }) => (
+                { title: 'Spelling',      iconSource: require('../../../assets/games.png'), illustrationSource: require('../../../assets/word games.png'), desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words',    accentColor: '#A78BFA' },
+                { title: 'Sound Games',   iconSource: require('../../../assets/gamers.png'), illustrationSource: require('../../../assets/sound games.png'),       desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening', accentColor: '#FF9F43' },
+                { title: 'Phonics Games', iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics games.png'),      desc: 'Have fun while mastering phonics with interactive games!', route: 'PhonicsActivity',       tag: 'Games',    accentColor: '#54A0FF' },
+              ].map(({ title, iconSource, illustrationSource, desc, route, tag, accentColor }) => (
                 <StudentActivityCard
                   key={title}
                   title={title}
                   description={desc}
                   tag={tag}
-                  imageSource={imageSource}
+                  iconSource={iconSource}
+                  illustrationSource={illustrationSource}
+                  accentColor={accentColor}
+                  variant="featured"
                   onPress={() => navigation.navigate(route)}
                 />
               ))}

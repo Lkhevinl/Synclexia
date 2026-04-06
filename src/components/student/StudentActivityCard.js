@@ -3,31 +3,77 @@ import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
 import Icon from '../icons/Icon';
 import c from './candyTokens';
 
-export default function StudentActivityCard({ title, description, tag, iconName, imageSource, onPress, accentColor }) {
+export default function StudentActivityCard({ 
+  title, 
+  description, 
+  tag, 
+  iconName, 
+  iconSource, 
+  imageSource, 
+  illustrationSource,
+  onPress, 
+  accentColor,
+  variant = 'default'
+}) {
   const accent = accentColor || c.primary;
+  
+  if (variant === 'featured') {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={featuredStyles.outer}>
+        <View style={featuredStyles.card}>
+          <View style={featuredStyles.topRow}>
+            <View style={[featuredStyles.iconCircle, { backgroundColor: accent }]}>
+              {iconSource ? (
+                <Image source={iconSource} style={featuredStyles.iconImage} resizeMode="contain" />
+              ) : (
+                <Icon name={iconName || 'star'} size="md" color="#fff" />
+              )}
+            </View>
+            <View style={[featuredStyles.arrowCircle, { backgroundColor: accent + '20' }]}>
+              <Icon name="arrow-up-right" size="md" color={accent} />
+            </View>
+          </View>
+          <View style={featuredStyles.contentRow}>
+            <View style={featuredStyles.textContainer}>
+              {tag ? (
+                <View style={[featuredStyles.tagPill, { backgroundColor: accent + '15' }]}>
+                  <Text style={[featuredStyles.tagText, { color: accent }]}>{tag}</Text>
+                </View>
+              ) : null}
+              <Text style={featuredStyles.title}>{title}</Text>
+              <Text style={featuredStyles.desc}>{description}</Text>
+            </View>
+            {illustrationSource && (
+              <Image source={illustrationSource} style={featuredStyles.illustration} resizeMode="contain" />
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={styles.outer}>
-      <View style={[styles.card, { backgroundColor: accent + '14', borderColor: accent + '38' }]}>
-        <View style={styles.row}>
-          <View style={[styles.iconBox, { backgroundColor: accent }]}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={defaultStyles.outer}>
+      <View style={[defaultStyles.card, { backgroundColor: accent + '14', borderColor: accent + '38' }]}>
+        <View style={defaultStyles.row}>
+          <View style={[defaultStyles.iconBox, { backgroundColor: accent }]}>
             {imageSource ? (
-              <Image source={imageSource} style={styles.iconImage} resizeMode="contain" />
+              <Image source={imageSource} style={defaultStyles.iconImage} resizeMode="contain" />
             ) : (
               <Icon name={iconName} size="lg" color="#fff" />
             )}
           </View>
 
-          <View style={styles.body}>
+          <View style={defaultStyles.body}>
             {tag ? (
-              <View style={[styles.tagPill, { backgroundColor: accent + '22', borderColor: accent + '55' }]}>
-                <Text style={[styles.tagText, { color: accent }]}>{tag}</Text>
+              <View style={[defaultStyles.tagPill, { backgroundColor: accent + '22', borderColor: accent + '55' }]}>
+                <Text style={[defaultStyles.tagText, { color: accent }]}>{tag}</Text>
               </View>
             ) : null}
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.desc} numberOfLines={2}>{description}</Text>
+            <Text style={defaultStyles.title}>{title}</Text>
+            <Text style={defaultStyles.desc} numberOfLines={2}>{description}</Text>
           </View>
 
-          <View style={[styles.arrow, { backgroundColor: accent + '28' }]}>
+          <View style={[defaultStyles.arrow, { backgroundColor: accent + '28' }]}>
             <Icon name="chevron-forward" size="md" color={accent} />
           </View>
         </View>
@@ -36,7 +82,85 @@ export default function StudentActivityCard({ title, description, tag, iconName,
   );
 }
 
-const styles = StyleSheet.create({
+const featuredStyles = StyleSheet.create({
+  outer: {
+    marginBottom: 12,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 16,
+    overflow: 'hidden',
+    backgroundColor: '#FFF5F0',
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconImage: {
+    width: 28,
+    height: 28,
+  },
+  arrowCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  textContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  tagPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  tagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: c.text,
+    marginBottom: 6,
+  },
+  desc: {
+    fontSize: 13,
+    color: c.textMuted,
+    lineHeight: 19,
+  },
+  illustration: {
+    width: 120,
+    height: 100,
+  },
+});
+
+const defaultStyles = StyleSheet.create({
   outer: {
     marginBottom: 12,
     borderRadius: 20,

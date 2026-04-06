@@ -45,3 +45,5 @@ yarn-error.*
 
 /docs*
 ServiceAccountSynclexia.json
+# Local Netlify folder
+.netlify
