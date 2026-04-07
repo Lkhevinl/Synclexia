@@ -6,6 +6,7 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { TABLES } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import tokens from '../theme/tokens';
 
@@ -50,7 +51,7 @@ export default function SupportScreen({ route }) {
           rating: rating > 0 ? rating : null,
         },
       };
-      const { error } = await supabase.from('maintenance_logs').insert([feedbackData]);
+      const { error } = await supabase.from(TABLES.MAINTENANCE_LOGS).insert([feedbackData]);
       if (error) {
         console.error('Error submitting feedback:', error);
         alert('Error submitting feedback. Please try again.');

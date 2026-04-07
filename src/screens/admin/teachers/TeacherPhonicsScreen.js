@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import ScreenWrapper from '../../../components/ScreenWrapper';
 import tokens from '../../../theme/tokens';
@@ -23,7 +24,7 @@ export default function TeacherPhonicsScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_items')
+      .from(TABLES.PHONICS_ITEMS)
       .select('*')
       .order('label');
     if (error) Alert.alert('Error', error.message);
@@ -42,14 +43,14 @@ export default function TeacherPhonicsScreen() {
     if (!label.trim()) return Alert.alert('Error', 'Label is required.');
     if (editingId) {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .update({ label: label.trim(), icon, bg_color: bgColor })
         .eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Success', 'Item updated.');
     } else {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .insert([{ label: label.trim(), icon, bg_color: bgColor }]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Success', 'Item added.');
@@ -70,7 +71,7 @@ export default function TeacherPhonicsScreen() {
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
           const { error } = await supabase
-            .from('phonics_items')
+            .from(TABLES.PHONICS_ITEMS)
             .delete()
             .eq('id', id);
           if (error) Alert.alert('Error', error.message);

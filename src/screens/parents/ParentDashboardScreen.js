@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import Sidebar from '../../components/Sidebar';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import tokens from '../../theme/tokens';
@@ -58,7 +59,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
-        .from('notifications')
+        .from(TABLES.NOTIFICATIONS)
         .select('*')
         .in('target_role', ['all', 'parent'])
         .eq('is_draft', false)
@@ -86,7 +87,7 @@ export default function ParentDashboardScreen({ navigation }) {
     if (!profile?.id) return [];
     try {
       const { data, error } = await supabase
-        .from('parent_links')
+        .from(TABLES.PARENT_LINKS)
         .select(`
           student_id,
           profiles!parent_links_student_id_fkey (
@@ -116,7 +117,7 @@ export default function ParentDashboardScreen({ navigation }) {
 
     try {
       const [{ data: cp }, prog, insights] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', sid).maybeSingle(),
+        supabase.from(TABLES.PROFILES).select('*').eq('id', sid).maybeSingle(),
         getStudentProgress(sid, 14),
         analyzeStudentProfile(sid, 60),
       ]);

@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '../components/icons/Icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { STORAGE_KEYS, TIMEOUTS } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
 import c from '../components/student/candyTokens';
@@ -67,7 +68,7 @@ import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const ONBOARDING_KEY = '@synclexia_onboarding_complete';
+const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_COMPLETE;
 
 // React Navigation v6 wraps the tab bar in a SafeAreaView that already
 // adds insets.bottom as padding. Do NOT add insets.bottom here too or it
@@ -184,7 +185,7 @@ function AppScreens() {
   // Only show the error screen if it still hasn't resolved after 25s.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
-    const t = setTimeout(() => setTimedOut(true), 35000);
+    const t = setTimeout(() => setTimedOut(true), TIMEOUTS.PROFILE_SAFETY_NET_MS);
     return () => clearTimeout(t);
   }, [profileLoaded]);
 

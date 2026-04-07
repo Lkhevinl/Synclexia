@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 
 // Color palette — cycled by level number
 const LEVEL_COLORS = ['#FF7043', '#FFA726', '#EC407A', '#AB47BC', '#5C6BC0', '#26A69A', '#42A5F5', '#66BB6A'];
@@ -30,7 +31,7 @@ export default function ReadingScreen() {
 
   useEffect(() => {
     supabase
-      .from('stories')
+      .from(TABLES.STORIES)
       .select('id, title, content, level')
       .order('level', { ascending: true })
       .then(({ data }) => {

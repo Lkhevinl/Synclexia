@@ -8,12 +8,13 @@
 // Demotion rule:   accuracy < 40% on last session            → level down
 
 import { supabase } from './supabase';
+import { ADAPTIVE, TABLES } from './constants';
 
-const MIN_LEVEL = 1;
-const MAX_LEVEL = 3;
-const PROMOTE_STREAK = 3;   // consecutive correct sessions needed
-const PROMOTE_ACCURACY = 70; // minimum accuracy % to promote
-const DEMOTE_ACCURACY = 40;  // accuracy % that triggers demotion
+const MIN_LEVEL       = ADAPTIVE.MIN_LEVEL;
+const MAX_LEVEL       = ADAPTIVE.MAX_LEVEL;
+const PROMOTE_STREAK  = ADAPTIVE.PROMOTE_STREAK;
+const PROMOTE_ACCURACY = ADAPTIVE.PROMOTE_ACCURACY;
+const DEMOTE_ACCURACY  = ADAPTIVE.DEMOTE_ACCURACY;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,7 @@ export const getAdaptiveLevel = async (studentId, activityType) => {
   if (!studentId) return MIN_LEVEL;
   try {
     const { data } = await supabase
-      .from('adaptive_state')
+      .from(TABLES.ADAPTIVE_STATE)
       .select('current_level')
       .eq('student_id', studentId)
       .eq('activity_type', activityType)
@@ -38,7 +39,7 @@ export const getAdaptiveLevel = async (studentId, activityType) => {
     if (data) return data.current_level;
 
     // First time — seed with level 1
-    await supabase.from('adaptive_state').insert({
+    await supabase.from(TABLES.ADAPTIVE_STATE).insert({
       student_id: studentId,
       activity_type: activityType,
       current_level: MIN_LEVEL,
@@ -66,7 +67,7 @@ export const updateAdaptiveState = async (studentId, activityType, accuracy) => 
   try {
     // Fetch current state
     const { data: state } = await supabase
-      .from('adaptive_state')
+      .from(TABLES.ADAPTIVE_STATE)
       .select('*')
       .eq('student_id', studentId)
       .eq('activity_type', activityType)
@@ -106,7 +107,7 @@ export const updateAdaptiveState = async (studentId, activityType, accuracy) => 
     }
 
     // Upsert state
-    await supabase.from('adaptive_state').upsert({
+    await supabase.from(TABLES.ADAPTIVE_STATE).upsert({
       student_id: studentId,
       activity_type: activityType,
       current_level,
@@ -131,7 +132,7 @@ export const updateAdaptiveState = async (studentId, activityType, accuracy) => 
 export const getAllAdaptiveStates = async (studentId) => {
   try {
     const { data } = await supabase
-      .from('adaptive_state')
+      .from(TABLES.ADAPTIVE_STATE)
       .select('*')
       .eq('student_id', studentId)
       .order('activity_type');

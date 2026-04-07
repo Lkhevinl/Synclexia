@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import Sidebar from '../../components/Sidebar';
 import ScreenWrapper from '../../components/ScreenWrapper';
 
@@ -45,7 +46,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
   const fetchNotifications = async () => {
     try {
-      const { data, error } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
+      const { data, error } = await supabase.from(TABLES.NOTIFICATIONS).select('*').eq('is_draft', false).order('created_at', { ascending: false });
       if (error) {
         setNotifications([]);
         return;
@@ -59,8 +60,8 @@ export default function AdminDashboardScreen({ navigation }) {
   const fetchUserCounts = async () => {
     try {
       const [s, p] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+        supabase.from(TABLES.PROFILES).select('*', { count: 'exact', head: true }).eq('role', 'student'),
+        supabase.from(TABLES.PROFILES).select('*', { count: 'exact', head: true }).eq('role', 'parent'),
       ]);
 
       if (s.error || p.error) {
@@ -80,11 +81,11 @@ export default function AdminDashboardScreen({ navigation }) {
   const fetchContentStats = async () => {
     try {
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
       ]);
 
       setContentStats({

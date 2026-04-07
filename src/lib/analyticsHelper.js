@@ -2,6 +2,7 @@
 // Session logging for all activity attempts — records every session to
 // session_logs.
 import { supabase } from './supabase';
+import { TABLES } from './constants';
 
 /**
  * Log a completed activity session.
@@ -48,7 +49,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
     let session = null;
     let logError = null;
     for (const payload of attempts) {
-      const res = await supabase.from('session_logs').insert(payload).select().single();
+      const res = await supabase.from(TABLES.SESSION_LOGS).insert(payload).select().single();
       if (!res.error) {
         session = res.data;
         logError = null;
@@ -93,7 +94,7 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
     let sessErr = null;
 
     ({ data: sessions, error: sessErr } = await supabase
-      .from('session_logs')
+      .from(TABLES.SESSION_LOGS)
       .select('*')
       .eq('student_id', studentId)
       .gte('created_at', since.toISOString())
@@ -101,7 +102,7 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
 
     if (sessErr && isUndefinedColumn(sessErr)) {
       ({ data: sessions, error: sessErr } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('*')
         .eq('user_id', studentId)
         .gte('created_at', since.toISOString())
@@ -156,7 +157,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
 
     // Get all students (exclude parents and admins)
     const { data: students } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .select('id, full_name, email, created_at')
       .eq('role', 'student')
       .order('created_at', { ascending: false });
@@ -164,7 +165,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
     // Get session logs for the date range (support both student_id and user_id columns)
     let sessions = [];
     const { data: byStudentId, error: err1 } = await supabase
-      .from('session_logs')
+      .from(TABLES.SESSION_LOGS)
       .select('*')
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
@@ -174,7 +175,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
     } else {
       // Fallback to user_id if student_id doesn't exist
       const { data: byUserId } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('*')
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: false });

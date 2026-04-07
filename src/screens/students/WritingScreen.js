@@ -5,6 +5,7 @@ import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
+import { TABLES } from '../../lib/constants';
 import { logSession } from '../../lib/analyticsHelper';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -262,7 +263,7 @@ export default function WritingScreen() {
   // --- FETCH DATA ---
   useEffect(() => {
     const fetchItems = async () => {
-      const { data } = await supabase.from('writing_practice').select('*').order('label');
+      const { data } = await supabase.from(TABLES.WRITING_PRACTICE).select('*').order('label');
       if (data && data.length > 0) setItems(data);
     };
     fetchItems();
@@ -273,7 +274,7 @@ export default function WritingScreen() {
     const fetchStories = async () => {
       setLoadingStories(true);
       const { data, error } = await supabase
-        .from('stories')
+        .from(TABLES.STORIES)
         .select('*')
         .order('level', { ascending: true });
       if (data && data.length > 0) {

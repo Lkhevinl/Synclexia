@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import CustomButton from '../../../components/CustomButton';
 import CustomInput from '../../../components/CustomInput';
@@ -31,7 +32,7 @@ export default function TeacherAddStoryScreen() {
   const fetchStories = async () => {
     setLoadingList(true);
     const { data } = await supabase
-      .from('stories')
+      .from(TABLES.STORIES)
       .select('id, title, level, created_at')
       .order('created_at', { ascending: false });
     setStories(data || []);
@@ -45,7 +46,7 @@ export default function TeacherAddStoryScreen() {
   };
 
   const openEdit = async (story) => {
-    const { data } = await supabase.from('stories').select('*').eq('id', story.id).single();
+    const { data } = await supabase.from(TABLES.STORIES).select('*').eq('id', story.id).single();
     if (!data) return;
     setEditingId(story.id);
     setTitle(data.title || ''); setContent(data.content || ''); setLevel(String(data.level || 1));
@@ -61,9 +62,9 @@ export default function TeacherAddStoryScreen() {
     const payload = { title: title.trim(), content: content.trim(), level: parseInt(level) };
     let error;
     if (editingId) {
-      ({ error } = await supabase.from('stories').update(payload).eq('id', editingId));
+      ({ error } = await supabase.from(TABLES.STORIES).update(payload).eq('id', editingId));
     } else {
-      ({ error } = await supabase.from('stories').insert([payload]));
+      ({ error } = await supabase.from(TABLES.STORIES).insert([payload]));
     }
     setSaving(false);
     if (error) { Alert.alert('Error', error.message); return; }
@@ -78,7 +79,7 @@ export default function TeacherAddStoryScreen() {
       {
         text: 'Delete', style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase.from('stories').delete().eq('id', story.id);
+          const { error } = await supabase.from(TABLES.STORIES).delete().eq('id', story.id);
           if (error) Alert.alert('Error', error.message);
           else fetchStories();
         },

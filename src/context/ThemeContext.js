@@ -2,8 +2,9 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import a11yStyleRef from '../lib/a11yStyleRef';
+import { STORAGE_KEYS } from '../lib/constants';
 
-const THEME_STORAGE_KEY = '@synclexia_theme';
+const THEME_STORAGE_KEY = STORAGE_KEYS.THEME;
 
 // Color themes based on overlay selection
 const COLOR_THEMES = {

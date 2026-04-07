@@ -4,6 +4,7 @@ import Icon from '../../../components/icons/Icon';
 import AppHeader from '../../../components/AppHeader';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { scheduleDeadlineReminder } from '../../../lib/pushNotificationHelper';
 import ScreenWrapper from '../../../components/ScreenWrapper';
@@ -66,7 +67,7 @@ export default function TeacherAssignActivitiesScreen() {
     const sid = getStudentId(student);
     if (!sid) return;
     const { data } = await supabase
-      .from('assignments')
+      .from(TABLES.ASSIGNMENTS)
       .select('*')
       .eq('student_id', sid)
       .eq('teacher_id', profile?.id);
@@ -85,7 +86,7 @@ export default function TeacherAssignActivitiesScreen() {
     const sid = getStudentId(selectedStudent);
     if (isAssigned) {
       await supabase
-        .from('assignments')
+        .from(TABLES.ASSIGNMENTS)
         .delete()
         .eq('student_id', sid)
         .eq('activity_type', activityId)
@@ -129,7 +130,7 @@ export default function TeacherAssignActivitiesScreen() {
       };
 
       const { data: existing } = await supabase
-        .from('assignments')
+        .from(TABLES.ASSIGNMENTS)
         .select('id')
         .eq('student_id', sid)
         .eq('teacher_id', profile?.id)
@@ -139,14 +140,14 @@ export default function TeacherAssignActivitiesScreen() {
       let data, error;
       if (existing) {
         ({ data, error } = await supabase
-          .from('assignments')
+          .from(TABLES.ASSIGNMENTS)
           .update(payload)
           .eq('id', existing.id)
           .select()
           .single());
       } else {
         ({ data, error } = await supabase
-          .from('assignments')
+          .from(TABLES.ASSIGNMENTS)
           .insert({ teacher_id: profile?.id, student_id: sid, activity_type: configModal, ...payload })
           .select()
           .single());

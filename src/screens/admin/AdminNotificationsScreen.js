@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,7 +31,7 @@ export default function AdminNotificationsScreen() {
     setLoading(true);
     const isDraft = activeTab === 'Drafts';
     const { data, error } = await supabase
-      .from('notifications')
+      .from(TABLES.NOTIFICATIONS)
       .select('*')
       .eq('is_draft', isDraft)
       .order('created_at', { ascending: false });
@@ -46,7 +47,7 @@ export default function AdminNotificationsScreen() {
     try {
       if (editingId) {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .update({ title, content, is_draft: asDraft, target_role: targetRole })
           .eq('id', editingId);
 
@@ -55,7 +56,7 @@ export default function AdminNotificationsScreen() {
         setEditingId(null);
       } else {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .insert([{ title, content, is_draft: asDraft, target_role: targetRole }]);
 
         if (error) throw error;
@@ -83,7 +84,7 @@ export default function AdminNotificationsScreen() {
   const handleDelete = async (id) => {
     if (Platform.OS === 'web') {
       if (!window.confirm('Delete this notification?')) return;
-      await supabase.from('notifications').delete().eq('id', id);
+      await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
       setTitle('');
       setContent('');
       setTargetRole('all');
@@ -93,7 +94,7 @@ export default function AdminNotificationsScreen() {
       Alert.alert("Delete", "Are you sure?", [
         { text: "Cancel" },
         { text: "Delete", style: 'destructive', onPress: async () => {
-            await supabase.from('notifications').delete().eq('id', id);
+            await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
             setTitle('');
             setContent('');
             setTargetRole('all');

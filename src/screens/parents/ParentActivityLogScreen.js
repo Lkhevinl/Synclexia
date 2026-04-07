@@ -8,6 +8,7 @@ import tokens from '../../theme/tokens';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
+import { TABLES } from '../../lib/constants';
 
 const ACTIVITY_LABELS = {
   phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
@@ -42,7 +43,7 @@ export default function ParentActivityLogScreen({ route }) {
       const since = new Date();
       since.setDate(since.getDate() - days);
       const { data, error } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('*')
         .eq('student_id', sid)
         .gte('created_at', since.toISOString())

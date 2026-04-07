@@ -18,6 +18,7 @@ import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { TABLES, ROLES } from '../lib/constants';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
 import CustomButton from '../components/CustomButton';
@@ -117,12 +118,12 @@ export default function SignUpScreen({ navigation }) {
       if (role === 'student') {
         for (let attempt = 0; attempt < 5; attempt++) {
           profileData.unique_code = generateUniqueCode();
-          const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+          const result = await supabase.from(TABLES.PROFILES).upsert([profileData], { onConflict: 'id' });
           profileError = result.error;
           if (!profileError || profileError.code !== '23505') break;
         }
       } else {
-        const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
+        const result = await supabase.from(TABLES.PROFILES).upsert([profileData], { onConflict: 'id' });
         profileError = result.error;
       }
 

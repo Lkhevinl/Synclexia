@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -39,7 +40,7 @@ export default function AdminPhonologicalScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonological_content')
+      .from(TABLES.PHONOLOGICAL_CONTENT)
       .select('*')
       .order('task_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -93,11 +94,11 @@ export default function AdminPhonologicalScreen() {
     if (!data) return Alert.alert('Error', 'Please fill all required fields.');
     const payload = { task_type: taskType, difficulty_level: level, data };
     if (editingId) {
-      const { error } = await supabase.from('phonological_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', 'Item updated.');
     } else {
-      const { error } = await supabase.from('phonological_content').insert([payload]);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', 'Item added.');
     }
@@ -106,7 +107,7 @@ export default function AdminPhonologicalScreen() {
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonological_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -114,7 +115,7 @@ export default function AdminPhonologicalScreen() {
     Alert.alert('Delete', 'Delete this item?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonological_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONOLOGICAL_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);

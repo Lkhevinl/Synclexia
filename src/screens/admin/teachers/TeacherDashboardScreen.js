@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import Sidebar from '../../../components/Sidebar';
 import ScreenWrapper from '../../../components/ScreenWrapper';
 import tokens from '../../../theme/tokens';
@@ -44,7 +45,7 @@ export default function TeacherDashboardScreen({ navigation }) {
 
   const fetchNotifications = async () => {
     const { data } = await supabase
-      .from('notifications')
+      .from(TABLES.NOTIFICATIONS)
       .select('*')
       .eq('is_draft', false)
       .order('created_at', { ascending: false })
@@ -55,11 +56,11 @@ export default function TeacherDashboardScreen({ navigation }) {
   const fetchContentStats = async () => {
     try {
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
       ]);
 
       setContentStats({

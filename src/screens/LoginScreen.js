@@ -15,6 +15,7 @@ import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '../lib/uiAlert';
+import { TABLES } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
@@ -71,7 +72,7 @@ export default function LoginScreen({ navigation }) {
         return;
       } else {
         const { data: profileData } = await supabase
-          .from('profiles')
+          .from(TABLES.PROFILES)
           .select('is_banned, role')
           .eq('id', data.session.user.id)
           .single();

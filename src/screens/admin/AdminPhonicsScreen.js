@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -24,7 +25,7 @@ export default function AdminPhonicsScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_items')
+      .from(TABLES.PHONICS_ITEMS)
       .select('*')
       .order('label');
 
@@ -46,7 +47,7 @@ export default function AdminPhonicsScreen() {
 
     if (editingId) {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .update({ label: label.trim(), icon, bg_color: bgColor })
         .eq('id', editingId);
 
@@ -54,7 +55,7 @@ export default function AdminPhonicsScreen() {
       Alert.alert('Success', 'Item updated.');
     } else {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .insert([{ label: label.trim(), icon, bg_color: bgColor, created_by: profile.id }]);
 
       if (error) return Alert.alert('Error', error.message);
@@ -77,7 +78,7 @@ export default function AdminPhonicsScreen() {
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
           const { error } = await supabase
-            .from('phonics_items')
+            .from(TABLES.PHONICS_ITEMS)
             .delete()
             .eq('id', id);
 

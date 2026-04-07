@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, RefreshControl, TextInput, Modal, ScrollView } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -46,7 +47,7 @@ export default function AdminUsersScreen({ route }) {
   const fetchUsers = async () => {
     setRefreshing(true);
     const { data, error } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .select('*')
       .in('role', ['student', 'user', 'parent', 'admin'])
       .order('full_name', { ascending: true });
@@ -74,7 +75,7 @@ export default function AdminUsersScreen({ route }) {
     if (!selectedUser) return;
     
     const { error } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .update({
         full_name: editForm.full_name,
         email: editForm.email,
@@ -95,7 +96,7 @@ export default function AdminUsersScreen({ route }) {
     Alert.alert("Ban User", "This will block their access. Continue?", [
         { text: "Cancel" },
         { text: "Ban", style: 'destructive', onPress: async () => {
-             await supabase.from('profiles').update({ is_banned: true }).eq('id', id);
+             await supabase.from(TABLES.PROFILES).update({ is_banned: true }).eq('id', id);
              Alert.alert("Info", "User banned successfully.");
              fetchUsers();
         }}

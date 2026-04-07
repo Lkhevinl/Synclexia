@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 import { navigationRef } from '../navigation/navigationRef';
+import { TIMEOUTS, TABLES, ROLES } from '../lib/constants';
 
 const AuthContext = createContext({});
 
@@ -76,7 +77,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
-    if (Date.now() - startTime > 20000) {
+    if (Date.now() - startTime > TIMEOUTS.PROFILE_TOTAL_MS) {
       console.warn('fetchProfile: total time exceeded 20s');
       setProfileError('server_error');
       setProfileLoaded(true);
@@ -85,9 +86,9 @@ export const AuthProvider = ({ children }) => {
     try {
       // Race the Supabase query against a 8-second hard timeout so a hanging
       // network request can never block the app indefinitely.
-      const queryPromise = supabase.from('profiles').select('*').eq('id', userId).single();
+      const queryPromise = supabase.from(TABLES.PROFILES).select('*').eq('id', userId).single();
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 8000)
+        setTimeout(() => reject(new Error('timeout')), TIMEOUTS.PROFILE_QUERY_MS)
       );
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
       if (error) {
@@ -103,7 +104,7 @@ export const AuthProvider = ({ children }) => {
         }
         if (isTransient500 && retryCount < 3) {
           console.log(`fetchProfile: transient 500, retrying… (attempt ${retryCount + 1})`);
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
           return fetchProfile(userId, retryCount + 1, startTime);
         }
         if (isTransient500) {
@@ -132,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       } else if (retryCount < 3) {
         // Profile may not exist yet (signup race) or network issue — retry up to 3 times
         console.log(`fetchProfile: profile not found, retrying… (attempt ${retryCount + 1})`);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
         return fetchProfile(userId, retryCount + 1, startTime);
       }
       setProfileError('not_found');
@@ -146,7 +147,7 @@ export const AuthProvider = ({ children }) => {
       // Retry on timeout or network errors (up to 3 times total)
       if ((isTimeout || isNetwork) && retryCount < 3) {
         console.log(`fetchProfile: ${isTimeout ? 'request timed out' : 'network error'}, retrying… (attempt ${retryCount + 1})`);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
         return fetchProfile(userId, retryCount + 1, startTime);
       }
 

@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import ScreenWrapper from '../../../components/ScreenWrapper';
 import tokens from '../../../theme/tokens';
 import { useTheme } from '../../../context/ThemeContext';
@@ -36,7 +37,7 @@ function InboxView({ profile, onSelectConversation }) {
 
     // ── 1. Enrolled student IDs ─────────────────────────────────────────────
     const { data: enrollments } = await supabase
-      .from('enrollments')
+      .from(TABLES.ENROLLMENTS)
       .select('student_id')
       .eq('teacher_id', profile.id);
     const enrolledIds = (enrollments || []).map(e => e.student_id);
@@ -45,7 +46,7 @@ function InboxView({ profile, onSelectConversation }) {
     let studentProfiles = [];
     if (enrolledIds.length > 0) {
       const { data: sp } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name')
         .in('id', enrolledIds);
       studentProfiles = sp || [];
@@ -57,7 +58,7 @@ function InboxView({ profile, onSelectConversation }) {
     let linkedParents = [];
     if (enrolledIds.length > 0) {
       const { data: links } = await supabase
-        .from('parent_links')
+        .from(TABLES.PARENT_LINKS)
         .select('parent_id, student_id')
         .in('student_id', enrolledIds);
       linkedParents = links || [];
@@ -68,7 +69,7 @@ function InboxView({ profile, onSelectConversation }) {
     const parentProfileMap = {};
     if (allLinkedParentIds.length > 0) {
       const { data: pp } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name, email, role')
         .in('id', allLinkedParentIds);
       (pp || []).forEach(p => { parentProfileMap[p.id] = p; });
@@ -92,7 +93,7 @@ function InboxView({ profile, onSelectConversation }) {
 
     // ── 6. Existing conversations ────────────────────────────────────────────
     const { data: rows, error } = await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .select('*')
       .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
       .order('created_at', { ascending: false });
@@ -108,7 +109,7 @@ function InboxView({ profile, onSelectConversation }) {
     const extraIds = [...convMap.keys()].filter(id => !parentProfileMap[id]);
     if (extraIds.length > 0) {
       const { data: extra } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name, email, role')
         .in('id', extraIds);
       (extra || []).forEach(p => { parentProfileMap[p.id] = p; });
@@ -134,7 +135,7 @@ function InboxView({ profile, onSelectConversation }) {
       let unreadCount = 0;
       if (lastMsg) {
         const { count } = await supabase
-          .from('parent_messages')
+          .from(TABLES.PARENT_MESSAGES)
           .select('*', { count: 'exact', head: true })
           .eq('sender_id', parentId)
           .eq('receiver_id', profile.id)
@@ -341,7 +342,7 @@ function ChatView({ profile, conversation, onBack }) {
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .select('*')
       .or(`and(sender_id.eq.${profile.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${profile.id})`)
       .order('created_at', { ascending: true });
@@ -351,7 +352,7 @@ function ChatView({ profile, conversation, onBack }) {
 
     // Mark incoming as read
     await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .update({ is_read: true })
       .eq('sender_id', otherId)
       .eq('receiver_id', profile.id)
@@ -361,7 +362,7 @@ function ChatView({ profile, conversation, onBack }) {
   const sendMessage = async () => {
     if (!text.trim()) return;
     setSending(true);
-    const { error } = await supabase.from('parent_messages').insert({
+    const { error } = await supabase.from(TABLES.PARENT_MESSAGES).insert({
       sender_id:   profile.id,
       receiver_id: otherId,
       parent_id:   otherId,

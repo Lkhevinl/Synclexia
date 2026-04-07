@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
@@ -49,7 +50,7 @@ export default function AdminPhonicsActivityScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_activity_content')
+      .from(TABLES.PHONICS_ACTIVITY_CONTENT)
       .select('*')
       .order('game_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -87,11 +88,11 @@ export default function AdminPhonicsActivityScreen() {
     const payload = { game_type: gameType, difficulty_level: level, data };
 
     if (editingId) {
-      const { error } = await supabase.from('phonics_activity_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', 'Item updated.');
     } else {
-      const { error } = await supabase.from('phonics_activity_content').insert([payload]);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', 'Item added.');
     }
@@ -100,7 +101,7 @@ export default function AdminPhonicsActivityScreen() {
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonics_activity_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -108,7 +109,7 @@ export default function AdminPhonicsActivityScreen() {
     Alert.alert('Delete', 'Delete this item?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonics_activity_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import { useAuth } from '../../context/AuthContext';
 import AppHeader from '../../components/AppHeader';
 import CustomInput from '../../components/CustomInput';
@@ -131,7 +132,7 @@ export default function AddMaintenanceLogScreen({ navigation }) {
         status: 'open',
       };
 
-      const { error } = await supabase.from('maintenance_logs').insert([payload]);
+      const { error } = await supabase.from(TABLES.MAINTENANCE_LOGS).insert([payload]);
 
       if (error) {
         console.error('Maintenance log error:', error);

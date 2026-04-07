@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { TABLES } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
@@ -66,7 +67,7 @@ export default function ProfileScreen({ navigation }) {
     setUploading(true);
     try {
       const newUrl = await uploadImage(asset, 'avatars', profile.id);
-      await supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', profile.id);
+      await supabase.from(TABLES.PROFILES).update({ avatar_url: newUrl }).eq('id', profile.id);
       setAvatarUrl(newUrl);
       fetchProfile(profile.id).catch(() => {});
     } catch (e) { showAlert('Upload Failed', e.message); }
@@ -84,7 +85,7 @@ export default function ProfileScreen({ navigation }) {
     setBannerUploading(true);
     try {
       const newUrl = await uploadImage(asset, 'avatars', `banner_${profile.id}`);
-      await supabase.from('profiles').update({ banner_url: newUrl }).eq('id', profile.id);
+      await supabase.from(TABLES.PROFILES).update({ banner_url: newUrl }).eq('id', profile.id);
       setBannerUrl(newUrl);
       fetchProfile(profile.id).catch(() => {});
     } catch (e) { showAlert('Upload Failed', e.message); }
@@ -97,7 +98,7 @@ export default function ProfileScreen({ navigation }) {
     setSaving(true);
     const updates = { full_name: fullName.trim() };
     if (avatarUrl && avatarUrl !== profile?.avatar_url) updates.avatar_url = avatarUrl;
-    const { error } = await supabase.from('profiles').update(updates).eq('id', profile.id);
+    const { error } = await supabase.from(TABLES.PROFILES).update(updates).eq('id', profile.id);
     if (error) { showAlert('Error', error.message); setSaving(false); return; }
     const trimmedEmail = email.trim().toLowerCase();
     const finishSave = async () => { await fetchProfile(profile.id); setSaving(false); navigation.goBack(); };
@@ -106,7 +107,7 @@ export default function ProfileScreen({ navigation }) {
       if (emailError) {
         showAlert('Profile Saved', `Name updated, but email change failed: ${emailError.message}`, finishSave);
       } else {
-        await supabase.from('profiles').update({ email: trimmedEmail }).eq('id', profile.id);
+        await supabase.from(TABLES.PROFILES).update({ email: trimmedEmail }).eq('id', profile.id);
         showAlert('Check Your Email', 'Profile saved! A confirmation link was sent to the new email address.', finishSave);
       }
     } else {

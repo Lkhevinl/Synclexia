@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TABLES } from '../lib/constants';
 import {
   View,
   Text,
@@ -45,7 +46,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
       if (log.id.startsWith('feedback-')) {
         // Update in the old feedback table
         const { error } = await supabase
-          .from('feedback')
+          .from(TABLES.FEEDBACK)
           .update({ status: newStatus })
           .eq('id', log.id.replace('feedback-', ''));
 
@@ -53,7 +54,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
       } else {
         // Update in the maintenance_logs table
         const { error } = await supabase
-          .from('maintenance_logs')
+          .from(TABLES.MAINTENANCE_LOGS)
           .update({ status: newStatus })
           .eq('id', log.id);
 
@@ -92,7 +93,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
       if (log.id.startsWith('feedback-')) {
         // Update reply in the old feedback table
         const { error } = await supabase
-          .from('feedback')
+          .from(TABLES.FEEDBACK)
           .update({
             reply: adminComment.trim(),
             has_unread_reply: true,
@@ -109,7 +110,7 @@ export default function MaintenanceLogDetailScreen({ route, navigation }) {
         // For maintenance_logs, we could add a comments field or create a separate comments table
         // For now, let's add a simple admin_comment field update
         const { error } = await supabase
-          .from('maintenance_logs')
+          .from(TABLES.MAINTENANCE_LOGS)
           .update({
             admin_comment: adminComment.trim(),
             status: log.status === 'open' ? 'in_progress' : log.status // Move to in_progress if it was open

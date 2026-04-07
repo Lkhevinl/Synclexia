@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -34,11 +35,11 @@ export default function AdminManageContentsScreen({ navigation }) {
   const fetchContentStats = async () => {
     try {
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
       ]);
 
       setContentStats({

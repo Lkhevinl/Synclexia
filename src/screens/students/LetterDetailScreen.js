@@ -8,24 +8,25 @@ import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import { SPEECH } from '../../lib/constants';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
 const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
-const ELEVENLABS_VOICE_ID = 'Xb7hH8MSUJpSbSDYk0k2';
+const ELEVENLABS_VOICE_ID = SPEECH.ELEVENLABS_VOICE_ID;
 
 async function playElevenLabsTTS(text) {
   if (!ELEVENLABS_API_KEY) return false;
   try {
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+      `https://api.elevenlabs.io/v1/text-to-speech/${SPEECH.ELEVENLABS_VOICE_ID}`,
       {
         method: 'POST',
         headers: { 'xi-api-key': ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_multilingual_v2',
-          voice_settings: { stability: 0.35, similarity_boost: 0.60, style: 0.55, use_speaker_boost: false },
+          model_id: SPEECH.ELEVENLABS_MODEL,
+          voice_settings: { stability: SPEECH.ELEVENLABS_STABILITY, similarity_boost: SPEECH.ELEVENLABS_SIMILARITY_BOOST, style: SPEECH.ELEVENLABS_STYLE, use_speaker_boost: SPEECH.ELEVENLABS_SPEAKER_BOOST },
         }),
       }
     );
@@ -39,7 +40,7 @@ async function playElevenLabsTTS(text) {
           const base64 = reader.result.split(',')[1];
           ({ sound } = await Audio.Sound.createAsync(
             { uri: `data:audio/mp3;base64,${base64}` },
-            { shouldPlay: true, rate: 0.92 }
+            { shouldPlay: true, rate: SPEECH.ELEVENLABS_PLAYBACK_RATE }
           ));
           await new Promise((res, rej) => {
             sound.setOnPlaybackStatusUpdate((st) => {
@@ -102,9 +103,9 @@ export default function LetterDetailScreen() {
     try {
       const text = `${item.story} ... ${item.sound}! Your turn!`;
       const ok = await playElevenLabsTTS(text);
-      if (!ok) Speech.speak(item.sound || item.letter, { rate: 0.85, pitch: 1.1 });
+      if (!ok) Speech.speak(item.sound || item.letter, { rate: SPEECH.DEFAULT_RATE, pitch: SPEECH.DEFAULT_PITCH });
     } catch {
-      Speech.speak(item.sound || item.letter, { rate: 0.85, pitch: 1.1 });
+      Speech.speak(item.sound || item.letter, { rate: SPEECH.DEFAULT_RATE, pitch: SPEECH.DEFAULT_PITCH });
     } finally {
       setTimeout(() => {
         setPlaying(false);
@@ -294,7 +295,7 @@ export default function LetterDetailScreen() {
                   style={[s.playSongBtn, { backgroundColor: TAB_COLORS.song.active, shadowColor: TAB_COLORS.song.active }]}
                   onPress={() => Speech.speak(
                     item.song ?? `${item.sound ?? item.letter}! ${item.sound ?? item.letter}! ${item.sound ?? item.letter}!`,
-                    { rate: 0.75, pitch: 1.15 }
+                    { rate: SPEECH.SONG_RATE, pitch: SPEECH.SONG_PITCH }
                   )}
                   activeOpacity={0.85}
                 >

@@ -22,6 +22,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAdaptive } from '../../context/AdaptiveContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 
 const ACTIVITY_TYPE = 'phonological_awareness';
 
@@ -33,7 +34,7 @@ const ACTIVITY_TYPE = 'phonological_awareness';
  */
 const fetchContent = async (taskType, level) => {
   const { data, error } = await supabase
-    .from('phonological_content')
+    .from(TABLES.PHONOLOGICAL_CONTENT)
     .select('id, data')
     .eq('task_type', taskType)
     .eq('is_active', true)

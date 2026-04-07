@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import Sidebar from '../../components/Sidebar';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -59,7 +60,7 @@ export default function DashboardScreen({ navigation }) {
     const assignCode = async () => {
       try {
         const code = generateUniqueCode();
-        await supabase.from('profiles').update({ unique_code: code }).eq('id', profile.id);
+        await supabase.from(TABLES.PROFILES).update({ unique_code: code }).eq('id', profile.id);
         await fetchProfile(profile.id);
       } catch (error) {
         // Silently fail - code generation is not critical
@@ -93,7 +94,7 @@ export default function DashboardScreen({ navigation }) {
     try {
       // Learner app: show global announcements only (no teacher/class targeting).
       const { data, error } = await supabase
-        .from('notifications')
+        .from(TABLES.NOTIFICATIONS)
         .select('*')
         .eq('is_draft', false)
         .in('target_role', ['all', 'student'])
@@ -114,7 +115,7 @@ export default function DashboardScreen({ navigation }) {
     if (!profile?.id) return;
     try {
       const { count, error } = await supabase
-        .from('feedback')
+        .from(TABLES.FEEDBACK)
         .select('*', { count: 'exact', head: true })
         .eq('user_id', profile?.id)
         .eq('has_unread_reply', true);
@@ -137,7 +138,7 @@ export default function DashboardScreen({ navigation }) {
 
       // Calculate streak (consecutive days with activity)
       const { data: sessions } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('created_at')
         .eq('student_id', profile.id)
         .order('created_at', { ascending: false });

@@ -10,6 +10,7 @@ import {
 import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
 import ScreenWrapper from '../../../components/ScreenWrapper';
@@ -51,7 +52,7 @@ export default function TeacherPhonicsActivityScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_activity_content')
+      .from(TABLES.PHONICS_ACTIVITY_CONTENT)
       .select('*')
       .order('game_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -90,11 +91,11 @@ export default function TeacherPhonicsActivityScreen() {
     if (!data) return Alert.alert('Missing Fields', 'Please fill all required fields for this game type.');
     const payload = { game_type: gameType, difficulty_level: level, data };
     if (editingId) {
-      const { error } = await supabase.from('phonics_activity_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Update Error', error.message);
       Alert.alert('Updated', 'Item updated successfully.');
     } else {
-      const { error } = await supabase.from('phonics_activity_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
       Alert.alert('Added', 'Item added successfully.');
     }
@@ -103,7 +104,7 @@ export default function TeacherPhonicsActivityScreen() {
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonics_activity_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -111,7 +112,7 @@ export default function TeacherPhonicsActivityScreen() {
     Alert.alert('Delete Item', 'Are you sure you want to delete this item?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonics_activity_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);

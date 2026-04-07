@@ -4,6 +4,7 @@ import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { TABLES } from '../../../lib/constants';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import GoBackBtn from '../../../components/GoBackBtn';
 import ScreenWrapper from '../../../components/ScreenWrapper';
@@ -56,7 +57,7 @@ export default function TeacherUsersScreen() {
       { text: 'Cancel' },
       {
         text: 'Remove', style: 'destructive', onPress: async () => {
-          const { error } = await supabase.from('enrollments').delete().eq('id', enrollmentId);
+          const { error } = await supabase.from(TABLES.ENROLLMENTS).delete().eq('id', enrollmentId);
           if (error) Alert.alert('Error', error.message);
           else fetchUsers();
         },

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -36,7 +37,7 @@ export default function AdminSpellingScreen() {
   const fetchWords = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('spelling_words')
+      .from(TABLES.SPELLING_WORDS)
       .select('*')
       .order('difficulty_level')
       .order('word');
@@ -69,11 +70,11 @@ export default function AdminSpellingScreen() {
       created_by: profile.id,
     };
     if (editingId) {
-      const { error } = await supabase.from('spelling_words').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.SPELLING_WORDS).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', `"${word}" updated.`);
     } else {
-      const { error } = await supabase.from('spelling_words').insert([payload]);
+      const { error } = await supabase.from(TABLES.SPELLING_WORDS).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', `"${word}" added to spelling list.`);
     }
@@ -83,7 +84,7 @@ export default function AdminSpellingScreen() {
 
   const handleToggle = async (item) => {
     const { error } = await supabase
-      .from('spelling_words')
+      .from(TABLES.SPELLING_WORDS)
       .update({ is_active: !item.is_active })
       .eq('id', item.id);
     if (error) return Alert.alert('Error', error.message);
@@ -94,7 +95,7 @@ export default function AdminSpellingScreen() {
     Alert.alert('Delete', `Delete "${item.word}"?`, [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('spelling_words').delete().eq('id', item.id);
+        await supabase.from(TABLES.SPELLING_WORDS).delete().eq('id', item.id);
         fetchWords();
       }},
     ]);

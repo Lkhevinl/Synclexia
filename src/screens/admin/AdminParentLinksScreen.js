@@ -11,6 +11,7 @@ import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -48,7 +49,7 @@ export default function AdminParentLinksScreen({ navigation }) {
 
   const fetchLinks = async () => {
     const { data, error } = await supabase
-      .from('parent_links')
+      .from(TABLES.PARENT_LINKS)
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -64,7 +65,7 @@ export default function AdminParentLinksScreen({ navigation }) {
       const allIds = [...new Set([...parentIds, ...studentIds])];
 
       const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name, email, role')
         .in('id', allIds);
 
@@ -90,7 +91,7 @@ export default function AdminParentLinksScreen({ navigation }) {
 
   const fetchParents = async () => {
     const { data, error } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .select('id, full_name, email, role')
       .eq('role', 'parent')
       .order('full_name');
@@ -103,7 +104,7 @@ export default function AdminParentLinksScreen({ navigation }) {
 
   const fetchStudents = async () => {
     const { data, error } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .select('id, full_name, email, role')
       .eq('role', 'student')
       .order('full_name');

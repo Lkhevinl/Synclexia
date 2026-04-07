@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert } 
 import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { TABLES } from '../../../lib/constants';
 import AppHeader from '../../../components/AppHeader';
 import ScreenWrapper from '../../../components/ScreenWrapper';
 import tokens from '../../../theme/tokens';
@@ -19,7 +20,7 @@ export default function TeacherFeedbackScreen() {
   const fetchFeedback = async () => {
     // Only show feedback from enrolled students
     const { data: enrollments } = await supabase
-      .from('enrollments')
+      .from(TABLES.ENROLLMENTS)
       .select('student_id')
       .eq('teacher_id', profile?.id);
     
@@ -31,14 +32,14 @@ export default function TeacherFeedbackScreen() {
     }
     
     const { data: rawFeedback } = await supabase
-      .from('feedback')
+      .from(TABLES.FEEDBACK)
       .select('*')
       .in('user_id', studentIds)
       .order('created_at', { ascending: false });
     if (rawFeedback && rawFeedback.length > 0) {
       // Fetch user profiles in batch
       const uids = [...new Set(rawFeedback.map(f => f.user_id))];
-      const { data: profs } = await supabase.from('profiles').select('id, full_name, email').in('id', uids);
+      const { data: profs } = await supabase.from(TABLES.PROFILES).select('id, full_name, email').in('id', uids);
       const profMap = {};
       (profs || []).forEach(p => { profMap[p.id] = p; });
       setFeedbacks(rawFeedback.map(f => ({ ...f, profiles: profMap[f.user_id] || null })));
@@ -50,7 +51,7 @@ export default function TeacherFeedbackScreen() {
   const sendReply = async (itemId) => {
     if (!replyText || selectedId !== itemId) return;
     const { error } = await supabase
-      .from('feedback')
+      .from(TABLES.FEEDBACK)
       .update({ reply: replyText, has_unread_reply: true })
       .eq('id', itemId);
     if (!error) {
@@ -110,7 +111,7 @@ export default function TeacherFeedbackScreen() {
                      />
                      <TouchableOpacity onPress={() => {
                          if (!replyText || selectedId !== item.id) return;
-                         supabase.from('feedback')
+                         supabase.from(TABLES.FEEDBACK)
                            .update({ reply: replyText, has_unread_reply: true })
                            .eq('id', item.id)
                            .then(({ error }) => {

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import * as Speech from 'expo-speech';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -18,7 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const fetchActivityContent = async (gameType) => {
   const { data, error } = await supabase
-    .from('phonics_activity_content')
+    .from(TABLES.PHONICS_ACTIVITY_CONTENT)
     .select('id, data')
     .eq('game_type', gameType)
     .eq('is_active', true);

@@ -5,6 +5,7 @@ import Icon from '../../../components/icons/Icon';
 import QRCode from 'react-native-qrcode-svg';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { TABLES } from '../../../lib/constants';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import AppHeader from '../../../components/AppHeader';
 import ScreenWrapper from '../../../components/ScreenWrapper';
@@ -44,7 +45,7 @@ export default function TeacherEnrollmentScreen() {
     for (let attempt = 0; attempt < 10; attempt++) {
       const code = generateCode();
       const { error } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .update({ teacher_code: code })
         .eq('id', profile.id);
       if (!error || error.code !== '23505') {
@@ -68,7 +69,7 @@ export default function TeacherEnrollmentScreen() {
             for (let attempt = 0; attempt < 10; attempt++) {
               const code = generateCode();
               const { error } = await supabase
-                .from('profiles')
+                .from(TABLES.PROFILES)
                 .update({ teacher_code: code })
                 .eq('id', profile.id);
               if (!error || error.code !== '23505') {
@@ -112,7 +113,7 @@ export default function TeacherEnrollmentScreen() {
         style: 'destructive',
         onPress: async () => {
           const { error } = await supabase
-            .from('enrollments')
+            .from(TABLES.ENROLLMENTS)
             .delete()
             .eq('id', enrollmentId);
           if (error) {

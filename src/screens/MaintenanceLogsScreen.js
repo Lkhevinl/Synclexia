@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
+import { TABLES } from '../lib/constants';
 import AppHeader from '../components/AppHeader';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
@@ -40,7 +41,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
       // Fetch from new maintenance_logs table
       let { data: maintenanceLogs, error: maintenanceError } = await supabase
-        .from('maintenance_logs')
+        .from(TABLES.MAINTENANCE_LOGS)
         .select(`
           *,
           performed_by_profile:performed_by (full_name),
@@ -53,7 +54,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       if (maintenanceError && maintenanceError.code === 'PGRST200') {
         console.log('Foreign key relationship failed for maintenance_logs, trying simple query...');
         ({ data: maintenanceLogs, error: maintenanceError } = await supabase
-          .from('maintenance_logs')
+          .from(TABLES.MAINTENANCE_LOGS)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100));
@@ -61,7 +62,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
       // Fetch from legacy feedback table
       let { data: legacyFeedback, error: feedbackError } = await supabase
-        .from('feedback')
+        .from(TABLES.FEEDBACK)
         .select(`
           *,
           profiles:user_id (full_name, role)
@@ -73,7 +74,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       if (feedbackError && feedbackError.code === 'PGRST200') {
         console.log('Foreign key relationship failed for feedback, trying simple query...');
         ({ data: legacyFeedback, error: feedbackError } = await supabase
-          .from('feedback')
+          .from(TABLES.FEEDBACK)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100));

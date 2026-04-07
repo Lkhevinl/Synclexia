@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform
 import Icon from '../../../components/icons/Icon';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../context/AuthContext';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import ScreenWrapper from '../../../components/ScreenWrapper';
 import tokens from '../../../theme/tokens';
@@ -31,7 +32,7 @@ export default function TeacherNotificationsScreen() {
     setLoading(true);
     const isDraft = activeTab === 'Drafts';
     const { data, error } = await supabase
-      .from('notifications')
+      .from(TABLES.NOTIFICATIONS)
       .select('*')
       .eq('is_draft', isDraft)
       .eq('teacher_id', profile?.id)
@@ -46,7 +47,7 @@ export default function TeacherNotificationsScreen() {
     try {
       if (editingId) {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .update({ title, content, is_draft: asDraft, target_role: targetRole })
           .eq('id', editingId);
         if (error) throw error;
@@ -54,7 +55,7 @@ export default function TeacherNotificationsScreen() {
         setEditingId(null);
       } else {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .insert([{ title, content, is_draft: asDraft, target_role: targetRole, teacher_id: profile?.id }]);
         if (error) throw error;
         showAlert("Success", asDraft ? "Saved to Drafts" : "Posted!");
@@ -79,13 +80,13 @@ export default function TeacherNotificationsScreen() {
   const handleDelete = async (id) => {
     if (Platform.OS === 'web') {
       if (!window.confirm('Delete this notification?')) return;
-      await supabase.from('notifications').delete().eq('id', id);
+      await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
       fetchNotifications();
     } else {
       Alert.alert("Delete", "Are you sure?", [
         { text: "Cancel" },
         { text: "Delete", style: 'destructive', onPress: async () => {
-            await supabase.from('notifications').delete().eq('id', id);
+            await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
             fetchNotifications();
         }}
       ]);

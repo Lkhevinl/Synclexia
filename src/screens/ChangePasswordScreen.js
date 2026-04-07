@@ -11,6 +11,7 @@ import AppText from '../components/AppText';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import tokens from '../theme/tokens';
+import { getPasswordStrength, AUTH } from '../lib/constants';
 
 const showAlert = (title, message, onOk) => {
   if (Platform.OS === 'web') {
@@ -67,20 +68,12 @@ export default function ChangePasswordScreen({ navigation }) {
     );
   }, [isStudent, navigation]);
 
-  const passwordStrength = (pw) => {
-    if (pw.length === 0)  return null;
-    if (pw.length < 6)   return { label: 'Too short', color: '#F44336', width: '20%' };
-    if (pw.length < 8)   return { label: 'Weak',      color: '#FF9800', width: '40%' };
-    if (pw.length < 12)  return { label: 'Good',      color: '#FFC107', width: '65%' };
-    return                       { label: 'Strong',   color: '#4CAF50', width: '100%' };
-  };
-
-  const strength = passwordStrength(newPass);
+  const strength = getPasswordStrength(newPass);
 
   const handleChange = async () => {
     if (isStudent) return;
     if (!newPass || !confirm) { Alert.alert('Missing Fields', 'Please fill in both password fields.'); return; }
-    if (newPass.length < 6)  { Alert.alert('Too Short', 'Password must be at least 6 characters.'); return; }
+    if (newPass.length < AUTH.PASSWORD_MIN_LENGTH)  { Alert.alert('Too Short', `Password must be at least ${AUTH.PASSWORD_MIN_LENGTH} characters.`); return; }
     if (newPass !== confirm)  { Alert.alert('Mismatch', 'The new passwords do not match. Please try again.'); return; }
 
     setLoading(true);

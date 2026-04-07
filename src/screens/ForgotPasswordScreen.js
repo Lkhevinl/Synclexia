@@ -10,8 +10,9 @@ import { useTheme } from '../context/ThemeContext';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
 import tokens from '../theme/tokens';
+import { AUTH } from '../lib/constants';
 
-const RESEND_COOLDOWN = 60;
+const RESEND_COOLDOWN = AUTH.RESEND_COOLDOWN_SECONDS;
 const ERROR_RED = '#E53935';
 const SUCCESS_GREEN = '#4CAF50';
 
@@ -71,7 +72,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setInputError("That doesn't look like a valid email."); shakeInput(); return; }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo: 'https://synclexia-password-reset.netlify.app' });
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo: AUTH.PASSWORD_RESET_REDIRECT_URL });
       if (error) { setInputError(error.message); shakeInput(); }
       else        { showSuccess(); }
     } catch {

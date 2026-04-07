@@ -7,6 +7,7 @@ import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import tokens from '../../theme/tokens';
@@ -129,7 +130,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
     // Save banner separately (direct update)
     if (!error && !result?.error && bannerUrl && bannerUrl !== childProfile?.banner_url) {
-      await supabase.from('profiles').update({ banner_url: bannerUrl }).eq('id', studentId);
+      await supabase.from(TABLES.PROFILES).update({ banner_url: bannerUrl }).eq('id', studentId);
     }
 
     setSaving(false);

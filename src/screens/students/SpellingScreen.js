@@ -4,6 +4,7 @@ import {
   Animated, Alert, ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import * as Speech from 'expo-speech';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -18,7 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 
 const fetchSpellingWords = async () => {
   const { data, error } = await supabase
-    .from('spelling_words')
+    .from(TABLES.SPELLING_WORDS)
     .select('id, word, emoji, hint, difficulty_level')
     .eq('is_active', true)
     .order('difficulty_level', { ascending: true });

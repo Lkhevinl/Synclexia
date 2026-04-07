@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../context/ThemeContext';
+import { STORAGE_KEYS } from '../lib/constants';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
 import CustomButton from '../components/CustomButton';
 import tokens from '../theme/tokens';
 
-const ONBOARDING_KEY = '@synclexia_onboarding_complete';
+const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_COMPLETE;
 
 const onboardingData = [
   {

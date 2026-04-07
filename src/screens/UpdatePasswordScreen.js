@@ -11,17 +11,10 @@ import AppText from '../components/AppText';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import tokens from '../theme/tokens';
+import { getPasswordStrength, AUTH, TIMEOUTS } from '../lib/constants';
 
 const ERROR_RED = '#E53935';
 const SUCCESS_GREEN = '#4CAF50';
-
-const passwordStrength = (pw) => {
-  if (pw.length === 0)  return null;
-  if (pw.length < 6)   return { label: 'Too short', color: '#F44336', width: '20%' };
-  if (pw.length < 8)   return { label: 'Weak',      color: '#FF9800', width: '40%' };
-  if (pw.length < 12)  return { label: 'Good',      color: '#FFC107', width: '65%' };
-  return                       { label: 'Strong',   color: '#4CAF50', width: '100%' };
-};
 
 export default function UpdatePasswordScreen() {
   const { signOut, clearRecoveryMode } = useAuth();
@@ -35,15 +28,15 @@ export default function UpdatePasswordScreen() {
   const [loading,      setLoading]      = useState(false);
   const [done,         setDone]         = useState(false);
 
-  const strength = passwordStrength(newPass);
+  const strength = getPasswordStrength(newPass);
 
   const handleUpdate = async () => {
     if (!newPass || !confirm) {
       Alert.alert('Missing Fields', 'Please fill in both password fields.');
       return;
     }
-    if (newPass.length < 6) {
-      Alert.alert('Too Short', 'Password must be at least 6 characters.');
+    if (newPass.length < AUTH.PASSWORD_MIN_LENGTH) {
+      Alert.alert('Too Short', `Password must be at least ${AUTH.PASSWORD_MIN_LENGTH} characters.`);
       return;
     }
     if (newPass !== confirm) {
@@ -60,7 +53,7 @@ export default function UpdatePasswordScreen() {
     } else {
       clearRecoveryMode();
       setDone(true);
-      setTimeout(() => signOut(), 2000);
+      setTimeout(() => signOut(), TIMEOUTS.SIGN_OUT_AUTO_DELAY_MS);
     }
   };
 
