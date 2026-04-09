@@ -13,6 +13,7 @@ export default function AdminDashboardScreen({ navigation }) {
   const { theme, colors } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [dismissingId, setDismissingId] = useState(null);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
@@ -45,16 +46,126 @@ export default function AdminDashboardScreen({ navigation }) {
   }, []);
 
   const fetchNotifications = async () => {
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
     try {
-      const { data, error } = await supabase.from(TABLES.NOTIFICATIONS).select('*').eq('is_draft', false).order('created_at', { ascending: false });
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data, error } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          setNotifications([]);
+          return;
+        }
+        setNotifications(data || []);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications (admins see all)
+      let query = supabase
+        .from(TABLES.NOTIFICATIONS)
+        .select('*')
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false });
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         setNotifications([]);
         return;
       }
+
       setNotifications(data || []);
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
+  };
+
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return;
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications }
+      ]
+    );
   };
 
   const fetchUserCounts = async () => {
@@ -368,9 +479,16 @@ export default function AdminDashboardScreen({ navigation }) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeaderContent}>
               <Text style={styles.modalTitle}>Notifications 🔔</Text>
-              <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <Icon name="x" size="md" color="#666" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={clearAllNotifications} style={styles.clearAllBtn}>
+                    <Text style={styles.clearAllText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifVisible(false)}>
+                  <Icon name="x" size="md" color="#666" />
+                </TouchableOpacity>
+              </View>
             </View>
             <FlatList
               data={notifications}
@@ -392,12 +510,24 @@ export default function AdminDashboardScreen({ navigation }) {
                     <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                     <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => dismissNotification(item.id)}
+                    disabled={dismissingId === item.id}
+                    style={styles.dismissBtn}
+                  >
+                    {dismissingId === item.id ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <Icon name="x" size="sm" color="#999" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               )}
             />
           </View>
         </View>
       </Modal>
+
       </>
       )}
     </ScreenWrapper>
@@ -441,6 +571,10 @@ const styles = StyleSheet.create({
   emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 },
   closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 10 },
   closeText: { color: '#fff', fontWeight: 'bold' },
+  modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16, marginRight: 8 },
+  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn: { padding: 8, marginLeft: 4 },
 
   // Loading and Error states
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },

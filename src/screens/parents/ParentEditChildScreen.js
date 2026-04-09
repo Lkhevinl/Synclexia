@@ -34,6 +34,12 @@ export default function ParentEditChildScreen({ route, navigation }) {
   const [uploading,       setUploading]       = useState(false);
   const [bannerUploading, setBannerUploading] = useState(false);
   const [saving,          setSaving]          = useState(false);
+  const [resetLoading,    setResetLoading]    = useState(false);
+  const [resetSent,       setResetSent]       = useState(false);
+  const [newPassword,     setNewPassword]     = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword,    setShowPassword]    = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
 
   // ── Generic upload helper ────────────────────────────────────────────────
   const uploadToStorage = async (asset, bucket, fileName) => {
@@ -155,6 +161,96 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
   const displayName = fullName || childProfile?.full_name || 'Child';
 
+  // ── Password change for child (direct) ──────────────────────────────────
+  const handlePasswordChange = async () => {
+    if (!newPassword || !confirmPassword) {
+      showAlert('Missing Fields', 'Please enter and confirm the new password.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      showAlert('Password Too Short', 'Password must be at least 6 characters long.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showAlert('Passwords Do Not Match', 'The passwords you entered do not match. Please try again.');
+      return;
+    }
+
+    setResetLoading(true);
+    try {
+      // Call RPC to update child's password (requires backend function)
+      const { data: result, error } = await supabase
+        .rpc('parent_update_child_password', {
+          p_student_id: studentId,
+          p_new_password: newPassword,
+        });
+
+      if (error) {
+        console.error('[Password Change] Error:', error);
+        let message = error.message;
+        if (error.message?.includes('not found')) {
+          message = 'Student account not found. Please verify the account exists.';
+        } else if (error.message?.includes('permission')) {
+          message = 'You do not have permission to change this password.';
+        }
+        showAlert('Error', message);
+      } else if (result?.error) {
+        showAlert('Error', result.error);
+      } else {
+        setPasswordChanged(true);
+        setNewPassword('');
+        setConfirmPassword('');
+        showAlert('Password Updated ✓', `The password for ${displayName} has been changed successfully.`);
+      }
+    } catch (e) {
+      console.error('[Password Change] Exception:', e);
+      showAlert('Error', 'Failed to update password. Please try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  // ── Password reset via email (fallback) ──────────────────────────────────
+  const handlePasswordReset = async () => {
+    if (!email.trim() || !email.includes('@')) {
+      showAlert('Invalid Email', 'Please enter a valid email address for your child first.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const cleanEmail = email.trim().toLowerCase();
+      console.log('[Password Reset] Sending reset for:', cleanEmail);
+
+      const { error, data } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: 'https://synclexia-password-reset.netlify.app',
+      });
+
+      console.log('[Password Reset] Response:', { error, data });
+
+      if (error) {
+        let message = error.message;
+        let title = 'Error sending recovery email';
+        if (error.status === 500 || error.message?.includes('Internal Server Error')) {
+          title = 'Configuration Required';
+          message = 'The password reset feature needs to be configured.\n\nPlease contact support to enable this feature.';
+        } else if (error.message?.includes('rate limit')) {
+          message = 'Too many attempts. Please wait a few minutes and try again.';
+        } else if (error.message?.includes('not found') || error.message?.includes('invalid')) {
+          message = 'This email address was not found in the system. Please verify the email is correct.';
+        }
+        showAlert(title, message);
+      } else {
+        setResetSent(true);
+        showAlert('Reset Link Sent ✓', `A password reset link has been sent to ${cleanEmail}. Please check the inbox (and spam folder).`);
+      }
+    } catch (e) {
+      console.error('[Password Reset] Exception:', e);
+      showAlert('Error', 'Failed to send reset link. Please check your internet connection and try again.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <ScreenWrapper role="parent" scrollable>
       {/* ── Banner + Avatar hero ── */}
@@ -242,6 +338,67 @@ export default function ParentEditChildScreen({ route, navigation }) {
             Changing the email will send a verification link to the new address.
           </Text>
 
+          {/* ── Change Password Section ── */}
+          <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S PASSWORD</Text>
+
+          {passwordChanged ? (
+            <View style={[styles.passwordBox, styles.passwordBoxSent]}>
+              <View style={styles.passwordInfo}>
+                <Icon name="checkmark-circle" size="md" color="#4CAF50" />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.passwordLabel, a11yTextStyle]}>Password Updated</Text>
+                  <Text style={[styles.passwordHint, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
+                    The password has been changed successfully.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.inputBox}>
+                <Icon name="lock-closed" size="md" color="#90A4AE" />
+                <TextInput
+                  style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Enter new password (min 6 characters)"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Icon name={showPassword ? 'eye-off' : 'eye'} size="md" color="#90A4AE" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={[styles.inputBox, { marginTop: tokens.spacing.sm }]}>
+                <Icon name="lock-closed" size="md" color="#90A4AE" />
+                <TextInput
+                  style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm new password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.passwordBtn, styles.passwordBtnFull, resetLoading && styles.passwordBtnDisabled]}
+                onPress={handlePasswordChange}
+                disabled={resetLoading || !newPassword || !confirmPassword}
+              >
+                {resetLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Icon name="save" size="sm" color="#fff" />
+                    <Text style={styles.passwordBtnText}>Update Password</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+
           <TouchableOpacity
             style={[styles.saveBtn, (!isChanged || saving || uploading || bannerUploading) && styles.saveBtnDisabled]}
             onPress={handleSave}
@@ -322,4 +479,65 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { backgroundColor: '#F5C4B0', elevation: 0, shadowOpacity: 0 },
   saveBtnText:     { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+
+  // Password section styles
+  passwordBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderWidth: 1.5,
+    borderColor: '#E8D5CC',
+    ...tokens.shadows.low,
+  },
+  passwordBoxSent: {
+    borderColor: '#4CAF50',
+    backgroundColor: '#F1F8E9',
+  },
+  passwordInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  passwordLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  passwordHint: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+  },
+  passwordBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#E8927C',
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    ...tokens.shadows.low,
+  },
+  passwordBtnSent: {
+    backgroundColor: '#4CAF50',
+  },
+  passwordBtnFull: {
+    width: '100%',
+    justifyContent: 'center',
+    marginTop: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+  },
+  passwordBtnDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.7,
+  },
+  passwordBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 });

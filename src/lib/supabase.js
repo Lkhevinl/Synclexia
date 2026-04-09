@@ -33,4 +33,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',
   },
+  realtime: {
+    // Disable Realtime to prevent WebSocket connection errors in browser console
+    // Only enable if actively using Supabase Realtime subscriptions
+    enabled: false,
+  },
 });

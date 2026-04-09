@@ -14,7 +14,6 @@ import { useTheme } from '../../../context/ThemeContext';
 const ACTIVITY_ICONS = {
   phonics:                  'mic',
   phonics_blend:            'link-2',
-  phonics_rhyme:            'music',
   phonics_segment:          'scissors',
   spelling:                 'type',
   writing:                  'pencil',

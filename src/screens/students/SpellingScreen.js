@@ -44,46 +44,12 @@ function buildTiles(word) {
 
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
-function AnimatedModeCard({ children, style, onPress, delay = 0 }) {
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const pressAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, delay }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay }),
-    ]).start();
-  }, []);
-
-  const handlePressIn = () => {
-    Animated.spring(pressAnim, { toValue: 0.95, useNativeDriver: true, friction: 5 }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(pressAnim, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
-  };
-
-  return (
-    <Animated.View style={[style, { transform: [{ scale: Animated.multiply(scaleAnim, pressAnim) }], opacity: opacityAnim }]}>
-      <TouchableOpacity onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} activeOpacity={1} style={{ flex: 1 }}>
-        {children}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
-function ModeSelector({ onSelect }) {
+function IntroCard({ onStart }) {
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
   }, []);
-
-  const modes = [
-    { id: 'dictation', icon: 'volume-2',  label: 'Listen & Spell',   desc: 'Hear the word, then tap the letters to spell it', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'hint',      icon: 'lightbulb', label: 'Picture Spelling',  desc: 'See the picture and hint, then spell the word',    gradient: ['#9C27B0', '#6A1B9A'] },
-  ];
 
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
@@ -91,29 +57,22 @@ function ModeSelector({ onSelect }) {
         <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
           <Icon name="type" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Spelling Practice</Text>
-          <Text style={ms.sub}>Choose how you want to learn</Text>
+          <Text style={ms.sub}>Listen and spell the words!</Text>
         </View>
       </Animated.View>
 
-      {modes.map((m, index) => (
-        <AnimatedModeCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
-          <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
-            <View style={ms.cardContent}>
-              <View style={ms.emojiCircle}>
-                <Icon name={m.icon} size="md" color="#fff" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={ms.cardLabel}>{m.label}</Text>
-                <Text style={ms.cardDesc}>{m.desc}</Text>
-              </View>
-              <View style={ms.playBtn}>
-                <Icon name="play" size="md" color="#fff" />
-              </View>
-            </View>
-            <View style={ms.cardShine} />
-          </View>
-        </AnimatedModeCard>
-      ))}
+      <View style={ms.instructionsCard}>
+        <Icon name="volume-2" size="lg" color="#2196F3" />
+        <Text style={ms.instructionsTitle}>How to Play</Text>
+        <Text style={ms.instructionsText}>
+          1. Listen to the word{'\n'}
+          2. Tap the letters in order{'\n'}
+          3. Press Check to see if you're right!
+        </Text>
+        <TouchableOpacity style={ms.startBtn} onPress={onStart}>
+          <Text style={ms.startBtnText}>Start Spelling</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -124,20 +83,16 @@ const ms = StyleSheet.create({
   headerEmoji: { fontSize: 50, marginBottom: 8 },
   title: { fontSize: 28, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
   sub: { fontSize: 15, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4 },
-  cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-  card: { borderRadius: 20, padding: 20, overflow: 'hidden' },
-  cardContent: { flexDirection: 'row', alignItems: 'center' },
-  emojiCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  cardEmoji: { fontSize: 28 },
-  cardLabel: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  cardDesc: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 18 },
-  playBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
-  cardShine: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  instructionsCard: { backgroundColor: '#fff', borderRadius: 24, padding: 32, alignItems: 'center', elevation: 6, marginHorizontal: 8 },
+  instructionsTitle: { fontSize: 22, fontWeight: 'bold', color: '#37474F', marginTop: 16, marginBottom: 12 },
+  instructionsText: { fontSize: 16, color: '#78909C', textAlign: 'center', lineHeight: 26, marginBottom: 24 },
+  startBtn: { backgroundColor: '#2196F3', borderRadius: 16, paddingHorizontal: 48, paddingVertical: 16, elevation: 4 },
+  startBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
 });
 
 // ─── Core Spelling Game ───────────────────────────────────────────────────────
 
-function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
+function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
   // Shuffle words fetched from DB for this session
   const [wordList] = useState(() => shuffle(wordBank).slice(0, Math.min(10, wordBank.length)));
   const [wordIdx, setWordIdx] = useState(0);
@@ -160,10 +115,8 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
     setChecked(false);
     setCorrect(false);
 
-    // Auto-speak in dictation mode
-    if (mode === 'dictation') {
-      setTimeout(() => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 }), 300);
-    }
+    // Auto-speak the word
+    setTimeout(() => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 }), 300);
   }, [wordIdx]);
 
   const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
@@ -206,7 +159,7 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
   const handleNext = () => {
     if (wordIdx + 1 >= wordList.length) {
       // Log spelling session
-      if (userId) logSession({ studentId: userId, activityType: 'spelling', score, total: wordList.length, details: { mode } });
+      if (userId) logSession({ studentId: userId, activityType: 'spelling', score, total: wordList.length });
       setFinished(true);
       return;
     }
@@ -241,13 +194,13 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
   const spelled = answer.map(t => t.letter).join('');
   const bounceStyle = { transform: [{ scale: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) }] };
 
-  const accentColor = mode === 'dictation' ? '#2196F3' : '#9C27B0';
+  const accentColor = '#2196F3';
 
   return (
     <View style={[game.container, { backgroundColor: accentColor + '10' }]}>
       {/* Header */}
       <StudentPageHeader
-        title={mode === 'dictation' ? 'Listen & Spell' : 'Picture Spelling'}
+        title="Listen & Spell"
         onBack={onBack}
         right={<Text style={game.headerSub}>{wordIdx + 1} / {wordList.length}  {score}</Text>}
       />
@@ -255,25 +208,15 @@ function SpellingGame({ mode, onBack, userId, wordBank, dyslexiaTextStyle = {} }
       <ScrollView contentContainerStyle={game.body} keyboardShouldPersistTaps="always">
         {/* Word Card */}
         <View style={game.card}>
-          {/* Picture Hint (always in hint mode, hidden in dictation until checked) */}
-          {(mode === 'hint' || checked) && (
-            <Text style={game.emoji}>{current.emoji}</Text>
-          )}
-          {mode === 'dictation' && !checked && (
-            <Text style={game.emoji}>❓</Text>
-          )}
+          {/* Emoji shown after checking or when checked */}
+          {checked && <Text style={game.emoji}>{current.emoji}</Text>}
+          {!checked && <Text style={game.emoji}>❓</Text>}
           
-          {/* Hint text */}
-          {mode === 'hint' && (
-            <Text style={[game.hintText, dyslexiaTextStyle]}>{current.hint}</Text>
-          )}
 
           {/* Speak button */}
           <TouchableOpacity style={[game.speakBtn, { borderColor: accentColor }]} onPress={speakWord}>
             <Icon name="volume-2" size="md" color={accentColor} />
-            <Text style={[game.speakBtnText, { color: accentColor }]}>
-              {mode === 'dictation' ? 'Hear the word again' : 'Hear how it sounds'}
-            </Text>
+            <Text style={[game.speakBtnText, { color: accentColor }]}>Hear the word again</Text>
           </TouchableOpacity>
 
           {/* Answer Row (placed tiles) */}
@@ -434,7 +377,7 @@ const fin = StyleSheet.create({
 export default function SpellingScreen() {
   const { profile } = useAuth();
   const { colors, getOverlayColor, getDyslexiaTextStyle } = useTheme();
-  const [mode, setMode] = useState(null);
+  const [started, setStarted] = useState(false);
   const [wordBank, setWordBank] = useState([]);
   const [loading, setLoading] = useState(true);
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
@@ -446,7 +389,7 @@ export default function SpellingScreen() {
     });
   }, []);
 
-  const handleBack = () => setMode(null);
+  const handleBack = () => setStarted(false);
 
   return (
     <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
@@ -461,21 +404,10 @@ export default function SpellingScreen() {
             <Icon name="type" size="xl" color="#78909C" />
             <Text style={{ color: '#78909C', marginTop: 10 }}>No words yet. Ask an admin to add content.</Text>
           </View>
-        ) : mode ? (
-          <SpellingGame mode={mode} onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />
+        ) : started ? (
+          <SpellingGame onBack={handleBack} userId={profile?.id} wordBank={wordBank} dyslexiaTextStyle={getDyslexiaTextStyle()} />
         ) : (
-          <>
-            <StudentCard variant="tinted" style={root.hintCard}>
-              <View style={root.hintRow}>
-                <Icon name="info" size="md" color={c.primary} />
-                <Text style={root.hintText}>
-                  <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-                  Choose a mode — "Listen & Spell" plays the word aloud, "Picture Spelling" shows a hint. Tap letters in order to spell!
-                </Text>
-              </View>
-            </StudentCard>
-            <ModeSelector onSelect={setMode} />
-          </>
+          <IntroCard onStart={() => setStarted(true)} />
         )}
       {overlayColor && (
         <View style={[root.overlay, { backgroundColor: overlayColor, pointerEvents: 'none' }]} />

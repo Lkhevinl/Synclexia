@@ -11,13 +11,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { TABLES } from '../../lib/constants';
 
 const ACTIVITY_LABELS = {
-  phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
+  phonics: 'Phonics', phonics_blend: 'Blending',
   phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
   reading: 'Reading', phonological_awareness: 'Phonological',
   phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
 };
 const ACTIVITY_ICON_NAMES = {
-  phonics: 'mic', phonics_blend: 'link-2', phonics_rhyme: 'music',
+  phonics: 'mic', phonics_blend: 'link-2',
   phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
   reading: 'book-open', phonological_awareness: 'headphones',
   phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',

@@ -16,13 +16,11 @@ import { useTheme } from '../../context/ThemeContext';
 
 const TASK_TYPES = [
   { id: 'syllable', label: 'Syllable', color: '#2196F3' },
-  { id: 'rime',     label: 'Rime',     color: '#9C27B0' },
   { id: 'phoneme',  label: 'Phoneme',  color: '#E91E63' },
 ];
 
 const FORM_HINTS = {
   syllable: 'word: cat  |  syllables: 1  |  emoji: 🐱',
-  rime:     'target: cat  |  correct: hat  |  distractors: dog,sun',
   phoneme:  'word: sun  |  position: first or last  |  answer: s  |  options: s,m,b',
 };
 
@@ -33,7 +31,7 @@ export default function AdminPhonologicalScreen() {
   const [taskType, setTaskType] = useState('syllable');
   const [level, setLevel] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+  const [form, setForm] = useState({ word: '', syllables: '', emoji: '', position: '', answer: '', options: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -50,7 +48,7 @@ export default function AdminPhonologicalScreen() {
   };
 
   const resetForm = () => {
-    setForm({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+    setForm({ word: '', syllables: '', emoji: '', position: '', answer: '', options: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -64,9 +62,6 @@ export default function AdminPhonologicalScreen() {
       word:       d.word || '',
       syllables:  d.syllables?.toString() || '',
       emoji:      d.emoji || '',
-      target:     d.target || '',
-      correct:    d.correct || '',
-      distractors: d.distractors?.join(',') || '',
       position:   d.position || '',
       answer:     d.answer || '',
       options:    d.options?.join(',') || '',
@@ -77,10 +72,6 @@ export default function AdminPhonologicalScreen() {
     if (taskType === 'syllable') {
       if (!form.word || !form.syllables) return null;
       return { word: form.word.trim(), syllables: parseInt(form.syllables), emoji: form.emoji.trim() };
-    }
-    if (taskType === 'rime') {
-      if (!form.target || !form.correct || !form.distractors) return null;
-      return { target: form.target.trim(), correct: form.correct.trim(), distractors: form.distractors.split(',').map(s => s.trim()) };
     }
     if (taskType === 'phoneme') {
       if (!form.word || !form.position || !form.answer || !form.options) return null;
@@ -127,9 +118,6 @@ export default function AdminPhonologicalScreen() {
     { id: 'word',        label: 'Word',                       show: ['syllable', 'phoneme'] },
     { id: 'syllables',   label: 'Syllable count (number)',    show: ['syllable'] },
     { id: 'emoji',       label: 'Emoji',                      show: ['syllable'] },
-    { id: 'target',      label: 'Target word',                show: ['rime'] },
-    { id: 'correct',     label: 'Correct rhyme',              show: ['rime'] },
-    { id: 'distractors', label: 'Distractors (comma-sep)',    show: ['rime'] },
     { id: 'position',    label: 'Position (first / last)',    show: ['phoneme'] },
     { id: 'answer',      label: 'Correct sound (e.g. s)',     show: ['phoneme'] },
     { id: 'options',     label: 'Options (comma-sep, e.g. s,m,b)', show: ['phoneme'] },

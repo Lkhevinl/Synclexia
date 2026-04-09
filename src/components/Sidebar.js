@@ -115,14 +115,7 @@ export default function Sidebar({ visible, onClose }) {
               {/* STUDENT QUICK NAV */}
               {isStudent && (
                 <>
-                  <Text style={s.groupLabel}>MY LEARNING</Text>
-                  <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
-                      <View style={[s.iconWrap, { backgroundColor: c.achievement + '30' }]}><Icon name="sparkles" size="sm" color={c.achievement} /></View>
-                      <Text style={s.rowLabel}>AI Insights</Text>
-                      <StudentIconBadge icon="star" label="New" variant="achievement" />
-                    </TouchableOpacity>
-                  </View>
+                  {/* MY LEARNING section removed - AI Insights moved to parent dashboard */}
                 </>
               )}
 

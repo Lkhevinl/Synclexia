@@ -430,7 +430,6 @@ export const formatActivityType = (activityType) => {
   const typeMap = {
     'phonics': 'Phonics',
     'phonics_blend': 'Phonics Blending',
-    'phonics_rhyme': 'Phonics Rhyming',
     'phonics_segment': 'Phonics Segmenting',
     'spelling': 'Spelling',
     'writing': 'Writing Practice',

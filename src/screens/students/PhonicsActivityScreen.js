@@ -121,16 +121,6 @@ function ModeSelector({ onSelect }) {
       skill: 'Blending'
     },
     { 
-      id: 'rhyme',   
-      label: 'Rhyme Time!',       
-      emoji: '🎵',
-      color: '#FB8C00', 
-      light: '#FFF3E0',
-      desc: 'Find rhyming words', 
-      letter: 'R',
-      skill: 'Rhyming'
-    },
-    { 
       id: 'segment', 
       label: 'Sound Count!', 
       emoji: '🥁',
@@ -508,113 +498,6 @@ const bg = StyleSheet.create({
   blendBtn: { backgroundColor: '#E53935', borderRadius: 18, paddingHorizontal: 44, paddingVertical: 16, elevation: 4, shadowColor: '#E53935', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
   blendBtnDone: { backgroundColor: '#43A047' },
   blendBtnText: { fontSize: 22, fontWeight: 'bold', color: '#fff', letterSpacing: 1 },
-});
-
-// ─── Rhyme Time Game ───────────────────────────────────────────────────────────
-
-function RhymeGame({ onBack, userId, items }) {
-  const rounds = useState(() => shuffleArr(items))[0];
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-
-  const current = rounds[idx];
-
-  const speak = (word) => Speech.speak(word, { rate: 0.8, pitch: 1.1 });
-
-  const speakInstruction = () => {
-    Speech.speak('Listen to the word. Then find the word that rhymes with it!', { rate: 0.85 });
-  };
-
-  const handleSelect = (option) => {
-    if (selected) return;
-    setSelected(option);
-    const isCorrect = option === current.correct;
-    if (isCorrect) {
-      Speech.speak('Great job! They rhyme!', { rate: 0.85 });
-      setScore(s => s + 1);
-    } else {
-      Speech.speak(`Not quite! ${current.correct} rhymes with ${current.target}.`, { rate: 0.85 });
-    }
-  };
-
-  const handleNext = () => {
-    if (idx + 1 >= rounds.length) {
-      if (userId) logSession({ studentId: userId, activityType: 'phonics_rhyme', score, total: rounds.length, details: { game: 'Rhyme Time' } });
-      setFinished(true);
-      return;
-    }
-    setIdx(i => i + 1);
-    setSelected(null);
-  };
-
-  if (!rounds.length) return <EmptyContent label="Rhyme Time!" color="#FB8C00" onBack={onBack} />;
-  if (finished) return <ScoreScreen score={score} total={rounds.length} onBack={onBack} label="Rhyme Time!" color="#FB8C00" />;
-
-  return (
-    <View style={rg.container}>
-      <StudentPageHeader
-        title="Rhyme Time!"
-        onBack={onBack}
-        right={
-          <TouchableOpacity onPress={speakInstruction} style={rg.helpBtn}>
-            <Icon name="help-circle" size="md" color={c.primary} />
-          </TouchableOpacity>
-        }
-      />
-
-      <View style={rg.card}>
-        <TouchableOpacity onPress={() => speak(current.target)} activeOpacity={0.8} style={rg.targetBox}>
-          <Text style={rg.targetEmoji}>{current.emoji}</Text>
-          <Text style={rg.targetWord}>{current.target}</Text>
-          <Text style={rg.tapHint}>Tap to hear</Text>
-        </TouchableOpacity>
-
-        <Text style={rg.question}>Which word RHYMES with  "{current.target}"?</Text>
-
-        <View style={rg.optionRow}>
-          {current.options.map((opt, i) => {
-            let tileStyle = rg.optionTile;
-            if (selected === opt) {
-              tileStyle = opt === current.correct ? rg.optionCorrect : rg.optionWrong;
-            } else if (selected && opt === current.correct) {
-              tileStyle = rg.optionCorrect;
-            }
-            return (
-              <TouchableOpacity key={i} style={tileStyle} onPress={() => { speak(opt); handleSelect(opt); }} activeOpacity={0.8}>
-                <Text style={rg.optionText}>{opt}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {selected && (
-          <TouchableOpacity style={rg.nextBtn} onPress={handleNext}>
-            <Text style={rg.nextBtnText}>Next →</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
-
-const rg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF3E0' },
-  helpBtn: { padding: 6, backgroundColor: 'rgba(251,140,0,0.15)', borderRadius: 20 },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#FB8C00' },
-  targetBox: { alignItems: 'center', backgroundColor: '#FFF3E0', borderRadius: 20, padding: 18, width: '72%', marginBottom: 16, borderWidth: 2, borderColor: '#FB8C00' },
-  targetEmoji: { fontSize: 60, marginBottom: 6 },
-  targetWord: { fontSize: 38, fontWeight: 'bold', color: '#E65100' },
-  tapHint: { fontSize: 12, color: '#FB8C00', marginTop: 4, fontWeight: '600' },
-  question: { fontSize: 15, color: '#5D4037', marginBottom: 18, textAlign: 'center', fontWeight: '600' },
-  optionRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24 },
-  optionTile: { backgroundColor: '#FFF3E0', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 18, borderWidth: 3, borderColor: '#FB8C00', elevation: 3, shadowColor: '#FB8C00', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-  optionCorrect: { backgroundColor: '#E8F5E9', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 18, borderWidth: 3, borderColor: '#43A047' },
-  optionWrong: { backgroundColor: '#FFEBEE', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 18, borderWidth: 3, borderColor: '#E53935' },
-  optionText: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
-  nextBtn: { backgroundColor: '#FB8C00', borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: '#FB8C00', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
-  nextBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
 });
 
 // ─── Segment Game ──────────────────────────────────────────────────────────────
@@ -1149,17 +1032,16 @@ export default function PhonicsActivityScreen() {
   const { profile } = useAuth();
   const { colors, getOverlayColor } = useTheme();
   const [mode, setMode] = useState(null);
-  const [contentMap, setContentMap] = useState({ blend: [], rhyme: [], segment: [], sounds: [], build: [], tricky: [] });
+  const [contentMap, setContentMap] = useState({ blend: [], segment: [], sounds: [], build: [], tricky: [] });
   const [loading, setLoading] = useState(true);
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
 
   useEffect(() => {
     Promise.all([
       fetchActivityContent('blend'),
-      fetchActivityContent('rhyme'),
       fetchActivityContent('segment'),
-    ]).then(([blend, rhyme, segment]) => {
-      setContentMap({ blend, rhyme, segment, sounds: [], build: [], tricky: [] });
+    ]).then(([blend, segment]) => {
+      setContentMap({ blend, segment, sounds: [], build: [], tricky: [] });
       setLoading(false);
     });
   }, []);
@@ -1168,7 +1050,6 @@ export default function PhonicsActivityScreen() {
 
   const renderGame = () => {
     if (mode === 'blend')   return <BlendGame   onBack={handleBack} userId={profile?.id} items={contentMap.blend} />;
-    if (mode === 'rhyme')   return <RhymeGame   onBack={handleBack} userId={profile?.id} items={contentMap.rhyme} />;
     if (mode === 'segment') return <SegmentGame onBack={handleBack} userId={profile?.id} items={contentMap.segment} />;
     if (mode === 'sounds')  return <SoundMatchGame onBack={handleBack} userId={profile?.id} />;
     if (mode === 'build')   return <WordBuilderGame onBack={handleBack} userId={profile?.id} />;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Image, Dimensions, DeviceEventEmitter } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Image, Dimensions, DeviceEventEmitter, Alert, ActivityIndicator, Platform } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
@@ -50,6 +50,7 @@ export default function DashboardScreen({ navigation }) {
   const [unreadReplyCount, setUnreadReplyCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dismissingId, setDismissingId] = useState(null);
   const [stats, setStats] = useState({ totalSessions: 0, avgAccuracy: 0, streak: 0 });
 
   const isStudent = profile?.role === 'student';
@@ -73,9 +74,15 @@ export default function DashboardScreen({ navigation }) {
     setLoading(true);
     setError(null);
     try {
-      await Promise.all([fetchNotifications(), fetchUnreadReplies(), fetchStudentStats()]);
+      // Run all fetches independently - don't let one failure break everything
+      await Promise.all([
+        fetchNotifications().catch(err => console.log('Notifications fetch failed:', err)),
+        fetchUnreadReplies().catch(err => console.log('Unread replies fetch failed:', err)),
+        fetchStudentStats().catch(err => console.log('Stats fetch failed:', err))
+      ]);
     } catch (error) {
-      setError('Failed to load dashboard. Please check your connection and try again.');
+      console.error('Dashboard initialization error:', error);
+      // Don't show error screen - individual fetches handle their own errors
     } finally {
       setLoading(false);
     }
@@ -91,14 +98,52 @@ export default function DashboardScreen({ navigation }) {
   }, []);
 
   const fetchNotifications = async () => {
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
     try {
-      // Learner app: show global announcements only (no teacher/class targeting).
-      const { data, error } = await supabase
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data, error } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('is_draft', false)
+          .in('target_role', ['all', 'student'])
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          setNotifications([]);
+          return;
+        }
+        setNotifications(data || []);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications
+      let query = supabase
         .from(TABLES.NOTIFICATIONS)
         .select('*')
         .eq('is_draft', false)
         .in('target_role', ['all', 'student'])
         .order('created_at', { ascending: false });
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         setNotifications([]);
@@ -107,6 +152,7 @@ export default function DashboardScreen({ navigation }) {
 
       setNotifications(data || []);
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
   };
@@ -177,6 +223,76 @@ export default function DashboardScreen({ navigation }) {
       });
     } catch (error) {
       setStats({ totalSessions: 0, avgAccuracy: 0, streak: 0 });
+    }
+  };
+
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return;
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Clear all notifications?')) return;
+      dismissAllNotifications();
+    } else {
+      Alert.alert(
+        'Clear All Notifications',
+        'Are you sure you want to clear all notifications?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications }
+        ]
+      );
     }
   };
 
@@ -304,9 +420,16 @@ export default function DashboardScreen({ navigation }) {
               <StudentCard style={styles.modalSheet}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Notifications</Text>
-                  <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
-                    <Icon name="x" size="sm" color={c.primary} />
-                  </TouchableOpacity>
+                  <View style={styles.modalHeaderActions}>
+                    {notifications.length > 0 && (
+                      <TouchableOpacity onPress={clearAllNotifications} style={styles.clearAllBtn}>
+                        <Text style={styles.clearAllText}>Clear All</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
+                      <Icon name="x" size="sm" color={c.primary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 {unreadReplyCount > 0 && (
                   <TouchableOpacity
@@ -343,6 +466,17 @@ export default function DashboardScreen({ navigation }) {
                         <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                         <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                       </View>
+                      <TouchableOpacity
+                        onPress={() => dismissNotification(item.id)}
+                        disabled={dismissingId === item.id}
+                        style={styles.dismissBtn}
+                      >
+                        {dismissingId === item.id ? (
+                          <ActivityIndicator size="small" color="#999" />
+                        ) : (
+                          <Icon name="x" size="sm" color="#999" />
+                        )}
+                      </TouchableOpacity>
                     </StudentCard>
                   )}
                 />
@@ -436,6 +570,8 @@ const styles = StyleSheet.create({
   notifTitle: { fontWeight: 'bold', color: c.primary, marginBottom: 4, fontSize: 14 },
   notifBody: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
   notifTime: { fontSize: 11, color: '#aaa', marginTop: 4 },
-  emptyNotif: { alignItems: 'center', paddingVertical: 40 },
-  emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 },
+  modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16 },
+  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn: { padding: 8, marginLeft: 4 },
 });

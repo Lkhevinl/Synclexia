@@ -11,6 +11,7 @@ export const TABLES = {
   PHONICS_ACTIVITY_CONTENT: 'phonics_activity_content',
   SPELLING_WORDS:           'spelling_words',
   NOTIFICATIONS:            'notifications',
+  USER_NOTIFICATIONS:       'user_notifications',
   PARENT_LINKS:             'parent_links',
   STORIES:                  'stories',
   PHONICS_ITEMS:            'phonics_items',
@@ -39,11 +40,11 @@ export const STORAGE_KEYS = {
 
 // ── Network / Timeout Constants ───────────────────────────────────────────────
 export const TIMEOUTS = {
-  FETCH_MS:             15000,  // supabase fetch timeout
-  PROFILE_QUERY_MS:     8000,   // single fetchProfile query cap
-  PROFILE_TOTAL_MS:     20000,  // total fetchProfile ceiling
-  PROFILE_SAFETY_NET_MS:35000,  // AppNavigator loading safety-net
-  RETRY_DELAY_MS:       1500,   // delay between retries
+  FETCH_MS:             20000,  // supabase fetch timeout (increased from 15s)
+  PROFILE_QUERY_MS:     12000,  // single fetchProfile query cap (increased from 8s)
+  PROFILE_TOTAL_MS:     30000,  // total fetchProfile ceiling (increased from 20s)
+  PROFILE_SAFETY_NET_MS:45000,  // AppNavigator loading safety-net (increased from 35s)
+  RETRY_DELAY_MS:       2000,   // delay between retries (increased from 1.5s)
   SIGN_OUT_AUTO_DELAY_MS:2000,  // auto sign-out delay after password reset
 };
 

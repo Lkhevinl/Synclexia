@@ -1,10 +1,8 @@
 // screens/students/PhonologicalAwarenessScreen.js
-// Three clinically-grounded phonological awareness tasks:
+// Two clinically-grounded phonological awareness tasks:
 //   1. Syllable Clapping    — tap once per syllable
-//   2. Onset-Rime          — identify which word shares the rime
-//   3. Phoneme Isolation   — identify the first/last sound
+//   2. Phoneme Isolation   — identify the first/last sound
 // All content is fetched dynamically from the phonological_content table.
-// Adaptive difficulty filters which items are shown per session.
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -19,7 +17,6 @@ import StudentCard from '../../components/student/StudentCard';
 import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { useAdaptive } from '../../context/AdaptiveContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
@@ -29,16 +26,14 @@ const ACTIVITY_TYPE = 'phonological_awareness';
 // ─── DB Fetch ─────────────────────────────────────────────────────────────────
 
 /**
- * Fetch active content for a task_type at a given difficulty level.
- * Returns rows where difficulty_level = level OR difficulty_level IS NULL.
+ * Fetch all active content for a task_type.
  */
-const fetchContent = async (taskType, level) => {
+const fetchContent = async (taskType) => {
   const { data, error } = await supabase
     .from(TABLES.PHONOLOGICAL_CONTENT)
     .select('id, data')
     .eq('task_type', taskType)
-    .eq('is_active', true)
-    .or(`difficulty_level.eq.${level},difficulty_level.is.null`);
+    .eq('is_active', true);
 
   if (error || !data) return [];
   return data.map(row => ({ id: row.id, ...row.data }));
@@ -86,11 +81,8 @@ function AnimatedCard({ children, style, onPress, delay = 0 }) {
 
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
-function ModeSelector({ onSelect, level }) {
+function ModeSelector({ onSelect }) {
   const headerAnim = useRef(new Animated.Value(0)).current;
-  const levelColors = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
-  const levelLabels = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-  const levelIcons  = { 1: 'signal-low', 2: 'signal-medium', 3: 'signal-high' };
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
@@ -98,7 +90,6 @@ function ModeSelector({ onSelect, level }) {
 
   const modes = [
     { id: 'syllable', icon: 'hand-metal',  label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'rime',     icon: 'music',        label: 'Onset-Rime',        desc: 'Find the word that rhymes',            gradient: ['#9C27B0', '#6A1B9A'] },
     { id: 'phoneme',  icon: 'type',         label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
   ];
 
@@ -109,12 +100,6 @@ function ModeSelector({ onSelect, level }) {
           <Icon name="headphones" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Phonological Awareness</Text>
           <Text style={ms.sub}>Building blocks of reading & spelling</Text>
-          <View style={[ms.levelPill, { backgroundColor: levelColors[level] + '30', borderColor: levelColors[level] }]}>
-            <Icon name={levelIcons[level]} size="sm" color={levelColors[level]} />
-            <Text style={[ms.levelText, { color: levelColors[level] }]}>
-              Level: {levelLabels[level]}
-            </Text>
-          </View>
         </View>
       </Animated.View>
 
@@ -147,8 +132,6 @@ const ms = StyleSheet.create({
   headerEmoji: { fontSize: 50, marginBottom: 8 },
   title:       { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
   sub:         { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4, marginBottom: 12 },
-  levelPill:   { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  levelText:   { fontWeight: 'bold', fontSize: 14 },
   cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   card:        { borderRadius: 20, padding: 20, overflow: 'hidden' },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
@@ -162,10 +145,9 @@ const ms = StyleSheet.create({
 
 // ─── Syllable Game ─────────────────────────────────────────────────────────────
 
-function SyllableGame({ onBack, userId, level, items: rawItems }) {
+function SyllableGame({ onBack, userId, items: rawItems }) {
   const { colors } = useTheme();
-  const count = level === 1 ? 6 : level === 2 ? 8 : 10;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
+  const [items] = useState(() => shuffleArr(rawItems).slice(0, 6));
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -196,7 +178,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
     setTimeout(() => {
       if (idx + 1 >= items.length) {
         setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'syllable', level } });
+        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'syllable' } });
       } else {
         setIdx(i => i + 1);
         setSelected(null);
@@ -243,91 +225,11 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   );
 }
 
-// ─── Rime Game ────────────────────────────────────────────────────────────────
-
-function RimeGame({ onBack, userId, level, items: rawItems }) {
-  const { colors } = useTheme();
-  const count = level === 1 ? 5 : level === 2 ? 7 : 8;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [feedback, setFeedback] = useState(null);
-  const [score, setScore] = useState(0);
-  const [done, setDone] = useState(false);
-
-  const current = items[idx];
-  const choices = current ? shuffleArr([current.correct, ...current.distractors]) : [];
-
-  const speak = (w) => Speech.speak(w, { rate: 0.65 });
-  useEffect(() => { if (current) speak(current.target); }, [idx]);
-
-  const handleSelect = (choice) => {
-    if (feedback) return;
-    setSelected(choice);
-    const isCorrect = choice === current.correct;
-    setFeedback(isCorrect ? 'correct' : 'wrong');
-    if (isCorrect) {
-      setScore(s => s + 1);
-      Speech.speak('Yes! They rhyme!', { rate: 0.9 });
-    } else {
-      Speech.speak(`${current.target} and ${current.correct} rhyme.`, { rate: 0.8 });
-    }
-    setTimeout(() => {
-      if (idx + 1 >= items.length) {
-        setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'rime', level } });
-      } else {
-        setIdx(i => i + 1);
-        setSelected(null);
-        setFeedback(null);
-      }
-    }, 1200);
-  };
-
-  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#9C27B0" />;
-  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#9C27B0" />;
-
-  return (
-    <View style={[g.container, { backgroundColor: colors.surface }]}>
-      <StudentPageHeader
-        title="Onset-Rime"
-        onBack={onBack}
-        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
-      />
-      <View style={g.body}>
-        <TouchableOpacity style={g.wordCard} onPress={() => speak(current.target)}>
-          <Icon name="headphones" size="xl" color="#9C27B0" />
-          <Text style={g.wordText}>{current.target}</Text>
-          <View style={g.speakBtn}>
-            <Icon name="volume-2" size="md" color="#9C27B0" />
-            <Text style={[g.speakText, { color: '#9C27B0' }]}>Tap to hear</Text>
-          </View>
-        </TouchableOpacity>
-        <Text style={g.question}>Which word rhymes with <Text style={{ fontWeight: 'bold' }}>{current.target}</Text>?</Text>
-        <View style={g.choiceCol}>
-          {choices.map(c => (
-            <TouchableOpacity
-              key={c}
-              style={[g.choiceBtn,
-                selected === c && feedback === 'correct' && { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-                selected === c && feedback === 'wrong'   && { backgroundColor: '#F44336', borderColor: '#F44336' },
-              ]}
-              onPress={() => { handleSelect(c); speak(c); }}>
-              <Text style={[g.choiceText, selected === c && { color: '#fff' }]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 // ─── Phoneme Game ─────────────────────────────────────────────────────────────
 
-function PhonemeGame({ onBack, userId, level, items: rawItems }) {
+function PhonemeGame({ onBack, userId, items: rawItems }) {
   const { colors } = useTheme();
-  const count = level === 1 ? 5 : level === 2 ? 6 : 8;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
+  const [items] = useState(() => shuffleArr(rawItems).slice(0, 5));
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -352,7 +254,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
     setTimeout(() => {
       if (idx + 1 >= items.length) {
         setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'phoneme', level } });
+        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'phoneme' } });
       } else {
         setIdx(i => i + 1);
         setSelected(null);
@@ -444,9 +346,6 @@ const g = StyleSheet.create({
   optionRow:  { flexDirection: 'row', gap: 12, flexWrap: 'wrap', justifyContent: 'center' },
   numBtn:     { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 3 },
   numText:    { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
-  choiceCol:  { width: '100%', gap: 12 },
-  choiceBtn:  { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#eee' },
-  choiceText: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
 });
 
 // ─── Root Screen ──────────────────────────────────────────────────────────────
@@ -454,24 +353,20 @@ const g = StyleSheet.create({
 export default function PhonologicalAwarenessScreen() {
   const { profile } = useAuth();
   const { colors } = useTheme();
-  const { refreshLevel, getLevel } = useAdaptive();
   const [mode, setMode] = useState(null);
-  const [contentMap, setContentMap] = useState({ syllable: [], rime: [], phoneme: [] });
+  const [contentMap, setContentMap] = useState({ syllable: [], phoneme: [] });
   const [contentLoading, setContentLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setContentLoading(true);
-      await refreshLevel(ACTIVITY_TYPE);
-      const lvl = getLevel(ACTIVITY_TYPE) || 1;
-      const [syllable, rime, phoneme] = await Promise.all([
-        fetchContent('syllable', lvl),
-        fetchContent('rime',     lvl),
-        fetchContent('phoneme',  lvl),
+      const [syllable, phoneme] = await Promise.all([
+        fetchContent('syllable'),
+        fetchContent('phoneme'),
       ]);
       if (!cancelled) {
-        setContentMap({ syllable, rime, phoneme });
+        setContentMap({ syllable, phoneme });
         setContentLoading(false);
       }
     };
@@ -479,7 +374,6 @@ export default function PhonologicalAwarenessScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  const level = getLevel(ACTIVITY_TYPE);
   const handleBack = () => setMode(null);
 
   if (contentLoading) {
@@ -491,9 +385,8 @@ export default function PhonologicalAwarenessScreen() {
     );
   }
 
-  if (mode === 'syllable') return <SyllableGame onBack={handleBack} userId={profile?.id} level={level} items={contentMap.syllable} />;
-  if (mode === 'rime')     return <RimeGame     onBack={handleBack} userId={profile?.id} level={level} items={contentMap.rime} />;
-  if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} level={level} items={contentMap.phoneme} />;
+  if (mode === 'syllable') return <SyllableGame onBack={handleBack} userId={profile?.id} items={contentMap.syllable} />;
+  if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} items={contentMap.phoneme} />;
 
   return (
     <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
@@ -503,11 +396,11 @@ export default function PhonologicalAwarenessScreen() {
           <Icon name="info" size="md" color={c.primary} />
           <Text style={paRoot.hintText}>
             <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-            Pick a game! Clap Syllables counts word parts, Onset-Rime finds rhyming words, Phoneme Isolation identifies sounds.
+            Pick a game! Clap Syllables counts word parts, Phoneme Isolation identifies sounds.
           </Text>
         </View>
       </StudentCard>
-      <ModeSelector onSelect={setMode} level={level} />
+      <ModeSelector onSelect={setMode} />
     </ScreenWrapper>
   );
 }

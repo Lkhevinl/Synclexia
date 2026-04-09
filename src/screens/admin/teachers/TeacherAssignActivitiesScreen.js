@@ -15,7 +15,6 @@ const ACTIVITIES = [
   { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },
   { id: 'phonics_activity',      name: 'Activities',         icon: '🎮', color: '#00897B' },
   { id: 'phonics_blend',         name: 'Blending',           icon: '🔗', color: '#00BCD4' },
-  { id: 'phonics_rhyme',         name: 'Rhyme',              icon: '🎵', color: '#E91E63' },
   { id: 'phonics_segment',       name: 'Segmenting',         icon: '✂️', color: '#795548' },
   { id: 'spelling',              name: 'Spelling',           icon: '🔤', color: '#3F51B5' },
   { id: 'writing',               name: 'Writing',            icon: '✍️', color: '#4CAF50' },

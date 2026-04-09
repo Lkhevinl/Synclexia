@@ -673,9 +673,6 @@ export default function WritingScreen() {
                 >
                   <View style={styles.storyCardHeader}>
                     <Text style={[styles.storyTitle, a11yTextStyle]} numberOfLines={1}>{story.title}</Text>
-                    <View style={[styles.levelBadge, { backgroundColor: getLevelColor(story.level) }]}>
-                      <Text style={styles.levelText}>Level {story.level}</Text>
-                    </View>
                   </View>
                   <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
                   <View style={styles.storyMeta}>
@@ -712,9 +709,6 @@ export default function WritingScreen() {
             <View style={styles.storyRefCard}>
               <View style={styles.storyRefHeader}>
                 <Text style={[styles.storyRefLabel, a11yTextStyle]}>Story to Copy:</Text>
-                <View style={[styles.levelBadge, { backgroundColor: getLevelColor(selectedStory.level) }]}>
-                  <Text style={styles.levelText}>Level {selectedStory.level}</Text>
-                </View>
               </View>
               <Text style={[styles.storyRefText, a11yTextStyle]}>{selectedStory.content}</Text>
               <TouchableOpacity

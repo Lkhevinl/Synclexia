@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, Image, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, Image, Platform, Dimensions, ActivityIndicator } from 'react-native';
 import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../context/ThemeContext';
@@ -25,6 +25,7 @@ export default function TeacherDashboardScreen({ navigation }) {
   const { theme, colors } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [dismissingId, setDismissingId] = useState(null);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
@@ -37,41 +38,135 @@ export default function TeacherDashboardScreen({ navigation }) {
   });
 
   useEffect(() => {
-    fetchNotifications();
-    fetchContentStats();
+    // Load dashboard data independently - don't let one failure break everything
+    fetchNotifications().catch(err => console.log('Notifications fetch failed:', err));
+    fetchContentStats().catch(err => console.log('Content stats fetch failed:', err));
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase
-      .from(TABLES.NOTIFICATIONS)
-      .select('*')
-      .eq('is_draft', false)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    if (data) setNotifications(data);
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
+    try {
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        if (data) setNotifications(data);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications (teachers see all role-targeted notifications)
+      let query = supabase
+        .from(TABLES.NOTIFICATIONS)
+        .select('*')
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data } = await query;
+      if (data) setNotifications(data);
+    } catch (error) {
+      setNotifications([]);
+    }
   };
 
   const fetchContentStats = async () => {
     try {
+      // Fetch stats independently - don't let one failure break everything
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
-        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
-        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
-        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
-        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
       ]);
 
       setContentStats({
-        stories: stories.count || 0,
-        phonics: phonics.count || 0,
-        spelling: spelling.count || 0,
-        phonicsActivities: phonicsAct.count || 0,
-        phonological: phonological.count || 0,
+        stories: stories?.count || 0,
+        phonics: phonics?.count || 0,
+        spelling: spelling?.count || 0,
+        phonicsActivities: phonicsAct?.count || 0,
+        phonological: phonological?.count || 0,
       });
     } catch (error) {
       console.error('Error fetching content stats:', error);
+    }
+  };
+
+  // ── Notification management ─────────────────────────────────────────────────
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
     }
   };
 
@@ -232,7 +327,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           />
           <GridCard
             title="Phonics Activity"
-            subtitle="Blend, rhyme & segment"
+            subtitle="Blend & segment"
             icon="musical-notes"
             color="#FF9800"
             count={contentStats.phonicsActivities}
@@ -295,9 +390,16 @@ export default function TeacherDashboardScreen({ navigation }) {
                 <Icon name="bell" size="md" color="#9C27B0" />
                 <Text style={styles.modalTitle}>Notifications</Text>
               </View>
-              <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
-                <Icon name="x" size="md" color="#666" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={dismissAllNotifications} style={styles.clearAllBtn}>
+                    <Text style={styles.clearAllText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
+                  <Icon name="x" size="md" color="#666" />
+                </TouchableOpacity>
+              </View>
             </View>
             <FlatList
               data={notifications}
@@ -312,6 +414,17 @@ export default function TeacherDashboardScreen({ navigation }) {
                     <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                     <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => dismissNotification(item.id)}
+                    disabled={dismissingId === item.id}
+                    style={styles.dismissBtn}
+                  >
+                    {dismissingId === item.id ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <Icon name="x" size="sm" color="#999" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               )}
               ListEmptyComponent={
@@ -693,5 +806,9 @@ const styles = StyleSheet.create({
   notifBody: { color: '#616161', fontSize: 13, lineHeight: 20, marginBottom: 6 },
   notifTime: { fontSize: 11, color: '#9e9e9e', fontWeight: '500' },
   emptyNotif: { alignItems: 'center', paddingVertical: 60 },
-  emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 }
+  emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 },
+  modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16, marginRight: 8 },
+  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn: { padding: 8, marginLeft: 4 },
 });

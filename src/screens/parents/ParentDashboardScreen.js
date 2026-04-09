@@ -21,13 +21,13 @@ const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF980
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
 
 const ACTIVITY_LABELS = {
-  phonics: 'Phonics', phonics_blend: 'Blending', phonics_rhyme: 'Rhyme',
+  phonics: 'Phonics', phonics_blend: 'Blending',
   phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
   reading: 'Reading', phonological_awareness: 'Phonological',
   phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
 };
 const ACTIVITY_ICON_NAMES = {
-  phonics: 'mic', phonics_blend: 'link-2', phonics_rhyme: 'music',
+  phonics: 'mic', phonics_blend: 'link-2',
   phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
   reading: 'book-open', phonological_awareness: 'headphones',
   phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
@@ -46,6 +46,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const [notifCount, setNotifCount] = useState(0);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [dismissingId, setDismissingId] = useState(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,14 +58,58 @@ export default function ParentDashboardScreen({ navigation }) {
 
   // ── Fetch system notifications for parents ────────────────────────────────
   const fetchNotifications = async () => {
+    if (!profile?.id) {
+      setNotifications([]);
+      setNotifCount(0);
+      return;
+    }
     try {
-      const { data, error } = await supabase
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data, error } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .in('target_role', ['all', 'parent'])
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (error) {
+          setNotifications([]);
+          setNotifCount(0);
+          return;
+        }
+        setNotifications(data || []);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        setNotifCount((data || []).filter(n => n.created_at >= sevenDaysAgo).length);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications
+      let query = supabase
         .from(TABLES.NOTIFICATIONS)
         .select('*')
         .in('target_role', ['all', 'parent'])
         .eq('is_draft', false)
         .order('created_at', { ascending: false })
         .limit(20);
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         setNotifications([]);
@@ -116,15 +161,27 @@ export default function ParentDashboardScreen({ navigation }) {
     const sid = childLink.profiles?.id ?? childLink.student_id;
 
     try {
-      const [{ data: cp }, prog, insights] = await Promise.all([
-        supabase.from(TABLES.PROFILES).select('*').eq('id', sid).maybeSingle(),
-        getStudentProgress(sid, 14),
-        analyzeStudentProfile(sid, 60),
-      ]);
-
+      // Fetch profile
+      const { data: cp } = await supabase.from(TABLES.PROFILES).select('*').eq('id', sid).maybeSingle();
       setChildProfile(cp);
-      setProgress(prog);
-      setAiInsights(insights);
+
+      // Fetch progress (non-critical)
+      try {
+        const prog = await getStudentProgress(sid, 14);
+        setProgress(prog);
+      } catch (err) {
+        console.log('[ParentDashboard] Progress fetch failed:', err);
+        setProgress(null);
+      }
+
+      // Fetch insights (non-critical)
+      try {
+        const insights = await analyzeStudentProfile(sid, 60);
+        setAiInsights(insights);
+      } catch (err) {
+        console.log('[ParentDashboard] Insights fetch failed:', err);
+        setAiInsights(null);
+      }
     } catch (error) {
       console.warn('[ParentDashboard] loadChild failed:', error);
       setChildProfile(null);
@@ -148,9 +205,17 @@ export default function ParentDashboardScreen({ navigation }) {
       setChildren(kids);
       const idx = Math.min(selectedIdx, Math.max(kids.length - 1, 0));
       setSelectedIdx(idx);
-      await Promise.all([loadChild(kids[idx]), fetchNotifications()]);
+      // Run fetches independently - don't let one failure break everything
+      await Promise.all([
+        loadChild(kids[idx]).catch(err => console.log('Load child failed:', err)),
+        fetchNotifications().catch(err => console.log('Notifications fetch failed:', err))
+      ]);
     } catch (e) {
-      setError('Could not load dashboard data. Please check your connection and try again.');
+      console.error('Dashboard refresh error:', e);
+      // Only show error if critical data (children) couldn't load
+      if (children.length === 0) {
+        setError('Could not load dashboard data. Please check your connection and try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -204,6 +269,76 @@ export default function ParentDashboardScreen({ navigation }) {
     setProgress(null);
     setAiInsights(null);
     await loadChild(children[idx]);
+  };
+
+  // ── Notification management ────────────────────────────────────────────────────
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        setNotifCount(prev => Math.max(0, prev - 1));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotifCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotifCount(prev => Math.max(0, prev - 1));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+      setNotifCount(0);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return;
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications }
+      ]
+    );
   };
 
   const child = children[selectedIdx];
@@ -497,9 +632,16 @@ export default function ParentDashboardScreen({ navigation }) {
           <View style={s.notifCard}>
             <View style={s.notifHeader}>
               <Text style={[s.notifTitle, { fontSize: theme.fontSize + 6 }, a11yTextStyle]}>Announcements</Text>
-              <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
-                <Icon name="x" size="md" color="#666" />
-              </TouchableOpacity>
+              <View style={s.notifHeaderActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={clearAllNotifications} style={s.clearAllBtn}>
+                    <Text style={s.clearAllText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
+                  <Icon name="x" size="md" color="#666" />
+                </TouchableOpacity>
+              </View>
             </View>
             <FlatList
               data={notifications}
@@ -514,7 +656,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 </View>
               }
               renderItem={({ item }) => (
-                <TouchableOpacity style={s.notifItem} activeOpacity={0.7}>
+                <View style={s.notifItem}>
                   <View style={s.notifItemIconBox}>
                     <Icon name="megaphone" size="md" color="#E8927C" />
                   </View>
@@ -523,7 +665,18 @@ export default function ParentDashboardScreen({ navigation }) {
                     <Text style={[s.notifItemBody, { fontSize: theme.fontSize - 1 }, a11yTextStyle]} numberOfLines={3}>{item.content}</Text>
                     <Text style={[s.notifItemDate, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => dismissNotification(item.id)}
+                    disabled={dismissingId === item.id}
+                    style={s.dismissBtn}
+                  >
+                    {dismissingId === item.id ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <Icon name="x" size="sm" color="#999" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               )}
             />
           </View>
@@ -642,6 +795,10 @@ const s = StyleSheet.create({
   notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#C87456', marginBottom: tokens.spacing.xs },
   notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
   notifItemDate:      { fontSize: 11, color: '#aaa' },
+  notifHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  clearAllBtn:        { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16 },
+  clearAllText:       { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn:         { padding: 8, marginLeft: 4 },
 
   // Error state
   errorHeader:        { paddingTop: 55, paddingBottom: tokens.spacing.xl, paddingHorizontal: 22, borderBottomLeftRadius: tokens.radius.md, borderBottomRightRadius: tokens.radius.md },

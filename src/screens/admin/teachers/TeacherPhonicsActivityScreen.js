@@ -1,6 +1,6 @@
 // screens/teachers/TeacherPhonicsActivityScreen.js
 // Teacher CRUD screen for phonics_activity_content table.
-// Full management: add, edit, toggle active, delete blend/rhyme/segment items.
+// Full management: add, edit, toggle active, delete blend & segment items.
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -19,23 +19,19 @@ import { useTheme } from '../../../context/ThemeContext';
 
 const GAME_TYPES = [
   { id: 'blend',   label: 'Blend It',    color: '#FF9800' },
-  { id: 'rhyme',   label: 'Rhyme Time',  color: '#E91E63' },
   { id: 'segment', label: 'Count Sounds', color: '#4CAF50' },
 ];
 
 const FORM_HINTS = {
   blend:   'phonemes: c,a,t  |  word: cat  |  emoji: 🐱',
-  rhyme:   'target: cat  |  options: bat,dog,sun  |  correct: bat  |  emoji: 🐱',
   segment: 'word: cat  |  phonemes: c,a,t  |  count: 3  |  emoji: 🐱',
 };
 
 const parseBlend   = (f) => ({ phonemes: f.phonemes.split(',').map(s => s.trim()), word: f.word.trim(), emoji: f.emoji.trim() });
-const parseRhyme   = (f) => ({ target: f.target.trim(), options: f.options.split(',').map(s => s.trim()), correct: f.correct.trim(), emoji: f.emoji.trim() });
 const parseSegment = (f) => ({ word: f.word.trim(), phonemes: f.phonemes.split(',').map(s => s.trim()), count: parseInt(f.count), emoji: f.emoji.trim() });
 
-const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: '' });
-const rhymeToForm   = (d) => ({ phonemes: '', word: '', emoji: d.emoji || '', target: d.target || '', options: d.options?.join(',') || '', correct: d.correct || '', count: '' });
-const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: d.count?.toString() || '' });
+const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: '' });
+const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: d.count?.toString() || '' });
 
 export default function TeacherPhonicsActivityScreen() {
   const { profile } = useAuth();
@@ -45,7 +41,7 @@ export default function TeacherPhonicsActivityScreen() {
   const [gameType, setGameType]   = useState('blend');
   const [level, setLevel]         = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', count: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
@@ -62,7 +58,7 @@ export default function TeacherPhonicsActivityScreen() {
   };
 
   const resetForm = () => {
-    setForm({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+    setForm({ phonemes: '', word: '', emoji: '', count: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -72,14 +68,12 @@ export default function TeacherPhonicsActivityScreen() {
     setLevel(item.difficulty_level);
     setEditingId(item.id);
     if (item.game_type === 'blend')   setForm(blendToForm(item.data));
-    if (item.game_type === 'rhyme')   setForm(rhymeToForm(item.data));
     if (item.game_type === 'segment') setForm(segmentToForm(item.data));
   };
 
   const buildData = () => {
     try {
       if (gameType === 'blend')   return parseBlend(form);
-      if (gameType === 'rhyme')   return parseRhyme(form);
       if (gameType === 'segment') return parseSegment(form);
     } catch { return null; }
   };
@@ -121,11 +115,8 @@ export default function TeacherPhonicsActivityScreen() {
   const fieldDefs = [
     { id: 'phonemes', label: 'Phonemes (comma-separated)',   show: ['blend', 'segment'] },
     { id: 'word',     label: 'Word',                          show: ['blend', 'segment'] },
-    { id: 'target',   label: 'Target word',                   show: ['rhyme'] },
-    { id: 'options',  label: 'Options (comma-separated)',     show: ['rhyme'] },
-    { id: 'correct',  label: 'Correct answer',                show: ['rhyme'] },
     { id: 'count',    label: 'Phoneme count (number)',         show: ['segment'] },
-    { id: 'emoji',    label: 'Emoji (optional)',               show: ['blend', 'rhyme', 'segment'] },
+    { id: 'emoji',    label: 'Emoji (optional)',               show: ['blend', 'segment'] },
   ].filter(f => f.show.includes(gameType));
 
   const gameColor = GAME_TYPES.find(g => g.id === gameType)?.color || '#FF9800';
@@ -137,7 +128,7 @@ export default function TeacherPhonicsActivityScreen() {
       <LinearGradient colors={['#F57C00', '#E65100']} style={styles.header}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Phonics Activity</Text>
-        <Text style={styles.headerSub}>Manage blend, rhyme & segment games</Text>
+        <Text style={styles.headerSub}>Manage blend & segment games</Text>
 
         {/* Game-type pills */}
         <View style={styles.typeRow}>

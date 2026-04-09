@@ -181,8 +181,8 @@ function AppScreens() {
   const { profile, profileLoaded, profileError, retryFetchProfile, signOut, session } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
-  // Safety-net: fetchProfile can take up to ~20s (15s timeout + 3x1.5s retries).
-  // Only show the error screen if it still hasn't resolved after 25s.
+  // Safety-net: fetchProfile can take up to ~36s (12s timeout + 3x2s retries).
+  // Only show the error screen if it still hasn't resolved after 45s.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
     const t = setTimeout(() => setTimedOut(true), TIMEOUTS.PROFILE_SAFETY_NET_MS);
