@@ -45,5 +45,11 @@ yarn-error.*
 
 /docs*
 ServiceAccountSynclexia.json
+
+# Google Cloud credentials
+synclexia-491611-92eeff6552f3.json
+*-*.json
+gcp-*.json
+service-account*.json
 # Local Netlify folder
 .netlify

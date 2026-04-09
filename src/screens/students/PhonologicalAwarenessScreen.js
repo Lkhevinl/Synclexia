@@ -89,8 +89,8 @@ function ModeSelector({ onSelect }) {
   }, []);
 
   const modes = [
-    { id: 'syllable', icon: 'hand-metal',  label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'phoneme',  icon: 'type',         label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
+    { id: 'syllable', icon: 'hand-metal',  label: 'Clap & Snap', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'phoneme',  icon: 'type',         label: 'Pick-a-Sound',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
   ];
 
   return (
@@ -193,7 +193,7 @@ function SyllableGame({ onBack, userId, items: rawItems }) {
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Syllable Clapping"
+        title="Clap & Snap"
         onBack={onBack}
         right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
@@ -269,7 +269,7 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
       <StudentPageHeader
-        title="Phoneme Isolation"
+        title="Pick-a-Sound"
         onBack={onBack}
         right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
@@ -396,7 +396,7 @@ export default function PhonologicalAwarenessScreen() {
           <Icon name="info" size="md" color={c.primary} />
           <Text style={paRoot.hintText}>
             <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
-            Pick a game! Clap Syllables counts word parts, Phoneme Isolation identifies sounds.
+            Pick a game! Clap & Snap counts word parts, Pick-a-Sound identifies sounds.
           </Text>
         </View>
       </StudentCard>

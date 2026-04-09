@@ -93,148 +93,90 @@ function JollyLetterTile({ letter, groupIdx, delay = 0 }) {
   );
 }
 
-function ModeSelector({ onSelect }) {
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const bounceAnim = useRef(new Animated.Value(1)).current;
+function GameCard({ game, onPress, delay = 0 }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceAnim, { toValue: 1.08, duration: 700, useNativeDriver: true }),
-        Animated.timing(bounceAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 6, delay }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 300, useNativeDriver: true, delay }),
+    ]).start();
   }, []);
 
-  const modes = [
-    { 
-      id: 'blend',   
-      label: 'Blend It!',        
-      emoji: '🔗',
-      color: '#E53935', 
-      light: '#FFEBEE',
-      desc: 'Put sounds together', 
-      letter: 'B',
-      skill: 'Blending'
+  return (
+    <Animated.View style={[gms.cardContainer, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+        <LinearGradient colors={game.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={gms.card}>
+          {/* Icon Circle */}
+          <View style={gms.iconCircle}>
+            <Text style={gms.icon}>{game.icon}</Text>
+          </View>
+
+          {/* Text Content */}
+          <View style={gms.textContainer}>
+            <Text style={gms.title}>{game.title}</Text>
+            <Text style={gms.desc}>{game.desc}</Text>
+          </View>
+
+          {/* Play Button */}
+          <View style={gms.playCircle}>
+            <Text style={gms.playIcon}>▶</Text>
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+function ModeSelector({ onSelect }) {
+  const games = [
+    {
+      id: 'blend',
+      title: 'Blend It!',
+      desc: 'Put sounds together to make a word',
+      icon: '🔗',
+      colors: ['#FF9800', '#F57C00'],
     },
-    { 
-      id: 'segment', 
-      label: 'Sound Count!', 
-      emoji: '🥁',
-      color: '#FFD600', 
-      light: '#FFFDE7',
-      desc: 'Count the sounds!', 
-      letter: 'S',
-      skill: 'Segmenting',
-      textColor: '#5D4037',
+    {
+      id: 'segment',
+      title: 'Count the Sounds!',
+      desc: 'How many sounds does the word have?',
+      icon: '🔢',
+      colors: ['#4CAF50', '#388E3C'],
     },
-    { 
-      id: 'sounds', 
-      label: 'Sound Match!', 
-      emoji: '👂',
-      color: '#43A047', 
-      light: '#E8F5E9',
-      desc: 'Match sounds to letters', 
-      letter: 'M',
-      skill: 'Hearing Sounds'
-    },
-    { 
-      id: 'build', 
-      label: 'Word Builder!', 
-      emoji: '🧱',
-      color: '#1E88E5', 
-      light: '#E3F2FD',
-      desc: 'Build words with blocks', 
-      letter: 'W',
-      skill: 'Spelling'
-    },
-    { 
-      id: 'tricky', 
-      label: 'Tricky Words!', 
-      emoji: '⚡',
-      color: '#8E24AA', 
-      light: '#F3E5F5',
-      desc: 'Words that break rules!', 
-      letter: 'T',
-      skill: 'Sight Words'
+    {
+      id: 'sounds',
+      title: 'Sound Match!',
+      desc: 'Match the sounds you hear',
+      icon: '�',
+      colors: ['#2196F3', '#1976D2'],
     },
   ];
 
-  // Sample letters for the animated ticker
-  const tickerLetters = ['s','a','t','i','p','n','c','k','e','h','r','m'];
-
   return (
-    <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
-
-      {/* ── Jolly Phonics Header ── */}
-      <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim, marginBottom: 18 }}>
-        <LinearGradient colors={['#E53935','#FB8C00','#FFD600','#43A047','#1E88E5','#8E24AA']} start={{x:0,y:0}} end={{x:1,y:0}} style={ms.rainbowBanner}>
-          <Text style={ms.bannerTitle}>🎉 Jolly Phonics! 🎉</Text>
-          <Text style={ms.bannerSub}>Learn sounds the fun way!</Text>
-        </LinearGradient>
-      </Animated.View>
-
-      {/* ── Letter Tiles Row ── */}
-      <View style={ms.letterRow}>
-        {tickerLetters.map((lt, i) => (
-          <JollyLetterTile key={i} letter={lt} groupIdx={i} delay={i * 50} />
-        ))}
-      </View>
-
-      {/* ── Section Label ── */}
-      <View style={ms.sectionHeader}>
-        <Text style={ms.sectionTitle}>🎮 Choose Your Game</Text>
-      </View>
-
-      {/* ── Activity Cards Grid ── */}
-      <View style={ms.grid}>
-        {modes.map((m, index) => (
-          <AnimatedCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={200 + index * 80}>
-            <View style={[ms.jollyCard, { borderColor: m.color, backgroundColor: m.light }]}>
-              {/* Top stripe */}
-              <View style={[ms.cardStripe, { backgroundColor: m.color }]}>
-                <Text style={[ms.cardBigLetter, { color: m.textColor || '#fff' }]}>{m.letter}</Text>
-              </View>
-              {/* Card body */}
-              <View style={ms.jollyCardBody}>
-                <Text style={ms.cardEmojiBig}>{m.emoji}</Text>
-                <Text style={[ms.jollyCardLabel, { color: m.color }]}>{m.label}</Text>
-                <View style={[ms.jollySkillTag, { backgroundColor: m.color }]}>
-                  <Text style={ms.jollySkillTagText}>{m.skill}</Text>
-                </View>
-                <Text style={ms.jollyCardDesc}>{m.desc}</Text>
-              </View>
-              {/* Play button */}
-              <View style={[ms.jollyPlayBtn, { backgroundColor: m.color }]}>
-                <Text style={ms.jollyPlayBtnText}>▶ PLAY</Text>
-              </View>
-            </View>
-          </AnimatedCard>
-        ))}
-      </View>
-
-      {/* ── Phonics Groups Reference ── */}
-      <View style={ms.groupsCard}>
-        <Text style={ms.groupsTitle}>📚 Jolly Phonics Groups</Text>
-        {JP_GROUPS.slice(0, 4).map((g, i) => (
-          <View key={i} style={ms.groupRow}>
-            <View style={[ms.groupDot, { backgroundColor: g.color }]} />
-            <Text style={ms.groupName}>{g.name}:</Text>
-            <Text style={ms.groupLetters}>{g.letters.join('  ')}</Text>
+    <ScrollView contentContainerStyle={gms.container} showsVerticalScrollIndicator={false}>
+      {/* Header Card */}
+      <View style={gms.headerCard}>
+        <LinearGradient colors={['#FF9800', '#F57C00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={gms.headerGradient}>
+          <Text style={gms.headerEmoji}>🎮</Text>
+          <View style={gms.headerTextContainer}>
+            <Text style={gms.headerTitle}>Phonics Activities</Text>
+            <Text style={gms.headerSubtitle}>Choose a game to play</Text>
           </View>
-        ))}
+        </LinearGradient>
       </View>
 
-      {/* ── Tip ── */}
-      <View style={ms.tipsCard}>
-        <Text style={ms.tipsEmoji}>💡</Text>
-        <Text style={ms.tipsText}>
-          <Text style={{ fontWeight: 'bold' }}>Jolly Tip: </Text>
-          Say each sound out loud and use the actions!
-        </Text>
+      {/* Game Cards */}
+      <View style={gms.gamesContainer}>
+        {games.map((game, index) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            delay={index * 100}
+            onPress={() => onSelect(game.id)}
+          />
+        ))}
       </View>
     </ScrollView>
   );
@@ -1072,6 +1014,96 @@ export default function PhonicsActivityScreen() {
     </ScreenWrapper>
   );
 }
+
+// Game Mode Styles (horizontal card layout)
+const gms = StyleSheet.create({
+  container: { padding: 20, paddingTop: 16, paddingBottom: 40 },
+
+  // Header Card
+  headerCard: {
+    borderRadius: 20,
+    marginBottom: 24,
+    elevation: 6,
+    shadowColor: '#FF9800',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerGradient: {
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  headerEmoji: { fontSize: 32, marginBottom: 8 },
+  headerTextContainer: { alignItems: 'center' },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+  },
+
+  // Games Container
+  gamesContainer: { gap: 16 },
+
+  // Game Card Styles
+  cardContainer: {
+    borderRadius: 18,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+  },
+  card: {
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  icon: { fontSize: 24 },
+  textContainer: { flex: 1 },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  desc: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+  },
+  playCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  playIcon: {
+    fontSize: 14,
+    color: '#fff',
+    marginLeft: 2,
+  },
+});
 
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
