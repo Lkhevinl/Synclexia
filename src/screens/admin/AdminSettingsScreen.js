@@ -106,14 +106,6 @@ export default function AdminSettingsScreen({ navigation }) {
                 <Text style={styles.supportText}>View Maintenance Logs</Text>
                 <Icon name="chevron-forward" size={20} color="#CFD8DC" />
               </TouchableOpacity>
-
-              <View style={styles.divider} />
-
-              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('AddMaintenanceLog')}>
-                <Icon name="plus-circle" size="md" color="#4CAF50" />
-                <Text style={styles.supportText}>Add Maintenance Log</Text>
-                <Icon name="chevron-forward" size={20} color="#CFD8DC" />
-              </TouchableOpacity>
           </View>
 
           {/* LOGOUT */}

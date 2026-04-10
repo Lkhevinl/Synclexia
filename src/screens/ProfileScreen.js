@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import Icon from '../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { TABLES } from '../lib/constants';
@@ -33,71 +32,13 @@ export default function ProfileScreen({ navigation }) {
 
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [email, setEmail] = useState(profile?.email || '');
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || null);
-  const [bannerUrl, setBannerUrl] = useState(profile?.banner_url || null);
-  const [uploading, setUploading] = useState(false);
-  const [bannerUploading, setBannerUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const uploadImage = async (asset, bucket, fileName) => {
-    const mimeType = asset.mimeType || 'image/jpeg';
-    const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
-    const fullPath = `${fileName}.${ext}`;
-    let blob;
-    if (asset.file) {
-      blob = asset.file;
-    } else {
-      const response = await fetch(asset.uri);
-      blob = await response.blob();
-    }
-    const { error } = await supabase.storage.from(bucket).upload(fullPath, blob, { contentType: mimeType, upsert: true });
-    if (error) throw error;
-    const { data } = supabase.storage.from(bucket).getPublicUrl(fullPath);
-    return `${data.publicUrl}?t=${Date.now()}`;
-  };
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { showAlert('Permission Required', 'Please allow photo library access.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
-    if (!result.canceled && result.assets?.[0]) uploadAvatar(result.assets[0]);
-  };
-
-  const uploadAvatar = async (asset) => {
-    setUploading(true);
-    try {
-      const newUrl = await uploadImage(asset, 'avatars', profile.id);
-      await supabase.from(TABLES.PROFILES).update({ avatar_url: newUrl }).eq('id', profile.id);
-      setAvatarUrl(newUrl);
-      fetchProfile(profile.id).catch(() => {});
-    } catch (e) { showAlert('Upload Failed', e.message); }
-    finally { setUploading(false); }
-  };
-
-  const pickBanner = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { showAlert('Permission Required', 'Please allow photo library access.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [16, 9], quality: 0.8 });
-    if (!result.canceled && result.assets?.[0]) uploadBanner(result.assets[0]);
-  };
-
-  const uploadBanner = async (asset) => {
-    setBannerUploading(true);
-    try {
-      const newUrl = await uploadImage(asset, 'avatars', `banner_${profile.id}`);
-      await supabase.from(TABLES.PROFILES).update({ banner_url: newUrl }).eq('id', profile.id);
-      setBannerUrl(newUrl);
-      fetchProfile(profile.id).catch(() => {});
-    } catch (e) { showAlert('Upload Failed', e.message); }
-    finally { setBannerUploading(false); }
-  };
 
   const handleSave = async () => {
     if (isStudent) { showAlert('View Only', 'Name and email can only be changed by a parent.'); return; }
     if (!fullName.trim()) { showAlert('Validation', 'Full name cannot be empty.'); return; }
     setSaving(true);
     const updates = { full_name: fullName.trim() };
-    if (avatarUrl && avatarUrl !== profile?.avatar_url) updates.avatar_url = avatarUrl;
     const { error } = await supabase.from(TABLES.PROFILES).update(updates).eq('id', profile.id);
     if (error) { showAlert('Error', error.message); setSaving(false); return; }
     const trimmedEmail = email.trim().toLowerCase();
@@ -117,46 +58,28 @@ export default function ProfileScreen({ navigation }) {
 
   const isChanged =
     fullName.trim() !== (profile?.full_name || '') ||
-    email.trim().toLowerCase() !== (profile?.email || '') ||
-    (avatarUrl && avatarUrl !== profile?.avatar_url) ||
-    (bannerUrl && bannerUrl !== profile?.banner_url);
+    email.trim().toLowerCase() !== (profile?.email || '');
 
   return (
     <ScreenWrapper padded={false}>
       <ScrollView contentContainerStyle={{ paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         {/* Banner */}
         <View style={styles.bannerWrapper}>
-          <TouchableOpacity onPress={pickBanner} disabled={bannerUploading || isStudent} activeOpacity={0.85} style={{ flex: 1 }}>
-            {bannerUrl
-              ? <Image source={{ uri: bannerUrl }} style={styles.bannerImg} />
-              : <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
-            }
-            <View style={styles.bannerEditBtn}>
-              {bannerUploading ? <ActivityIndicator size="small" color="#fff" /> : <Icon name="image" size="sm" color="#fff" />}
-              <Text style={styles.bannerEditText}>{bannerUploading ? 'Uploading...' : isStudent ? 'View Cover' : 'Edit Cover'}</Text>
-            </View>
-          </TouchableOpacity>
+          <LinearGradient colors={['#E8927C', '#C87456']} style={styles.bannerImg} />
 
           <View style={styles.backBtnOnBanner}><GoBackBtn /></View>
 
           <View style={styles.avatarOnBanner}>
-            <TouchableOpacity onPress={pickImage} disabled={uploading || isStudent} activeOpacity={0.8} style={styles.avatarWrapper}>
-              {avatarUrl
-                ? <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <View style={styles.avatarWrapper}>
+              {profile?.avatar_url
+                ? <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
                 : <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
                     <Text style={styles.avatarInitial}>{fullName?.[0]?.toUpperCase() || profile?.full_name?.[0]?.toUpperCase() || '?'}</Text>
                   </View>
               }
-              <View style={[styles.cameraOverlay, { backgroundColor: colors.primary }]}>
-                {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Icon name="camera" size="sm" color={colors.onPrimary} />}
-              </View>
-            </TouchableOpacity>
+            </View>
           </View>
         </View>
-
-        <AppText variant="caption" style={[styles.avatarHint, { color: colors.onSurfaceMuted }]}>
-          {uploading ? 'Uploading photo...' : isStudent ? 'Photos can only be changed by a parent' : 'Tap photo or cover to change'}
-        </AppText>
 
         {/* Form */}
         <View style={[styles.form, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
@@ -175,9 +98,9 @@ export default function ProfileScreen({ navigation }) {
 
           {!isStudent && (
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: colors.primary }, (!isChanged || saving || uploading) && { opacity: 0.5 }]}
+              style={[styles.saveBtn, { backgroundColor: colors.primary }, (!isChanged || saving) && { opacity: 0.5 }]}
               onPress={handleSave}
-              disabled={!isChanged || saving || uploading}
+              disabled={!isChanged || saving}
             >
               {saving ? <ActivityIndicator color={colors.onPrimary} /> : (
                 <>
@@ -204,16 +127,12 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   bannerWrapper:  { width: '100%', height: 200, position: 'relative', marginBottom: 56 },
   bannerImg:      { width: '100%', height: 200 },
-  bannerEditBtn:  { position: 'absolute', bottom: 70, right: 12, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  bannerEditText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   backBtnOnBanner: { position: 'absolute', top: 44, left: 12 },
   avatarOnBanner: { position: 'absolute', bottom: -48, left: 20 },
   avatarWrapper:  { position: 'relative' },
   avatar:         { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: '#fff' },
   avatarPlaceholder: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#fff' },
   avatarInitial:  { fontSize: 34, fontWeight: 'bold' },
-  cameraOverlay:  { position: 'absolute', bottom: 2, right: 2, borderRadius: 13, padding: 4, borderWidth: 2, borderColor: '#fff' },
-  avatarHint:     { textAlign: 'center', marginBottom: tokens.spacing.md, marginTop: -tokens.spacing.sm },
 
   form:        { borderRadius: tokens.radius.lg, padding: tokens.spacing.lg, marginHorizontal: tokens.spacing.md },
   fieldLabel:  { letterSpacing: 0.8, marginTop: tokens.spacing.md, marginBottom: tokens.spacing.sm },

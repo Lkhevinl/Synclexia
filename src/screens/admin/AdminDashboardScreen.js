@@ -25,7 +25,6 @@ export default function AdminDashboardScreen({ navigation }) {
     phonicsActivities: 0,
     phonological: 0,
   });
-  const [usersModalVisible, setUsersModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -373,7 +372,7 @@ export default function AdminDashboardScreen({ navigation }) {
           {/* MANAGE USERS */}
           <TouchableOpacity
             style={styles.enhancedCard}
-            onPress={() => setUsersModalVisible(true)}
+            onPress={() => navigation.navigate('AdminUsers')}
             activeOpacity={0.85}
           >
             <LinearGradient colors={['#f093fb', '#f5576c']} style={styles.enhancedCardGradient}>
@@ -385,93 +384,60 @@ export default function AdminDashboardScreen({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* MAINTENANCE LOGS */}
+          {/* MANAGE NOTIFICATIONS */}
           <TouchableOpacity
-            style={styles.enhancedCard}
-            onPress={() => navigation.navigate('MaintenanceLogs')}
+            style={[styles.enhancedCard, styles.wideCard]}
+            onPress={() => navigation.navigate('AdminNotifications')}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.enhancedCardGradient}>
-              <View style={styles.enhancedIconWrap}>
-                <Icon name="wrench" size="lg" color="#fff" />
+            <LinearGradient colors={['#f7971e', '#ffd200']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Icon name="megaphone" size="lg" color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Manage Notifications</Text>
               </View>
-              <Text style={styles.enhancedCardTitle}>Maintenance</Text>
-              <Text style={styles.enhancedCardSubtitle}>Logs & Issues</Text>
+              <Text style={styles.enhancedCardDescription}>
+                Send app-wide announcements and manage alerts
+              </Text>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>{notifications.length} active notifications</Text>
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* REPORT ANALYTICS */}
+          <TouchableOpacity
+            style={[styles.enhancedCard, styles.wideCard]}
+            onPress={() => navigation.navigate('AdminReports')}
+            activeOpacity={0.85}
+          >
+            <LinearGradient colors={['#11998e', '#38ef7d']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Icon name="bar-chart-2" size="lg" color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Report Analytics</Text>
+              </View>
+              <View style={styles.reportFeatureList}>
+                <View style={styles.reportFeatureItem}>
+                  <Icon name="activity" size="sm" color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.reportFeatureText}>Activity logs from parents and learners</Text>
+                </View>
+                <View style={styles.reportFeatureItem}>
+                  <Icon name="file-text" size="sm" color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.reportFeatureText}>Custom reports/exports (generate PDFs and CSVs for review or sharing)</Text>
+                </View>
+              </View>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>View insights & exports</Text>
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* USERS MANAGEMENT MODAL */}
-      <Modal visible={usersModalVisible} transparent animationType="slide" onRequestClose={() => setUsersModalVisible(false)}>
-        <View style={styles.submenuOverlay}>
-          <View style={styles.submenuContent}>
-            <View style={styles.submenuHeader}>
-              <Text style={styles.submenuTitle}>User Management</Text>
-              <TouchableOpacity onPress={() => setUsersModalVisible(false)}>
-                <Icon name="x" size="md" color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'student' }); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#C8E6C9' }]}>
-                  <Icon name="graduation-cap" size="md" color="#2E7D32" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Learners (Students)</Text>
-                  <Text style={styles.submenuItemSub}>{studentCount} total</Text>
-                </View>
-                <Icon name="chevron-forward" size="sm" color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'parent' }); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#F8BBD0' }]}>
-                  <Icon name="users" size="md" color="#C2185B" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Parents</Text>
-                  <Text style={styles.submenuItemSub}>{parentCount} total</Text>
-                </View>
-                <Icon name="chevron-forward" size="sm" color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminParentLinks'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#E1BEE7' }]}>
-                  <Icon name="users" size="md" color="#6A1B9A" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Parent Links</Text>
-                  <Text style={styles.submenuItemSub}>Manage relationships</Text>
-                </View>
-                <Icon name="chevron-forward" size="sm" color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminNotifications'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#FFCCBC' }]}>
-                  <Icon name="megaphone" size="md" color="#D84315" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Send Announcements</Text>
-                  <Text style={styles.submenuItemSub}>Notify all users</Text>
-                </View>
-                <Icon name="chevron-forward" size="sm" color="#ccc" />
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* NOTIFICATIONS MODAL */}
       <Modal visible={notifVisible} transparent={true} animationType="slide" onRequestClose={() => setNotifVisible(false)}>
@@ -646,6 +612,10 @@ const styles = StyleSheet.create({
   enhancedCardDescription: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: 16 },
   enhancedCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
   enhancedCardStats: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+
+  reportFeatureList: { marginBottom: 16, gap: 10 },
+  reportFeatureItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  reportFeatureText: { fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 18, flex: 1 },
 
   // Enhanced Header Styles
   enhancedHeader: {

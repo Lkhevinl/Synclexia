@@ -72,7 +72,7 @@ export default function AdminManageContentsScreen({ navigation }) {
   const contentItems = [
     {
       id: 'stories',
-      title: 'Writing Practice',
+      title: 'Reading Activity',
       subtitle: `${contentStats.stories} stories`,
       icon: 'pencil',
       bgColor: '#E1BEE7',
@@ -104,7 +104,7 @@ export default function AdminManageContentsScreen({ navigation }) {
     },
     {
       id: 'phonological',
-      title: 'Phonological Awareness',
+      title: 'Sound Game',
       subtitle: `${contentStats.phonological} items`,
       icon: 'headphones',
       bgColor: '#E1BEE7',
