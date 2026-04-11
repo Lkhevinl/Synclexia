@@ -446,11 +446,6 @@ export default function ParentDashboardScreen({ navigation }) {
                 </View>
                 <View style={s.snapDiv} />
                 <View style={s.snapItem}>
-                  <Text style={[s.snapVal, { color: '#4CAF50', fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalXP}</Text>
-                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>XP Earned</Text>
-                </View>
-                <View style={s.snapDiv} />
-                <View style={s.snapItem}>
                   <Text style={[s.snapVal, {
                     color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336',
                     fontSize: theme.fontSize + 4

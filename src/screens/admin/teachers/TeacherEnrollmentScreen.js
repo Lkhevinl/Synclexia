@@ -189,9 +189,6 @@ export default function TeacherEnrollmentScreen() {
                     {enrollment.profiles?.full_name || 'Unknown'}
                   </Text>
                   <Text style={styles.studentEmail}>{enrollment.profiles?.email}</Text>
-                  <Text style={styles.studentLevel}>
-                    Level {Math.floor((enrollment.profiles?.xp || 0) / 100) + 1}
-                  </Text>
                 </View>
               </View>
               <TouchableOpacity

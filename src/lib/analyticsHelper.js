@@ -1,27 +1,10 @@
 // lib/analyticsHelper.js
-// Session logging for all activity attempts — records every session to
-// session_logs and awards XP.
+// Session logging for all activity attempts — records every session to session_logs.
 import { supabase } from './supabase';
 
 /**
- * XP awarded per activity type (base rates)
- * Bonus XP is calculated from accuracy
- */
-const XP_RATES = {
-  phonics: 5,
-  phonics_blend: 8,
-  phonics_rhyme: 8,
-  phonics_segment: 8,
-  spelling: 10,
-  writing: 5,
-  reading: 8,
-  scan: 3,
-  phonological_awareness: 8, // onset-rime, syllable, phoneme isolation
-};
-
-/**
- * Log a completed activity session and award XP.
- * 
+ * Log a completed activity session.
+ *
  * @param {Object} params
  * @param {string} params.studentId - The student's profile UUID
  * @param {string} params.activityType - e.g. 'phonics', 'spelling', 'phonics_blend'
@@ -29,21 +12,15 @@ const XP_RATES = {
  * @param {number} params.total - Total items in session
  * @param {number} [params.durationSeconds] - Time spent (seconds)
  * @param {Object} [params.details] - Extra info (wrong answers, words, etc.)
- * @returns {Object} { success, xpEarned, session }
+ * @returns {Object} { success, session }
  */
 export const logSession = async ({ studentId, activityType, score, total, durationSeconds = 0, details = {} }) => {
   try {
     if (!studentId || !activityType) {
-      return { success: false, xpEarned: 0, session: null };
+      return { success: false, session: null };
     }
 
     const accuracy = total > 0 ? Math.round((score / total) * 10000) / 100 : 0;
-    
-    // Calculate XP: base rate * score (no XP for zero score)
-    const baseRate = XP_RATES[activityType] || 5;
-    const baseXP = baseRate * score;
-    const accuracyBonus = accuracy >= 80 ? Math.round(baseXP * 0.5) : accuracy >= 50 ? Math.round(baseXP * 0.2) : 0;
-    const xpEarned = baseXP + accuracyBonus;
 
     const basePayload = {
       activity_type: activityType,
@@ -51,7 +28,6 @@ export const logSession = async ({ studentId, activityType, score, total, durati
       total,
       accuracy,
       duration_seconds: durationSeconds,
-      xp_earned: xpEarned,
       details,
     };
 
@@ -61,11 +37,9 @@ export const logSession = async ({ studentId, activityType, score, total, durati
     const isNotNullViolation = (err) =>
       err?.code === '23502' || /violates not-null constraint/i.test(err?.message || '');
 
-    // 1) Insert session log
     // Support both schemas:
     // - new schema: session_logs.student_id
     // - legacy schema: session_logs.user_id
-    // - some DBs may temporarily have both (e.g. migrations)
     const attempts = [
       { ...basePayload, student_id: studentId, user_id: studentId },
       { ...basePayload, student_id: studentId },
@@ -83,8 +57,6 @@ export const logSession = async ({ studentId, activityType, score, total, durati
       }
       logError = res.error;
 
-      // Retry only when the DB schema doesn't match our columns, or when a
-      // required id column wasn't provided.
       if (!(isUndefinedColumn(logError) || isNotNullViolation(logError))) {
         break;
       }
@@ -92,27 +64,22 @@ export const logSession = async ({ studentId, activityType, score, total, durati
 
     if (logError) {
       console.warn('Session log insert failed:', logError.message);
-      return { success: false, xpEarned: 0, session: null };
+      return { success: false, session: null };
     }
 
-    // 2. Award XP directly (not just from quest claiming anymore)
-    if (xpEarned > 0) {
-      await supabase.rpc('add_xp', { amount: xpEarned });
-    }
-
-    return { success: true, xpEarned, session };
+    return { success: true, session };
   } catch (error) {
     console.warn('logSession error:', error.message);
-    return { success: false, xpEarned: 0, session: null };
+    return { success: false, session: null };
   }
 };
 
 /**
  * Get session log summary for a student.
- * 
+ *
  * @param {string} studentId
  * @param {number} [daysBack=7] - How many days of data to include
- * @returns {Object} { totalSessions, totalXP, avgAccuracy, byActivity, recentSessions }
+ * @returns {Object} { totalSessions, avgAccuracy, byActivity, recentSessions }
  */
 export const getStudentProgress = async (studentId, daysBack = 7) => {
   try {
@@ -143,38 +110,35 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
     }
 
     if (sessErr) {
-      return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
+      return { totalSessions: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
     }
 
     if (!sessions || sessions.length === 0) {
-      return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
+      return { totalSessions: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
     }
 
     const totalSessions = sessions.length;
-    const totalXP = sessions.reduce((sum, s) => sum + (s.xp_earned || 0), 0);
     const avgAccuracy = Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions * 100) / 100;
 
     // Group by activity type
     const byActivity = {};
     sessions.forEach(s => {
       if (!byActivity[s.activity_type]) {
-        byActivity[s.activity_type] = { count: 0, totalScore: 0, totalItems: 0, totalXP: 0 };
+        byActivity[s.activity_type] = { count: 0, totalScore: 0, totalItems: 0 };
       }
       byActivity[s.activity_type].count++;
       byActivity[s.activity_type].totalScore += s.score || 0;
       byActivity[s.activity_type].totalItems += s.total || 0;
-      byActivity[s.activity_type].totalXP += s.xp_earned || 0;
     });
 
     return {
       totalSessions,
-      totalXP,
       avgAccuracy,
       byActivity,
       recentSessions: sessions.slice(0, 10),
     };
   } catch (error) {
-    return { totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
+    return { totalSessions: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] };
   }
 };
 
@@ -245,11 +209,10 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
     studentSessions.forEach(s => {
       const date = new Date(s.created_at).toISOString().split('T')[0];
       if (!dailyData[date]) {
-        dailyData[date] = { sessions: 0, accuracy: [], xp: 0 };
+        dailyData[date] = { sessions: 0, accuracy: [] };
       }
       dailyData[date].sessions++;
       dailyData[date].accuracy.push(s.accuracy || 0);
-      dailyData[date].xp += s.xp_earned || 0;
     });
 
     const dailyTrends = Object.entries(dailyData)
@@ -259,7 +222,6 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
         avgAccuracy: data.accuracy.length > 0
           ? data.accuracy.reduce((a, b) => a + b, 0) / data.accuracy.length
           : 0,
-        totalXP: data.xp,
       }))
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -297,14 +259,12 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
           totalScore: 0,
           totalItems: 0,
           totalAccuracy: 0,
-          totalXP: 0,
         };
       }
       activityBreakdown[type].count++;
       activityBreakdown[type].totalScore += s.score || 0;
       activityBreakdown[type].totalItems += s.total || 0;
       activityBreakdown[type].totalAccuracy += s.accuracy || 0;
-      activityBreakdown[type].totalXP += s.xp_earned || 0;
     });
 
     const activityPerformance = Object.entries(activityBreakdown)
@@ -315,7 +275,6 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
         completionRate: data.totalItems > 0
           ? (data.totalScore / data.totalItems) * 100
           : 0,
-        totalXP: data.totalXP,
       }))
       .sort((a, b) => b.totalSessions - a.totalSessions);
 
@@ -355,7 +314,6 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
       }
 
       const totalSessions = studentSessionData.length;
-      const totalXP = studentSessionData.reduce((sum, s) => sum + (s.xp_earned || 0), 0);
       const avgAccuracy = totalSessions > 0
         ? studentSessionData.reduce((sum, s) => sum + (s.accuracy || 0), 0) / totalSessions
         : 0;
@@ -364,7 +322,6 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
         ...student,
         totalSessions,
         avgAccuracy: Math.round(avgAccuracy * 100) / 100,
-        totalXP,
         lastActive: sortedSessions[0]?.created_at || student.created_at,
         streak,
       };
@@ -432,7 +389,6 @@ export const exportAnalyticsCSV = (analyticsData) => {
     'Email',
     'Total Sessions',
     'Avg Accuracy (%)',
-    'Total XP',
     'Streak (days)',
     'Last Active',
   ];
@@ -442,7 +398,6 @@ export const exportAnalyticsCSV = (analyticsData) => {
     s.email || 'N/A',
     s.totalSessions,
     s.avgAccuracy.toFixed(2),
-    s.totalXP,
     s.streak,
     new Date(s.lastActive).toLocaleDateString(),
   ]);

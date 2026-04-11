@@ -87,7 +87,6 @@ export default function ParentActivityLogScreen({ route }) {
 
   const groupedList = Object.entries(grouped).map(([date, items]) => ({ date, items }));
 
-  const totalXP = sessions.reduce((sum, s) => sum + (s.xp_earned || 0), 0);
   const avgAcc = sessions.length > 0
     ? Math.round(sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / sessions.length)
     : 0;
@@ -108,7 +107,6 @@ export default function ParentActivityLogScreen({ route }) {
               <Text style={s.sessionScore}>{session.score}/{session.total} correct</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={s.sessionXP}>+{session.xp_earned} XP</Text>
               <View style={[s.accBadge, { backgroundColor: accColor + '20', borderColor: accColor }]}>
                 <Text style={[s.accText, { color: accColor }]}>{session.accuracy}%</Text>
               </View>
@@ -142,10 +140,6 @@ export default function ParentActivityLogScreen({ route }) {
           <View style={s.summaryItem}>
             <Ionicons name="layers-outline" size={16} color="#7B1FA2" />
             <Text style={s.summaryText}>{sessions.length} sessions</Text>
-          </View>
-          <View style={s.summaryItem}>
-            <Ionicons name="star-outline" size={16} color="#FF9800" />
-            <Text style={s.summaryText}>{totalXP} XP earned</Text>
           </View>
           <View style={s.summaryItem}>
             <Ionicons name="checkmark-circle-outline" size={16} color="#4CAF50" />

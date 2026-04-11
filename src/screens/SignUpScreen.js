@@ -57,11 +57,6 @@ export default function SignUpScreen({ navigation }) {
 
   const { setSession } = useAuth();
 
-  const generateUniqueCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  };
-
   const handleRoleSelect = (selectedRole) => {
     setRole(selectedRole);
   };
@@ -137,32 +132,10 @@ export default function SignUpScreen({ navigation }) {
         return;
       }
 
-      const profileData = {
-        id: user.id,
-        full_name: trimmedName,
-        email: trimmedEmail,
-        role,
-      };
-
-      let profileError = null;
-      if (role === 'student') {
-        for (let attempt = 0; attempt < 5; attempt++) {
-          profileData.unique_code = generateUniqueCode();
-          const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
-          profileError = result.error;
-          if (!profileError || profileError.code !== '23505') break;
-        }
-      } else {
-        const result = await supabase.from('profiles').upsert([profileData], { onConflict: 'id' });
-        profileError = result.error;
-      }
-
-      if (profileError) {
-        showAlert('Profile Save Failed', `Could not save your profile.`);
-      } else {
-        setSignedUpSession(data.session);
-        setShowSuccessModal(true);
-      }
+      // Profile is auto-created server-side by the handle_new_user DB trigger
+      // (SECURITY DEFINER — bypasses RLS, works regardless of email-confirm setting)
+      setSignedUpSession(data.session);
+      setShowSuccessModal(true);
     } catch (e) {
       showAlert('Unexpected Error', `Something went wrong.`);
     } finally {

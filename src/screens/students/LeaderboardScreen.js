@@ -26,25 +26,10 @@ export default function LeaderboardScreen() {
     const { days } = RANGES[range];
 
     if (days === null) {
-      // All-time: top 10 by total XP in profiles
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, xp')
-        .eq('role', 'student')
-        .order('xp', { ascending: false })
-        .limit(10);
-      if (data) setLeaders(data.map(u => ({ ...u, periodXp: u.xp })));
-    } else {
-      // Filtered: sum XP earned from session_logs in the past N days
-      const since = new Date();
-      since.setDate(since.getDate() - days);
-      const sinceISO = since.toISOString();
-
-      // Fetch session logs in range that have xp_earned
+      // All-time: top 10 by total session count
       const { data: logs } = await supabase
         .from('session_logs')
-        .select('student_id, xp_earned')
-        .gte('created_at', sinceISO);
+        .select('student_id');
 
       if (!logs || logs.length === 0) {
         setLeaders([]);
@@ -52,16 +37,54 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      // Aggregate XP per student
-      const xpMap = {};
+      const countMap = {};
       logs.forEach(log => {
         const sid = log.student_id;
         if (!sid) return;
-        xpMap[sid] = (xpMap[sid] || 0) + (log.xp_earned || 0);
+        countMap[sid] = (countMap[sid] || 0) + 1;
       });
 
-      // Sort and take top 10
-      const sorted = Object.entries(xpMap)
+      const sorted = Object.entries(countMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+      const ids = sorted.map(([id]) => id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', ids);
+
+      const profMap = {};
+      (profiles || []).forEach(p => { profMap[p.id] = p; });
+
+      setLeaders(sorted.map(([id, count]) => ({
+        ...(profMap[id] || { id, full_name: 'Unknown' }),
+        sessionCount: count,
+      })));
+    } else {
+      // Filtered: count sessions in the past N days
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+
+      const { data: logs } = await supabase
+        .from('session_logs')
+        .select('student_id')
+        .gte('created_at', since.toISOString());
+
+      if (!logs || logs.length === 0) {
+        setLeaders([]);
+        setLoading(false);
+        return;
+      }
+
+      const countMap = {};
+      logs.forEach(log => {
+        const sid = log.student_id;
+        if (!sid) return;
+        countMap[sid] = (countMap[sid] || 0) + 1;
+      });
+
+      const sorted = Object.entries(countMap)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10);
 
@@ -71,22 +94,19 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      // Fetch profiles for these students
       const ids = sorted.map(([id]) => id);
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, xp')
+        .select('id, full_name')
         .in('id', ids);
 
       const profMap = {};
       (profiles || []).forEach(p => { profMap[p.id] = p; });
 
-      const result = sorted.map(([id, periodXp]) => ({
-        ...(profMap[id] || { id, full_name: 'Unknown', xp: 0 }),
-        periodXp,
-      }));
-
-      setLeaders(result);
+      setLeaders(sorted.map(([id, count]) => ({
+        ...(profMap[id] || { id, full_name: 'Unknown' }),
+        sessionCount: count,
+      })));
     }
 
     setLoading(false);
@@ -140,10 +160,8 @@ export default function LeaderboardScreen() {
 
               <View style={styles.infoCol}>
                 <Text style={styles.name}>{item.full_name || 'Unknown'}</Text>
-                <Text style={styles.xpText}>
-                  {RANGES[range].days === null
-                    ? `${item.xp} XP (all time)`
-                    : `${item.periodXp} XP earned`}
+                <Text style={styles.sessionText}>
+                  {item.sessionCount} session{item.sessionCount !== 1 ? 's' : ''}
                 </Text>
               </View>
             </View>
@@ -180,5 +198,5 @@ const styles = StyleSheet.create({
 
   infoCol: { flex: 1 },
   name: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  xpText: { fontSize: 12, color: '#1976D2', fontWeight: 'bold' },
+  sessionText: { fontSize: 12, color: '#1976D2', fontWeight: 'bold' },
 });

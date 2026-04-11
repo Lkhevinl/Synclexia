@@ -112,7 +112,6 @@ export default function ParentLinkChildScreen({ navigation }) {
     }
   };
 
-  const level     = found?.level ?? Math.floor((found?.xp || 0) / 100) + 1;
   const firstName = found?.full_name?.split(' ')[0] ?? '';
 
   return (
@@ -260,13 +259,6 @@ export default function ParentLinkChildScreen({ navigation }) {
                 <Text style={tx([s.foundEmail, { fontSize: fs - 1 }])}>
                   {found.email || 'Student account'}
                 </Text>
-                <View style={s.levelRow}>
-                  <Ionicons name="star" size={14} color="#FF9800" />
-                  <Text style={tx([s.levelText, { fontSize: fs - 1 }])}>Level {level}</Text>
-                  <View style={s.xpBadge}>
-                    <Text style={tx([s.xpText, { fontSize: fs - 2 }])}>{found.xp ?? 0} XP</Text>
-                  </View>
-                </View>
               </View>
             </View>
 

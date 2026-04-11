@@ -12,7 +12,7 @@ export default function AdminUsersScreen({ route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student', xp: 0 });
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', role: 'student' });
   const initialTab = (route?.params?.filterRole === 'parent') ? 'parent' : 'student';
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -63,7 +63,6 @@ export default function AdminUsersScreen({ route }) {
       full_name: user.full_name || '',
       email: user.email || '',
       role: user.role || 'student',
-      xp: user.xp || 0,
     });
     setEditModalVisible(true);
   };
@@ -77,7 +76,6 @@ export default function AdminUsersScreen({ route }) {
         full_name: editForm.full_name,
         email: editForm.email,
         role: editForm.role,
-        xp: parseInt(editForm.xp) || 0,
       })
       .eq('id', selectedUser.id);
     
@@ -166,7 +164,7 @@ export default function AdminUsersScreen({ route }) {
                 <Text style={[styles.cell, {flex: 3, fontSize: 11, color: '#666'}]} numberOfLines={1}>{item.email}</Text>
                 <View style={{flex: 1, alignItems: 'center'}}>
                     <View style={styles.lvlBadge}>
-                        <Text style={styles.lvlText}>{Math.floor((item.xp || 0)/100) + 1}</Text>
+                        <Text style={styles.lvlText}>{item.role?.toUpperCase?.() || 'USER'}</Text>
                     </View>
                 </View>
                 <View style={{flex:1, alignItems: 'flex-end', flexDirection: 'row', gap: 10}}>
@@ -216,14 +214,6 @@ export default function AdminUsersScreen({ route }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              
-              <Text style={styles.inputLabel}>XP</Text>
-              <TextInput 
-                style={styles.input} 
-                value={String(editForm.xp)} 
-                onChangeText={(t) => setEditForm({...editForm, xp: t})}
-                keyboardType="numeric"
-              />
               
               <View style={styles.modalActions}>
                 <TouchableOpacity style={styles.saveBtn} onPress={saveUserEdit}>

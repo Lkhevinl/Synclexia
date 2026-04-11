@@ -259,7 +259,6 @@ export default function ParentProgressScreen({ route }) {
                     <Text style={s.sessionDate}>{new Date(session.created_at).toLocaleDateString()} · {session.score}/{session.total}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={s.sessionXP}>+{session.xp_earned} XP</Text>
                     <Text style={[s.sessionAcc, {
                       color: session.accuracy >= 70 ? '#4CAF50' : session.accuracy >= 40 ? '#FF9800' : '#F44336'
                     }]}>{session.accuracy}%</Text>

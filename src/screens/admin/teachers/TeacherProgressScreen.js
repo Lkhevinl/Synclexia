@@ -36,7 +36,6 @@ export default function TeacherProgressScreen() {
   // Null-safe helpers — profiles can be null if RLS blocks the query
   const getStudentId   = (s) => s?.profiles?.id   ?? s?.student_id;
   const getStudentName = (s) => s?.profiles?.full_name ?? 'Student';
-  const getStudentXP   = (s) => s?.profiles?.xp   ?? 0;
 
   const fetchStudents = async () => {
     const data = await fetchEnrollmentsWithProfiles(profile?.id);
@@ -96,9 +95,9 @@ export default function TeacherProgressScreen() {
     });
     
     csv += `\nRecent Sessions\n`;
-    csv += `Date,Activity,Score,Total,Accuracy,XP\n`;
+    csv += `Date,Activity,Score,Total,Accuracy\n`;
     progress.recentSessions.forEach(session => {
-      csv += `${new Date(session.created_at).toLocaleDateString()},${session.activity_type},${session.score},${session.total},${session.accuracy}%,${session.xp_earned || 0}\n`;
+      csv += `${new Date(session.created_at).toLocaleDateString()},${session.activity_type},${session.score},${session.total},${session.accuracy}%\n`;
     });
 
     try {
@@ -255,7 +254,6 @@ export default function TeacherProgressScreen() {
                   <Text style={styles.sessionType}>{session.activity_type}</Text>
                   <Text style={styles.sessionScore}>
                     {session.score}/{session.total} ({session.accuracy}%)
-                    {session.xp_earned ? ` • +${session.xp_earned} XP` : ''}
                   </Text>
                 </View>
                 <Text style={styles.sessionTime}>

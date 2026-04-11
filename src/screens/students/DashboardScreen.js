@@ -13,7 +13,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DAILY_TIPS = [
   "Tip: Reading out loud helps you remember better!",
   "Fact: 'A' is the most common letter used in English.",
-  "Goal: Try to earn 50 XP today!",
+  "Goal: Try to complete 3 activities today!",
   "Tip: Take a break if your eyes get tired.",
   "Fun: Can you complete all quests this week?"
 ];

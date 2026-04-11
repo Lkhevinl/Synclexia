@@ -19,7 +19,6 @@ export async function fetchEnrollmentsWithProfiles(teacherId) {
         id,
         full_name,
         email,
-        xp,
         role
       )
     `)

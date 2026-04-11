@@ -56,8 +56,6 @@ export default function TeacherAssignActivitiesScreen() {
   const getStudentId = (student) => student.profiles?.id ?? student.student_id;
   const getStudentName = (student) => student.profiles?.full_name ?? 'Student';
   const getStudentEmail = (student) => student.profiles?.email ?? '';
-  const getStudentXP = (student) => student.profiles?.xp ?? 0;
-
   const selectStudent = async (student) => {
     setSelectedStudent(student);
     const sid = getStudentId(student);

@@ -1,19 +1,22 @@
 -- ============================================================
--- FIX: Profiles RLS — resolves "Couldn't Load Your Profile"
--- for parent and admin roles on login.
+-- Profiles RLS — aligned with current schema
 --
--- Root cause: Some policies query public.profiles directly
--- inside an RLS USING clause, causing infinite recursion
--- (PostgreSQL error 42P17) for non-student roles.
+-- Roles in profiles.role CHECK: student | parent | admin
 --
--- Fix: All role-based checks go through get_my_role(), a
--- SECURITY DEFINER function that bypasses RLS when it reads
--- the profiles table — breaking the recursion.
+-- Design:
+--   • get_my_role()    — SECURITY DEFINER, avoids infinite recursion
+--     when an RLS policy queries profiles to check the caller's role
+--   • is_my_child(uuid) — SECURITY DEFINER, same reason
+--   • No INSERT policy for regular users: profile creation is
+--     handled entirely by the handle_new_user() trigger, which
+--     runs server-side and bypasses RLS. Keeping a user INSERT
+--     policy here would require auth.uid() to be set at signup
+--     time, which is not guaranteed when email confirmation is on.
 --
--- Run this in the Supabase SQL Editor.
+-- Run in the Supabase SQL Editor.
 -- ============================================================
 
--- ── Step 1: Ensure SECURITY DEFINER helper functions exist ──
+-- ── Helper functions ─────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS TEXT LANGUAGE sql SECURITY DEFINER STABLE
@@ -30,12 +33,13 @@ AS $$
   );
 $$;
 
-REVOKE ALL ON FUNCTION public.get_my_role() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.is_my_child(uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.get_my_role() TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_my_child(uuid) TO authenticated;
+-- Restrict execution to authenticated users only
+REVOKE ALL ON FUNCTION public.get_my_role()          FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_my_child(uuid)      FROM PUBLIC;
+GRANT  EXECUTE ON FUNCTION public.get_my_role()      TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.is_my_child(uuid)  TO authenticated;
 
--- ── Step 2: Drop ALL existing profiles policies ──────────────
+-- ── Drop all existing profiles policies ──────────────────────
 
 DO $$
 DECLARE r RECORD;
@@ -48,50 +52,54 @@ BEGIN
   END LOOP;
 END $$;
 
--- ── Step 3: Ensure RLS is enabled ───────────────────────────
+-- ── Enable RLS ────────────────────────────────────────────────
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- ── Step 4: Recreate policies (no direct subquery into profiles) ─
+-- ── SELECT policies ───────────────────────────────────────────
 
--- Every authenticated user can read their OWN profile row
-CREATE POLICY "Users can read own profile"
+-- Every authenticated user can read their own profile
+CREATE POLICY "profiles_select_own"
   ON public.profiles FOR SELECT
   USING (auth.uid() = id);
 
--- Admins can read ALL profiles
--- get_my_role() is SECURITY DEFINER → bypasses RLS, no recursion
-CREATE POLICY "Admins can read all profiles"
+-- Admins can read all profiles
+CREATE POLICY "profiles_select_admin"
   ON public.profiles FOR SELECT
   USING (public.get_my_role() = 'admin');
 
 -- Parents can read their linked children's profiles
-CREATE POLICY "Parents can read linked child profiles"
+CREATE POLICY "profiles_select_parent_child"
   ON public.profiles FOR SELECT
   USING (public.get_my_role() = 'parent' AND public.is_my_child(id));
 
--- Users can update their own profile
-CREATE POLICY "Users can update own profile"
+-- ── UPDATE policies ───────────────────────────────────────────
+
+-- Users can update their own profile (avatar, name, push_token, etc.)
+CREATE POLICY "profiles_update_own"
   ON public.profiles FOR UPDATE
-  USING (auth.uid() = id)
+  USING  (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- Admins can update any profile
-CREATE POLICY "Admins can update any profile"
+-- Admins can update any profile (ban, role change, etc.)
+CREATE POLICY "profiles_update_admin"
   ON public.profiles FOR UPDATE
   USING (public.get_my_role() = 'admin');
 
--- Users can insert their own profile row (signup flow)
-CREATE POLICY "Users can insert own profile"
-  ON public.profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+-- ── INSERT policy ─────────────────────────────────────────────
 
--- Admins can insert profiles (manual user creation)
-CREATE POLICY "Admins can insert profiles"
+-- Profile rows are created by the handle_new_user() trigger
+-- (SECURITY DEFINER, no session required).
+-- This policy covers only the admin use-case (manual user creation
+-- from the admin dashboard) and edge-case re-inserts by the user
+-- themselves when they already have an active session.
+CREATE POLICY "profiles_insert_admin"
   ON public.profiles FOR INSERT
   WITH CHECK (public.get_my_role() = 'admin');
 
--- Admins can delete profiles
-CREATE POLICY "Admins can delete profiles"
+-- ── DELETE policy ─────────────────────────────────────────────
+
+-- Only admins can delete profiles
+CREATE POLICY "profiles_delete_admin"
   ON public.profiles FOR DELETE
   USING (public.get_my_role() = 'admin');
