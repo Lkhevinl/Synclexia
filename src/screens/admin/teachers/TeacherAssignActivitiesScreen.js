@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, Switch, TextInput, Alert, Modal, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import AppHeader from '../../../components/AppHeader';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { scheduleDeadlineReminder } from '../../../lib/pushNotificationHelper';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const ACTIVITIES = [
   { id: 'phonics',               name: 'Phonics',            icon: '🗣️', color: '#FF9800' },
   { id: 'phonics_activity',      name: 'Activities',         icon: '🎮', color: '#00897B' },
   { id: 'phonics_blend',         name: 'Blending',           icon: '🔗', color: '#00BCD4' },
-  { id: 'phonics_rhyme',         name: 'Rhyme',              icon: '🎵', color: '#E91E63' },
   { id: 'phonics_segment',       name: 'Segmenting',         icon: '✂️', color: '#795548' },
   { id: 'spelling',              name: 'Spelling',           icon: '🔤', color: '#3F51B5' },
   { id: 'writing',               name: 'Writing',            icon: '✍️', color: '#4CAF50' },
@@ -26,6 +29,7 @@ const DIFFICULTY_LABELS = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 
 export default function TeacherAssignActivitiesScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [assignments, setAssignments] = useState({}); // { activityId: true/false } for quick toggles
@@ -56,12 +60,13 @@ export default function TeacherAssignActivitiesScreen() {
   const getStudentId = (student) => student.profiles?.id ?? student.student_id;
   const getStudentName = (student) => student.profiles?.full_name ?? 'Student';
   const getStudentEmail = (student) => student.profiles?.email ?? '';
+
   const selectStudent = async (student) => {
     setSelectedStudent(student);
     const sid = getStudentId(student);
     if (!sid) return;
     const { data } = await supabase
-      .from('assignments')
+      .from(TABLES.ASSIGNMENTS)
       .select('*')
       .eq('student_id', sid)
       .eq('teacher_id', profile?.id);
@@ -80,7 +85,7 @@ export default function TeacherAssignActivitiesScreen() {
     const sid = getStudentId(selectedStudent);
     if (isAssigned) {
       await supabase
-        .from('assignments')
+        .from(TABLES.ASSIGNMENTS)
         .delete()
         .eq('student_id', sid)
         .eq('activity_type', activityId)
@@ -124,7 +129,7 @@ export default function TeacherAssignActivitiesScreen() {
       };
 
       const { data: existing } = await supabase
-        .from('assignments')
+        .from(TABLES.ASSIGNMENTS)
         .select('id')
         .eq('student_id', sid)
         .eq('teacher_id', profile?.id)
@@ -134,14 +139,14 @@ export default function TeacherAssignActivitiesScreen() {
       let data, error;
       if (existing) {
         ({ data, error } = await supabase
-          .from('assignments')
+          .from(TABLES.ASSIGNMENTS)
           .update(payload)
           .eq('id', existing.id)
           .select()
           .single());
       } else {
         ({ data, error } = await supabase
-          .from('assignments')
+          .from(TABLES.ASSIGNMENTS)
           .insert({ teacher_id: profile?.id, student_id: sid, activity_type: configModal, ...payload })
           .select()
           .single());
@@ -187,9 +192,6 @@ export default function TeacherAssignActivitiesScreen() {
         </Text>
         <Text style={styles.studentEmail}>{getStudentEmail(item) || 'No email'}</Text>
       </View>
-      <Text style={[styles.studentXP, isSelected && styles.studentXPActive]}>
-        {getStudentXP(item)} XP
-      </Text>
     </TouchableOpacity>
   );
 
@@ -230,21 +232,18 @@ export default function TeacherAssignActivitiesScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading...</Text>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (students.length === 0) {
     return (
-      <View style={styles.container}>
-        <AppHeader
-          title="Assign Activities"
-          colors={['#4c669f', '#3b5998']}
-        />
+      <ScreenWrapper role="teacher" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+        <AppHeader title="Assign Activities" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <Ionicons name="people" size={80} color="#ccc" style={{ marginBottom: 20 }} />
+          <Icon name="users" size="xl" color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
             No students enrolled yet
           </Text>
@@ -252,18 +251,13 @@ export default function TeacherAssignActivitiesScreen() {
             Once students enroll, you can assign them activities here.
           </Text>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <AppHeader
-        title="Assign Activities"
-        subtitle="Select a student, configure & assign"
-        colors={['#4c669f', '#3b5998']}
-      />
+    <ScreenWrapper role="teacher" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <AppHeader title="Assign Activities" subtitle="Select a student, configure & assign" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.sectionLabel}>Select Student</Text>
         <FlatList
@@ -358,12 +352,12 @@ export default function TeacherAssignActivitiesScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, paddingRight: 20 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },

@@ -9,14 +9,18 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
+import { TABLES } from '../lib/constants';
 import AppHeader from '../components/AppHeader';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
+import ScreenWrapper from '../components/ScreenWrapper';
+import { useTheme } from '../context/ThemeContext';
 
 export default function MaintenanceLogsScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [logs, setLogs] = useState([]);
   const [filteredLogs, setFilteredLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +41,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
       // Fetch from new maintenance_logs table
       let { data: maintenanceLogs, error: maintenanceError } = await supabase
-        .from('maintenance_logs')
+        .from(TABLES.MAINTENANCE_LOGS)
         .select(`
           *,
           performed_by_profile:performed_by (full_name),
@@ -50,7 +54,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       if (maintenanceError && maintenanceError.code === 'PGRST200') {
         console.log('Foreign key relationship failed for maintenance_logs, trying simple query...');
         ({ data: maintenanceLogs, error: maintenanceError } = await supabase
-          .from('maintenance_logs')
+          .from(TABLES.MAINTENANCE_LOGS)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100));
@@ -58,7 +62,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
       // Fetch from legacy feedback table
       let { data: legacyFeedback, error: feedbackError } = await supabase
-        .from('feedback')
+        .from(TABLES.FEEDBACK)
         .select(`
           *,
           profiles:user_id (full_name, role)
@@ -70,7 +74,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       if (feedbackError && feedbackError.code === 'PGRST200') {
         console.log('Foreign key relationship failed for feedback, trying simple query...');
         ({ data: legacyFeedback, error: feedbackError } = await supabase
-          .from('feedback')
+          .from(TABLES.FEEDBACK)
           .select('*')
           .order('created_at', { ascending: false })
           .limit(100));
@@ -326,15 +330,13 @@ export default function MaintenanceLogsScreen({ navigation }) {
     const isSelected = selectedFilter === filter.key;
     return (
       <TouchableOpacity
-        key={filter.key}
         style={[styles.filterBtn, isSelected && styles.filterBtnActive]}
         onPress={() => setSelectedFilter(filter.key)}
       >
-        <Ionicons
+        <Icon
           name={filter.icon}
-          size={14}
+          size="sm"
           color={isSelected ? '#fff' : '#607D8B'}
-          style={styles.filterIcon}
         />
         <Text style={[styles.filterText, isSelected && styles.filterTextActive]}>
           {filter.label}
@@ -360,7 +362,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
       >
         <View style={styles.logHeader}>
           <View style={[styles.logIconBadge, { backgroundColor: typeConfig.bgColor }]}>
-            <Ionicons name={typeConfig.icon} size={20} color={typeConfig.color} />
+            <Icon name={typeConfig.icon} size="md" color={typeConfig.color} />
           </View>
           <View style={styles.logHeaderText}>
             <View style={styles.logTitleRow}>
@@ -382,7 +384,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
               )}
               {(item.admin_comment || item.legacyReply) && (
                 <View style={styles.commentBadge}>
-                  <Ionicons name="chatbubble" size={10} color="#4CAF50" />
+                  <Icon name="message-square" size="sm" color="#4CAF50" />
                   <Text style={styles.commentBadgeText}>REPLIED</Text>
                 </View>
               )}
@@ -400,7 +402,7 @@ export default function MaintenanceLogsScreen({ navigation }) {
         {/* Enhanced footer with status and category */}
         <View style={styles.logFooter}>
           <View style={styles.logFooterLeft}>
-            <Ionicons name="person-outline" size={14} color="#90A4AE" />
+            <Icon name="user" size="md" color="#90A4AE" />
             <Text style={styles.logPerformer}>{performedBy}</Text>
             {item.category && (
               <>
@@ -421,25 +423,23 @@ export default function MaintenanceLogsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
         <AppHeader
           title="System Maintenance"
-          colors={['#607D8B', '#455A64']}
           rightIcon={profile?.id ? 'add' : null}
           rightAction={() => navigation?.navigate('AddMaintenanceLog')}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#607D8B" />
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="System Maintenance"
-        colors={['#607D8B', '#455A64']}
         rightIcon={profile?.id ? 'add' : null}
         rightAction={() => navigation?.navigate('AddMaintenanceLog')}
       />
@@ -512,14 +512,13 @@ export default function MaintenanceLogsScreen({ navigation }) {
           />
         }
       />
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
   loadingContainer: {
     flex: 1,

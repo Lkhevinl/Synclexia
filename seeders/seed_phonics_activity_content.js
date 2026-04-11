@@ -24,32 +24,32 @@ const BLEND_ITEMS = [
   { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['d','o','g'],    word: 'dog',  emoji: '🐶' } },
   { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['s','u','n'],    word: 'sun',  emoji: '☀️' } },
   { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['h','a','t'],    word: 'hat',  emoji: '🎩' } },
-  { game_type: 'blend', difficulty_level: 2, data: { phonemes: ['b','u','s'],    word: 'bus',  emoji: '🚌' } },
-  { game_type: 'blend', difficulty_level: 2, data: { phonemes: ['f','i','sh'],   word: 'fish', emoji: '🐟' } },
-  { game_type: 'blend', difficulty_level: 3, data: { phonemes: ['fr','o','g'],   word: 'frog', emoji: '🐸' } },
-  { game_type: 'blend', difficulty_level: 3, data: { phonemes: ['cl','a','p'],   word: 'clap', emoji: '👏' } },
+  { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['b','u','s'],    word: 'bus',  emoji: '🚌' } },
+  { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['f','i','sh'],   word: 'fish', emoji: '🐟' } },
+  { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['fr','o','g'],   word: 'frog', emoji: '🐸' } },
+  { game_type: 'blend', difficulty_level: 1, data: { phonemes: ['cl','a','p'],   word: 'clap', emoji: '👏' } },
 ];
 
 const RHYME_ITEMS = [
   { game_type: 'rhyme', difficulty_level: 1, data: { target: 'cat',   options: ['bat','dog','sun'],   correct: 'bat',   emoji: '🐱' } },
   { game_type: 'rhyme', difficulty_level: 1, data: { target: 'hop',   options: ['mop','cat','pen'],   correct: 'mop',   emoji: '🐰' } },
   { game_type: 'rhyme', difficulty_level: 1, data: { target: 'big',   options: ['map','pig','sun'],   correct: 'pig',   emoji: '🐷' } },
-  { game_type: 'rhyme', difficulty_level: 2, data: { target: 'ring',  options: ['sing','cat','hop'],  correct: 'sing',  emoji: '💍' } },
-  { game_type: 'rhyme', difficulty_level: 2, data: { target: 'bee',   options: ['cat','tree','hop'],  correct: 'tree',  emoji: '🐝' } },
-  { game_type: 'rhyme', difficulty_level: 2, data: { target: 'run',   options: ['sit','sun','cat'],   correct: 'sun',   emoji: '🏃' } },
-  { game_type: 'rhyme', difficulty_level: 3, data: { target: 'ship',  options: ['cat','drip','tip'],  correct: 'tip',   emoji: '🚢' } },
-  { game_type: 'rhyme', difficulty_level: 3, data: { target: 'night', options: ['light','day','cat'], correct: 'light', emoji: '🌙' } },
+  { game_type: 'rhyme', difficulty_level: 1, data: { target: 'ring',  options: ['sing','cat','hop'],  correct: 'sing',  emoji: '💍' } },
+  { game_type: 'rhyme', difficulty_level: 1, data: { target: 'bee',   options: ['cat','tree','hop'],  correct: 'tree',  emoji: '🐝' } },
+  { game_type: 'rhyme', difficulty_level: 1, data: { target: 'run',   options: ['sit','sun','cat'],   correct: 'sun',   emoji: '🏃' } },
+  { game_type: 'rhyme', difficulty_level: 1, data: { target: 'ship',  options: ['cat','drip','tip'],  correct: 'tip',   emoji: '🚢' } },
+  { game_type: 'rhyme', difficulty_level: 1, data: { target: 'night', options: ['light','day','cat'], correct: 'light', emoji: '🌙' } },
 ];
 
 const SEGMENT_ITEMS = [
   { game_type: 'segment', difficulty_level: 1, data: { word: 'cat',  phonemes: ['c','a','t'],   count: 3, emoji: '🐱' } },
   { game_type: 'segment', difficulty_level: 1, data: { word: 'it',   phonemes: ['i','t'],        count: 2, emoji: '👆' } },
-  { game_type: 'segment', difficulty_level: 2, data: { word: 'frog', phonemes: ['fr','o','g'],   count: 3, emoji: '🐸' } },
-  { game_type: 'segment', difficulty_level: 2, data: { word: 'ship', phonemes: ['sh','i','p'],   count: 3, emoji: '🚢' } },
-  { game_type: 'segment', difficulty_level: 2, data: { word: 'play', phonemes: ['pl','ay'],       count: 2, emoji: '🎮' } },
-  { game_type: 'segment', difficulty_level: 3, data: { word: 'stop', phonemes: ['st','o','p'],   count: 3, emoji: '🛑' } },
-  { game_type: 'segment', difficulty_level: 3, data: { word: 'tree', phonemes: ['tr','ee'],       count: 2, emoji: '🌳' } },
-  { game_type: 'segment', difficulty_level: 3, data: { word: 'best', phonemes: ['b','e','st'],   count: 3, emoji: '⭐' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'frog', phonemes: ['fr','o','g'],   count: 3, emoji: '🐸' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'ship', phonemes: ['sh','i','p'],   count: 3, emoji: '🚢' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'play', phonemes: ['pl','ay'],       count: 2, emoji: '🎮' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'stop', phonemes: ['st','o','p'],   count: 3, emoji: '🛑' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'tree', phonemes: ['tr','ee'],       count: 2, emoji: '🌳' } },
+  { game_type: 'segment', difficulty_level: 1, data: { word: 'best', phonemes: ['b','e','st'],   count: 3, emoji: '⭐' } },
 ];
 
 const ALL_ITEMS = [...BLEND_ITEMS, ...RHYME_ITEMS, ...SEGMENT_ITEMS];

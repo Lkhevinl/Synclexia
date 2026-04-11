@@ -11,9 +11,11 @@ import {
   Share,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 import {
   BarChart,
   StatCard,
@@ -29,6 +31,7 @@ import {
 } from '../../lib/analyticsHelper';
 
 export default function AdminReportsScreen() {
+  const { colors } = useTheme();
   const [tab, setTab] = useState('overview'); // overview, progress, performance, engagement, trends
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -88,7 +91,7 @@ export default function AdminReportsScreen() {
         style={[styles.tabBtn, isActive && styles.tabBtnActive]}
         onPress={() => setTab(value)}
       >
-        <Ionicons name={icon} size={20} color={isActive ? '#fff' : '#607D8B'} />
+        <Icon name={icon} size="md" color={isActive ? '#fff' : '#607D8B'} />
         <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{label}</Text>
       </TouchableOpacity>
     );
@@ -151,7 +154,7 @@ export default function AdminReportsScreen() {
           </View>
           {item.streak > 0 && (
             <View style={styles.streakBadge}>
-              <Ionicons name="flame" size={16} color="#FF5722" />
+              <Icon name="flame" size="md" color="#FF5722" />
               <Text style={styles.streakText}>{item.streak}d</Text>
             </View>
           )}
@@ -163,12 +166,8 @@ export default function AdminReportsScreen() {
             <Text style={styles.metricValue}>{item.totalSessions}</Text>
           </View>
           <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Accuracy</Text>
+            <Text style={styles.metricLabel}>Avg Accuracy</Text>
             <Text style={styles.metricValue}>{item.avgAccuracy.toFixed(1)}%</Text>
-          </View>
-          <View style={styles.metricItem}>
-            <Text style={styles.metricLabel}>Total XP</Text>
-            <Text style={styles.metricValue}>{item.totalXP}</Text>
           </View>
         </View>
 
@@ -239,12 +238,6 @@ export default function AdminReportsScreen() {
                   label="Avg Accuracy"
                   value={`${activity.avgAccuracy.toFixed(1)}%`}
                   color={activity.avgAccuracy >= 80 ? '#4CAF50' : '#FF9800'}
-                />
-                <MetricRow
-                  icon="trophy"
-                  label="Total XP"
-                  value={activity.totalXP}
-                  color="#FF9800"
                 />
                 <MetricRow
                   icon="checkmark-circle"
@@ -351,7 +344,6 @@ export default function AdminReportsScreen() {
                   value={`${item.avgAccuracy.toFixed(1)}%`}
                   color="#2196F3"
                 />
-                <MetricRow icon="trophy" label="Total XP" value={item.totalXP} color="#FF9800" />
               </View>
             )}
           />
@@ -399,13 +391,12 @@ export default function AdminReportsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="Reports & Analytics"
-        colors={['#607D8B', '#455A64']}
         right={
           <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
-            <Ionicons name="download-outline" size={24} color="#fff" />
+            <Icon name="download" size="md" color="#fff" />
           </TouchableOpacity>
         }
       />
@@ -434,15 +425,12 @@ export default function AdminReportsScreen() {
 
       {/* Tab Content */}
       {renderContent()}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
+  container: { flex: 1 },
   exportBtn: {
     padding: 4,
   },

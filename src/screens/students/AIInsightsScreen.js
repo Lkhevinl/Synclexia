@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
@@ -10,10 +9,16 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { analyzeStudentProfile, applyLearningPath, ACTIVITY_META } from '../../lib/strengthsAnalysis';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
+import tokens from '../../theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -23,6 +28,7 @@ const LEVEL_LABELS = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 
 export default function AIInsightsScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
   const [profile_data, setProfileData] = useState(null);
@@ -110,22 +116,22 @@ export default function AIInsightsScreen({ navigation }) {
             </View>
           </View>
           <View style={styles.trendBadge}>
-            <Ionicons name={TREND_ICON[item.trend]} size={14} color={TREND_COLOR[item.trend]} />
+            <Icon name={TREND_ICON[item.trend]} size="sm" color={TREND_COLOR[item.trend]} />
           </View>
         </View>
 
         <View style={styles.activityCardBottom}>
           <View style={styles.statPill}>
-            <Ionicons name="layers-outline" size={11} color="#666" />
+            <Icon name="layers" size="xs" color="#666" />
             <Text style={styles.statPillText}>{LEVEL_LABELS[item.adaptiveLevel] ?? 'Easy'}</Text>
           </View>
           <View style={styles.statPill}>
-            <Ionicons name="checkmark-done-outline" size={11} color="#666" />
+            <Icon name="check-check" size="xs" color="#666" />
             <Text style={styles.statPillText}>{item.totalSessions} sessions</Text>
           </View>
           {item.daysSinceLastSession != null && (
             <View style={styles.statPill}>
-              <Ionicons name="time-outline" size={11} color="#666" />
+              <Icon name="clock" size="xs" color="#666" />
               <Text style={styles.statPillText}>
                 {item.daysSinceLastSession === 0 ? 'Today' : `${item.daysSinceLastSession}d ago`}
               </Text>
@@ -183,23 +189,27 @@ export default function AIInsightsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#667eea" />
-        <Text style={styles.loadingText}>Analyzing your learning journey...</Text>
-      </View>
+      <ScreenWrapper role="student" padded={false}>
+        <View style={[styles.centered, { backgroundColor: colors.surface }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Analyzing your learning journey...</Text>
+        </View>
+      </ScreenWrapper>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={64} color="#EF5350" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={load}>
-          <Ionicons name="refresh" size={18} color="#fff" />
-          <Text style={styles.retryText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenWrapper role="student" padded={false}>
+        <View style={[styles.centered, { backgroundColor: colors.surface }]}>
+          <Icon name="alert-circle" size="xl" color="#EF5350" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={load}>
+            <Icon name="refresh-cw" size="md" color="#fff" />
+            <Text style={styles.retryText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </ScreenWrapper>
     );
   }
 
@@ -211,20 +221,15 @@ export default function AIInsightsScreen({ navigation }) {
   const pathHasAdjustments = p.learningPath.some(i => i.suggestedLevel !== i.currentLevel);
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <LinearGradient colors={['#667eea', '#764ba2']} style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>AI Learning Insights</Text>
-          <Text style={styles.headerSub}>Personalized for {profile?.full_name?.split(' ')[0] ?? 'you'}</Text>
-        </View>
-        <TouchableOpacity style={styles.refreshBtn} onPress={load}>
-          <Ionicons name="refresh-outline" size={22} color="rgba(255,255,255,0.8)" />
-        </TouchableOpacity>
-      </LinearGradient>
+    <ScreenWrapper role="student" padded={false}>
+      <StudentPageHeader
+        title="AI Learning Insights"
+        right={
+          <TouchableOpacity onPress={load}>
+            <Icon name="refresh-cw" size="md" color={c.primary} />
+          </TouchableOpacity>
+        }
+      />
 
       <Animated.ScrollView
         style={{ opacity: fadeAnim }}
@@ -253,7 +258,7 @@ export default function AIInsightsScreen({ navigation }) {
 
           {p.totalSessions === 0 && (
             <View style={styles.noDataBanner}>
-              <Ionicons name="information-circle-outline" size={18} color="#1976D2" />
+              <Icon name="info" size="md" color="#1976D2" />
               <Text style={styles.noDataText}>Complete some activities to see your personalized insights!</Text>
             </View>
           )}
@@ -264,7 +269,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#4CAF50', '#2E7D32']} style={styles.sectionIconGradient}>
-                <Ionicons name="star" size={14} color="#fff" />
+                <Icon name="star" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Your Strengths</Text>
             </View>
@@ -279,7 +284,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#FF9800', '#E65100']} style={styles.sectionIconGradient}>
-                <Ionicons name="fitness" size={14} color="#fff" />
+                <Icon name="dumbbell" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Areas to Improve</Text>
             </View>
@@ -293,8 +298,8 @@ export default function AIInsightsScreen({ navigation }) {
         {hasNotPracticed && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#9C27B0', '#6A1B9A']} style={styles.sectionIconGradient}>
-                <Ionicons name="rocket" size={14} color="#fff" />
+              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
+                <Icon name="rocket" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Not Explored Yet</Text>
             </View>
@@ -328,8 +333,8 @@ export default function AIInsightsScreen({ navigation }) {
         {p.recommendations.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <LinearGradient colors={['#667eea', '#764ba2']} style={styles.sectionIconGradient}>
-                <Ionicons name="bulb" size={14} color="#fff" />
+              <LinearGradient colors={['#E8927C', '#C87456']} style={styles.sectionIconGradient}>
+                <Icon name="lightbulb" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>AI Recommendations</Text>
             </View>
@@ -344,7 +349,7 @@ export default function AIInsightsScreen({ navigation }) {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <LinearGradient colors={['#00BFA5', '#00796B']} style={styles.sectionIconGradient}>
-                <Ionicons name="map" size={14} color="#fff" />
+                <Icon name="map" size="sm" color="#fff" />
               </LinearGradient>
               <Text style={styles.sectionTitle}>Suggested Learning Path</Text>
             </View>
@@ -366,13 +371,13 @@ export default function AIInsightsScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={applied ? ['#4CAF50', '#2E7D32'] : ['#667eea', '#764ba2']}
+                  colors={applied ? ['#4CAF50', '#2E7D32'] : ['#E8927C', '#C87456']}
                   style={styles.applyBtnGradient}
                 >
                   {applying ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Ionicons name={applied ? 'checkmark-circle' : 'flash'} size={20} color="#fff" />
+                    <Icon name={applied ? 'check-circle' : 'zap'} size="md" color="#fff" />
                   )}
                   <Text style={styles.applyBtnText}>
                     {applying ? 'Applying...' : applied ? 'Learning Path Applied!' : 'Customize My Learning'}
@@ -391,73 +396,68 @@ export default function AIInsightsScreen({ navigation }) {
 
         <View style={{ height: 30 }} />
       </Animated.ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
 
   // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 50,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingBottom: tokens.spacing.lg - 4,
+    paddingHorizontal: tokens.spacing.md,
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: tokens.radius.full,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  headerTitle: { fontSize: tokens.fontSize.lg, fontWeight: 'bold', color: '#fff' },
+  headerSub: { fontSize: tokens.fontSize.xs + 1, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
   refreshBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: tokens.radius.full,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  scrollContent: { padding: 16 },
+  scrollContent: { padding: tokens.spacing.md },
 
   // Loading / error
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  loadingText: { marginTop: 16, fontSize: 15, color: '#667eea', fontWeight: '500' },
-  errorText: { marginTop: 16, fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: tokens.spacing.xl },
+  loadingText: { marginTop: tokens.spacing.md, fontSize: tokens.fontSize.md, color: '#E8927C', fontWeight: '500' },
+  errorText: { marginTop: tokens.spacing.md, fontSize: tokens.fontSize.sm, color: '#666', textAlign: 'center', lineHeight: 20 },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 24,
-    backgroundColor: '#667eea',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 14,
+    gap: tokens.spacing.sm,
+    marginTop: tokens.spacing.lg,
+    paddingVertical: tokens.spacing.sm + 4,
+    paddingHorizontal: tokens.spacing.lg,
+    borderRadius: tokens.radius.md + 2,
   },
   retryText: { color: '#fff', fontWeight: '700' },
 
   // Overall score card
   overallCard: {
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
+    borderRadius: tokens.radius.lg + 4,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.lg - 4,
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    ...tokens.shadows.mid,
   },
-  scoreRingWrapper: { alignItems: 'center', marginBottom: 20 },
+  scoreRingWrapper: { alignItems: 'center', marginBottom: tokens.spacing.lg - 4 },
   scoreRingOuter: {
     width: 120,
     height: 120,
@@ -476,32 +476,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  scoreNumber: { fontSize: 36, fontWeight: 'bold' },
-  scorePercent: { fontSize: 16, fontWeight: '600', color: '#999' },
-  scoreLabel: { marginTop: 10, fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
+  scoreNumber: { fontSize: tokens.fontSize.display + 2, fontWeight: 'bold' },
+  scorePercent: { fontSize: tokens.fontSize.md + 1, fontWeight: '600', color: '#999' },
+  scoreLabel: { marginTop: tokens.spacing.sm + 2, fontSize: tokens.fontSize.sm, fontWeight: '700', letterSpacing: 0.5 },
 
   overallStats: { flexDirection: 'row', alignItems: 'center', gap: 0 },
   overallStatItem: { flex: 1, alignItems: 'center' },
-  overallStatNum: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  overallStatLabel: { fontSize: 11, color: '#888', marginTop: 2 },
-  overallStatDivider: { width: 1, height: 36, backgroundColor: '#E0E0E0', marginHorizontal: 8 },
+  overallStatNum: { fontSize: tokens.fontSize.xl, fontWeight: 'bold', color: '#333' },
+  overallStatLabel: { fontSize: tokens.fontSize.xs, color: '#888', marginTop: 2 },
+  overallStatDivider: { width: 1, height: 36, backgroundColor: '#E0E0E0', marginHorizontal: tokens.spacing.sm },
 
   noDataBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E3F2FD',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 16,
-    gap: 8,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.sm + 4,
+    marginTop: tokens.spacing.md,
+    gap: tokens.spacing.sm,
   },
-  noDataText: { flex: 1, fontSize: 13, color: '#1976D2', lineHeight: 18 },
+  noDataText: { flex: 1, fontSize: tokens.fontSize.sm, color: '#1976D2', lineHeight: 18 },
 
   // Section
-  section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  section: { marginBottom: tokens.spacing.lg },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm + 2, marginBottom: tokens.spacing.sm + 4 },
   sectionIconGradient: {
-    width: 28,
+    width: tokens.spacing.xl - 4,
     height: 28,
     borderRadius: 14,
     justifyContent: 'center',
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#667eea',
+    backgroundColor: '#E8927C',
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     elevation: 4,
-    shadowColor: '#667eea',
+    shadowColor: '#E8927C',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

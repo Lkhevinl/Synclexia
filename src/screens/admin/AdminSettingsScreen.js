@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 export default function AdminSettingsScreen({ navigation }) {
-  const { theme, updateTheme } = useTheme(); 
+  const { theme, colors, updateTheme } = useTheme();
   const { profile, signOut, dashboardMode, setDashboardMode } = useAuth();
   const isAdmin = profile?.role === 'admin';
 
@@ -37,15 +38,14 @@ export default function AdminSettingsScreen({ navigation }) {
   );
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       
       {/* HEADER */}
       <LinearGradient colors={['#607D8B', '#455A64']} style={styles.header}>
           {/* Only show Back button if not on a Tab (optional) */}
           <GoBackBtn /> 
           <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Settings ⚙️</Text>
+              <Text style={styles.headerTitle}>Settings</Text>
               <Text style={styles.headerSub}>Customize your experience</Text>
           </View>
       </LinearGradient>
@@ -55,7 +55,7 @@ export default function AdminSettingsScreen({ navigation }) {
           {/* VISUALS */}
           <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                  <Ionicons name="eye" size={24} color="#607D8B" />
+                  <Icon name="eye" size="md" color="#607D8B" />
                   <Text style={styles.sectionTitle}>Visuals</Text>
               </View>
               <Text style={styles.label}>Text Size</Text>
@@ -76,7 +76,7 @@ export default function AdminSettingsScreen({ navigation }) {
           {/* ACCOUNT */}
           <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                  <Ionicons name="person" size={24} color="#607D8B" />
+                  <Icon name="user" size="md" color="#607D8B" />
                   <Text style={styles.sectionTitle}>Account</Text>
               </View>
               <View style={styles.infoRow}>
@@ -97,39 +97,31 @@ export default function AdminSettingsScreen({ navigation }) {
           {/* SYSTEM MAINTENANCE */}
           <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                  <Ionicons name="construct" size={24} color="#607D8B" />
+                  <Icon name="wrench" size="md" color="#607D8B" />
                   <Text style={styles.sectionTitle}>System Maintenance</Text>
               </View>
 
               <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('MaintenanceLogs')}>
-                <Ionicons name="list-outline" size={20} color="#607D8B" />
+                <Icon name="list" size="md" color="#607D8B" />
                 <Text style={styles.supportText}>View Maintenance Logs</Text>
-                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
-              </TouchableOpacity>
-
-              <View style={styles.divider} />
-
-              <TouchableOpacity style={styles.supportItem} onPress={() => navigation.navigate('AddMaintenanceLog')}>
-                <Ionicons name="add-circle-outline" size={20} color="#4CAF50" />
-                <Text style={styles.supportText}>Add Maintenance Log</Text>
-                <Ionicons name="chevron-forward" size={20} color="#CFD8DC" />
+                <Icon name="chevron-forward" size={20} color="#CFD8DC" />
               </TouchableOpacity>
           </View>
 
           {/* LOGOUT */}
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={24} color="#fff" />
+              <Icon name="log-out" size="md" color="#fff" />
               <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
 
           <View style={{height: 150}} /> 
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#ECEFF1' },
+  mainContainer: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   headerContent: { alignItems: 'center', marginTop: 10 },
   headerTitle: { fontSize: 26, fontWeight: 'bold', color: '#fff' },

@@ -7,10 +7,13 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const LEVELS = [
   { value: 1, label: 'Level 1 — CVC / Easy' },
@@ -20,6 +23,7 @@ const LEVELS = [
 
 export default function AdminSpellingScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [words, setWords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [word, setWord] = useState('');
@@ -33,7 +37,7 @@ export default function AdminSpellingScreen() {
   const fetchWords = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('spelling_words')
+      .from(TABLES.SPELLING_WORDS)
       .select('*')
       .order('difficulty_level')
       .order('word');
@@ -66,11 +70,11 @@ export default function AdminSpellingScreen() {
       created_by: profile.id,
     };
     if (editingId) {
-      const { error } = await supabase.from('spelling_words').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.SPELLING_WORDS).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', `"${word}" updated.`);
     } else {
-      const { error } = await supabase.from('spelling_words').insert([payload]);
+      const { error } = await supabase.from(TABLES.SPELLING_WORDS).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', `"${word}" added to spelling list.`);
     }
@@ -80,7 +84,7 @@ export default function AdminSpellingScreen() {
 
   const handleToggle = async (item) => {
     const { error } = await supabase
-      .from('spelling_words')
+      .from(TABLES.SPELLING_WORDS)
       .update({ is_active: !item.is_active })
       .eq('id', item.id);
     if (error) return Alert.alert('Error', error.message);
@@ -91,7 +95,7 @@ export default function AdminSpellingScreen() {
     Alert.alert('Delete', `Delete "${item.word}"?`, [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('spelling_words').delete().eq('id', item.id);
+        await supabase.from(TABLES.SPELLING_WORDS).delete().eq('id', item.id);
         fetchWords();
       }},
     ]);
@@ -100,9 +104,9 @@ export default function AdminSpellingScreen() {
   const levelColor = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
-      <Text style={styles.header}>Spelling Words 🔤</Text>
+      <Text style={styles.header}>Spelling Words</Text>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>{editingId ? 'Edit Word' : 'Add New Word'}</Text>
@@ -173,24 +177,24 @@ export default function AdminSpellingScreen() {
                 </View>
               </View>
               <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                <Ionicons name="pencil" size={20} color="#2196F3" />
+                <Icon name="pencil" size="md" color="#2196F3" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                <Ionicons name="trash" size={20} color="#F44336" />
+                <Icon name="trash" size="md" color="#F44336" />
               </TouchableOpacity>
             </View>
           )}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
   form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 340, elevation: 2 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },

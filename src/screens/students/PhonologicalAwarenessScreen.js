@@ -1,41 +1,39 @@
 // screens/students/PhonologicalAwarenessScreen.js
-// Three clinically-grounded phonological awareness tasks:
+// Two clinically-grounded phonological awareness tasks:
 //   1. Syllable Clapping    — tap once per syllable
-//   2. Onset-Rime          — identify which word shares the rime
-//   3. Phoneme Isolation   — identify the first/last sound
+//   2. Phoneme Isolation   — identify the first/last sound
 // All content is fetched dynamically from the phonological_content table.
-// Adaptive difficulty filters which items are shown per session.
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Animated, StatusBar, ActivityIndicator,
+  ScrollView, Animated, ActivityIndicator,
 } from 'react-native';
 import * as Speech from 'expo-speech';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import GoBackBtn from '../../components/GoBackBtn';
+import Icon from '../../components/icons/Icon';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
-import { useAdaptive } from '../../context/AdaptiveContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 
 const ACTIVITY_TYPE = 'phonological_awareness';
 
 // ─── DB Fetch ─────────────────────────────────────────────────────────────────
 
 /**
- * Fetch active content for a task_type at a given difficulty level.
- * Returns rows where difficulty_level = level OR difficulty_level IS NULL.
+ * Fetch all active content for a task_type.
  */
-const fetchContent = async (taskType, level) => {
+const fetchContent = async (taskType) => {
   const { data, error } = await supabase
-    .from('phonological_content')
+    .from(TABLES.PHONOLOGICAL_CONTENT)
     .select('id, data')
     .eq('task_type', taskType)
-    .eq('is_active', true)
-    .or(`difficulty_level.eq.${level},difficulty_level.is.null`);
+    .eq('is_active', true);
 
   if (error || !data) return [];
   return data.map(row => ({ id: row.id, ...row.data }));
@@ -83,55 +81,45 @@ function AnimatedCard({ children, style, onPress, delay = 0 }) {
 
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
-function ModeSelector({ onSelect, level }) {
+function ModeSelector({ onSelect }) {
   const headerAnim = useRef(new Animated.Value(0)).current;
-  const levelColors = { 1: '#4CAF50', 2: '#FF9800', 3: '#F44336' };
-  const levelLabels = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
-  const levelEmojis = { 1: '🌱', 2: '🌿', 3: '🌳' };
 
   useEffect(() => {
     Animated.spring(headerAnim, { toValue: 1, useNativeDriver: true, friction: 6 }).start();
   }, []);
 
   const modes = [
-    { id: 'syllable', emoji: '👏', label: 'Syllable Clapping', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'rime',     emoji: '🎵', label: 'Onset-Rime',        desc: 'Find the word that rhymes',            gradient: ['#9C27B0', '#6A1B9A'] },
-    { id: 'phoneme',  emoji: '🔤', label: 'Phoneme Isolation',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
+    { id: 'syllable', icon: 'hand-metal',  label: 'Clap & Snap', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
+    { id: 'phoneme',  icon: 'type',         label: 'Pick-a-Sound',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
   ];
 
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
-        <LinearGradient colors={['#673AB7', '#512DA8']} style={ms.headerCard}>
-          <Text style={ms.headerEmoji}>🎧</Text>
+        <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
+          <Icon name="headphones" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Phonological Awareness</Text>
           <Text style={ms.sub}>Building blocks of reading & spelling</Text>
-          <View style={[ms.levelPill, { backgroundColor: levelColors[level] + '30', borderColor: levelColors[level] }]}>
-            <Text style={ms.levelEmoji}>{levelEmojis[level]}</Text>
-            <Text style={[ms.levelText, { color: levelColors[level] }]}>
-              Level: {levelLabels[level]}
-            </Text>
-          </View>
-        </LinearGradient>
+        </View>
       </Animated.View>
 
       {modes.map((m, index) => (
         <AnimatedCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
-          <LinearGradient colors={m.gradient} style={ms.card} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+          <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
-                <Text style={ms.cardEmoji}>{m.emoji}</Text>
+                <Icon name={m.icon} size="md" color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={ms.cardLabel}>{m.label}</Text>
                 <Text style={ms.cardDesc}>{m.desc}</Text>
               </View>
               <View style={ms.playBtn}>
-                <Ionicons name="play" size={20} color="#fff" />
+                <Icon name="play" size="md" color="#fff" />
               </View>
             </View>
             <View style={ms.cardShine} />
-          </LinearGradient>
+          </View>
         </AnimatedCard>
       ))}
     </ScrollView>
@@ -144,9 +132,6 @@ const ms = StyleSheet.create({
   headerEmoji: { fontSize: 50, marginBottom: 8 },
   title:       { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
   sub:         { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4, marginBottom: 12 },
-  levelPill:   { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
-  levelEmoji:  { fontSize: 18 },
-  levelText:   { fontWeight: 'bold', fontSize: 14 },
   cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   card:        { borderRadius: 20, padding: 20, overflow: 'hidden' },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
@@ -160,9 +145,9 @@ const ms = StyleSheet.create({
 
 // ─── Syllable Game ─────────────────────────────────────────────────────────────
 
-function SyllableGame({ onBack, userId, level, items: rawItems }) {
-  const count = level === 1 ? 6 : level === 2 ? 8 : 10;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
+function SyllableGame({ onBack, userId, items: rawItems }) {
+  const { colors } = useTheme();
+  const [items] = useState(() => shuffleArr(rawItems).slice(0, 6));
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -193,7 +178,7 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
     setTimeout(() => {
       if (idx + 1 >= items.length) {
         setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'syllable', level } });
+        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'syllable' } });
       } else {
         setIdx(i => i + 1);
         setSelected(null);
@@ -206,17 +191,18 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#2196F3" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
-      <LinearGradient colors={['#2196F3', '#1565C0']} style={g.header}>
-        <Text style={g.headerTitle}>Syllable Clapping 👏</Text>
-        <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
-      </LinearGradient>
+    <View style={[g.container, { backgroundColor: colors.surface }]}>
+      <StudentPageHeader
+        title="Clap & Snap"
+        onBack={onBack}
+        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
+      />
       <View style={g.body}>
         <TouchableOpacity onPress={speak} style={g.wordCard}>
           <Animated.Text style={[g.wordEmoji, { transform: [{ scale: bounceAnim }] }]}>{current.emoji}</Animated.Text>
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={18} color="#2196F3" />
+            <Icon name="volume-2" size="md" color="#2196F3" />
             <Text style={[g.speakText, { color: '#2196F3' }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
@@ -239,88 +225,11 @@ function SyllableGame({ onBack, userId, level, items: rawItems }) {
   );
 }
 
-// ─── Rime Game ────────────────────────────────────────────────────────────────
-
-function RimeGame({ onBack, userId, level, items: rawItems }) {
-  const count = level === 1 ? 5 : level === 2 ? 7 : 8;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [feedback, setFeedback] = useState(null);
-  const [score, setScore] = useState(0);
-  const [done, setDone] = useState(false);
-
-  const current = items[idx];
-  const choices = current ? shuffleArr([current.correct, ...current.distractors]) : [];
-
-  const speak = (w) => Speech.speak(w, { rate: 0.65 });
-  useEffect(() => { if (current) speak(current.target); }, [idx]);
-
-  const handleSelect = (choice) => {
-    if (feedback) return;
-    setSelected(choice);
-    const isCorrect = choice === current.correct;
-    setFeedback(isCorrect ? 'correct' : 'wrong');
-    if (isCorrect) {
-      setScore(s => s + 1);
-      Speech.speak('Yes! They rhyme!', { rate: 0.9 });
-    } else {
-      Speech.speak(`${current.target} and ${current.correct} rhyme.`, { rate: 0.8 });
-    }
-    setTimeout(() => {
-      if (idx + 1 >= items.length) {
-        setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'rime', level } });
-      } else {
-        setIdx(i => i + 1);
-        setSelected(null);
-        setFeedback(null);
-      }
-    }, 1200);
-  };
-
-  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#9C27B0" />;
-  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#9C27B0" />;
-
-  return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
-      <LinearGradient colors={['#9C27B0', '#6A1B9A']} style={g.header}>
-        <Text style={g.headerTitle}>Onset-Rime 🎵</Text>
-        <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
-      </LinearGradient>
-      <View style={g.body}>
-        <TouchableOpacity style={g.wordCard} onPress={() => speak(current.target)}>
-          <Text style={{ fontSize: 40 }}>🎧</Text>
-          <Text style={g.wordText}>{current.target}</Text>
-          <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={18} color="#9C27B0" />
-            <Text style={[g.speakText, { color: '#9C27B0' }]}>Tap to hear</Text>
-          </View>
-        </TouchableOpacity>
-        <Text style={g.question}>Which word rhymes with <Text style={{ fontWeight: 'bold' }}>{current.target}</Text>?</Text>
-        <View style={g.choiceCol}>
-          {choices.map(c => (
-            <TouchableOpacity
-              key={c}
-              style={[g.choiceBtn,
-                selected === c && feedback === 'correct' && { backgroundColor: '#4CAF50', borderColor: '#4CAF50' },
-                selected === c && feedback === 'wrong'   && { backgroundColor: '#F44336', borderColor: '#F44336' },
-              ]}
-              onPress={() => { handleSelect(c); speak(c); }}>
-              <Text style={[g.choiceText, selected === c && { color: '#fff' }]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
-
 // ─── Phoneme Game ─────────────────────────────────────────────────────────────
 
-function PhonemeGame({ onBack, userId, level, items: rawItems }) {
-  const count = level === 1 ? 5 : level === 2 ? 6 : 8;
-  const [items] = useState(() => shuffleArr(rawItems).slice(0, count));
+function PhonemeGame({ onBack, userId, items: rawItems }) {
+  const { colors } = useTheme();
+  const [items] = useState(() => shuffleArr(rawItems).slice(0, 5));
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -345,7 +254,7 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
     setTimeout(() => {
       if (idx + 1 >= items.length) {
         setDone(true);
-        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'phoneme', level } });
+        if (userId) logSession({ studentId: userId, activityType: ACTIVITY_TYPE, score: score + (isCorrect ? 1 : 0), total: items.length, details: { subType: 'phoneme' } });
       } else {
         setIdx(i => i + 1);
         setSelected(null);
@@ -358,17 +267,18 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
   if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#E91E63" />;
 
   return (
-    <View style={[g.container, { backgroundColor: '#FAF5F1' }]}>
-      <LinearGradient colors={['#E91E63', '#AD1457']} style={g.header}>
-        <Text style={g.headerTitle}>Phoneme Isolation 🔤</Text>
-        <Text style={g.headerSub}>{idx + 1}/{items.length}  ⭐ {score}</Text>
-      </LinearGradient>
+    <View style={[g.container, { backgroundColor: colors.surface }]}>
+      <StudentPageHeader
+        title="Pick-a-Sound"
+        onBack={onBack}
+        right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
+      />
       <View style={g.body}>
         <TouchableOpacity style={g.wordCard} onPress={() => Speech.speak(current.word, { rate: 0.6 })}>
-          <Text style={{ fontSize: 40 }}>👂</Text>
+          <Icon name="ear" size="xl" color="#E91E63" />
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Ionicons name="volume-high" size={18} color="#E91E63" />
+            <Icon name="volume-2" size="md" color="#E91E63" />
             <Text style={[g.speakText, { color: '#E91E63' }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
@@ -398,8 +308,13 @@ function PhonemeGame({ onBack, userId, level, items: rawItems }) {
 function FinishScreen({ score, total, onBack, color }) {
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   return (
-    <LinearGradient colors={[color, color + 'AA']} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 }}>
-      <Text style={{ fontSize: 64 }}>{pct >= 70 ? '🏆' : pct >= 40 ? '👍' : '💪'}</Text>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30, backgroundColor: color }}>
+      {pct >= 70
+        ? <Icon name="trophy" size={64} color="#fff" />
+        : pct >= 40
+        ? <Icon name="thumbs-up" size={64} color="#fff" />
+        : <Icon name="dumbbell" size={64} color="#fff" />
+      }
       <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#fff', marginTop: 16 }}>
         {score} / {total}
       </Text>
@@ -410,7 +325,7 @@ function FinishScreen({ score, total, onBack, color }) {
       <TouchableOpacity style={{ marginTop: 30, backgroundColor: '#fff', borderRadius: 25, paddingHorizontal: 36, paddingVertical: 14 }} onPress={onBack}>
         <Text style={{ fontWeight: 'bold', color: color, fontSize: 16 }}>Try Another</Text>
       </TouchableOpacity>
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -431,33 +346,27 @@ const g = StyleSheet.create({
   optionRow:  { flexDirection: 'row', gap: 12, flexWrap: 'wrap', justifyContent: 'center' },
   numBtn:     { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 3 },
   numText:    { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
-  choiceCol:  { width: '100%', gap: 12 },
-  choiceBtn:  { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', elevation: 3, borderWidth: 2, borderColor: '#eee' },
-  choiceText: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
 });
 
 // ─── Root Screen ──────────────────────────────────────────────────────────────
 
 export default function PhonologicalAwarenessScreen() {
   const { profile } = useAuth();
-  const { refreshLevel, getLevel } = useAdaptive();
+  const { colors } = useTheme();
   const [mode, setMode] = useState(null);
-  const [contentMap, setContentMap] = useState({ syllable: [], rime: [], phoneme: [] });
+  const [contentMap, setContentMap] = useState({ syllable: [], phoneme: [] });
   const [contentLoading, setContentLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setContentLoading(true);
-      await refreshLevel(ACTIVITY_TYPE);
-      const lvl = getLevel(ACTIVITY_TYPE) || 1;
-      const [syllable, rime, phoneme] = await Promise.all([
-        fetchContent('syllable', lvl),
-        fetchContent('rime',     lvl),
-        fetchContent('phoneme',  lvl),
+      const [syllable, phoneme] = await Promise.all([
+        fetchContent('syllable'),
+        fetchContent('phoneme'),
       ]);
       if (!cancelled) {
-        setContentMap({ syllable, rime, phoneme });
+        setContentMap({ syllable, phoneme });
         setContentLoading(false);
       }
     };
@@ -465,27 +374,39 @@ export default function PhonologicalAwarenessScreen() {
     return () => { cancelled = true; };
   }, []);
 
-  const level = getLevel(ACTIVITY_TYPE);
   const handleBack = () => setMode(null);
 
   if (contentLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1', justifyContent: 'center', alignItems: 'center' }}>
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#6A1B9A" />
         <Text style={{ marginTop: 12, color: '#78909C' }}>Loading activities…</Text>
-      </SafeAreaView>
+      </ScreenWrapper>
     );
   }
 
-  if (mode === 'syllable') return <SyllableGame onBack={handleBack} userId={profile?.id} level={level} items={contentMap.syllable} />;
-  if (mode === 'rime')     return <RimeGame     onBack={handleBack} userId={profile?.id} level={level} items={contentMap.rime} />;
-  if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} level={level} items={contentMap.phoneme} />;
+  if (mode === 'syllable') return <SyllableGame onBack={handleBack} userId={profile?.id} items={contentMap.syllable} />;
+  if (mode === 'phoneme')  return <PhonemeGame  onBack={handleBack} userId={profile?.id} items={contentMap.phoneme} />;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF5F1' }}>
-      <StatusBar barStyle="dark-content" />
-      <GoBackBtn />
-      <ModeSelector onSelect={setMode} level={level} />
-    </SafeAreaView>
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+      <StudentPageHeader title="Sound Games" />
+      <StudentCard variant="tinted" style={paRoot.hintCard}>
+        <View style={paRoot.hintRow}>
+          <Icon name="info" size="md" color={c.primary} />
+          <Text style={paRoot.hintText}>
+            <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+            Pick a game! Clap & Snap counts word parts, Pick-a-Sound identifies sounds.
+          </Text>
+        </View>
+      </StudentCard>
+      <ModeSelector onSelect={setMode} />
+    </ScreenWrapper>
   );
 }
+
+const paRoot = StyleSheet.create({
+  hintCard: { margin: 16, marginBottom: 4 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+});

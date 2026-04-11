@@ -1,16 +1,22 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 import { showAlert } from '../../lib/uiAlert';
 
 export default function TextToSpeechScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [text, setText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const startTimeRef = useRef(null);
@@ -154,68 +160,84 @@ export default function TextToSpeechScreen() {
   };
 
   return (
-    <View style={styles.container}>
-       <View style={styles.topRow}>
-          <GoBackBtn />
-          <Text style={styles.header}>Text-to-Speech</Text>
-          <View style={{ width: 24 }} />
-      </View>
+    <ScreenWrapper role="student" style={{ backgroundColor: colors.surface }} padded={false}>
+      <View style={styles.content}>
+        <StudentPageHeader title="Text-to-Speech" />
 
-      <View style={styles.textBox}>
-        <TextInput 
-          multiline 
-          placeholder="Type something here..." 
-          style={styles.input} 
-          value={text} 
-          onChangeText={(t) => { setText(t); if (!isSpeaking) setActiveWordIndex(-1); }}
-          nativeID="tts-input"
-          textAlignVertical="top"
-        />
-      </View>
+        <StudentCard variant="tinted" style={styles.hintCard}>
+          <View style={styles.hintRow}>
+            <Icon name="info" size="md" color={c.primary} />
+            <Text style={styles.hintText}>
+              <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
+              Type or paste text, then tap Play to hear it. Each word lights up as it's spoken!
+            </Text>
+          </View>
+        </StudentCard>
 
-      {/* Read-along preview (highlighted as it speaks) */}
-      {text.trim().length > 0 && (
-        <View style={styles.previewBox}>
-          <Text style={styles.previewLabel}>Read-along Preview</Text>
-          <Text style={styles.previewText}>
-            {tokenize(text).tokens.map((t, i) => {
-              if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
-              const isActive = isSpeaking && t.wordIndex === activeWordIndex;
-              return (
-                <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
-                  {t.text}
-                </Text>
-              );
-            })}
-          </Text>
-        </View>
-      )}
+        <StudentCard style={styles.textBox}>
+          <TextInput
+            multiline
+            placeholder="Type something here..."
+            style={styles.input}
+            value={text}
+            onChangeText={(t) => { setText(t); if (!isSpeaking) setActiveWordIndex(-1); }}
+            nativeID="tts-input"
+            textAlignVertical="top"
+          />
+        </StudentCard>
 
-      <View style={styles.controls}>
+        {/* Read-along preview (highlighted as it speaks) */}
+        {text.trim().length > 0 && (
+          <View style={styles.previewBox}>
+            <Text style={styles.previewLabel}>Read-along Preview</Text>
+            <ScrollView style={styles.previewScroll} showsVerticalScrollIndicator={true}>
+              <Text style={styles.previewText}>
+                {tokenize(text).tokens.map((t, i) => {
+                  if (!t.isWord) return <Text key={`pws-${i}`}>{t.text}</Text>;
+                  const isActive = isSpeaking && t.wordIndex === activeWordIndex;
+                  return (
+                    <Text key={`pw-${i}`} style={isActive ? styles.activeWord : null}>
+                      {t.text}
+                    </Text>
+                  );
+                })}
+              </Text>
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={styles.controls}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleUpload}>
-              <Ionicons name="document-attach-outline" size={24} color="#333" />
+            <Icon name="paperclip" size="md" color={c.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.playBtn, isSpeaking && styles.stopBtn]} onPress={speak}>
-              <Ionicons name={isSpeaking ? "stop" : "play"} size={32} color="#fff" />
+          <TouchableOpacity
+            style={[styles.playBtn, isSpeaking && styles.stopBtn]}
+            onPress={speak}
+            activeOpacity={0.85}
+          >
+            <Icon name={isSpeaking ? 'square' : 'play'} size="lg" color="#fff" />
           </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 20, paddingTop: 50 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  header: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  textBox: { flex: 1, backgroundColor: '#FFF9C4', borderRadius: 15, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: '#ddd' },
-  input: { flex: 1, fontSize: 18, color: '#333', lineHeight: 28, textAlignVertical: 'top' },
-  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 15, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16 },
-  previewLabel: { fontSize: 12, fontWeight: 'bold', color: '#78909C', marginBottom: 6, textTransform: 'uppercase' },
-  previewText: { fontSize: 16, color: '#333', lineHeight: 24 },
+  content: { flex: 1, padding: 20, paddingTop: 16 },
+  hintCard: { marginBottom: 14 },
+  hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  textBox: { flex: 1, marginBottom: 16, padding: 16 },
+  input: { flex: 1, fontSize: 18, color: c.text, lineHeight: 28, minHeight: 120 },
+  previewBox: { backgroundColor: '#F5F7FA', borderRadius: 20, padding: 14, borderWidth: 1, borderColor: '#E0E0E0', marginBottom: 16, maxHeight: 120 },
+  previewLabel: { fontSize: 12, fontWeight: '700', color: c.textMuted, marginBottom: 6, textTransform: 'uppercase' },
+  previewScroll: { maxHeight: 80 },
+  previewText: { fontSize: 16, color: c.text, lineHeight: 24 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
-  controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 20 },
-  actionBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#FFE082', justifyContent: 'center', alignItems: 'center' },
-  playBtn: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#01579B', justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  stopBtn: { backgroundColor: '#C62828' },
+  controls: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginBottom: 100 },
+  actionBtn: { width: 60, height: 60, borderRadius: 18, backgroundColor: c.primaryLight, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: c.primary },
+  playBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: c.primaryDark, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:6, borderBottomWidth: 4, borderBottomColor: c.primaryDark },
+  stopBtn: { backgroundColor: '#C62828', borderBottomColor: '#8B0000' },
 });

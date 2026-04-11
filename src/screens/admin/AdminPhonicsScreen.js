@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminPhonicsScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [label, setLabel] = useState('');
-  const [icon, setIcon] = useState('🔤');
+  const [icon, setIcon] = useState('mic');
   const [bgColor, setBgColor] = useState('#4FC3F7');
   const [editingId, setEditingId] = useState(null);
 
@@ -21,7 +25,7 @@ export default function AdminPhonicsScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_items')
+      .from(TABLES.PHONICS_ITEMS)
       .select('*')
       .order('label');
 
@@ -32,7 +36,7 @@ export default function AdminPhonicsScreen() {
 
   const resetForm = () => {
     setLabel('');
-    setIcon('🔤');
+    setIcon('mic');
     setBgColor('#4FC3F7');
     setEditingId(null);
   };
@@ -43,7 +47,7 @@ export default function AdminPhonicsScreen() {
 
     if (editingId) {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .update({ label: label.trim(), icon, bg_color: bgColor })
         .eq('id', editingId);
 
@@ -51,7 +55,7 @@ export default function AdminPhonicsScreen() {
       Alert.alert('Success', 'Item updated.');
     } else {
       const { error } = await supabase
-        .from('phonics_items')
+        .from(TABLES.PHONICS_ITEMS)
         .insert([{ label: label.trim(), icon, bg_color: bgColor, created_by: profile.id }]);
 
       if (error) return Alert.alert('Error', error.message);
@@ -64,7 +68,7 @@ export default function AdminPhonicsScreen() {
 
   const handleEdit = (item) => {
     setLabel(item.label || '');
-    setIcon(item.icon || '🔤');
+    setIcon(item.icon || 'mic');
     setBgColor(item.bg_color || '#4FC3F7');
     setEditingId(item.id);
   };
@@ -74,7 +78,7 @@ export default function AdminPhonicsScreen() {
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
           const { error } = await supabase
-            .from('phonics_items')
+            .from(TABLES.PHONICS_ITEMS)
             .delete()
             .eq('id', id);
 
@@ -86,7 +90,7 @@ export default function AdminPhonicsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <View style={styles.headerRow}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Phonics Manager</Text>
@@ -102,7 +106,7 @@ export default function AdminPhonicsScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Icon (emoji)"
+          placeholder="Icon (Lucide name)"
           value={icon}
           onChangeText={setIcon}
         />
@@ -135,7 +139,7 @@ export default function AdminPhonicsScreen() {
           renderItem={({ item }) => (
             <View style={styles.itemRow}>
               <View style={styles.itemInfo}>
-                <Text style={styles.itemIcon}>{item.icon || '🔤'}</Text>
+                <Icon name={item.icon || 'mic'} size="md" color="#455A64" />
                 <View>
                   <Text style={styles.itemLabel}>{item.label}</Text>
                   <Text style={styles.itemMeta}>{item.bg_color}</Text>
@@ -143,10 +147,10 @@ export default function AdminPhonicsScreen() {
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#0288D1" />
+                  <Icon name="pencil" size="md" color="#0288D1" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
+                  <Icon name="trash" size="md" color="#E53935" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -154,12 +158,12 @@ export default function AdminPhonicsScreen() {
           ListEmptyComponent={<Text style={styles.emptyText}>No phonics items yet.</Text>}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 50, backgroundColor: '#F5F5F5' },
+  container: { flex: 1, padding: 20, paddingTop: 50 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#333', marginLeft: 15 },
 

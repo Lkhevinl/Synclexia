@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, ScrollView, Platform, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import StudentBadge from './student/StudentBadge';
+import StudentIconBadge from './student/StudentIconBadge';
+import c from './student/candyTokens';
 
 const FONT_STYLES = [
   { label: 'System',         value: 'System'        },
@@ -74,13 +77,13 @@ export default function Sidebar({ visible, onClose }) {
               {profile?.banner_url ? (
                 <Image source={{ uri: profile.banner_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : (
-                <LinearGradient colors={['#546E7A', '#37474F']} style={StyleSheet.absoluteFill} />
+                <LinearGradient colors={['#E8927C', '#C87456']} style={StyleSheet.absoluteFill} />
               )}
               {/* Dark overlay for readability over any background */}
               <View style={s.headerOverlay} />
 
               <TouchableOpacity onPress={onClose} style={s.closeBtn}>
-                <Ionicons name="close" size={24} color="#fff" />
+                <Icon name="close" size="lg" color="#fff" />
               </TouchableOpacity>
               {profile?.avatar_url ? (
                 <Image source={{ uri: profile.avatar_url }} style={s.avatarImg} />
@@ -89,8 +92,9 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.avatarText}>{profile?.full_name?.charAt(0).toUpperCase() || 'U'}</Text>
                 </View>
               )}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Text style={s.name}>{profile?.full_name || 'User'}</Text>
+                {isStudent && <StudentBadge variant="level">Student</StudentBadge>}
               </View>
               <Text style={s.email}>{profile?.email}</Text>
 
@@ -98,7 +102,7 @@ export default function Sidebar({ visible, onClose }) {
               {isStudent && profile?.unique_code && (
                 <View style={s.parentLinkSection}>
                   <View style={s.parentLinkHeader}>
-                    <Ionicons name="people" size={14} color="rgba(255,255,255,0.9)" />
+                    <Icon name="people" size="sm" color="rgba(255,255,255,0.9)" />
                     <Text style={s.parentLinkLabel}>Parent Link Code</Text>
                   </View>
                   <Text style={s.parentLinkCode}>{profile.unique_code}</Text>
@@ -108,21 +112,28 @@ export default function Sidebar({ visible, onClose }) {
 
             <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
+              {/* STUDENT QUICK NAV */}
+              {isStudent && (
+                <>
+                  {/* MY LEARNING section removed - AI Insights moved to parent dashboard */}
+                </>
+              )}
+
               {/* ACCOUNT */}
               {!isStudent && (
                 <>
                   <Text style={s.groupLabel}>ACCOUNT</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('Profile')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Ionicons name="create-outline" size={18} color="#0288D1" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#0288D118' }]}><Icon name="edit" size="sm" color="#0288D1" /></View>
                       <Text style={s.rowLabel}>Edit Profile</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('ChangePassword')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="lock-closed-outline" size={18} color="#7B1FA2" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Icon name="lock" size="sm" color="#7B1FA2" /></View>
                       <Text style={s.rowLabel}>Change Password</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -157,12 +168,12 @@ export default function Sidebar({ visible, onClose }) {
 
                 {/* Font Style */}
                 <TouchableOpacity style={s.row} onPress={() => setFontModalVisible(true)}>
-                  <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Ionicons name="text" size={18} color="#7B1FA2" /></View>
+                  <View style={[s.iconWrap, { backgroundColor: '#7B1FA218' }]}><Icon name="text" size="sm" color="#7B1FA2" /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.rowLabel}>Font Style</Text>
                     <Text style={s.rowDesc}>{currentFont.label}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                  <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                 </TouchableOpacity>
 
                 <View style={s.divider} />
@@ -186,40 +197,21 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               </View>
 
-              {/* AI INSIGHTS - For students */}
-              {isStudent && (
-                <>
-                  <Text style={s.groupLabel}>LEARNING AI</Text>
-                  <View style={s.card}>
-                    <TouchableOpacity style={s.row} onPress={() => navigate('AIInsights')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#667eea18' }]}>
-                        <Text style={{ fontSize: 16 }}>🧠</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.rowLabel}>AI Learning Insights</Text>
-                        <Text style={s.rowDesc}>Strengths, weaknesses & custom path</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-
               {/* SYSTEM MAINTENANCE - Admin only */}
               {isAdmin && (
                 <>
                   <Text style={s.groupLabel}>SYSTEM MAINTENANCE</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('MaintenanceLogs')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#607D8B18' }]}><Ionicons name="list-outline" size={18} color="#607D8B" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#607D8B18' }]}><Icon name="list" size="sm" color="#607D8B" /></View>
                       <Text style={s.rowLabel}>View Maintenance Logs</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('AddMaintenanceLog')}>
-                      <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Ionicons name="add-circle-outline" size={18} color="#4CAF50" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#4CAF5018' }]}><Icon name="plus-circle" size="sm" color="#4CAF50" /></View>
                       <Text style={s.rowLabel}>Add Maintenance Log</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -231,15 +223,15 @@ export default function Sidebar({ visible, onClose }) {
                   <Text style={s.groupLabel}>SUPPORT</Text>
                   <View style={s.card}>
                     <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'About' })}>
-                      <View style={[s.iconWrap, { backgroundColor: '#1976D218' }]}><Ionicons name="information-circle-outline" size={18} color="#1976D2" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#1976D218' }]}><Icon name="info" size="sm" color="#1976D2" /></View>
                       <Text style={s.rowLabel}>About</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'Rate' })}>
-                      <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Ionicons name="chatbubble-ellipses-outline" size={18} color="#2E7D32" /></View>
+                      <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Icon name="message-square-dashed" size="sm" color="#2E7D32" /></View>
                       <Text style={s.rowLabel}>Send Feedback to Admin</Text>
-                      <Ionicons name="chevron-forward" size={17} color="#D0D9E0" />
+                      <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>
                 </>
@@ -262,7 +254,7 @@ export default function Sidebar({ visible, onClose }) {
                 </View>
               ) : (
                 <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-                  <Ionicons name="exit-outline" size={20} color="#EF5350" />
+                  <Icon name="log-out" size="md" color="#EF5350" />
                   <Text style={s.logoutText}>Log Out</Text>
                 </TouchableOpacity>
               )}
@@ -290,12 +282,12 @@ export default function Sidebar({ visible, onClose }) {
               >
                 <Text style={[
                   s.fontOptionText,
-                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : (f.value !== 'System' ? f.value : undefined) },
+                  { fontFamily: resolveFontFamily ? resolveFontFamily(f.value) : undefined },
                   theme.fontStyle === f.value && s.fontOptionTextActive,
                 ]}>
                   {f.label}
                 </Text>
-                {theme.fontStyle === f.value && <Ionicons name="checkmark-circle" size={20} color="#546E7A" />}
+                {theme.fontStyle === f.value && <Icon name="check-circle" size="md" color="#546E7A" />}
               </TouchableOpacity>
             ))}
           </View>
@@ -307,7 +299,7 @@ export default function Sidebar({ visible, onClose }) {
 
 const s = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row-reverse' },
-  drawer: { width: '85%', backgroundColor: '#F0F2F5', elevation: 10 },
+  drawer: { width: '85%', backgroundColor: '#FAF5F1', elevation: 10 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, overflow: 'hidden' },
@@ -378,17 +370,17 @@ const s = StyleSheet.create({
   // Chips
   chipRow: { flexDirection: 'row', gap: 6 },
   chipBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: '#E8ECF0', alignItems: 'center', backgroundColor: '#F8F9FB' },
-  chipBtnActive: { borderColor: '#546E7A', backgroundColor: '#ECEFF1' },
+  chipBtnActive: { borderColor: '#E8927C', backgroundColor: '#FFF0E8' },
   chipText: { fontSize: 12, fontWeight: '600', color: '#B0BEC5' },
-  chipTextActive: { color: '#37474F' },
+  chipTextActive: { color: '#E8927C' },
 
   // Color overlay
   overlayRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   overlayBtn: { alignItems: 'center', paddingHorizontal: 7, paddingVertical: 7, borderRadius: 10, borderWidth: 1.5, borderColor: '#E8ECF0', backgroundColor: '#F8F9FB', minWidth: 48 },
-  overlayBtnActive: { borderColor: '#546E7A', backgroundColor: '#ECEFF1' },
+  overlayBtnActive: { borderColor: '#E8927C', backgroundColor: '#FFF0E8' },
   overlayEmoji: { fontSize: 18, marginBottom: 2 },
   overlayLabel: { fontSize: 9, color: '#90A4AE', fontWeight: '600' },
-  overlayLabelActive: { color: '#37474F' },
+  overlayLabelActive: { color: '#E8927C' },
 
   // Logout
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 14, marginBottom: 10, borderWidth: 1.5, borderColor: '#FFCDD2' },
@@ -409,7 +401,7 @@ const s = StyleSheet.create({
   fontHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', alignSelf: 'center', marginBottom: 20 },
   fontTitle: { fontSize: 17, fontWeight: '700', color: '#263238', textAlign: 'center', marginBottom: 14 },
   fontOption: { paddingVertical: 14, paddingHorizontal: 14, borderRadius: 12, marginBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fontOptionActive: { backgroundColor: '#ECEFF1' },
-  fontOptionText: { fontSize: 15, color: '#546E7A' },
-  fontOptionTextActive: { fontWeight: '700', color: '#263238' },
+  fontOptionActive: { backgroundColor: '#FFF0E8' },
+  fontOptionText: { fontSize: 15, color: '#E8927C' },
+  fontOptionTextActive: { fontWeight: '700', color: '#C87456' },
 });

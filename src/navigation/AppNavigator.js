@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, DeviceEventEmitter } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../components/icons/Icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import { STORAGE_KEYS, TIMEOUTS } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
+import c from '../components/student/candyTokens';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
 
@@ -19,20 +21,18 @@ import PhonicsScreen from '../screens/students/PhonicsScreen';
 import WritingScreen from '../screens/students/WritingScreen';
 import ReadingScreen from '../screens/students/ReadingScreen';
 import ScanScreen from '../screens/students/ScanScreen';
-import QuestsScreen from '../screens/students/QuestScreen';
-import LeaderboardScreen from '../screens/students/LeaderboardScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import PhonicsActivityScreen from '../screens/students/PhonicsActivityScreen';
+import LetterDetailScreen from '../screens/students/LetterDetailScreen';
 import SpellingScreen from '../screens/students/SpellingScreen';
 import PhonologicalAwarenessScreen from '../screens/students/PhonologicalAwarenessScreen';
 import AIInsightsScreen from '../screens/students/AIInsightsScreen';
-
-const ONBOARDING_KEY = '@synclexia_onboarding_complete';
 import SpeechToTextScreen from '../screens/students/SpeechToTextScreen';
 import TextToSpeechScreen from '../screens/students/TextToSpeechScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import UpdatePasswordScreen from '../screens/UpdatePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
@@ -68,31 +68,36 @@ import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_COMPLETE;
+
 // React Navigation v6 wraps the tab bar in a SafeAreaView that already
 // adds insets.bottom as padding. Do NOT add insets.bottom here too or it
 // doubles the bottom gap and pushes labels off-screen on iPhone.
 const TAB_BAR_STYLE = {
   position: 'absolute',
-  backgroundColor: '#F5EDE6',
-  height: 64,
+  backgroundColor: '#FFF4F0',
+  height: 68,
   borderRadius: 50,
-  marginHorizontal: 20,
+  marginHorizontal: 16,
   marginBottom: 20,
   paddingTop: 10,
   paddingBottom: 10,
   paddingLeft: 10,
-  paddingRight: 20,
+  paddingRight: 10,
   borderTopWidth: 0,
   overflow: 'hidden',
-  elevation: 12,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.12,
-  shadowRadius: 20,
+  elevation: 14,
+  shadowColor: c.primaryDark,
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.18,
+  shadowRadius: 24,
+  borderWidth: 2,
+  borderColor: c.primary + '20',
 };
 
 function StudentTabs() {
   return (
+    <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -109,15 +114,23 @@ function StudentTabs() {
 
           return (
             <View style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: focused ? '#E8735A' : 'transparent',
+              width: 46,
+              height: 46,
+              borderRadius: 23,
+              backgroundColor: focused ? c.primary : 'transparent',
               justifyContent: 'center',
               alignItems: 'center',
               flexShrink: 0,
+              borderWidth: focused ? 2.5 : 0,
+              borderColor: focused ? c.primaryDark : 'transparent',
+              borderBottomWidth: focused ? 4 : 0,
+              elevation: focused ? 4 : 0,
+              shadowColor: focused ? c.primaryDark : 'transparent',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
             }}>
-              <Ionicons name={iconName} size={20} color={focused ? '#fff' : '#bbb'} />
+              <Icon name={iconName} size="lg" color={focused ? '#fff' : c.textMuted} />
             </View>
           );
         },
@@ -138,12 +151,13 @@ function StudentTabs() {
               onPress={() => DeviceEventEmitter.emit('openSidebar')}
               activeOpacity={0.7}
             >
-              <Ionicons name="menu-outline" size={20} color="#bbb" />
+              <Icon name="menu" size="lg" color="#bbb" />
             </TouchableOpacity>
           ),
         }}
       />
     </Tab.Navigator>
+    </View>
   );
 }
 
@@ -167,11 +181,11 @@ function AppScreens() {
   const { profile, profileLoaded, profileError, retryFetchProfile, signOut, session } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
-  // Safety-net: if profileLoaded never fires (e.g. Supabase hangs after the
-  // 8s fetchProfile timeout), stop showing the loading screen after 10s.
+  // Safety-net: fetchProfile can take up to ~36s (12s timeout + 3x2s retries).
+  // Only show the error screen if it still hasn't resolved after 45s.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
-    const t = setTimeout(() => setTimedOut(true), 10000);
+    const t = setTimeout(() => setTimedOut(true), TIMEOUTS.PROFILE_SAFETY_NET_MS);
     return () => clearTimeout(t);
   }, [profileLoaded]);
 
@@ -186,7 +200,7 @@ function AppScreens() {
   if ((profileError || timedOut) && !profile) {
     return (
       <View style={navStyles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color="#E53935" />
+        <Icon name="alert-circle" size="xl" color="#E53935" />
         <Text style={navStyles.errorTitle}>Couldn't Load Your Profile</Text>
         <Text style={navStyles.errorMsg}>
           {timedOut
@@ -218,18 +232,17 @@ function AppScreens() {
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>
       {/* User App */}
       <Stack.Screen name="Home" component={HomeComponent} />
-      <Stack.Screen name="Phonics" component={PhonicsScreen} />
-      <Stack.Screen name="Writing" component={WritingScreen} />
-      <Stack.Screen name="Reading" component={ReadingScreen} />
-      <Stack.Screen name="Scan" component={ScanScreen} />
-      <Stack.Screen name="Quests" component={QuestsScreen} />
-      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
-      <Stack.Screen name="Support" component={SupportScreen} />
-      <Stack.Screen name="About" component={AboutScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="PhonicsActivity" component={PhonicsActivityScreen} />
-      <Stack.Screen name="Spelling" component={SpellingScreen} />
-      <Stack.Screen name="PhonologicalAwareness" component={PhonologicalAwarenessScreen} />
+      <Stack.Screen name="Phonics"                 component={PhonicsScreen} />
+      <Stack.Screen name="Writing"                 component={WritingScreen} />
+      <Stack.Screen name="Reading"                 component={ReadingScreen} />
+      <Stack.Screen name="Scan"                    component={ScanScreen} />
+      <Stack.Screen name="Support"                 component={SupportScreen} />
+      <Stack.Screen name="About"                   component={AboutScreen} />
+      <Stack.Screen name="Settings"                component={SettingsScreen} />
+      <Stack.Screen name="PhonicsActivity"         component={PhonicsActivityScreen} />
+      <Stack.Screen name="LetterDetail"             component={LetterDetailScreen} />
+      <Stack.Screen name="Spelling"                component={SpellingScreen} />
+      <Stack.Screen name="PhonologicalAwareness"   component={PhonologicalAwarenessScreen} />
       <Stack.Screen name="AIInsights" component={AIInsightsScreen} />
       <Stack.Screen name="SpeechToText" component={SpeechToTextScreen} />
       <Stack.Screen name="TextToSpeech" component={TextToSpeechScreen} />
@@ -293,7 +306,7 @@ const navStyles = StyleSheet.create({
 });
 
 export default function RootNavigator() {
-  const { session, loading } = useAuth();
+  const { session, loading, recoveryMode } = useAuth();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -313,6 +326,14 @@ export default function RootNavigator() {
   };
 
   if (loading || checkingOnboarding) return <LoadingScreen />;
+
+  if (recoveryMode) {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
+      </Stack.Navigator>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, detachPreviousScreen: true }}>

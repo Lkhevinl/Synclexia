@@ -4,46 +4,53 @@
 // for a student and returns structured insights with recommendations.
 
 import { supabase } from './supabase';
+import { ANALYSIS, TABLES } from './constants';
+
+const STRENGTH_THRESHOLD      = ANALYSIS.STRENGTH_THRESHOLD;
+const WEAKNESS_THRESHOLD      = ANALYSIS.WEAKNESS_THRESHOLD;
+const TREND_DELTA             = ANALYSIS.TREND_DELTA;
+const LEARNING_PATH_MAX_ITEMS = ANALYSIS.LEARNING_PATH_MAX_ITEMS;
+const RECENT_SESSIONS_SLICE   = ANALYSIS.RECENT_SESSIONS_SLICE;
 
 export const ACTIVITY_META = {
   phonics: {
     label: 'Phonics',
-    icon: '🗣️',
+    icon: 'mic',
     color: '#7C4DFF',
     route: 'Phonics',
     tip: 'Practice letter sounds daily — even 5 minutes helps!',
   },
   spelling: {
     label: 'Spelling',
-    icon: '🔤',
+    icon: 'type',
     color: '#FF9800',
     route: 'Spelling',
     tip: 'Say words out loud while spelling — it builds memory!',
   },
   reading: {
     label: 'Reading',
-    icon: '📖',
+    icon: 'book-open',
     color: '#E91E63',
     route: 'Reading',
     tip: 'Read one short story per day to build fluency.',
   },
   writing: {
     label: 'Writing',
-    icon: '✍️',
+    icon: 'pencil',
     color: '#00BFA5',
     route: 'Writing',
     tip: 'Trace letters slowly and carefully for best results.',
   },
   phonological_awareness: {
     label: 'Sound Awareness',
-    icon: '🎧',
+    icon: 'headphones',
     color: '#E91E63',
     route: 'PhonologicalAwareness',
     tip: 'Clapping syllables is a great warm-up exercise!',
   },
   text_recognition: {
     label: 'Magic Scanner',
-    icon: '🔍',
+    icon: 'scan-line',
     color: '#0288D1',
     route: 'Scan',
     tip: 'Scan books or worksheets to practice reading real text!',
@@ -51,9 +58,6 @@ export const ACTIVITY_META = {
 };
 
 const ALL_ACTIVITIES = Object.keys(ACTIVITY_META);
-
-const STRENGTH_THRESHOLD = 75;  // >= 75% accuracy = strength
-const WEAKNESS_THRESHOLD = 50;  // <  50% accuracy = weakness
 
 /**
  * Analyse a student's session history and return a structured learning profile.
@@ -72,13 +76,13 @@ export async function analyzeStudentProfile(studentId, days = 60) {
   // ── Fetch data in parallel ────────────────────────────────────────────────
   const [sessionsResult, adaptiveResult] = await Promise.all([
     supabase
-      .from('session_logs')
+      .from(TABLES.SESSION_LOGS)
       .select('activity_type, score, total, accuracy, created_at')
       .eq('student_id', studentId)
       .gte('created_at', sinceISO)
       .order('created_at', { ascending: false }),
     supabase
-      .from('adaptive_state')
+      .from(TABLES.ADAPTIVE_STATE)
       .select('activity_type, current_level, attempts, correct_streak')
       .eq('student_id', studentId),
   ]);
@@ -191,7 +195,7 @@ function _computeMetrics(activity, sessions, adaptive) {
   const avgAccuracy = Math.round(accuracies.reduce((a, b) => a + b, 0) / accuracies.length);
 
   // Recent accuracy: last 5 sessions
-  const recentSlice = accuracies.slice(0, Math.min(5, accuracies.length));
+  const recentSlice = accuracies.slice(0, Math.min(RECENT_SESSIONS_SLICE, accuracies.length));
   const recentAccuracy = Math.round(recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length);
 
   // Trend: compare first half vs second half (oldest → newest in array is reversed)
@@ -202,8 +206,8 @@ function _computeMetrics(activity, sessions, adaptive) {
     const newer = accuracies.slice(0, half);
     const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
     const newerAvg = newer.reduce((a, b) => a + b, 0) / newer.length;
-    if (newerAvg - olderAvg >= 8) trend = 'improving';
-    else if (olderAvg - newerAvg >= 8) trend = 'declining';
+    if (newerAvg - olderAvg >= TREND_DELTA) trend = 'improving';
+    else if (olderAvg - newerAvg >= TREND_DELTA) trend = 'declining';
   }
 
   const lastSession = sessions[0];
@@ -311,7 +315,7 @@ function _buildLearningPath(weaknesses, notPracticed, averages, adaptiveLevels) 
     });
   });
 
-  return path.slice(0, 4); // top 4 priorities
+  return path.slice(0, LEARNING_PATH_MAX_ITEMS);
 }
 
 /**
@@ -331,7 +335,7 @@ export async function applyLearningPath(studentId, learningPath) {
   for (const item of learningPath) {
     if (item.suggestedLevel === item.currentLevel) continue; // already correct
     try {
-      await supabase.from('adaptive_state').upsert(
+      await supabase.from(TABLES.ADAPTIVE_STATE).upsert(
         {
           student_id: studentId,
           activity_type: item.activity,

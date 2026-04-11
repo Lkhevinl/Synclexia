@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, TextInput,
+  View, StyleSheet, TouchableOpacity, TextInput,
   Alert, ScrollView, ActivityIndicator, Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
-import GoBackBtn from '../components/GoBackBtn';
+import AppHeader from '../components/AppHeader';
+import ScreenWrapper from '../components/ScreenWrapper';
+import AppText from '../components/AppText';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import tokens from '../theme/tokens';
+import { getPasswordStrength, AUTH } from '../lib/constants';
 
 const showAlert = (title, message, onOk) => {
   if (Platform.OS === 'web') {
@@ -18,23 +22,24 @@ const showAlert = (title, message, onOk) => {
   }
 };
 
-const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder }) => (
+const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder, colors }) => (
   <View style={styles.fieldGroup}>
-    <Text style={styles.fieldLabel}>{label}</Text>
-    <View style={styles.inputBox}>
-      <Ionicons name="lock-closed-outline" size={18} color="#90A4AE" />
+    <AppText variant="label" style={[styles.fieldLabel, { color: colors.onSurfaceMuted }]}>{label}</AppText>
+    <View style={[styles.inputBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+      <Icon name="lock" size="md" color={colors.onSurfaceMuted} />
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: colors.onSurface }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={colors.onSurfaceMuted}
         secureTextEntry={!show}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="next"
       />
       <TouchableOpacity onPress={onToggle} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color="#90A4AE" />
+        <Icon name={show ? 'eye-off' : 'eye'} size="sm" color={colors.onSurfaceMuted} />
       </TouchableOpacity>
     </View>
   </View>
@@ -42,13 +47,14 @@ const PasswordField = ({ label, value, onChangeText, show, onToggle, placeholder
 
 export default function ChangePasswordScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const isStudent = profile?.role === 'student';
 
-  const [newPass, setNewPass]       = useState('');
-  const [confirm, setConfirm]       = useState('');
-  const [showNew, setShowNew]       = useState(false);
+  const [newPass, setNewPass]         = useState('');
+  const [confirm, setConfirm]         = useState('');
+  const [showNew, setShowNew]         = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading]       = useState(false);
+  const [loading, setLoading]         = useState(false);
 
   React.useEffect(() => {
     if (!isStudent) return;
@@ -62,30 +68,13 @@ export default function ChangePasswordScreen({ navigation }) {
     );
   }, [isStudent, navigation]);
 
-  const passwordStrength = (pw) => {
-    if (pw.length === 0) return null;
-    if (pw.length < 6)  return { label: 'Too short',  color: '#F44336', width: '20%' };
-    if (pw.length < 8)  return { label: 'Weak',       color: '#FF9800', width: '40%' };
-    if (pw.length < 12) return { label: 'Good',       color: '#FFC107', width: '65%' };
-    return                       { label: 'Strong',    color: '#4CAF50', width: '100%' };
-  };
-
-  const strength = passwordStrength(newPass);
+  const strength = getPasswordStrength(newPass);
 
   const handleChange = async () => {
     if (isStudent) return;
-    if (!newPass || !confirm) {
-      Alert.alert('Missing Fields', 'Please fill in both password fields.');
-      return;
-    }
-    if (newPass.length < 6) {
-      Alert.alert('Too Short', 'Password must be at least 6 characters.');
-      return;
-    }
-    if (newPass !== confirm) {
-      Alert.alert('Mismatch', 'The new passwords do not match. Please try again.');
-      return;
-    }
+    if (!newPass || !confirm) { Alert.alert('Missing Fields', 'Please fill in both password fields.'); return; }
+    if (newPass.length < AUTH.PASSWORD_MIN_LENGTH)  { Alert.alert('Too Short', `Password must be at least ${AUTH.PASSWORD_MIN_LENGTH} characters.`); return; }
+    if (newPass !== confirm)  { Alert.alert('Mismatch', 'The new passwords do not match. Please try again.'); return; }
 
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: newPass });
@@ -101,26 +90,22 @@ export default function ChangePasswordScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#0288D1', '#01579B']} style={styles.header}>
-        <GoBackBtn />
-        <Text style={styles.headerTitle}>Change Password</Text>
-        <View style={{ width: 36 }} />
-      </LinearGradient>
-
+    <ScreenWrapper padded={false} edges={['left', 'right', 'bottom']}>
+      <AppHeader title="Change Password" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+
         {/* Banner */}
-        <View style={styles.banner}>
-          <View style={styles.bannerIcon}>
-            <Ionicons name="shield-checkmark" size={40} color="#0288D1" />
+        <View style={[styles.banner, { backgroundColor: colors.primaryLight }]}>
+          <View style={[styles.bannerIcon, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
+            <Icon name="shield-check" size="lg" color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Secure Your Account</Text>
-            <Text style={styles.bannerSub}>Use a strong password with at least 8 characters.</Text>
+            <AppText variant="body" style={{ fontWeight: 'bold', color: colors.primary }}>Secure Your Account</AppText>
+            <AppText variant="caption" style={{ color: colors.onSurfaceMuted, marginTop: 3 }}>Use a strong password with at least 8 characters.</AppText>
           </View>
         </View>
 
-        <View style={styles.form}>
+        <View style={[styles.form, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
           <PasswordField
             label="NEW PASSWORD"
             value={newPass}
@@ -128,15 +113,15 @@ export default function ChangePasswordScreen({ navigation }) {
             show={showNew}
             onToggle={() => setShowNew(v => !v)}
             placeholder="At least 6 characters"
+            colors={colors}
           />
 
-          {/* Strength indicator */}
           {strength && (
             <View style={styles.strengthRow}>
-              <View style={styles.strengthBarBg}>
+              <View style={[styles.strengthBarBg, { backgroundColor: colors.border }]}>
                 <View style={[styles.strengthBarFill, { width: strength.width, backgroundColor: strength.color }]} />
               </View>
-              <Text style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
+              <AppText variant="caption" style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</AppText>
             </View>
           )}
 
@@ -147,90 +132,55 @@ export default function ChangePasswordScreen({ navigation }) {
             show={showConfirm}
             onToggle={() => setShowConfirm(v => !v)}
             placeholder="Repeat new password"
+            colors={colors}
           />
 
-          {/* Match indicator */}
           {confirm.length > 0 && (
             <View style={styles.matchRow}>
-              <Ionicons
-                name={newPass === confirm ? 'checkmark-circle' : 'close-circle'}
-                size={16}
+              <Icon
+                name={newPass === confirm ? 'check-circle' : 'x-circle'}
+                size="xs"
                 color={newPass === confirm ? '#4CAF50' : '#F44336'}
               />
-              <Text style={[styles.matchText, { color: newPass === confirm ? '#4CAF50' : '#F44336' }]}>
+              <AppText variant="caption" style={{ color: newPass === confirm ? '#4CAF50' : '#F44336' }}>
                 {newPass === confirm ? 'Passwords match' : 'Passwords do not match'}
-              </Text>
+              </AppText>
             </View>
           )}
 
           <TouchableOpacity
-            style={[styles.saveBtn, (loading || !newPass || !confirm) && styles.saveBtnDisabled]}
+            style={[styles.saveBtn, { backgroundColor: colors.primary }, (loading || !newPass || !confirm) && { opacity: 0.5 }]}
             onPress={handleChange}
             disabled={loading || !newPass || !confirm}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <Text style={styles.saveBtnText}>Update Password</Text>
+                <Icon name="check-circle" size="md" color={colors.onPrimary} />
+                <AppText variant="body" style={{ color: colors.onPrimary, fontWeight: 'bold', marginLeft: tokens.spacing.sm }}>Update Password</AppText>
               </>
             )}
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ECEFF1' },
-  header: {
-    paddingTop: 55, paddingBottom: 20, paddingHorizontal: 16,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-  },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  body: { padding: 20, paddingBottom: 60 },
-
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#E3F2FD', borderRadius: 16, padding: 16, marginBottom: 20,
-  },
-  bannerIcon: {
-    width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center',
-    elevation: 2,
-  },
-  bannerTitle: { fontSize: 15, fontWeight: 'bold', color: '#01579B' },
-  bannerSub: { fontSize: 12, color: '#4FC3F7', marginTop: 3 },
-
-  form: { backgroundColor: '#fff', borderRadius: 20, padding: 20, elevation: 2 },
-  fieldGroup: { marginBottom: 8 },
-  fieldLabel: {
-    fontSize: 11, fontWeight: 'bold', color: '#90A4AE',
-    marginTop: 10, marginBottom: 6, letterSpacing: 0.8,
-  },
-  inputBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderWidth: 1.5, borderColor: '#CFD8DC', borderRadius: 12,
-    paddingHorizontal: 12, paddingVertical: 11, backgroundColor: '#F9FAFB',
-  },
-  input: { flex: 1, fontSize: 15, color: '#333' },
-
-  strengthRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, marginTop: 4 },
-  strengthBarBg: { flex: 1, height: 5, backgroundColor: '#ECEFF1', borderRadius: 3, overflow: 'hidden' },
+  body:          { padding: tokens.spacing.md, paddingBottom: 60 },
+  banner:        { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.md, borderRadius: tokens.radius.lg, padding: tokens.spacing.md, marginBottom: tokens.spacing.md },
+  bannerIcon:    { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
+  form:          { borderRadius: tokens.radius.lg, padding: tokens.spacing.md },
+  fieldGroup:    { marginBottom: tokens.spacing.xs },
+  fieldLabel:    { letterSpacing: 0.8, marginTop: tokens.spacing.sm, marginBottom: tokens.spacing.xs },
+  inputBox:      { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, borderWidth: 1.5, borderRadius: tokens.radius.md, paddingHorizontal: tokens.spacing.sm, paddingVertical: 11 },
+  input:         { flex: 1, fontSize: tokens.fontSize.md },
+  strengthRow:   { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, marginBottom: tokens.spacing.sm, marginTop: tokens.spacing.xs },
+  strengthBarBg: { flex: 1, height: 5, borderRadius: 3, overflow: 'hidden' },
   strengthBarFill: { height: 5, borderRadius: 3 },
-  strengthLabel: { fontSize: 11, fontWeight: 'bold', width: 55 },
-
-  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 8, marginTop: 4 },
-  matchText: { fontSize: 12 },
-
-  saveBtn: {
-    flexDirection: 'row', backgroundColor: '#0288D1', borderRadius: 14,
-    padding: 15, justifyContent: 'center', alignItems: 'center',
-    marginTop: 20, gap: 8, elevation: 2,
-  },
-  saveBtnDisabled: { backgroundColor: '#90CAF9' },
-  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  strengthLabel: { fontWeight: 'bold', width: 55 },
+  matchRow:      { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.xs, marginBottom: tokens.spacing.sm, marginTop: tokens.spacing.xs },
+  saveBtn:       { flexDirection: 'row', borderRadius: tokens.radius.md, padding: tokens.spacing.md, justifyContent: 'center', alignItems: 'center', marginTop: tokens.spacing.lg },
 });

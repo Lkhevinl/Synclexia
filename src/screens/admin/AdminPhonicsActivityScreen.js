@@ -1,52 +1,52 @@
 // screens/admin/AdminPhonicsActivityScreen.js
 // CRUD management for phonics_activity_content table.
-// Admin can add, edit, toggle, and delete blend / rhyme / segment items.
+// Admin can add, edit, toggle, and delete blend & segment items.
 
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const GAME_TYPES = [
-  { id: 'blend',   label: 'Blend It 🔗',        color: '#FF9800' },
-  { id: 'rhyme',   label: 'Rhyme Time 🎵',       color: '#E91E63' },
-  { id: 'segment', label: 'Count Sounds 🔢',     color: '#4CAF50' },
+  { id: 'blend',   label: 'Blend It',      color: '#FF9800' },
+  { id: 'segment', label: 'Count Sounds',   color: '#4CAF50' },
 ];
 const LEVELS = [1, 2, 3];
 
 // UI helpers for form fields per game type
 const FORM_HINTS = {
   blend:   'phonemes: c,a,t  |  word: cat  |  emoji: 🐱',
-  rhyme:   'target: cat  |  options: bat,dog,sun  |  correct: bat  |  emoji: 🐱',
   segment: 'word: cat  |  phonemes: c,a,t  |  count: 3  |  emoji: 🐱',
 };
 
 const parseBlend   = (f) => ({ phonemes: f.phonemes.split(',').map(s => s.trim()), word: f.word.trim(), emoji: f.emoji.trim() });
-const parseRhyme   = (f) => ({ target: f.target.trim(), options: f.options.split(',').map(s => s.trim()), correct: f.correct.trim(), emoji: f.emoji.trim() });
 const parseSegment = (f) => ({ word: f.word.trim(), phonemes: f.phonemes.split(',').map(s => s.trim()), count: parseInt(f.count), emoji: f.emoji.trim() });
 
-const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: '' });
-const rhymeToForm   = (d) => ({ phonemes: '', word: '', emoji: d.emoji || '', target: d.target || '', options: d.options?.join(',') || '', correct: d.correct || '', count: '' });
-const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: d.count?.toString() || '' });
+const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: '' });
+const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: d.count?.toString() || '' });
 
 export default function AdminPhonicsActivityScreen() {
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [gameType, setGameType] = useState('blend');
   const [level, setLevel] = useState(null); // null = all levels
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', count: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_activity_content')
+      .from(TABLES.PHONICS_ACTIVITY_CONTENT)
       .select('*')
       .order('game_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -56,7 +56,7 @@ export default function AdminPhonicsActivityScreen() {
   };
 
   const resetForm = () => {
-    setForm({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+    setForm({ phonemes: '', word: '', emoji: '', count: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -66,14 +66,12 @@ export default function AdminPhonicsActivityScreen() {
     setLevel(item.difficulty_level);
     setEditingId(item.id);
     if (item.game_type === 'blend')   setForm(blendToForm(item.data));
-    if (item.game_type === 'rhyme')   setForm(rhymeToForm(item.data));
     if (item.game_type === 'segment') setForm(segmentToForm(item.data));
   };
 
   const buildData = () => {
     try {
       if (gameType === 'blend')   return parseBlend(form);
-      if (gameType === 'rhyme')   return parseRhyme(form);
       if (gameType === 'segment') return parseSegment(form);
     } catch { return null; }
   };
@@ -84,11 +82,11 @@ export default function AdminPhonicsActivityScreen() {
     const payload = { game_type: gameType, difficulty_level: level, data };
 
     if (editingId) {
-      const { error } = await supabase.from('phonics_activity_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', 'Item updated.');
     } else {
-      const { error } = await supabase.from('phonics_activity_content').insert([payload]);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', 'Item added.');
     }
@@ -97,7 +95,7 @@ export default function AdminPhonicsActivityScreen() {
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonics_activity_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -105,7 +103,7 @@ export default function AdminPhonicsActivityScreen() {
     Alert.alert('Delete', 'Delete this item?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonics_activity_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);
@@ -114,21 +112,18 @@ export default function AdminPhonicsActivityScreen() {
   const t = (key) => [
     { id: 'phonemes', label: 'Phonemes (comma-separated)', show: ['blend', 'segment'] },
     { id: 'word',     label: 'Word',                        show: ['blend', 'segment'] },
-    { id: 'target',   label: 'Target word',                  show: ['rhyme'] },
-    { id: 'options',  label: 'Options (comma-separated)',    show: ['rhyme'] },
-    { id: 'correct',  label: 'Correct answer',               show: ['rhyme'] },
     { id: 'count',    label: 'Phoneme count (number)',        show: ['segment'] },
-    { id: 'emoji',    label: 'Emoji',                        show: ['blend', 'rhyme', 'segment'] },
+    { id: 'emoji',    label: 'Emoji',                        show: ['blend', 'segment'] },
   ].find(f => f.id === key);
 
   const fields = [
-    'phonemes', 'word', 'target', 'options', 'correct', 'count', 'emoji',
+    'phonemes', 'word', 'count', 'emoji',
   ].filter(f => t(f)?.show.includes(gameType));
 
   const gameColor = GAME_TYPES.find(g => g.id === gameType)?.color || '#2196F3';
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
       <Text style={styles.header}>Phonics Activity Content</Text>
 
@@ -142,7 +137,7 @@ export default function AdminPhonicsActivityScreen() {
             <TouchableOpacity
               key={g.id}
               style={[styles.typeBtn, gameType === g.id && { backgroundColor: g.color }]}
-              onPress={() => { setGameType(g.id); setForm({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' }); }}
+              onPress={() => { setGameType(g.id); setForm({ phonemes: '', word: '', emoji: '', count: '' }); }}
             >
               <Text style={[styles.typeBtnText, gameType === g.id && { color: '#fff' }]}>{g.label}</Text>
             </TouchableOpacity>
@@ -208,25 +203,25 @@ export default function AdminPhonicsActivityScreen() {
                   <Text style={styles.cardLevel}>L{item.difficulty_level ?? '—'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );
           }}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
   form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 400, elevation: 2 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },

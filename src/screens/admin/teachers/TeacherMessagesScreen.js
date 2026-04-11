@@ -3,12 +3,15 @@ import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, SectionList, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const AVATAR_COLORS = ['#E91E63','#9C27B0','#3F51B5','#2196F3','#009688','#FF9800','#F44336','#FF5722'];
 const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
@@ -34,7 +37,7 @@ function InboxView({ profile, onSelectConversation }) {
 
     // ── 1. Enrolled student IDs ─────────────────────────────────────────────
     const { data: enrollments } = await supabase
-      .from('enrollments')
+      .from(TABLES.ENROLLMENTS)
       .select('student_id')
       .eq('teacher_id', profile.id);
     const enrolledIds = (enrollments || []).map(e => e.student_id);
@@ -43,7 +46,7 @@ function InboxView({ profile, onSelectConversation }) {
     let studentProfiles = [];
     if (enrolledIds.length > 0) {
       const { data: sp } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name')
         .in('id', enrolledIds);
       studentProfiles = sp || [];
@@ -55,7 +58,7 @@ function InboxView({ profile, onSelectConversation }) {
     let linkedParents = [];
     if (enrolledIds.length > 0) {
       const { data: links } = await supabase
-        .from('parent_links')
+        .from(TABLES.PARENT_LINKS)
         .select('parent_id, student_id')
         .in('student_id', enrolledIds);
       linkedParents = links || [];
@@ -66,7 +69,7 @@ function InboxView({ profile, onSelectConversation }) {
     const parentProfileMap = {};
     if (allLinkedParentIds.length > 0) {
       const { data: pp } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name, email, role')
         .in('id', allLinkedParentIds);
       (pp || []).forEach(p => { parentProfileMap[p.id] = p; });
@@ -90,7 +93,7 @@ function InboxView({ profile, onSelectConversation }) {
 
     // ── 6. Existing conversations ────────────────────────────────────────────
     const { data: rows, error } = await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .select('*')
       .or(`sender_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
       .order('created_at', { ascending: false });
@@ -106,7 +109,7 @@ function InboxView({ profile, onSelectConversation }) {
     const extraIds = [...convMap.keys()].filter(id => !parentProfileMap[id]);
     if (extraIds.length > 0) {
       const { data: extra } = await supabase
-        .from('profiles')
+        .from(TABLES.PROFILES)
         .select('id, full_name, email, role')
         .in('id', extraIds);
       (extra || []).forEach(p => { parentProfileMap[p.id] = p; });
@@ -132,7 +135,7 @@ function InboxView({ profile, onSelectConversation }) {
       let unreadCount = 0;
       if (lastMsg) {
         const { count } = await supabase
-          .from('parent_messages')
+          .from(TABLES.PARENT_MESSAGES)
           .select('*', { count: 'exact', head: true })
           .eq('sender_id', parentId)
           .eq('receiver_id', profile.id)
@@ -176,7 +179,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'messages' && s.tabBtnActive]}
           onPress={() => setActiveTab('messages')}
         >
-          <Ionicons name="chatbubbles" size={16} color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
+          <Icon name="message-square" size="md" color={activeTab === 'messages' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'messages' ? s.tabTxtActive : s.tabTxt}>Messages</Text>
           {unreadCount > 0 && (
             <View style={s.tabBadge}><Text style={s.tabBadgeText}>{unreadCount}</Text></View>
@@ -186,7 +189,7 @@ function InboxView({ profile, onSelectConversation }) {
           style={[s.tabBtn, activeTab === 'parents' && s.tabBtnActive]}
           onPress={() => setActiveTab('parents')}
         >
-          <Ionicons name="people" size={16} color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
+          <Icon name="users" size="md" color={activeTab === 'parents' ? '#2E7D32' : '#999'} />
           <Text style={activeTab === 'parents' ? s.tabTxtActive : s.tabTxt}>Parents</Text>
         </TouchableOpacity>
       </View>
@@ -204,7 +207,7 @@ function InboxView({ profile, onSelectConversation }) {
         <TabBar />
         {allLinkedParents.length === 0 ? (
           <View style={s.centered}>
-            <Ionicons name="people-outline" size={64} color="#ddd" />
+            <Icon name="users" size="lg" color="#ddd" />
             <Text style={s.emptyTitle}>No parents linked yet</Text>
             <Text style={s.emptyHint}>Once parents link their children to your class, they will appear here.</Text>
           </View>
@@ -265,7 +268,7 @@ function InboxView({ profile, onSelectConversation }) {
       <TabBar />
       {conversations.length === 0 ? (
         <View style={s.centered}>
-          <Ionicons name="chatbubbles-outline" size={64} color="#ddd" />
+          <Icon name="message-square" size="lg" color="#ddd" />
           <Text style={s.emptyTitle}>No messages yet</Text>
           <Text style={s.emptyHint}>Switch to the Parents tab to see all parents linked to your enrolled students and start a conversation.</Text>
         </View>
@@ -339,7 +342,7 @@ function ChatView({ profile, conversation, onBack }) {
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .select('*')
       .or(`and(sender_id.eq.${profile.id},receiver_id.eq.${otherId}),and(sender_id.eq.${otherId},receiver_id.eq.${profile.id})`)
       .order('created_at', { ascending: true });
@@ -349,7 +352,7 @@ function ChatView({ profile, conversation, onBack }) {
 
     // Mark incoming as read
     await supabase
-      .from('parent_messages')
+      .from(TABLES.PARENT_MESSAGES)
       .update({ is_read: true })
       .eq('sender_id', otherId)
       .eq('receiver_id', profile.id)
@@ -359,7 +362,7 @@ function ChatView({ profile, conversation, onBack }) {
   const sendMessage = async () => {
     if (!text.trim()) return;
     setSending(true);
-    const { error } = await supabase.from('parent_messages').insert({
+    const { error } = await supabase.from(TABLES.PARENT_MESSAGES).insert({
       sender_id:   profile.id,
       receiver_id: otherId,
       parent_id:   otherId,
@@ -406,7 +409,7 @@ function ChatView({ profile, conversation, onBack }) {
       {/* Chat sub-header */}
       <View style={s.chatHeader}>
         <TouchableOpacity style={s.backArrow} onPress={onBack}>
-          <Ionicons name="arrow-back" size={22} color="#fff" />
+          <Icon name="arrow-left" size="md" color="#fff" />
         </TouchableOpacity>
         <View style={[s.chatAvatar, { backgroundColor: avatarColor(parentName) }]}>
           <Text style={s.chatAvatarText}>{parentName[0]?.toUpperCase()}</Text>
@@ -429,7 +432,7 @@ function ChatView({ profile, conversation, onBack }) {
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
           ListEmptyComponent={
             <View style={s.emptyChat}>
-              <Ionicons name="chatbubbles-outline" size={60} color="#ddd" />
+              <Icon name="message-square" size="lg" color="#ddd" />
               <Text style={s.emptyChatText}>No messages yet</Text>
               <Text style={s.emptyChatHint}>Send the first reply to {parentName}</Text>
             </View>
@@ -454,7 +457,7 @@ function ChatView({ profile, conversation, onBack }) {
         >
           {sending
             ? <ActivityIndicator size="small" color="#fff" />
-            : <Ionicons name="send" size={20} color="#fff" />}
+            : <Icon name="send" size="md" color="#fff" />}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -466,15 +469,16 @@ function ChatView({ profile, conversation, onBack }) {
 // ──────────────────────────────────────────────────────────────────────────────
 export default function TeacherMessagesScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [selectedConversation, setSelectedConversation] = useState(null);
 
   return (
-    <SafeAreaView style={s.container} edges={['top']}>
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <LinearGradient colors={['#2E7D32', '#1B5E20']} style={s.header}>
         <View style={s.headerRow}>
           {selectedConversation
             ? <TouchableOpacity onPress={() => setSelectedConversation(null)} style={s.headerBack}>
-                <Ionicons name="arrow-back" size={22} color="#fff" />
+                <Icon name="arrow-left" size="md" color="#fff" />
               </TouchableOpacity>
             : <GoBackBtn tintColor="#fff" />}
           <Text style={s.headerTitle}>
@@ -501,12 +505,12 @@ export default function TeacherMessagesScreen() {
           onSelectConversation={setSelectedConversation}
         />
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const s = StyleSheet.create({
-  container:           { flex: 1, backgroundColor: '#F9FBF9' },
+  container:           { flex: 1 },
   centered:            { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
 
   // Header

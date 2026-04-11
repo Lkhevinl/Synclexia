@@ -3,17 +3,21 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView,
   FlatList, Modal, ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
 import { useAuth } from '../../context/AuthContext';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const LEVEL_COLORS = ['', '#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#F44336'];
 
 export default function AdminAddStoryScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [stories, setStories] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
 
@@ -30,7 +34,7 @@ export default function AdminAddStoryScreen() {
   const fetchStories = async () => {
     setLoadingList(true);
     const { data } = await supabase
-      .from('stories')
+      .from(TABLES.STORIES)
       .select('id, title, level, created_at')
       .order('created_at', { ascending: false });
     setStories(data || []);
@@ -47,7 +51,7 @@ export default function AdminAddStoryScreen() {
 
   const openEdit = async (story) => {
     // Fetch full content for editing
-    const { data } = await supabase.from('stories').select('*').eq('id', story.id).single();
+    const { data } = await supabase.from(TABLES.STORIES).select('*').eq('id', story.id).single();
     if (!data) return;
     setEditingId(story.id);
     setTitle(data.title || '');
@@ -75,9 +79,9 @@ export default function AdminAddStoryScreen() {
 
     let error;
     if (editingId) {
-      ({ error } = await supabase.from('stories').update(payload).eq('id', editingId));
+      ({ error } = await supabase.from(TABLES.STORIES).update(payload).eq('id', editingId));
     } else {
-      ({ error } = await supabase.from('stories').insert([payload]));
+      ({ error } = await supabase.from(TABLES.STORIES).insert([payload]));
     }
 
     setSaving(false);
@@ -99,7 +103,7 @@ export default function AdminAddStoryScreen() {
         {
           text: 'Delete', style: 'destructive',
           onPress: async () => {
-            const { error } = await supabase.from('stories').delete().eq('id', story.id);
+            const { error } = await supabase.from(TABLES.STORIES).delete().eq('id', story.id);
             if (error) Alert.alert('Error', error.message);
             else fetchStories();
           },
@@ -109,13 +113,13 @@ export default function AdminAddStoryScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       {/* Header */}
       <View style={styles.header}>
         <GoBackBtn />
-        <Text style={styles.headerTitle}>📖 Story Library</Text>
+        <Text style={styles.header}>Story Library</Text>
         <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
-          <Ionicons name="add" size={22} color="#fff" />
+          <Icon name="plus" size="md" color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -123,7 +127,7 @@ export default function AdminAddStoryScreen() {
         <ActivityIndicator size="large" color="#0277BD" style={{ marginTop: 40 }} />
       ) : stories.length === 0 ? (
         <View style={styles.empty}>
-          <Ionicons name="book-outline" size={64} color="#ccc" />
+          <Icon name="book-open" size="lg" color="#ccc" />
           <Text style={styles.emptyText}>No stories yet. Tap + to add one.</Text>
         </View>
       ) : (
@@ -143,10 +147,10 @@ export default function AdminAddStoryScreen() {
                 </Text>
               </View>
               <TouchableOpacity style={styles.editIconBtn} onPress={() => openEdit(item)}>
-                <Ionicons name="create-outline" size={20} color="#0288D1" />
+                <Icon name="pencil" size="md" color="#0288D1" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteIconBtn} onPress={() => handleDelete(item)}>
-                <Ionicons name="trash-outline" size={20} color="#F44336" />
+                <Icon name="trash" size="md" color="#F44336" />
               </TouchableOpacity>
             </View>
           )}
@@ -160,7 +164,7 @@ export default function AdminAddStoryScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editingId ? 'Edit Story' : 'New Story'}</Text>
               <TouchableOpacity onPress={() => setFormVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+                <Icon name="x" size="md" color="#666" />
               </TouchableOpacity>
             </View>
 
@@ -198,12 +202,12 @@ export default function AdminAddStoryScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F8FF' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingTop: 55, paddingBottom: 16, paddingHorizontal: 16,

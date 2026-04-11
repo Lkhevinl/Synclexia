@@ -8,12 +8,16 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AdminManageContentsScreen({ navigation }) {
+  const { colors } = useTheme();
   const [contentStats, setContentStats] = useState({
     stories: 0,
     phonics: 0,
@@ -31,11 +35,11 @@ export default function AdminManageContentsScreen({ navigation }) {
   const fetchContentStats = async () => {
     try {
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
       ]);
 
       setContentStats({
@@ -68,9 +72,9 @@ export default function AdminManageContentsScreen({ navigation }) {
   const contentItems = [
     {
       id: 'stories',
-      title: 'Writing Practice',
+      title: 'Reading Activity',
       subtitle: `${contentStats.stories} stories`,
-      emoji: '✍️',
+      icon: 'pencil',
       bgColor: '#E1BEE7',
       route: 'AdminAddStory',
     },
@@ -78,7 +82,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'phonics',
       title: 'Phonics Audio',
       subtitle: `${contentStats.phonics} items`,
-      emoji: '🗣️',
+      icon: 'mic',
       bgColor: '#B3E5FC',
       route: 'AdminPhonics',
     },
@@ -86,7 +90,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'spelling',
       title: 'Spelling Words',
       subtitle: `${contentStats.spelling} words`,
-      emoji: '🔤',
+      icon: 'type',
       bgColor: '#BBDEFB',
       route: 'TeacherSpelling',
     },
@@ -94,15 +98,15 @@ export default function AdminManageContentsScreen({ navigation }) {
       id: 'phonicsActivities',
       title: 'Phonics Activity',
       subtitle: `${contentStats.phonicsActivities} activities`,
-      emoji: '🎮',
+      icon: 'gamepad-2',
       bgColor: '#FFE0B2',
       route: 'TeacherPhonicsActivity',
     },
     {
       id: 'phonological',
-      title: 'Phonological Awareness',
+      title: 'Sound Game',
       subtitle: `${contentStats.phonological} items`,
-      emoji: '🎧',
+      icon: 'headphones',
       bgColor: '#E1BEE7',
       route: 'TeacherPhonological',
     },
@@ -110,18 +114,18 @@ export default function AdminManageContentsScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+      <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+        <AppHeader title="Manage Contents" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#607D8B" />
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <AppHeader title="Manage Contents" colors={['#607D8B', '#455A64']} />
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <AppHeader title="Manage Contents" />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -132,7 +136,7 @@ export default function AdminManageContentsScreen({ navigation }) {
         {/* Stats Summary */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
-            <Ionicons name="pie-chart" size={24} color="#607D8B" />
+            <Icon name="pie-chart" size="md" color="#607D8B" />
             <Text style={styles.summaryTitle}>Content Overview</Text>
           </View>
           <Text style={styles.summaryText}>
@@ -150,34 +154,31 @@ export default function AdminManageContentsScreen({ navigation }) {
               activeOpacity={0.7}
             >
               <View style={[styles.contentIconWrapper, { backgroundColor: item.bgColor }]}>
-                <Text style={styles.contentEmoji}>{item.emoji}</Text>
+                <Icon name={item.icon} size="md" color="#455A64" />
               </View>
               <View style={styles.contentInfo}>
                 <Text style={styles.contentTitle}>{item.title}</Text>
                 <Text style={styles.contentSubtitle}>{item.subtitle}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#B0BEC5" />
+              <Icon name="chevron-forward" size="md" color="#B0BEC5" />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Help Text */}
         <View style={styles.helpCard}>
-          <Ionicons name="information-circle-outline" size={20} color="#607D8B" />
+          <Icon name="info" size="md" color="#607D8B" />
           <Text style={styles.helpText}>
             Tap any content type to add, edit, or manage items
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
+  container: { flex: 1 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

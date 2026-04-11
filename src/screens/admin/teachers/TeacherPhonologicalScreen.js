@@ -5,28 +5,31 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, ScrollView, StatusBar,
+  TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const TASK_TYPES = [
-  { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
-  { id: 'rime',     label: 'Rime 🎵',     color: '#9C27B0' },
-  { id: 'phoneme',  label: 'Phoneme 🔤',  color: '#E91E63' },
+  { id: 'syllable', label: 'Syllable', color: '#2196F3' },
+  { id: 'phoneme',  label: 'Phoneme',  color: '#E91E63' },
 ];
 
 const FORM_HINTS = {
   syllable: 'word: cat  |  syllables: 1  |  emoji: 🐱',
-  rime:     'target: cat  |  correct: hat  |  distractors: dog,sun',
   phoneme:  'word: sun  |  position: first or last  |  answer: s  |  options: s,m,b',
 };
 
 export default function TeacherPhonologicalScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [taskType, setTaskType]   = useState('syllable');
@@ -34,7 +37,6 @@ export default function TeacherPhonologicalScreen() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     word: '', syllables: '', emoji: '',
-    target: '', correct: '', distractors: '',
     position: '', answer: '', options: '',
   });
 
@@ -43,7 +45,7 @@ export default function TeacherPhonologicalScreen() {
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonological_content')
+      .from(TABLES.PHONOLOGICAL_CONTENT)
       .select('*')
       .order('task_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -53,7 +55,7 @@ export default function TeacherPhonologicalScreen() {
   };
 
   const resetForm = () => {
-    setForm({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+    setForm({ word: '', syllables: '', emoji: '', position: '', answer: '', options: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -67,9 +69,6 @@ export default function TeacherPhonologicalScreen() {
       word:        d.word        || '',
       syllables:   d.syllables?.toString() || '',
       emoji:       d.emoji       || '',
-      target:      d.target      || '',
-      correct:     d.correct     || '',
-      distractors: d.distractors?.join(',') || '',
       position:    d.position    || '',
       answer:      d.answer      || '',
       options:     d.options?.join(',')     || '',
@@ -80,10 +79,6 @@ export default function TeacherPhonologicalScreen() {
     if (taskType === 'syllable') {
       if (!form.word || !form.syllables) return null;
       return { word: form.word.trim(), syllables: parseInt(form.syllables), emoji: form.emoji.trim() };
-    }
-    if (taskType === 'rime') {
-      if (!form.target || !form.correct || !form.distractors) return null;
-      return { target: form.target.trim(), correct: form.correct.trim(), distractors: form.distractors.split(',').map(s => s.trim()) };
     }
     if (taskType === 'phoneme') {
       if (!form.word || !form.position || !form.answer || !form.options) return null;
@@ -99,20 +94,20 @@ export default function TeacherPhonologicalScreen() {
     if (!data) return Alert.alert('Missing Fields', 'Please fill all required fields for this task type.');
     const payload = { task_type: taskType, difficulty_level: level, data };
     if (editingId) {
-      const { error } = await supabase.from('phonological_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Update Error', error.message);
-      Alert.alert('✅ Updated', 'Item updated successfully.');
+      Alert.alert('Updated', 'Item updated successfully.');
     } else {
-      const { error } = await supabase.from('phonological_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
-      Alert.alert('✅ Added', 'Item added successfully.');
+      Alert.alert('Added', 'Item added successfully.');
     }
     resetForm();
     fetchItems();
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonological_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -120,7 +115,7 @@ export default function TeacherPhonologicalScreen() {
     Alert.alert('Delete Item', 'Are you sure you want to delete this item?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonological_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONOLOGICAL_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);
@@ -132,23 +127,19 @@ export default function TeacherPhonologicalScreen() {
     { id: 'word',        label: 'Word',                             show: ['syllable', 'phoneme'] },
     { id: 'syllables',   label: 'Syllable count (number)',          show: ['syllable'] },
     { id: 'emoji',       label: 'Emoji (optional)',                 show: ['syllable'] },
-    { id: 'target',      label: 'Target word',                      show: ['rime'] },
-    { id: 'correct',     label: 'Correct rhyme',                    show: ['rime'] },
-    { id: 'distractors', label: 'Distractors (comma-separated)',    show: ['rime'] },
     { id: 'position',    label: 'Position (first / last)',          show: ['phoneme'] },
     { id: 'answer',      label: 'Correct sound (e.g. s)',           show: ['phoneme'] },
     { id: 'options',     label: 'Options (comma-sep, e.g. s,m,b)', show: ['phoneme'] },
   ].filter(f => f.show.includes(taskType));
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#7B1FA2', '#4A148C']} style={styles.header}>
         <GoBackBtn />
-        <Text style={styles.headerTitle}>Phonological Awareness 🎧</Text>
-        <Text style={styles.headerSub}>Manage syllable, rime & phoneme tasks</Text>
+        <Text style={styles.headerTitle}>Phonological Awareness</Text>
+        <Text style={styles.headerSub}>Manage syllable & phoneme tasks</Text>
 
         {/* Task-type pills */}
         <View style={styles.typeRow}>
@@ -166,7 +157,7 @@ export default function TeacherPhonologicalScreen() {
 
       {/* ── ADD / EDIT FORM ── */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        <Text style={styles.formTitle}>{editingId ? '✏️ Edit Item' : '➕ Add New Item'}</Text>
+        <Text style={styles.formTitle}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
 
         <Text style={styles.fieldLabel}>Difficulty Level</Text>
         <View style={styles.levelRow}>
@@ -204,7 +195,7 @@ export default function TeacherPhonologicalScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.saveBtn, { backgroundColor: taskColor }]} onPress={handleSave}>
-            <Ionicons name={editingId ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+            <Icon name={editingId ? 'check-circle' : 'plus-circle'} size="md" color="#fff" />
             <Text style={styles.saveBtnText}>{editingId ? 'Update' : 'Add Item'}</Text>
           </TouchableOpacity>
         </View>
@@ -237,31 +228,31 @@ export default function TeacherPhonologicalScreen() {
                   <Text style={styles.cardLevel}>Level {item.difficulty_level ?? 'All'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="ear-outline" size={50} color="#E0E0E0" />
+              <Icon name="ear" size="lg" color="#E0E0E0" />
               <Text style={styles.emptyText}>No items yet. Add one above!</Text>
             </View>
           }
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

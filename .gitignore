@@ -9,6 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 
+
 # Native
 .kotlin/
 *.orig.*
@@ -40,3 +41,15 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+
+/docs*
+ServiceAccountSynclexia.json
+
+# Google Cloud credentials
+synclexia-491611-92eeff6552f3.json
+*-*.json
+gcp-*.json
+service-account*.json
+# Local Netlify folder
+.netlify

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, Image, Platform, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, Image, Platform, Dimensions, ActivityIndicator } from 'react-native';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import Sidebar from '../../../components/Sidebar';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
 
 const { width } = Dimensions.get('window');
 const isWeb = Platform.OS === 'web';
@@ -19,9 +22,10 @@ const DAILY_TIPS = [
 ];
 
 export default function TeacherDashboardScreen({ navigation }) {
-  const { theme } = useTheme();
+  const { theme, colors } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
+  const [dismissingId, setDismissingId] = useState(null);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [dailyTip, setDailyTip] = useState(DAILY_TIPS[0]);
@@ -34,41 +38,135 @@ export default function TeacherDashboardScreen({ navigation }) {
   });
 
   useEffect(() => {
-    fetchNotifications();
-    fetchContentStats();
+    // Load dashboard data independently - don't let one failure break everything
+    fetchNotifications().catch(err => console.log('Notifications fetch failed:', err));
+    fetchContentStats().catch(err => console.log('Content stats fetch failed:', err));
     const randomTip = DAILY_TIPS[Math.floor(Math.random() * DAILY_TIPS.length)];
     setDailyTip(randomTip);
   }, []);
 
   const fetchNotifications = async () => {
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('is_draft', false)
-      .order('created_at', { ascending: false })
-      .limit(10);
-    if (data) setNotifications(data);
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
+    try {
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        if (data) setNotifications(data);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications (teachers see all role-targeted notifications)
+      let query = supabase
+        .from(TABLES.NOTIFICATIONS)
+        .select('*')
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data } = await query;
+      if (data) setNotifications(data);
+    } catch (error) {
+      setNotifications([]);
+    }
   };
 
   const fetchContentStats = async () => {
     try {
+      // Fetch stats independently - don't let one failure break everything
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
       ]);
 
       setContentStats({
-        stories: stories.count || 0,
-        phonics: phonics.count || 0,
-        spelling: spelling.count || 0,
-        phonicsActivities: phonicsAct.count || 0,
-        phonological: phonological.count || 0,
+        stories: stories?.count || 0,
+        phonics: phonics?.count || 0,
+        spelling: spelling?.count || 0,
+        phonicsActivities: phonicsAct?.count || 0,
+        phonological: phonological?.count || 0,
       });
     } catch (error) {
       console.error('Error fetching content stats:', error);
+    }
+  };
+
+  // ── Notification management ─────────────────────────────────────────────────
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
     }
   };
 
@@ -87,7 +185,7 @@ export default function TeacherDashboardScreen({ navigation }) {
       >
         <View style={styles.cardTop}>
           <View style={styles.gridIconWrapper}>
-            <Ionicons name={icon} size={isDesktop ? 34 : 30} color="#fff" />
+            <Icon name={icon} size={isDesktop ? 'xl' : 'lg'} color="#fff" />
           </View>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{count}</Text>
@@ -99,7 +197,7 @@ export default function TeacherDashboardScreen({ navigation }) {
         </View>
         <View style={styles.cardFooter}>
           <Text style={styles.itemsLabel}>items</Text>
-          <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.9)" />
+          <Icon name="arrow-right" size={22} color="rgba(255,255,255,0.9)" />
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -109,8 +207,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                      contentStats.phonicsActivities + contentStats.phonological;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDesktop ? '#f0f4f8' : theme.bgColor }]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {/* ── HEADER ── */}
@@ -139,7 +236,7 @@ export default function TeacherDashboardScreen({ navigation }) {
 
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.iconBtn}>
-                <Ionicons name="notifications" size={23} color="#fff" />
+                <Icon name="bell" size="md" color="#fff" />
                 {notifications.length > 0 && (
                   <View style={styles.notifBadge}>
                     <Text style={styles.notifBadgeText}>{notifications.length > 9 ? '9+' : notifications.length}</Text>
@@ -147,7 +244,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.iconBtn}>
-                <Ionicons name="menu" size={25} color="#fff" />
+                <Icon name="menu" size="md" color="#fff" />
               </TouchableOpacity>
             </View>
           </View>
@@ -159,7 +256,7 @@ export default function TeacherDashboardScreen({ navigation }) {
                 <Text style={styles.greeting}>
                   Hello, {profile?.full_name?.split(' ')[0] || 'Teacher'}!
                 </Text>
-                <Text style={styles.waveEmoji}>👋</Text>
+                <Icon name="hand" size="lg" color="#FF9800" />
               </View>
               <Text style={styles.subGreeting}>
                 Welcome back! Manage learning content for all students.
@@ -167,7 +264,7 @@ export default function TeacherDashboardScreen({ navigation }) {
             </View>
             {profile?.status === 'active' && (
               <View style={styles.statusBadge}>
-                <Ionicons name="shield-checkmark" size={isDesktop ? 16 : 14} color="#4CAF50" />
+                <Icon name="shield-check" size={isDesktop ? 'sm' : 'xs'} color="#4CAF50" />
                 <Text style={styles.statusText}>Active</Text>
               </View>
             )}
@@ -187,7 +284,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           end={{ x: 1, y: 0 }}
         >
           <View style={styles.tipIcon}>
-            <Ionicons name="bulb" size={isDesktop ? 24 : 20} color="#FFD700" />
+            <Icon name="lightbulb" size={isDesktop ? 'lg' : 'md'} color="#FFD700" />
           </View>
           <Text style={[styles.tipText, { fontSize: theme.fontSize }]}>{dailyTip}</Text>
         </LinearGradient>
@@ -199,7 +296,7 @@ export default function TeacherDashboardScreen({ navigation }) {
             <Text style={styles.sectionSubtitle}>Click any card to manage content</Text>
           </View>
           <TouchableOpacity style={styles.refreshBtn} onPress={fetchContentStats}>
-            <Ionicons name="refresh" size={isDesktop ? 20 : 18} color="#9C27B0" />
+            <Icon name="refresh-cw" size={isDesktop ? 'md' : 'sm'} color="#9C27B0" />
           </TouchableOpacity>
         </View>
 
@@ -230,7 +327,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           />
           <GridCard
             title="Phonics Activity"
-            subtitle="Blend, rhyme & segment"
+            subtitle="Blend & segment"
             icon="musical-notes"
             color="#FF9800"
             count={contentStats.phonicsActivities}
@@ -252,28 +349,28 @@ export default function TeacherDashboardScreen({ navigation }) {
           <View style={[styles.statsContainer, isDesktop && styles.statsContainerDesktop]}>
             <View style={[styles.statCard, styles.statCardPrimary]}>
               <LinearGradient colors={['#667eea', '#764ba2']} style={styles.statGradient}>
-                <Ionicons name="albums" size={32} color="#fff" />
+                <Icon name="layers" size="lg" color="#fff" />
                 <Text style={styles.statValue}>{totalItems}</Text>
                 <Text style={styles.statLabel}>Total Items</Text>
               </LinearGradient>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#E8F5E9' }]}>
-                <Ionicons name="text" size={28} color="#4CAF50" />
+                <Icon name="type" size="lg" color="#4CAF50" />
                 <Text style={[styles.statValue, { color: '#4CAF50' }]}>{contentStats.spelling}</Text>
                 <Text style={[styles.statLabel, { color: '#2E7D32' }]}>Spelling Words</Text>
               </View>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#E3F2FD' }]}>
-                <Ionicons name="volume-high" size={28} color="#2196F3" />
+                <Icon name="volume-2" size="lg" color="#2196F3" />
                 <Text style={[styles.statValue, { color: '#2196F3' }]}>{contentStats.phonics}</Text>
                 <Text style={[styles.statLabel, { color: '#1565C0' }]}>Phonics Items</Text>
               </View>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statContent, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="musical-notes" size={28} color="#FF9800" />
+                <Icon name="music" size="lg" color="#FF9800" />
                 <Text style={[styles.statValue, { color: '#FF9800' }]}>{contentStats.phonicsActivities}</Text>
                 <Text style={[styles.statLabel, { color: '#E65100' }]}>Activities</Text>
               </View>
@@ -290,12 +387,19 @@ export default function TeacherDashboardScreen({ navigation }) {
           <View style={[styles.modalContent, isDesktop && styles.modalContentDesktop]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
-                <Ionicons name="notifications" size={24} color="#9C27B0" />
+                <Icon name="bell" size="md" color="#9C27B0" />
                 <Text style={styles.modalTitle}>Notifications</Text>
               </View>
-              <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={dismissAllNotifications} style={styles.clearAllBtn}>
+                    <Text style={styles.clearAllText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
+                  <Icon name="x" size="md" color="#666" />
+                </TouchableOpacity>
+              </View>
             </View>
             <FlatList
               data={notifications}
@@ -303,18 +407,29 @@ export default function TeacherDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <View style={styles.notifIcon}>
-                    <Ionicons name="megaphone" size={22} color="#9C27B0" />
+                    <Icon name="megaphone" size="md" color="#9C27B0" />
                   </View>
                   <View style={styles.notifContent}>
                     <Text style={styles.notifTitle}>{item.title}</Text>
                     <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                     <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => dismissNotification(item.id)}
+                    disabled={dismissingId === item.id}
+                    style={styles.dismissBtn}
+                  >
+                    {dismissingId === item.id ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <Icon name="x" size="sm" color="#999" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               )}
               ListEmptyComponent={
                 <View style={styles.emptyNotif}>
-                  <Ionicons name="notifications-off-outline" size={48} color="#ccc" />
+                  <Icon name="bell-off" size="lg" color="#ccc" />
                   <Text style={styles.emptyNotifText}>No notifications yet</Text>
                 </View>
               }
@@ -322,7 +437,7 @@ export default function TeacherDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
@@ -427,9 +542,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.15)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4
-  },
-  waveEmoji: {
-    fontSize: isDesktop ? 24 : 20
   },
   subGreeting: {
     color: 'rgba(255,255,255,0.95)',
@@ -694,5 +806,9 @@ const styles = StyleSheet.create({
   notifBody: { color: '#616161', fontSize: 13, lineHeight: 20, marginBottom: 6 },
   notifTime: { fontSize: 11, color: '#9e9e9e', fontWeight: '500' },
   emptyNotif: { alignItems: 'center', paddingVertical: 60 },
-  emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 }
+  emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 },
+  modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16, marginRight: 8 },
+  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn: { padding: 8, marginLeft: 4 },
 });

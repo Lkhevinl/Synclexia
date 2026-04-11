@@ -1,27 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, FlatList, ActivityIndicator, Alert, Share } from 'react-native';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
 import { supabase } from '../../../lib/supabase';
 import { fetchEnrollmentsWithProfiles } from '../../../lib/enrollmentHelper';
 import { getStudentProgress } from '../../../lib/analyticsHelper';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const ACTIVITY_ICONS = {
-  phonics:                  '🗣️',
-  phonics_blend:            '🔗',
-  phonics_rhyme:            '🎵',
-  phonics_segment:          '✂️',
-  spelling:                 '🔤',
-  writing:                  '✍️',
-  reading:                  '📖',
-  scan:                     '📷',
-  phonological_awareness:   '🎧',
+  phonics:                  'mic',
+  phonics_blend:            'link-2',
+  phonics_segment:          'scissors',
+  spelling:                 'type',
+  writing:                  'pencil',
+  reading:                  'book-open',
+  scan:                     'camera',
+  phonological_awareness:   'headphones',
 };
 
 export default function TeacherProgressScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [progress, setProgress] = useState(null);
@@ -84,7 +87,6 @@ export default function TeacherProgressScreen() {
     csv += `Period: Last ${daysBack} days\n\n`;
     csv += `Summary\n`;
     csv += `Total Sessions,${progress.totalSessions}\n`;
-    csv += `Total XP Earned,${progress.totalXP}\n`;
     csv += `Average Accuracy,${progress.avgAccuracy}%\n\n`;
     csv += `Activity Breakdown\n`;
     csv += `Activity Type,Sessions,Average Accuracy\n`;
@@ -112,32 +114,31 @@ export default function TeacherProgressScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#4c669f" />
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (students.length === 0) {
     return (
-      <View style={styles.container}>
+      <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
         <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
           <GoBackBtn />
           <Text style={styles.headerTitle}>Student Progress</Text>
         </LinearGradient>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-          <Ionicons name="analytics" size={80} color="#ccc" style={{ marginBottom: 20 }} />
+          <Icon name="bar-chart" size="xl" color="#ccc" style={{ marginBottom: 20 }} />
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#666', textAlign: 'center' }}>
             No students enrolled yet
           </Text>
         </View>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
       <LinearGradient colors={['#4c669f', '#3b5998']} style={styles.header}>
         <GoBackBtn />
         <Text style={styles.headerTitle}>Student Progress</Text>
@@ -166,9 +167,6 @@ export default function TeacherProgressScreen() {
                 </View>
                 <Text style={[styles.chipName, isActive && styles.chipNameActive]}>
                   {getStudentName(item).split(' ')[0]}
-                </Text>
-                <Text style={[styles.chipXP, isActive && styles.chipXPActive]}>
-                  {getStudentXP(item)} XP
                 </Text>
               </TouchableOpacity>
             );
@@ -201,10 +199,6 @@ export default function TeacherProgressScreen() {
                 <Text style={styles.summaryLabel}>Sessions</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Text style={[styles.summaryValue, { color: '#4CAF50' }]}>{progress.totalXP}</Text>
-                <Text style={styles.summaryLabel}>XP Earned</Text>
-              </View>
-              <View style={styles.summaryCard}>
                 <Text style={[styles.summaryValue, { color: progress.avgAccuracy >= 70 ? '#4CAF50' : '#FF9800' }]}>
                   {progress.avgAccuracy}%
                 </Text>
@@ -214,7 +208,7 @@ export default function TeacherProgressScreen() {
 
             {/* Export Button */}
             <TouchableOpacity style={styles.exportBtn} onPress={exportReport}>
-              <Ionicons name="download-outline" size={18} color="#fff" />
+              <Icon name="download" size="md" color="#fff" />
               <Text style={styles.exportText}>Export Report</Text>
             </TouchableOpacity>
 
@@ -229,7 +223,7 @@ export default function TeacherProgressScreen() {
                 const avgAcc = stats.totalItems > 0 ? Math.round((stats.totalScore / stats.totalItems) * 100) : 0;
                 return (
                   <View key={type} style={styles.breakdownRow}>
-                    <Text style={styles.breakdownIcon}>{ACTIVITY_ICONS[type] || '📊'}</Text>
+                    <Icon name={ACTIVITY_ICONS[type] || 'bar-chart'} size="md" color="#607D8B" />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.breakdownType}>{type}</Text>
                       <View style={styles.breakdownBar}>
@@ -249,7 +243,7 @@ export default function TeacherProgressScreen() {
             <Text style={styles.sectionLabel}>Recent Sessions</Text>
             {progress.recentSessions.map((session, idx) => (
               <View key={session.id || idx} style={styles.sessionItem}>
-                <Text style={styles.sessionIcon}>{ACTIVITY_ICONS[session.activity_type] || '📊'}</Text>
+                <Icon name={ACTIVITY_ICONS[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sessionType}>{session.activity_type}</Text>
                   <Text style={styles.sessionScore}>
@@ -266,12 +260,12 @@ export default function TeacherProgressScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  container: { flex: 1 },
   header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', marginTop: 15 },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 5 },
@@ -285,8 +279,6 @@ const styles = StyleSheet.create({
   chipAvatarText: { fontWeight: 'bold', color: '#3b5998', fontSize: 15 },
   chipName: { fontWeight: 'bold', color: '#333', fontSize: 13 },
   chipNameActive: { color: '#fff' },
-  chipXP: { fontSize: 11, color: '#999', marginTop: 2 },
-  chipXPActive: { color: 'rgba(255,255,255,0.8)' },
 
   // Time Range
   timeRow: { flexDirection: 'row', gap: 10, marginTop: 15 },

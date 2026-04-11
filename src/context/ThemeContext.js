@@ -2,8 +2,9 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import a11yStyleRef from '../lib/a11yStyleRef';
+import { STORAGE_KEYS } from '../lib/constants';
 
-const THEME_STORAGE_KEY = '@synclexia_theme';
+const THEME_STORAGE_KEY = STORAGE_KEYS.THEME;
 
 // Color themes based on overlay selection
 const COLOR_THEMES = {
@@ -66,7 +67,7 @@ const COLOR_THEMES = {
 const DEFAULT_THEME = {
   fontSize: 12,            // Default Text Size
   bgColor: '#FAF5F1',      // Default Background — warm cream
-  fontStyle: 'System',     // Default Font
+  fontStyle: 'Inter',      // Default Font
   primaryColor: '#C06080', // Default Accent — rose
 
   // ── Dyslexia Accessibility Settings ──────────────────────────────────
@@ -78,6 +79,8 @@ const DEFAULT_THEME = {
 
 const normalizeTheme = (rawTheme = {}) => {
   const merged = { ...DEFAULT_THEME, ...rawTheme };
+  // Migrate legacy 'System' value to Inter
+  if (merged.fontStyle === 'System') merged.fontStyle = 'Inter';
   // Clamp fontSize to a safe range so UI cannot break with extreme values
   if (typeof merged.fontSize === 'number') {
     merged.fontSize = Math.max(10, Math.min(17, merged.fontSize));
@@ -130,11 +133,6 @@ export const ThemeProvider = ({ children }) => {
     });
   };
 
-  // Get the complete color theme based on colorOverlay selection
-  const getThemeColors = () => {
-    return COLOR_THEMES[theme.colorOverlay] || COLOR_THEMES.none;
-  };
-
   // Computed helpers consumed throughout the app
   const getLetterSpacingValue = () => {
     if (theme.letterSpacing === 'wide') return 1;
@@ -145,30 +143,6 @@ export const ThemeProvider = ({ children }) => {
   // Keep overlay color for backward compatibility (applies a tint on top)
   const getOverlayColor = () => {
     return null; // No longer using overlay - using full theme colors instead
-  };
-
-  // Dynamic background color based on theme selection
-  const getBgColor = () => {
-    const colors = getThemeColors();
-    return colors.bgColor;
-  };
-
-  // Dynamic primary/accent color based on theme selection
-  const getPrimaryColor = () => {
-    const colors = getThemeColors();
-    return colors.primaryColor;
-  };
-
-  // Get header gradient colors
-  const getHeaderGradient = () => {
-    const colors = getThemeColors();
-    return colors.headerGradient;
-  };
-
-  // Get card background color
-  const getCardBg = () => {
-    const colors = getThemeColors();
-    return colors.cardBg;
   };
 
   /**
@@ -196,10 +170,15 @@ export const ThemeProvider = ({ children }) => {
   // Font family helper — platform-safe fallbacks (Android doesn't have many desktop fonts).
   // Keep the mapping distinct so users can *see* the difference.
   const resolveFontFamily = (fontStyleValue) => {
-    if (!fontStyleValue || fontStyleValue === 'System') return undefined;
+    if (!fontStyleValue) return undefined;
 
     const fontMap = {
-      // These are labels from the picker; map to platform-available families.
+      // Inter variants — loaded via @expo-google-fonts/inter
+      'Inter':          'Inter_400Regular',
+      'Inter Medium':   'Inter_500Medium',
+      'Inter SemiBold': 'Inter_600SemiBold',
+      'Inter Bold':     'Inter_700Bold',
+      // Platform-available fallbacks
       'OpenDyslexic': Platform.select({ ios: 'Arial Rounded MT Bold', android: 'monospace', default: 'monospace' }),
       'Open Sans': Platform.select({ ios: 'Arial', android: 'sans-serif', default: 'sans-serif' }),
       'Trebuchet MS': Platform.select({ ios: 'Trebuchet MS', android: 'serif', default: 'serif' }),
@@ -241,9 +220,23 @@ export const ThemeProvider = ({ children }) => {
     inputScale: combinedInputScale,
   };
 
+  // Semantic color tokens — screens read these instead of raw theme.* fields or helper functions
+  const colors = {
+    surface:        theme.bgColor,
+    surfaceCard:    theme.cardBg,
+    primary:        theme.primaryColor,
+    primaryLight:   theme.accentLight,
+    onPrimary:      '#ffffff',
+    onSurface:      theme.textPrimary,
+    onSurfaceMuted: theme.textSecondary,
+    border:         theme.textSecondary + '40', // ~25% opacity
+    headerGradient: theme.headerGradient,
+  };
+
   return (
     <ThemeContext.Provider value={{
       theme,
+      colors,
       updateTheme,
       getLetterSpacingValue,
       getOverlayColor, // kept for backward compatibility — always returns null
@@ -254,11 +247,6 @@ export const ThemeProvider = ({ children }) => {
       getFontFamily,
       fontFamilyStyle,
       a11yTextStyle,
-      getThemeColors,
-      getBgColor,
-      getPrimaryColor,
-      getHeaderGradient,
-      getCardBg,
     }}>
       {children}
     </ThemeContext.Provider>

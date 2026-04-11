@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import AppHeader from '../../components/AppHeader';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const showAlert = (title, msg) => {
   if (Platform.OS === 'web') { window.alert(`${title}\n${msg}`); }
@@ -10,6 +13,7 @@ const showAlert = (title, msg) => {
 };
 
 export default function AdminNotificationsScreen() {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState('Posted'); // 'Posted' | 'Drafts'
   const [notifications, setNotifications] = useState([]);
   const [title, setTitle] = useState('');
@@ -27,7 +31,7 @@ export default function AdminNotificationsScreen() {
     setLoading(true);
     const isDraft = activeTab === 'Drafts';
     const { data, error } = await supabase
-      .from('notifications')
+      .from(TABLES.NOTIFICATIONS)
       .select('*')
       .eq('is_draft', isDraft)
       .order('created_at', { ascending: false });
@@ -43,7 +47,7 @@ export default function AdminNotificationsScreen() {
     try {
       if (editingId) {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .update({ title, content, is_draft: asDraft, target_role: targetRole })
           .eq('id', editingId);
 
@@ -52,7 +56,7 @@ export default function AdminNotificationsScreen() {
         setEditingId(null);
       } else {
         const { error } = await supabase
-          .from('notifications')
+          .from(TABLES.NOTIFICATIONS)
           .insert([{ title, content, is_draft: asDraft, target_role: targetRole }]);
 
         if (error) throw error;
@@ -80,7 +84,7 @@ export default function AdminNotificationsScreen() {
   const handleDelete = async (id) => {
     if (Platform.OS === 'web') {
       if (!window.confirm('Delete this notification?')) return;
-      await supabase.from('notifications').delete().eq('id', id);
+      await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
       setTitle('');
       setContent('');
       setTargetRole('all');
@@ -90,7 +94,7 @@ export default function AdminNotificationsScreen() {
       Alert.alert("Delete", "Are you sure?", [
         { text: "Cancel" },
         { text: "Delete", style: 'destructive', onPress: async () => {
-            await supabase.from('notifications').delete().eq('id', id);
+            await supabase.from(TABLES.NOTIFICATIONS).delete().eq('id', id);
             setTitle('');
             setContent('');
             setTargetRole('all');
@@ -102,11 +106,10 @@ export default function AdminNotificationsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title="Notification Manager"
         subtitle="Post announcements to users"
-        colors={['#0288D1', '#01579B']}
       />
       <View style={styles.innerContent}>
       {/* TABS */}
@@ -193,10 +196,10 @@ export default function AdminNotificationsScreen() {
                 
                 <View style={styles.cardActions}>
                     <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                        <Ionicons name="pencil" size={22} color="#0288D1" />
+                        <Icon name="pencil" size="md" color="#0288D1" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
-                        <Ionicons name="trash-outline" size={22} color="red" />
+                        <Icon name="trash" size="md" color="red" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -205,12 +208,12 @@ export default function AdminNotificationsScreen() {
         />
       )}
       </View>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   innerContent: { flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
   tabContainer: { flexDirection: 'row', backgroundColor: '#E1F5FE', borderRadius: 10, padding: 5, marginBottom: 20 },
   tab: { flex: 1, padding: 10, alignItems: 'center', borderRadius: 8 },

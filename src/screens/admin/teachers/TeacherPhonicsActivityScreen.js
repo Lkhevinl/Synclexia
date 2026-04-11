@@ -1,53 +1,54 @@
 // screens/teachers/TeacherPhonicsActivityScreen.js
 // Teacher CRUD screen for phonics_activity_content table.
-// Full management: add, edit, toggle active, delete blend/rhyme/segment items.
+// Full management: add, edit, toggle active, delete blend & segment items.
 
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView, StatusBar,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../../lib/supabase';
+import { TABLES } from '../../../lib/constants';
 import GoBackBtn from '../../../components/GoBackBtn';
 import { useAuth } from '../../../context/AuthContext';
+import ScreenWrapper from '../../../components/ScreenWrapper';
+import tokens from '../../../theme/tokens';
+import { useTheme } from '../../../context/ThemeContext';
 
 const GAME_TYPES = [
-  { id: 'blend',   label: 'Blend It 🔗',    color: '#FF9800' },
-  { id: 'rhyme',   label: 'Rhyme Time 🎵',  color: '#E91E63' },
-  { id: 'segment', label: 'Count Sounds 🔢', color: '#4CAF50' },
+  { id: 'blend',   label: 'Blend It',    color: '#FF9800' },
+  { id: 'segment', label: 'Count Sounds', color: '#4CAF50' },
 ];
 
 const FORM_HINTS = {
   blend:   'phonemes: c,a,t  |  word: cat  |  emoji: 🐱',
-  rhyme:   'target: cat  |  options: bat,dog,sun  |  correct: bat  |  emoji: 🐱',
   segment: 'word: cat  |  phonemes: c,a,t  |  count: 3  |  emoji: 🐱',
 };
 
 const parseBlend   = (f) => ({ phonemes: f.phonemes.split(',').map(s => s.trim()), word: f.word.trim(), emoji: f.emoji.trim() });
-const parseRhyme   = (f) => ({ target: f.target.trim(), options: f.options.split(',').map(s => s.trim()), correct: f.correct.trim(), emoji: f.emoji.trim() });
 const parseSegment = (f) => ({ word: f.word.trim(), phonemes: f.phonemes.split(',').map(s => s.trim()), count: parseInt(f.count), emoji: f.emoji.trim() });
 
-const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: '' });
-const rhymeToForm   = (d) => ({ phonemes: '', word: '', emoji: d.emoji || '', target: d.target || '', options: d.options?.join(',') || '', correct: d.correct || '', count: '' });
-const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', target: '', options: '', correct: '', count: d.count?.toString() || '' });
+const blendToForm   = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: '' });
+const segmentToForm = (d) => ({ phonemes: d.phonemes?.join(',') || '', word: d.word || '', emoji: d.emoji || '', count: d.count?.toString() || '' });
 
 export default function TeacherPhonicsActivityScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [items, setItems]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [gameType, setGameType]   = useState('blend');
   const [level, setLevel]         = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+  const [form, setForm] = useState({ phonemes: '', word: '', emoji: '', count: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonics_activity_content')
+      .from(TABLES.PHONICS_ACTIVITY_CONTENT)
       .select('*')
       .order('game_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -57,7 +58,7 @@ export default function TeacherPhonicsActivityScreen() {
   };
 
   const resetForm = () => {
-    setForm({ phonemes: '', word: '', emoji: '', target: '', options: '', correct: '', count: '' });
+    setForm({ phonemes: '', word: '', emoji: '', count: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -67,14 +68,12 @@ export default function TeacherPhonicsActivityScreen() {
     setLevel(item.difficulty_level);
     setEditingId(item.id);
     if (item.game_type === 'blend')   setForm(blendToForm(item.data));
-    if (item.game_type === 'rhyme')   setForm(rhymeToForm(item.data));
     if (item.game_type === 'segment') setForm(segmentToForm(item.data));
   };
 
   const buildData = () => {
     try {
       if (gameType === 'blend')   return parseBlend(form);
-      if (gameType === 'rhyme')   return parseRhyme(form);
       if (gameType === 'segment') return parseSegment(form);
     } catch { return null; }
   };
@@ -86,20 +85,20 @@ export default function TeacherPhonicsActivityScreen() {
     if (!data) return Alert.alert('Missing Fields', 'Please fill all required fields for this game type.');
     const payload = { game_type: gameType, difficulty_level: level, data };
     if (editingId) {
-      const { error } = await supabase.from('phonics_activity_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Update Error', error.message);
-      Alert.alert('✅ Updated', 'Item updated successfully.');
+      Alert.alert('Updated', 'Item updated successfully.');
     } else {
-      const { error } = await supabase.from('phonics_activity_content').insert([{ ...payload, is_active: true, created_by: profile.id }]);
+      const { error } = await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).insert([{ ...payload, is_active: true, created_by: profile.id }]);
       if (error) return Alert.alert('Save Error', error.message);
-      Alert.alert('✅ Added', 'Item added successfully.');
+      Alert.alert('Added', 'Item added successfully.');
     }
     resetForm();
     fetchItems();
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonics_activity_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -107,7 +106,7 @@ export default function TeacherPhonicsActivityScreen() {
     Alert.alert('Delete Item', 'Are you sure you want to delete this item?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonics_activity_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);
@@ -116,24 +115,20 @@ export default function TeacherPhonicsActivityScreen() {
   const fieldDefs = [
     { id: 'phonemes', label: 'Phonemes (comma-separated)',   show: ['blend', 'segment'] },
     { id: 'word',     label: 'Word',                          show: ['blend', 'segment'] },
-    { id: 'target',   label: 'Target word',                   show: ['rhyme'] },
-    { id: 'options',  label: 'Options (comma-separated)',     show: ['rhyme'] },
-    { id: 'correct',  label: 'Correct answer',                show: ['rhyme'] },
     { id: 'count',    label: 'Phoneme count (number)',         show: ['segment'] },
-    { id: 'emoji',    label: 'Emoji (optional)',               show: ['blend', 'rhyme', 'segment'] },
+    { id: 'emoji',    label: 'Emoji (optional)',               show: ['blend', 'segment'] },
   ].filter(f => f.show.includes(gameType));
 
   const gameColor = GAME_TYPES.find(g => g.id === gameType)?.color || '#FF9800';
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="teacher" padded={false} style={{ backgroundColor: colors.surface }}>
 
       {/* ── HEADER ── */}
       <LinearGradient colors={['#F57C00', '#E65100']} style={styles.header}>
         <GoBackBtn />
-        <Text style={styles.headerTitle}>Phonics Activity 🎵</Text>
-        <Text style={styles.headerSub}>Manage blend, rhyme & segment games</Text>
+        <Text style={styles.headerTitle}>Phonics Activity</Text>
+        <Text style={styles.headerSub}>Manage blend & segment games</Text>
 
         {/* Game-type pills */}
         <View style={styles.typeRow}>
@@ -151,7 +146,7 @@ export default function TeacherPhonicsActivityScreen() {
 
       {/* ── ADD / EDIT FORM ── */}
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-        <Text style={styles.formTitle}>{editingId ? '✏️ Edit Item' : '➕ Add New Item'}</Text>
+        <Text style={styles.formTitle}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
 
         <Text style={styles.fieldLabel}>Difficulty Level</Text>
         <View style={styles.levelRow}>
@@ -189,7 +184,7 @@ export default function TeacherPhonicsActivityScreen() {
             </TouchableOpacity>
           )}
           <TouchableOpacity style={[styles.saveBtn, { backgroundColor: gameColor }]} onPress={handleSave}>
-            <Ionicons name={editingId ? 'checkmark-circle' : 'add-circle'} size={18} color="#fff" />
+            <Icon name={editingId ? 'check-circle' : 'plus-circle'} size="md" color="#fff" />
             <Text style={styles.saveBtnText}>{editingId ? 'Update' : 'Add Item'}</Text>
           </TouchableOpacity>
         </View>
@@ -222,31 +217,31 @@ export default function TeacherPhonicsActivityScreen() {
                   <Text style={styles.cardLevel}>Level {item.difficulty_level ?? 'All'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#B0BEC5'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="musical-notes-outline" size={50} color="#E0E0E0" />
+              <Icon name="music" size="lg" color="#E0E0E0" />
               <Text style={styles.emptyText}>No items yet. Add one above!</Text>
             </View>
           }
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
+  container: { flex: 1 },
 
   // Header
   header: { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

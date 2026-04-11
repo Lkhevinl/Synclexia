@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper';
 import { navigationRef } from '../navigation/navigationRef';
-import { runDiagnostics } from '../lib/diagnostics';
+import { TIMEOUTS, TABLES, ROLES } from '../lib/constants';
 
 const AuthContext = createContext({});
 
@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [dashboardMode, setDashboardMode] = useState('auto');
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const signingOutRef = useRef(false);
 
   const clearStaleSession = async () => {
@@ -47,11 +48,17 @@ export const AuthProvider = ({ children }) => {
     //    TOKEN_REFRESHED is intentionally ignored: Supabase updates its internal
     //    token automatically; we don't need to update React state for that.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true);
+        setLoading(false);
+        return;
+      }
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setProfile(null);
         setProfileLoaded(false);
         setDashboardMode('auto');
+        setRecoveryMode(false);
         setLoading(false);
         return;
       }
@@ -70,15 +77,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
-    // Extended to 15-second timeout for better reliability on slow connections
-    if (Date.now() - startTime > 15000) {
-      console.warn('fetchProfile: timed out after 15s');
+    if (Date.now() - startTime > TIMEOUTS.PROFILE_TOTAL_MS) {
+      console.warn('fetchProfile: total time exceeded 20s');
       setProfileError('server_error');
       setProfileLoaded(true);
       return null;
     }
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      // Race the Supabase query against a 8-second hard timeout so a hanging
+      // network request can never block the app indefinitely.
+      const queryPromise = supabase.from(TABLES.PROFILES).select('*').eq('id', userId).single();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), TIMEOUTS.PROFILE_QUERY_MS)
+      );
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
       if (error) {
         console.warn('fetchProfile error:', error.message, '| code:', error.code, '| status:', error.status);
         const isInfiniteRecursion = error.code === '42P17' ||
@@ -92,7 +104,7 @@ export const AuthProvider = ({ children }) => {
         }
         if (isTransient500 && retryCount < 3) {
           console.log(`fetchProfile: transient 500, retrying… (attempt ${retryCount + 1})`);
-          await new Promise(r => setTimeout(r, 1500));
+          await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
           return fetchProfile(userId, retryCount + 1, startTime);
         }
         if (isTransient500) {
@@ -121,7 +133,7 @@ export const AuthProvider = ({ children }) => {
       } else if (retryCount < 3) {
         // Profile may not exist yet (signup race) or network issue — retry up to 3 times
         console.log(`fetchProfile: profile not found, retrying… (attempt ${retryCount + 1})`);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
         return fetchProfile(userId, retryCount + 1, startTime);
       }
       setProfileError('not_found');
@@ -129,13 +141,17 @@ export const AuthProvider = ({ children }) => {
       return null;
     } catch (e) {
       console.warn('fetchProfile exception:', e.message);
-      // Check for network-related errors
-      if (e.message?.includes('Network') || e.message?.includes('connect') || e.message?.includes('timeout')) {
-        console.warn('Network error detected, will retry on user request');
-        setProfileError('network_error');
-      } else {
-        setProfileError('server_error');
+      const isTimeout = e.message === 'timeout';
+      const isNetwork = e.message?.includes('Network') || e.message?.includes('connect') || e.message?.includes('fetch');
+
+      // Retry on timeout or network errors (up to 3 times total)
+      if ((isTimeout || isNetwork) && retryCount < 3) {
+        console.log(`fetchProfile: ${isTimeout ? 'request timed out' : 'network error'}, retrying… (attempt ${retryCount + 1})`);
+        await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
+        return fetchProfile(userId, retryCount + 1, startTime);
       }
+
+      setProfileError(isTimeout || isNetwork ? 'network_error' : 'server_error');
       setProfileLoaded(true);
       return null;
     }
@@ -153,6 +169,7 @@ export const AuthProvider = ({ children }) => {
     setProfile(null);
     setProfileLoaded(false);
     setDashboardMode('auto');
+    setRecoveryMode(false);
     setLoading(false);
     // 2. Background cleanup — fire-and-forget, UI is already on Login
     supabase.auth.signOut({ scope: 'local' }).catch(() => {});
@@ -166,14 +183,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const retryFetchProfile = async (userId) => {
-    // Clear error state and retry
     setProfileError(null);
     setProfileLoaded(false);
-
-    // Run diagnostics first
-    console.log('Running diagnostics before retry...');
-    await runDiagnostics();
-
     return fetchProfile(userId);
   };
 
@@ -182,6 +193,8 @@ export const AuthProvider = ({ children }) => {
   const resetSigningOut = () => {
     signingOutRef.current = false;
   };
+
+  const clearRecoveryMode = () => setRecoveryMode(false);
 
   return (
     <AuthContext.Provider value={{
@@ -199,6 +212,8 @@ export const AuthProvider = ({ children }) => {
         setProfileError,
         setLoading,
         resetSigningOut,
+        recoveryMode,
+        clearRecoveryMode,
     }}>
       {children}
     </AuthContext.Provider>

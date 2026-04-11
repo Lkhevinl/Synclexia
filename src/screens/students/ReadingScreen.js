@@ -1,15 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
-import GoBackBtn from '../../components/GoBackBtn';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import StudentButton from '../../components/student/StudentButton';
+import StudentProgressBar from '../../components/student/StudentProgressBar';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
-import { checkQuestProgress } from '../../lib/questHelper';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 
 // Color palette — cycled by level number
 const LEVEL_COLORS = ['#FF7043', '#FFA726', '#EC407A', '#AB47BC', '#5C6BC0', '#26A69A', '#42A5F5', '#66BB6A'];
@@ -17,7 +20,7 @@ const storyColor = (level) => LEVEL_COLORS[((parseInt(level) || 1) - 1) % LEVEL_
 
 export default function ReadingScreen() {
   const { profile } = useAuth();
-  const { getDyslexiaTextStyle } = useTheme();
+  const { colors, getDyslexiaTextStyle } = useTheme();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -28,7 +31,7 @@ export default function ReadingScreen() {
 
   useEffect(() => {
     supabase
-      .from('stories')
+      .from(TABLES.STORIES)
       .select('id, title, content, level')
       .order('level', { ascending: true })
       .then(({ data }) => {
@@ -125,7 +128,6 @@ export default function ReadingScreen() {
         durationSeconds: duration,
         details: { storyId: selectedStory.id, storyTitle: selectedStory.title, level: selectedStory.level },
       });
-      checkQuestProgress(profile.id, 'Reading');
     }
     setSelectedStory(null);
   };
@@ -133,17 +135,8 @@ export default function ReadingScreen() {
   const storyTokens = selectedStory?.content ? tokenize(selectedStory.content).tokens : [];
 
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
-
-      {/* 1. LIBRARY HEADER */}
-      <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-        <GoBackBtn />
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>My Library</Text>
-          <Text style={styles.headerSub}>Select a book to read</Text>
-        </View>
-      </LinearGradient>
+    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+      <StudentPageHeader title="My Library" />
 
       {/* 2. LOADING / BOOKSHELF GRID */}
       {loading ? (
@@ -153,7 +146,7 @@ export default function ReadingScreen() {
         </View>
       ) : stories.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 40 }}>📚</Text>
+          <Icon name="book-open" size="xl" color="#78909C" />
           <Text style={{ color: '#78909C', marginTop: 10 }}>No stories yet. Ask an admin to add content.</Text>
         </View>
       ) : (
@@ -174,21 +167,21 @@ export default function ReadingScreen() {
               <View style={styles.bookContent}>
                 <Text style={styles.bookLevel}>Lvl {item.level}</Text>
                 <Text style={styles.bookTitle}>{item.title}</Text>
-                <Ionicons name="book" size={24} color="rgba(255,255,255,0.5)" style={{ marginTop: 10 }} />
+                <Icon name="book-open" size="md" color="rgba(255,255,255,0.5)" style={{ marginTop: 10 }} />
               </View>
             </TouchableOpacity>
           )}
         />
       )}
 
-      {/* 3. READING MODAL */}
+      {/* READING MODAL */}
       <Modal visible={!!selectedStory} animationType="slide" transparent onRequestClose={closeBook}>
         <View style={styles.modalOverlay}>
-          <View style={styles.readerContainer}>
-            <View style={[styles.readerHeader, { backgroundColor: selectedStory ? storyColor(selectedStory.level) : '#5D4037' }]}>
-              <Text style={styles.readerTitle}>{selectedStory?.title}</Text>
+          <StudentCard style={styles.readerContainer}>
+            <View style={[styles.readerHeader, { backgroundColor: selectedStory ? storyColor(selectedStory.level) : c.primaryDark }]}>
+              <Text style={styles.readerTitle} numberOfLines={1}>{selectedStory?.title}</Text>
               <TouchableOpacity onPress={closeBook} style={styles.closeBtn}>
-                <Ionicons name="close" size={24} color="#fff" />
+                <Icon name="x" size="md" color="#fff" />
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.readerContent}>
@@ -209,40 +202,38 @@ export default function ReadingScreen() {
               </Text>
             </ScrollView>
             <View style={styles.readerControls}>
-              <TouchableOpacity style={[styles.speakBtn, isSpeaking && styles.speakBtnStop]} onPress={handleSpeak}>
-                <Ionicons name={isSpeaking ? 'stop' : 'volume-high'} size={24} color="#fff" />
-                <Text style={styles.speakText}>{isSpeaking ? 'Stop' : 'Read to Me (Highlight)'}</Text>
-              </TouchableOpacity>
+              <StudentButton
+                variant={isSpeaking ? 'muted' : 'success'}
+                onPress={handleSpeak}
+                style={styles.speakBtn}
+              >
+                <Icon name={isSpeaking ? 'square' : 'volume-2'} size="md" color="#fff" />
+                <Text style={styles.speakText}>{isSpeaking ? 'Stop' : 'Read to Me'}</Text>
+              </StudentButton>
             </View>
-          </View>
+          </StudentCard>
         </View>
       </Modal>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
-  header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
-  headerTitleBox: { alignItems: 'center', marginTop: 10 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
   shelfContainer: { padding: 20, paddingTop: 30 },
-  bookCover: { width: '47%', aspectRatio: 0.7, borderRadius: 12, marginBottom: 20, elevation: 6, borderRightWidth: 5, borderRightColor: 'rgba(0,0,0,0.1)', borderBottomWidth: 5, borderBottomColor: 'rgba(0,0,0,0.1)' },
+  bookCover: { width: '47%', aspectRatio: 0.7, borderRadius: 20, marginBottom: 20, elevation: 8, borderWidth: 3, borderColor: 'rgba(255,255,255,0.4)', borderBottomWidth: 6, borderBottomColor: 'rgba(0,0,0,0.15)' },
   spine: { position: 'absolute', left: 10, top: 0, bottom: 0, width: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
   bookContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 10, paddingLeft: 15 },
-  bookLevel: { fontSize: 12, fontWeight: 'bold', color: 'rgba(255,255,255,0.8)', marginBottom: 5 },
-  bookTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff', textAlign: 'center', fontFamily: 'serif' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center' },
-  readerContainer: { width: '90%', height: '80%', backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden' },
-  readerHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  readerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff', flex: 1, marginRight: 10 },
-  closeBtn: { padding: 5, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 20 },
-  readerContent: { padding: 25 },
-  storyText: { fontSize: 24, lineHeight: 40, color: '#333', textAlign: 'center' },
-  readerControls: { padding: 20, borderTopWidth: 1, borderColor: '#eee', backgroundColor: '#fafafa' },
-  speakBtn: { backgroundColor: '#4CAF50', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 15, borderRadius: 15 },
-  speakBtnStop: { backgroundColor: '#C62828' },
-  speakText: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginLeft: 10 },
+  bookLevel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)', marginBottom: 5 },
+  bookTitle: { fontSize: 18, fontWeight: '800', color: '#fff', textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  readerContainer: { width: '100%', maxHeight: '85%', padding: 0, overflow: 'hidden' },
+  readerHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  readerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', flex: 1, marginRight: 10 },
+  closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' },
+  readerContent: { padding: 24 },
+  storyText: { fontSize: 24, lineHeight: 40, color: c.text, textAlign: 'center' },
+  readerControls: { padding: 16, borderTopWidth: 1, borderColor: '#eee', alignItems: 'center' },
+  speakBtn: { alignSelf: 'stretch' },
+  speakText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
 });

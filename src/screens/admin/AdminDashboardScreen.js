@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, Modal, FlatList, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, ActivityIndicator } from 'react-native';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
-
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import Sidebar from '../../components/Sidebar';
+import ScreenWrapper from '../../components/ScreenWrapper';
 
 export default function AdminDashboardScreen({ navigation }) {
-  const { theme, getBgColor, getHeaderGradient, getThemeColors, getPrimaryColor } = useTheme();
+  const { theme, colors } = useTheme();
   const { profile } = useAuth();
-  const themeColors = getThemeColors();
   const [notifications, setNotifications] = useState([]);
+  const [dismissingId, setDismissingId] = useState(null);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
@@ -24,7 +25,6 @@ export default function AdminDashboardScreen({ navigation }) {
     phonicsActivities: 0,
     phonological: 0,
   });
-  const [usersModalVisible, setUsersModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -45,23 +45,133 @@ export default function AdminDashboardScreen({ navigation }) {
   }, []);
 
   const fetchNotifications = async () => {
+    if (!profile?.id) {
+      setNotifications([]);
+      return;
+    }
     try {
-      const { data, error } = await supabase.from('notifications').select('*').eq('is_draft', false).order('created_at', { ascending: false });
+      // Get notifications that the user has NOT dismissed
+      const { data: dismissed, error: dismissedError } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .select('notification_id')
+        .eq('user_id', profile.id)
+        .eq('is_dismissed', true);
+
+      // If table doesn't exist yet, just show all notifications
+      if (dismissedError) {
+        console.log('User notifications table not ready, showing all notifications');
+        const { data, error } = await supabase
+          .from(TABLES.NOTIFICATIONS)
+          .select('*')
+          .eq('is_draft', false)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          setNotifications([]);
+          return;
+        }
+        setNotifications(data || []);
+        return;
+      }
+
+      const dismissedIds = (dismissed || []).map(d => d.notification_id);
+
+      // Build query for active notifications (admins see all)
+      let query = supabase
+        .from(TABLES.NOTIFICATIONS)
+        .select('*')
+        .eq('is_draft', false)
+        .order('created_at', { ascending: false });
+
+      // Filter out dismissed notifications
+      if (dismissedIds.length > 0) {
+        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         setNotifications([]);
         return;
       }
+
       setNotifications(data || []);
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
+  };
+
+  const dismissNotification = async (notificationId) => {
+    if (!profile?.id) return;
+    setDismissingId(notificationId);
+    try {
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert({
+          user_id: profile.id,
+          notification_id: notificationId,
+          is_dismissed: true,
+          dismissed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error dismissing notification:', error);
+        // Still remove from UI even if DB save fails
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        return;
+      }
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove from UI on error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const dismissAllNotifications = async () => {
+    if (!profile?.id || notifications.length === 0) return;
+    try {
+      const records = notifications.map(n => ({
+        user_id: profile.id,
+        notification_id: n.id,
+        is_dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from(TABLES.USER_NOTIFICATIONS)
+        .upsert(records, { onConflict: 'user_id,notification_id' });
+
+      if (error) {
+        console.error('Error clearing all notifications:', error);
+        return;
+      }
+      setNotifications([]);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  };
+
+  const clearAllNotifications = () => {
+    if (notifications.length === 0) return;
+    Alert.alert(
+      'Clear All Notifications',
+      'Are you sure you want to clear all notifications?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications }
+      ]
+    );
   };
 
   const fetchUserCounts = async () => {
     try {
       const [s, p] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'parent'),
+        supabase.from(TABLES.PROFILES).select('*', { count: 'exact', head: true }).eq('role', 'student'),
+        supabase.from(TABLES.PROFILES).select('*', { count: 'exact', head: true }).eq('role', 'parent'),
       ]);
 
       if (s.error || p.error) {
@@ -81,11 +191,11 @@ export default function AdminDashboardScreen({ navigation }) {
   const fetchContentStats = async () => {
     try {
       const [stories, phonics, spelling, phonicsAct, phonological] = await Promise.all([
-        supabase.from('stories').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_items').select('id', { count: 'exact', head: true }),
-        supabase.from('spelling_words').select('id', { count: 'exact', head: true }),
-        supabase.from('phonics_activity_content').select('id', { count: 'exact', head: true }),
-        supabase.from('phonological_items').select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.STORIES).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ITEMS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.SPELLING_WORDS).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONICS_ACTIVITY_CONTENT).select('id', { count: 'exact', head: true }),
+        supabase.from(TABLES.PHONOLOGICAL_ITEMS).select('id', { count: 'exact', head: true }),
       ]);
 
       setContentStats({
@@ -109,7 +219,7 @@ export default function AdminDashboardScreen({ navigation }) {
   const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={[styles.iconBox, { backgroundColor: color }]}>
-        <Ionicons name={icon} size={32} color="#fff" />
+        <Icon name={icon} size="lg" color="#fff" />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{title}</Text>
@@ -120,7 +230,7 @@ export default function AdminDashboardScreen({ navigation }) {
           <Text style={styles.badgeText}>{badge}</Text>
         </View>
       )}
-      <Ionicons name="chevron-forward" size={24} color="#CFD8DC" />
+      <Icon name="chevron-forward" size="md" color="#CFD8DC" />
     </TouchableOpacity>
   );
 
@@ -148,41 +258,40 @@ export default function AdminDashboardScreen({ navigation }) {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: getBgColor() }]}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <Sidebar visible={sidebarVisible} onClose={() => setSidebarVisible(false)} />
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={getPrimaryColor()} />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading admin dashboard...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={80} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={styles.errorTitle}>Connection Error</Text>
           <Text style={styles.errorMessage}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={initializeAdminDashboard}>
-            <Ionicons name="refresh" size={20} color="#fff" />
+            <Icon name="refresh-cw" size="sm" color="#fff" />
             <Text style={styles.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <>
           {/* HEADER */}
-          <LinearGradient colors={getHeaderGradient()} style={styles.enhancedHeader}>
+          <LinearGradient colors={theme.headerGradient} style={styles.enhancedHeader}>
         <View style={styles.enhancedHeaderContent}>
           <View style={styles.headerTextSection}>
-            <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}! 👋</Text>
+            <Text style={styles.enhancedGreeting}>Hello, {profile?.full_name?.split(' ')[0] || 'Admin'}!</Text>
             <Text style={styles.enhancedSubGreeting}>Manage platform content and users</Text>
           </View>
           <View style={styles.enhancedHeaderIcons}>
             <TouchableOpacity onPress={() => setNotifVisible(true)} style={styles.enhancedIconBtn}>
-              <Ionicons name="notifications-outline" size={28} color="#fff" />
+              <Icon name="bell" size="md" color="#fff" />
               {notifications.length > 0 && <View style={styles.enhancedRedDot} />}
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setSidebarVisible(true)} style={styles.enhancedIconBtn}>
-              <Ionicons name="menu-outline" size={30} color="#fff" />
+              <Icon name="menu" size="lg" color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -194,7 +303,7 @@ export default function AdminDashboardScreen({ navigation }) {
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: '#E8F5E9' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="people" size={24} color="#4CAF50" />
+              <Icon name="users" size="md" color="#4CAF50" />
             </View>
             <Text style={[styles.statNumber, { color: '#4CAF50' }]}>{studentCount}</Text>
             <Text style={styles.statLabel}>Students</Text>
@@ -203,7 +312,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#F3E5F5' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="heart" size={24} color="#9C27B0" />
+              <Icon name="heart" size="md" color="#9C27B0" />
             </View>
             <Text style={[styles.statNumber, { color: '#9C27B0' }]}>{parentCount}</Text>
             <Text style={styles.statLabel}>Parents</Text>
@@ -212,7 +321,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="library" size={24} color="#2196F3" />
+              <Icon name="library" size="md" color="#2196F3" />
             </View>
             <Text style={[styles.statNumber, { color: '#2196F3' }]}>{Object.values(contentStats).reduce((a, b) => a + b, 0)}</Text>
             <Text style={styles.statLabel}>Content</Text>
@@ -221,7 +330,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
           <View style={[styles.statCard, { backgroundColor: '#FFF3E0' }]}>
             <View style={styles.statIconContainer}>
-              <Ionicons name="trending-up" size={24} color="#FF9800" />
+              <Icon name="trending-up" size="md" color="#FF9800" />
             </View>
             <Text style={[styles.statNumber, { color: '#FF9800' }]}>98%</Text>
             <Text style={styles.statLabel}>Uptime</Text>
@@ -231,7 +340,7 @@ export default function AdminDashboardScreen({ navigation }) {
 
         {/* QUICK ACTIONS SECTION */}
         <View style={styles.sectionHeader}>
-          <Ionicons name="flash" size={20} color={getPrimaryColor()} />
+          <Icon name="zap" size="sm" color={colors.primary} />
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
 
@@ -246,7 +355,7 @@ export default function AdminDashboardScreen({ navigation }) {
             <LinearGradient colors={['#667eea', '#764ba2']} style={styles.enhancedCardGradient}>
               <View style={styles.enhancedCardHeader}>
                 <View style={styles.enhancedIconWrap}>
-                  <Ionicons name="layers" size={32} color="#fff" />
+                  <Icon name="layers" size="lg" color="#fff" />
                 </View>
                 <Text style={styles.enhancedCardTitle}>Manage Contents</Text>
               </View>
@@ -255,7 +364,7 @@ export default function AdminDashboardScreen({ navigation }) {
               </Text>
               <View style={styles.enhancedCardFooter}>
                 <Text style={styles.enhancedCardStats}>{Object.values(contentStats).reduce((a, b) => a + b, 0)} total items</Text>
-                <Ionicons name="arrow-forward" size={20} color="rgba(255,255,255,0.8)" />
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
               </View>
             </LinearGradient>
           </TouchableOpacity>
@@ -263,105 +372,72 @@ export default function AdminDashboardScreen({ navigation }) {
           {/* MANAGE USERS */}
           <TouchableOpacity
             style={styles.enhancedCard}
-            onPress={() => setUsersModalVisible(true)}
+            onPress={() => navigation.navigate('AdminUsers')}
             activeOpacity={0.85}
           >
             <LinearGradient colors={['#f093fb', '#f5576c']} style={styles.enhancedCardGradient}>
               <View style={styles.enhancedIconWrap}>
-                <Ionicons name="people" size={32} color="#fff" />
+                <Icon name="users" size="lg" color="#fff" />
               </View>
               <Text style={styles.enhancedCardTitle}>Users</Text>
               <Text style={styles.enhancedCardSubtitle}>{studentCount + parentCount} total</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* MAINTENANCE LOGS */}
+          {/* MANAGE NOTIFICATIONS */}
           <TouchableOpacity
-            style={styles.enhancedCard}
-            onPress={() => navigation.navigate('MaintenanceLogs')}
+            style={[styles.enhancedCard, styles.wideCard]}
+            onPress={() => navigation.navigate('AdminNotifications')}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={['#4facfe', '#00f2fe']} style={styles.enhancedCardGradient}>
-              <View style={styles.enhancedIconWrap}>
-                <Ionicons name="construct" size={32} color="#fff" />
+            <LinearGradient colors={['#f7971e', '#ffd200']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Icon name="megaphone" size="lg" color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Manage Notifications</Text>
               </View>
-              <Text style={styles.enhancedCardTitle}>Maintenance</Text>
-              <Text style={styles.enhancedCardSubtitle}>Logs & Issues</Text>
+              <Text style={styles.enhancedCardDescription}>
+                Send app-wide announcements and manage alerts
+              </Text>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>{notifications.length} active notifications</Text>
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* REPORT ANALYTICS */}
+          <TouchableOpacity
+            style={[styles.enhancedCard, styles.wideCard]}
+            onPress={() => navigation.navigate('AdminReports')}
+            activeOpacity={0.85}
+          >
+            <LinearGradient colors={['#11998e', '#38ef7d']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Icon name="bar-chart-2" size="lg" color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Report Analytics</Text>
+              </View>
+              <View style={styles.reportFeatureList}>
+                <View style={styles.reportFeatureItem}>
+                  <Icon name="activity" size="sm" color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.reportFeatureText}>Activity logs from parents and learners</Text>
+                </View>
+                <View style={styles.reportFeatureItem}>
+                  <Icon name="file-text" size="sm" color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.reportFeatureText}>Custom reports/exports (generate PDFs and CSVs for review or sharing)</Text>
+                </View>
+              </View>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>View insights & exports</Text>
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* USERS MANAGEMENT MODAL */}
-      <Modal visible={usersModalVisible} transparent animationType="slide" onRequestClose={() => setUsersModalVisible(false)}>
-        <View style={styles.submenuOverlay}>
-          <View style={styles.submenuContent}>
-            <View style={styles.submenuHeader}>
-              <Text style={styles.submenuTitle}>User Management</Text>
-              <TouchableOpacity onPress={() => setUsersModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView contentContainerStyle={{ padding: 16 }}>
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'student' }); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#C8E6C9' }]}>
-                  <Ionicons name="school" size={24} color="#2E7D32" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Learners (Students)</Text>
-                  <Text style={styles.submenuItemSub}>{studentCount} total</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminUsers', { filterRole: 'parent' }); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#F8BBD0' }]}>
-                  <Ionicons name="people" size={24} color="#C2185B" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Parents</Text>
-                  <Text style={styles.submenuItemSub}>{parentCount} total</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminParentLinks'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#E1BEE7' }]}>
-                  <Ionicons name="people-circle" size={24} color="#6A1B9A" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Parent Links</Text>
-                  <Text style={styles.submenuItemSub}>Manage relationships</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.submenuItem}
-                onPress={() => { setUsersModalVisible(false); navigation.navigate('AdminNotifications'); }}
-              >
-                <View style={[styles.submenuIcon, { backgroundColor: '#FFCCBC' }]}>
-                  <Ionicons name="megaphone" size={24} color="#D84315" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.submenuItemTitle}>Send Announcements</Text>
-                  <Text style={styles.submenuItemSub}>Notify all users</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#ccc" />
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* NOTIFICATIONS MODAL */}
       <Modal visible={notifVisible} transparent={true} animationType="slide" onRequestClose={() => setNotifVisible(false)}>
@@ -369,9 +445,16 @@ export default function AdminDashboardScreen({ navigation }) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeaderContent}>
               <Text style={styles.modalTitle}>Notifications 🔔</Text>
-              <TouchableOpacity onPress={() => setNotifVisible(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
+              <View style={styles.modalHeaderActions}>
+                {notifications.length > 0 && (
+                  <TouchableOpacity onPress={clearAllNotifications} style={styles.clearAllBtn}>
+                    <Text style={styles.clearAllText}>Clear All</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={() => setNotifVisible(false)}>
+                  <Icon name="x" size="md" color="#666" />
+                </TouchableOpacity>
+              </View>
             </View>
             <FlatList
               data={notifications}
@@ -379,29 +462,41 @@ export default function AdminDashboardScreen({ navigation }) {
               contentContainerStyle={{ paddingBottom: 10 }}
               ListEmptyComponent={
                 <View style={styles.emptyNotifContainer}>
-                  <Ionicons name="notifications-off-outline" size={48} color="#ddd" />
+                  <Icon name="bell-off" size="lg" color="#ddd" />
                   <Text style={styles.emptyNotifText}>No notifications yet</Text>
                 </View>
               }
               renderItem={({ item }) => (
                 <View style={styles.notifItem}>
                   <View style={styles.notifIconBox}>
-                    <Ionicons name="megaphone" size={20} color="#4c669f" />
+                    <Icon name="megaphone" size="md" color="#4c669f" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.notifTitle}>{item.title}</Text>
                     <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                     <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => dismissNotification(item.id)}
+                    disabled={dismissingId === item.id}
+                    style={styles.dismissBtn}
+                  >
+                    {dismissingId === item.id ? (
+                      <ActivityIndicator size="small" color="#999" />
+                    ) : (
+                      <Icon name="x" size="sm" color="#999" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               )}
             />
           </View>
         </View>
       </Modal>
+
       </>
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
@@ -442,6 +537,10 @@ const styles = StyleSheet.create({
   emptyNotifText: { marginTop: 12, color: '#999', fontSize: 15 },
   closeBtn: { backgroundColor: '#333', paddingVertical: 12, borderRadius: 15, alignItems: 'center', marginTop: 10 },
   closeText: { color: '#fff', fontWeight: 'bold' },
+  modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16, marginRight: 8 },
+  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  dismissBtn: { padding: 8, marginLeft: 4 },
 
   // Loading and Error states
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
@@ -513,6 +612,10 @@ const styles = StyleSheet.create({
   enhancedCardDescription: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: 16 },
   enhancedCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
   enhancedCardStats: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+
+  reportFeatureList: { marginBottom: 16, gap: 10 },
+  reportFeatureItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  reportFeatureText: { fontSize: 13, color: 'rgba(255,255,255,0.9)', lineHeight: 18, flex: 1 },
 
   // Enhanced Header Styles
   enhancedHeader: {

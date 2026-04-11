@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import GoBackBtn from '../../components/GoBackBtn';
+import Icon from '../../components/icons/Icon';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentCard from '../../components/student/StudentCard';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import c from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
 
 // expo-speech-recognition requires a dev/production build (not Expo Go).
@@ -23,6 +26,7 @@ const AVAILABLE = !!ExpoSpeechRecognitionModule;
 
 export default function SpeechToTextScreen() {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
@@ -112,62 +116,79 @@ export default function SpeechToTextScreen() {
   const handleClear = () => { transcriptRef.current = ''; setTranscript(''); setError(null); };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={['#01579B', '#0288D1']} style={styles.header}>
-        <GoBackBtn />
-        <View style={styles.headerTitleBox}>
-          <Text style={styles.headerTitle}>Speech to Text</Text>
-          <Text style={styles.headerSub}>Tap the mic and start speaking</Text>
-        </View>
-      </LinearGradient>
-
-      <ScrollView style={styles.transcriptBox} contentContainerStyle={styles.transcriptContent}>
-        {transcript ? (
-          <Text style={styles.transcriptText}>{transcript}</Text>
-        ) : (
-          <Text style={styles.placeholderText}>
-            {isListening ? 'Listening... speak now 🎙️' : 'Your spoken words will appear here.'}
-          </Text>
-        )}
-        {error && <Text style={styles.errorText}>⚠️ {error}</Text>}
-      </ScrollView>
-
-      <View style={styles.controls}>
-        <TouchableOpacity style={[styles.clearBtn, !transcript && styles.clearBtnHidden]} onPress={handleClear} disabled={!transcript}>
-          <Ionicons name="trash-outline" size={22} color="#78909C" />
-          <Text style={styles.clearBtnText}>Clear</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.micBtn, isListening && styles.micBtnActive]} onPress={toggleListening} activeOpacity={0.8}>
-          <Ionicons name={isListening ? 'stop' : 'mic'} size={36} color="#fff" />
-        </TouchableOpacity>
-
-        <View style={styles.clearBtn} />
+    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']}>
+      <View style={styles.padded}>
+        <StudentPageHeader title="Speech to Text" />
       </View>
 
-      {!AVAILABLE && (
-        <Text style={styles.devNote}>⚙️ Install expo-speech-recognition for live recognition</Text>
-      )}
-    </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <StudentCard style={styles.transcriptCard}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.transcriptContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
+            {transcript ? (
+              <Text style={styles.transcriptText}>{transcript}</Text>
+            ) : (
+              <Text style={styles.placeholderText}>
+                {isListening ? 'Listening… speak now' : 'Your spoken words will appear here.'}
+              </Text>
+            )}
+            {error && (
+              <View style={styles.errorRow}>
+                <Icon name="alert-triangle" size="sm" color="#F44336" />
+                <Text style={styles.errorText}> {error}</Text>
+              </View>
+            )}
+          </ScrollView>
+        </StudentCard>
+
+        <View style={styles.controls}>
+          <TouchableOpacity
+            style={[styles.clearBtn, !transcript && styles.clearBtnHidden]}
+            onPress={handleClear}
+            disabled={!transcript}
+          >
+            <Icon name="trash" size="md" color={c.textMuted} />
+            <Text style={styles.clearBtnText}>Clear</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.micBtn, isListening && styles.micBtnActive]}
+            onPress={toggleListening}
+            activeOpacity={0.8}
+          >
+            <Icon name={isListening ? 'square' : 'mic'} size="xl" color="#fff" />
+          </TouchableOpacity>
+
+          <View style={styles.clearBtn} />
+        </View>
+
+        {!AVAILABLE && (
+          <Text style={styles.devNote}>Install expo-speech-recognition for live recognition</Text>
+        )}
+      </ScrollView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA' },
-  header: { paddingTop: 60, paddingBottom: 30, paddingHorizontal: 20, borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
-  headerTitleBox: { alignItems: 'center', marginTop: 10 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 4 },
-  transcriptBox: { flex: 1, margin: 20, backgroundColor: '#fff', borderRadius: 20, elevation: 3 },
-  transcriptContent: { padding: 24, minHeight: 200 },
-  transcriptText: { fontSize: 22, color: '#333', lineHeight: 36 },
+  padded: { paddingHorizontal: 20 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20 },
+  transcriptCard: { height: 280, marginBottom: 20, padding: 0 },
+  scrollView: { flex: 1 },
+  transcriptContent: { padding: 20, flexGrow: 1 },
+  transcriptText: { fontSize: 22, color: c.text, lineHeight: 36 },
   placeholderText: { fontSize: 16, color: '#B0BEC5', textAlign: 'center', marginTop: 40, lineHeight: 26 },
-  errorText: { fontSize: 14, color: '#F44336', marginTop: 16, textAlign: 'center' },
-  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 40, paddingBottom: 40 },
-  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#0288D1', justifyContent: 'center', alignItems: 'center', elevation: 8 },
+  errorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, justifyContent: 'center' },
+  errorText: { fontSize: 14, color: '#F44336', textAlign: 'center' },
+  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 100 },
+  micBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: c.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: c.primaryDark, shadowOffset:{width:0,height:4}, shadowOpacity:0.4, shadowRadius:6 },
   micBtnActive: { backgroundColor: '#C62828' },
   clearBtn: { width: 60, height: 60, borderRadius: 15, backgroundColor: '#ECEFF1', justifyContent: 'center', alignItems: 'center' },
   clearBtnHidden: { opacity: 0 },
-  clearBtnText: { fontSize: 11, color: '#78909C', fontWeight: 'bold', marginTop: 2 },
+  clearBtnText: { fontSize: 11, color: c.textMuted, fontWeight: '700', marginTop: 2 },
   devNote: { textAlign: 'center', fontSize: 12, color: '#90A4AE', paddingBottom: 16, paddingHorizontal: 20 },
 });

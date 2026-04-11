@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import tokens from '../../theme/tokens';
 import { useFocusEffect } from '@react-navigation/native';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import { getAllAdaptiveStates, levelLabel } from '../../lib/adaptiveEngine';
@@ -12,18 +13,23 @@ import { supabase } from '../../lib/supabase';
 import { useTheme } from '../../context/ThemeContext';
 
 const ACTIVITY_LABELS = {
-  phonics: '🗣️ Phonics', phonics_blend: '🔗 Blending', phonics_rhyme: '🎵 Rhyme',
-  phonics_segment: '✂️ Segmenting', spelling: '🔤 Spelling', writing: '✍️ Writing',
-  reading: '📖 Reading', phonological_awareness: '🎧 Phonological',
-  phonics_activity: '🎮 Mini Games', speech_to_text: '🎤 Speech Practice', text_to_speech: '🔊 Read Aloud',
+  phonics: 'Phonics', phonics_blend: 'Blending',
+  phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
+  reading: 'Reading', phonological_awareness: 'Phonological',
+  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
+};
+const ACTIVITY_ICON_NAMES = {
+  phonics: 'mic', phonics_blend: 'link-2',
+  phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
+  reading: 'book-open', phonological_awareness: 'headphones',
+  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
 };
 
 export default function ParentProgressScreen({ route }) {
-  const { theme, a11yTextStyle } = useTheme();
+  const { colors, a11yTextStyle } = useTheme();
   const { child } = route.params || {};
   const sid = child?.profiles?.id ?? child?.student_id;
   const name = child?.profiles?.full_name ?? 'Child';
-  const insets = useSafeAreaInsets();
 
   const [daysBack, setDaysBack] = useState(14);
   const [progress, setProgress] = useState(null);
@@ -48,7 +54,7 @@ export default function ParentProgressScreen({ route }) {
     } catch (error) {
       console.warn('[ParentProgressScreen] load failed:', error);
       setError('Failed to load progress data. Please check your connection and try again.');
-      setProgress({ totalSessions: 0, totalXP: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
+      setProgress({ totalSessions: 0, avgAccuracy: 0, byActivity: {}, recentSessions: [] });
       setAdaptive([]);
       setAiProfile(null);
     } finally {
@@ -76,8 +82,8 @@ export default function ParentProgressScreen({ route }) {
   }, [sid, daysBack]);
 
   return (
-    <View style={s.container}>
-      <LinearGradient colors={['#7B1FA2','#4A148C']} style={s.header}>
+    <ScreenWrapper role="parent" scrollable>
+      <LinearGradient colors={colors.headerGradient} style={s.header}>
         <GoBackBtn />
         <Text style={s.headerTitle}>Progress Report</Text>
         <Text style={s.headerSub}>{name}'s learning analytics</Text>
@@ -93,31 +99,26 @@ export default function ParentProgressScreen({ route }) {
       </View>
 
       {loading ? (
-        <View style={s.centered}><ActivityIndicator size="large" color="#7B1FA2" /></View>
+        <View style={s.centered}><ActivityIndicator size="large" color={colors.primary} /></View>
       ) : error ? (
         <View style={s.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF6B6B" />
+          <Icon name="alert-circle" size="xl" color="#FF6B6B" />
           <Text style={s.errorTitle}>Connection Error</Text>
           <Text style={s.errorMessage}>{error}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={() => load(daysBack)}>
-            <Ionicons name="refresh" size={18} color="#fff" />
+            <Icon name="refresh-cw" size="md" color="#fff" />
             <Text style={s.retryBtnText}>Try Again</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}>
+        <>
           {/* Summary */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>📊 Summary</Text>
+            <Text style={s.cardTitle}>Summary</Text>
             <View style={s.summaryRow}>
               <View style={s.summaryItem}>
                 <Text style={s.summaryVal}>{progress?.totalSessions ?? 0}</Text>
                 <Text style={s.summaryLbl}>Sessions</Text>
-              </View>
-              <View style={s.summaryDiv} />
-              <View style={s.summaryItem}>
-                <Text style={[s.summaryVal, { color: '#4CAF50' }]}>{progress?.totalXP ?? 0}</Text>
-                <Text style={s.summaryLbl}>XP Earned</Text>
               </View>
               <View style={s.summaryDiv} />
               <View style={s.summaryItem}>
@@ -131,7 +132,7 @@ export default function ParentProgressScreen({ route }) {
 
           {/* Activity Breakdown with bars */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>🎯 Activity Breakdown</Text>
+            <Text style={s.cardTitle}>Activity Breakdown</Text>
             {Object.keys(progress?.byActivity ?? {}).length === 0 ? (
               <Text style={s.emptyText}>No activity in this period.</Text>
             ) : Object.entries(progress.byActivity).map(([type, data]) => {
@@ -139,7 +140,7 @@ export default function ParentProgressScreen({ route }) {
               const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
               return (
                 <View key={type} style={s.breakRow}>
-                  <Text style={s.breakIcon}>{ACTIVITY_LABELS[type]?.split(' ')[0] || '📊'}</Text>
+                  <Icon name={ACTIVITY_ICON_NAMES[type] || 'bar-chart'} size="md" color="#607D8B" />
                   <View style={{ flex: 1 }}>
                     <View style={s.breakTop}>
                       <Text style={s.breakLabel}>{ACTIVITY_LABELS[type] || type}</Text>
@@ -158,7 +159,7 @@ export default function ParentProgressScreen({ route }) {
           {/* Adaptive Difficulty Levels */}
           {adaptive.length > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🎮 Difficulty Levels</Text>
+              <Text style={s.cardTitle}>Difficulty Levels</Text>
               <Text style={s.cardSub}>System-adjusted based on performance</Text>
               {adaptive.map(a => {
                 const color = a.current_level === 1 ? '#4CAF50' : a.current_level === 2 ? '#FF9800' : '#F44336';
@@ -181,7 +182,7 @@ export default function ParentProgressScreen({ route }) {
           {/* AI Strengths & Weaknesses */}
           {aiProfile && aiProfile.totalSessions > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🧠 AI Strength & Weakness Analysis</Text>
+              <Text style={s.cardTitle}>AI Strength & Weakness Analysis</Text>
               <Text style={s.cardSub}>Based on last 60 days of activity</Text>
 
               {/* Overall Score */}
@@ -209,7 +210,7 @@ export default function ParentProgressScreen({ route }) {
                   <Text style={[s.aiGroupLabel, { color: '#2E7D32' }]}>Strengths</Text>
                   {aiProfile.strengths.map(item => (
                     <View key={item.activity} style={s.aiItemRow}>
-                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Icon name={item.icon} size="sm" color="#2E7D32" />
                       <Text style={s.aiItemLabel}>{item.label}</Text>
                       <View style={s.aiBar}>
                         <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#4CAF50' }]} />
@@ -225,7 +226,7 @@ export default function ParentProgressScreen({ route }) {
                   <Text style={[s.aiGroupLabel, { color: '#E65100', marginTop: 10 }]}>Needs Focus</Text>
                   {aiProfile.weaknesses.map(item => (
                     <View key={item.activity} style={s.aiItemRow}>
-                      <Text style={s.aiItemIcon}>{item.icon}</Text>
+                      <Icon name={item.icon} size="sm" color="#EF5350" />
                       <Text style={s.aiItemLabel}>{item.label}</Text>
                       <View style={s.aiBar}>
                         <View style={[s.aiBarFill, { width: `${Math.min(item.avgAccuracy, 100)}%`, backgroundColor: '#EF5350' }]} />
@@ -250,10 +251,10 @@ export default function ParentProgressScreen({ route }) {
           {/* Recent Sessions */}
           {(progress?.recentSessions?.length ?? 0) > 0 && (
             <View style={s.card}>
-              <Text style={s.cardTitle}>🕐 Recent Sessions</Text>
+              <Text style={s.cardTitle}>Recent Sessions</Text>
               {progress.recentSessions.map((session, i) => (
                 <View key={session.id || i} style={s.sessionRow}>
-                  <Text style={s.sessionIcon}>{ACTIVITY_LABELS[session.activity_type]?.split(' ')[0] || '📊'}</Text>
+                  <Icon name={ACTIVITY_ICON_NAMES[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
                   <View style={{ flex: 1 }}>
                     <Text style={s.sessionType}>{ACTIVITY_LABELS[session.activity_type] || session.activity_type}</Text>
                     <Text style={s.sessionDate}>{new Date(session.created_at).toLocaleDateString()} · {session.score}/{session.total}</Text>
@@ -270,42 +271,40 @@ export default function ParentProgressScreen({ route }) {
 
           {progress?.totalSessions === 0 && (
             <View style={s.emptyCard}>
-              <Ionicons name="bar-chart-outline" size={60} color="#ddd" />
+              <Icon name="bar-chart" size="lg" color="#ddd" />
               <Text style={s.emptyTitle}>No activity yet</Text>
               <Text style={s.emptyHint}>Encourage {name} to complete some activities!</Text>
             </View>
           )}
 
           <View style={{ height: 40 }} />
-        </ScrollView>
+        </>
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const s = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: '#F5F0FF' },
   centered:     { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header:       { paddingTop: 55, paddingBottom: 20, paddingHorizontal: 20 },
-  headerTitle:  { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: 12 },
+  header:       { paddingTop: 55, paddingBottom: tokens.spacing.lg, paddingHorizontal: tokens.spacing.lg, marginHorizontal: -tokens.spacing.md },
+  headerTitle:  { fontSize: 22, fontWeight: '900', color: '#fff', marginTop: tokens.spacing.md },
   headerSub:    { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 3 },
-  timeRow:      { flexDirection: 'row', gap: 10, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  timeBtn:      { flex: 1, paddingVertical: 10, borderRadius: 20, backgroundColor: '#F3E5F5', alignItems: 'center' },
+  timeRow:      { flexDirection: 'row', gap: 10, padding: tokens.spacing.md, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginHorizontal: -tokens.spacing.md },
+  timeBtn:      { flex: 1, paddingVertical: 10, borderRadius: tokens.radius.lg, backgroundColor: '#F3E5F5', alignItems: 'center' },
   timeBtnActive:{ backgroundColor: '#7B1FA2' },
   timeText:     { fontWeight: 'bold', color: '#7B1FA2', fontSize: 13 },
   timeTextActive:{ color: '#fff' },
-  scroll:       { padding: 16 },
-  card:         { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, elevation: 2 },
-  cardTitle:    { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-  cardSub:      { fontSize: 11, color: '#999', marginBottom: 12 },
-  summaryRow:   { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 12 },
+  card:         { backgroundColor: '#fff', borderRadius: tokens.radius.md, padding: tokens.spacing.md, marginBottom: 14, ...tokens.shadows.low },
+  cardTitle:    { fontSize: 15, fontWeight: 'bold', color: '#333', marginBottom: tokens.spacing.xs },
+  cardSub:      { fontSize: 11, color: '#999', marginBottom: tokens.spacing.md },
+  summaryRow:   { flexDirection: 'row', justifyContent: 'space-around', paddingTop: tokens.spacing.md },
   summaryItem:  { alignItems: 'center' },
   summaryVal:   { fontSize: 24, fontWeight: 'bold', color: '#333' },
   summaryLbl:   { fontSize: 10, color: '#999', marginTop: 3, fontWeight: '600' },
   summaryDiv:   { width: 1, backgroundColor: '#f0f0f0' },
   breakRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
   breakIcon:    { fontSize: 24, width: 32 },
-  breakTop:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  breakTop:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: tokens.spacing.xs },
   breakLabel:   { fontSize: 13, fontWeight: '600', color: '#333' },
   breakSessions:{ fontSize: 11, color: '#999' },
   barBg:        { height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
@@ -315,15 +314,15 @@ const s = StyleSheet.create({
   adaptLabel:   { fontSize: 14, color: '#333' },
   adaptRight:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   adaptAttempts:{ fontSize: 11, color: '#999' },
-  levelBadge:   { borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 3 },
+  levelBadge:   { borderWidth: 1, borderRadius: tokens.radius.md, paddingHorizontal: tokens.spacing.md, paddingVertical: 3 },
   levelText:    { fontSize: 12, fontWeight: 'bold' },
-  sessionRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
+  sessionRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: tokens.spacing.sm, borderBottomWidth: 1, borderBottomColor: '#f5f5f5' },
   sessionIcon:  { fontSize: 22, marginRight: 10 },
   sessionType:  { fontSize: 13, fontWeight: '600', color: '#333' },
   sessionDate:  { fontSize: 11, color: '#999', marginTop: 1 },
   sessionXP:    { fontSize: 13, fontWeight: 'bold', color: '#7B1FA2' },
   sessionAcc:   { fontSize: 11, fontWeight: 'bold' },
-  emptyText:    { color: '#bbb', textAlign: 'center', paddingVertical: 20 },
+  emptyText:    { color: '#bbb', textAlign: 'center', paddingVertical: tokens.spacing.lg },
   emptyCard:    { alignItems: 'center', paddingVertical: 40 },
   emptyTitle:   { fontSize: 18, fontWeight: 'bold', color: '#555', marginTop: 14 },
   emptyHint:    { fontSize: 13, color: '#999', marginTop: 6, textAlign: 'center' },
@@ -334,21 +333,21 @@ const s = StyleSheet.create({
   aiScoreNum:           { fontSize: 22, fontWeight: 'bold' },
   aiScoreLbl:           { fontSize: 9, fontWeight: '700', color: '#999', textTransform: 'uppercase' },
   aiScoreDesc:          { fontSize: 13, color: '#555', lineHeight: 18 },
-  aiGroupLabel:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  aiItemRow:            { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 6 },
+  aiGroupLabel:         { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: tokens.spacing.sm },
+  aiItemRow:            { flexDirection: 'row', alignItems: 'center', marginBottom: tokens.spacing.sm, gap: 6 },
   aiItemIcon:           { fontSize: 16, width: 22 },
   aiItemLabel:          { width: 90, fontSize: 12, fontWeight: '600', color: '#444' },
   aiBar:                { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
   aiBarFill:            { height: '100%', borderRadius: 3 },
   aiItemScore:          { width: 36, fontSize: 12, fontWeight: 'bold', textAlign: 'right' },
   aiNotPracticedBox:    { backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: 10 },
-  aiNotPracticedTitle:  { fontSize: 11, fontWeight: '700', color: '#F57C00', marginBottom: 4 },
+  aiNotPracticedTitle:  { fontSize: 11, fontWeight: '700', color: '#F57C00', marginBottom: tokens.spacing.xs },
   aiNotPracticedList:   { fontSize: 12, color: '#795548', lineHeight: 18 },
 
   // Error state
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
-  errorTitle:     { fontSize: 18, fontWeight: 'bold', color: '#FF6B6B', marginTop: 16, marginBottom: 8 },
-  errorMessage:   { color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  retryBtn:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#7B1FA2', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, elevation: 2 },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: tokens.spacing.xl },
+  errorTitle:     { fontSize: 18, fontWeight: 'bold', color: '#FF6B6B', marginTop: tokens.spacing.md, marginBottom: tokens.spacing.sm },
+  errorMessage:   { color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: tokens.spacing.lg },
+  retryBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#7B1FA2', paddingVertical: tokens.spacing.md, paddingHorizontal: tokens.spacing.lg, borderRadius: tokens.radius.md, ...tokens.shadows.low },
   retryBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

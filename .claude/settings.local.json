@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(xargs grep:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(grep -l \"getBgColor\\\\|getThemeColors\\\\|getPrimaryColor\\\\|backgroundColor.*#F5F5F5\\\\|backgroundColor.*#FAF5F1\\\\|SafeAreaView\\\\|LinearGradient.*header\\\\|View style=\\\\{styles\\\\.container\\\\}\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/\"*.js)",
+      "Bash(grep -rL \"ScreenWrapper\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/\"*.js)",
+      "Bash(grep -n \"closing.*container\\\\|</View>$\\\\|</SafeAreaView>$\\\\|</ScrollView>$\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/TeacherMessagesScreen.js\")"
     ]
   }
 }

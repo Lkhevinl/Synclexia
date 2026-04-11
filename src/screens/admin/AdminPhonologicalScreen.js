@@ -7,36 +7,38 @@ import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, ScrollView,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const TASK_TYPES = [
-  { id: 'syllable', label: 'Syllable 👏', color: '#2196F3' },
-  { id: 'rime',     label: 'Rime 🎵',     color: '#9C27B0' },
-  { id: 'phoneme',  label: 'Phoneme 🔤',  color: '#E91E63' },
+  { id: 'syllable', label: 'Syllable', color: '#2196F3' },
+  { id: 'phoneme',  label: 'Phoneme',  color: '#E91E63' },
 ];
 
 const FORM_HINTS = {
   syllable: 'word: cat  |  syllables: 1  |  emoji: 🐱',
-  rime:     'target: cat  |  correct: hat  |  distractors: dog,sun',
   phoneme:  'word: sun  |  position: first or last  |  answer: s  |  options: s,m,b',
 };
 
 export default function AdminPhonologicalScreen() {
+  const { colors } = useTheme();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [taskType, setTaskType] = useState('syllable');
   const [level, setLevel] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+  const [form, setForm] = useState({ word: '', syllables: '', emoji: '', position: '', answer: '', options: '' });
 
   useEffect(() => { fetchItems(); }, []);
 
   const fetchItems = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('phonological_content')
+      .from(TABLES.PHONOLOGICAL_CONTENT)
       .select('*')
       .order('task_type')
       .order('difficulty_level', { nullsFirst: true });
@@ -46,7 +48,7 @@ export default function AdminPhonologicalScreen() {
   };
 
   const resetForm = () => {
-    setForm({ word: '', syllables: '', emoji: '', target: '', correct: '', distractors: '', position: '', answer: '', options: '' });
+    setForm({ word: '', syllables: '', emoji: '', position: '', answer: '', options: '' });
     setLevel(null);
     setEditingId(null);
   };
@@ -60,9 +62,6 @@ export default function AdminPhonologicalScreen() {
       word:       d.word || '',
       syllables:  d.syllables?.toString() || '',
       emoji:      d.emoji || '',
-      target:     d.target || '',
-      correct:    d.correct || '',
-      distractors: d.distractors?.join(',') || '',
       position:   d.position || '',
       answer:     d.answer || '',
       options:    d.options?.join(',') || '',
@@ -73,10 +72,6 @@ export default function AdminPhonologicalScreen() {
     if (taskType === 'syllable') {
       if (!form.word || !form.syllables) return null;
       return { word: form.word.trim(), syllables: parseInt(form.syllables), emoji: form.emoji.trim() };
-    }
-    if (taskType === 'rime') {
-      if (!form.target || !form.correct || !form.distractors) return null;
-      return { target: form.target.trim(), correct: form.correct.trim(), distractors: form.distractors.split(',').map(s => s.trim()) };
     }
     if (taskType === 'phoneme') {
       if (!form.word || !form.position || !form.answer || !form.options) return null;
@@ -90,11 +85,11 @@ export default function AdminPhonologicalScreen() {
     if (!data) return Alert.alert('Error', 'Please fill all required fields.');
     const payload = { task_type: taskType, difficulty_level: level, data };
     if (editingId) {
-      const { error } = await supabase.from('phonological_content').update(payload).eq('id', editingId);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update(payload).eq('id', editingId);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Updated', 'Item updated.');
     } else {
-      const { error } = await supabase.from('phonological_content').insert([payload]);
+      const { error } = await supabase.from(TABLES.PHONOLOGICAL_CONTENT).insert([payload]);
       if (error) return Alert.alert('Error', error.message);
       Alert.alert('Added', 'Item added.');
     }
@@ -103,7 +98,7 @@ export default function AdminPhonologicalScreen() {
   };
 
   const handleToggle = async (item) => {
-    await supabase.from('phonological_content').update({ is_active: !item.is_active }).eq('id', item.id);
+    await supabase.from(TABLES.PHONOLOGICAL_CONTENT).update({ is_active: !item.is_active }).eq('id', item.id);
     fetchItems();
   };
 
@@ -111,7 +106,7 @@ export default function AdminPhonologicalScreen() {
     Alert.alert('Delete', 'Delete this item?', [
       { text: 'Cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        await supabase.from('phonological_content').delete().eq('id', item.id);
+        await supabase.from(TABLES.PHONOLOGICAL_CONTENT).delete().eq('id', item.id);
         fetchItems();
       }},
     ]);
@@ -123,18 +118,15 @@ export default function AdminPhonologicalScreen() {
     { id: 'word',        label: 'Word',                       show: ['syllable', 'phoneme'] },
     { id: 'syllables',   label: 'Syllable count (number)',    show: ['syllable'] },
     { id: 'emoji',       label: 'Emoji',                      show: ['syllable'] },
-    { id: 'target',      label: 'Target word',                show: ['rime'] },
-    { id: 'correct',     label: 'Correct rhyme',              show: ['rime'] },
-    { id: 'distractors', label: 'Distractors (comma-sep)',    show: ['rime'] },
     { id: 'position',    label: 'Position (first / last)',    show: ['phoneme'] },
     { id: 'answer',      label: 'Correct sound (e.g. s)',     show: ['phoneme'] },
     { id: 'options',     label: 'Options (comma-sep, e.g. s,m,b)', show: ['phoneme'] },
   ].filter(f => f.show.includes(taskType));
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} style={{ backgroundColor: colors.surface }}>
       <GoBackBtn />
-      <Text style={styles.header}>Phonological Content 🎧</Text>
+      <Text style={styles.header}>Phonological Content</Text>
 
       <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionLabel}>{editingId ? 'Edit Item' : 'Add New Item'}</Text>
@@ -210,25 +202,25 @@ export default function AdminPhonologicalScreen() {
                   <Text style={styles.cardLevel}>L{item.difficulty_level ?? 'All'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleToggle(item)} style={styles.iconBtn}>
-                  <Ionicons name={item.is_active ? 'eye' : 'eye-off'} size={20} color={item.is_active ? '#4CAF50' : '#90A4AE'} />
+                  <Icon name={item.is_active ? 'eye' : 'eye-off'} size="md" color={item.is_active ? '#4CAF50' : '#90A4AE'} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleEdit(item)} style={styles.iconBtn}>
-                  <Ionicons name="pencil" size={20} color="#2196F3" />
+                  <Icon name="pencil" size="md" color="#2196F3" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => handleDelete(item)} style={styles.iconBtn}>
-                  <Ionicons name="trash" size={20} color="#F44336" />
+                  <Icon name="trash" size="md" color="#F44336" />
                 </TouchableOpacity>
               </View>
             );
           }}
         />
       )}
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F7FA', paddingTop: 50 },
+  container: { flex: 1, paddingTop: 50 },
   header: { fontSize: 22, fontWeight: 'bold', color: '#37474F', textAlign: 'center', marginBottom: 10 },
   form: { backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 16, maxHeight: 400, elevation: 2 },
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#78909C', marginHorizontal: 16, marginTop: 8, marginBottom: 6 },

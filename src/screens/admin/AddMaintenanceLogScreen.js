@@ -10,13 +10,16 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from '../../components/icons/Icon';
 import { supabase } from '../../lib/supabase';
+import { TABLES } from '../../lib/constants';
 import { useAuth } from '../../context/AuthContext';
 import AppHeader from '../../components/AppHeader';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import Constants from 'expo-constants';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 // Cross-platform alert
 const showAlert = (title, message, onOk) => {
@@ -64,6 +67,7 @@ const CATEGORIES = [
 
 export default function AddMaintenanceLogScreen({ navigation }) {
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [logType, setLogType] = useState('user_concern');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -128,7 +132,7 @@ export default function AddMaintenanceLogScreen({ navigation }) {
         status: 'open',
       };
 
-      const { error } = await supabase.from('maintenance_logs').insert([payload]);
+      const { error } = await supabase.from(TABLES.MAINTENANCE_LOGS).insert([payload]);
 
       if (error) {
         console.error('Maintenance log error:', error);
@@ -174,13 +178,13 @@ export default function AddMaintenanceLogScreen({ navigation }) {
         onPress={() => setLogType(type.value)}
       >
         <View style={[styles.typeIconWrapper, { backgroundColor: type.color + '20' }]}>
-          <Ionicons name={type.icon} size={24} color={type.color} />
+          <Icon name={type.icon} size="md" color={type.color} />
         </View>
         <Text style={[styles.typeLabel, isSelected && { color: type.color, fontWeight: '600' }]}>
           {type.label}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={24} color={type.color} style={styles.checkIcon} />
+          <Icon name="check-circle" size="md" color={type.color} style={styles.checkIcon} />
         )}
       </TouchableOpacity>
     );
@@ -201,7 +205,7 @@ export default function AddMaintenanceLogScreen({ navigation }) {
           {priorityOption.label}
         </Text>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={priorityOption.color} />
+          <Icon name="check-circle" size="sm" color={priorityOption.color} />
         )}
       </TouchableOpacity>
     );
@@ -211,17 +215,16 @@ export default function AddMaintenanceLogScreen({ navigation }) {
   const showPriority = profile?.role !== 'admin' || ['bug_report', 'user_concern', 'learner_issue'].includes(logType);
 
   return (
-    <View style={styles.container}>
+    <ScreenWrapper role="admin" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <AppHeader
         title={profile?.role === 'admin' ? 'Add Maintenance Log' : 'Report Issue/Feedback'}
-        colors={['#607D8B', '#455A64']}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.formCard}>
           {/* Header Info */}
           <View style={styles.headerInfo}>
-            <Ionicons name="information-circle" size={20} color="#607D8B" />
+            <Icon name="info" size="md" color="#607D8B" />
             <Text style={styles.headerText}>
               {profile?.role === 'admin'
                 ? 'Add system maintenance logs and track user issues'
@@ -376,15 +379,12 @@ export default function AddMaintenanceLogScreen({ navigation }) {
           )}
         </View>
       </ScrollView>
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7FA',
-  },
+  container: { flex: 1 },
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
@@ -507,7 +507,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#546E7A',
     marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   hint: {
     fontSize: 12,

@@ -1,6 +1,8 @@
 // lib/analyticsHelper.js
-// Session logging for all activity attempts — records every session to session_logs.
+// Session logging for all activity attempts — records every session to
+// session_logs.
 import { supabase } from './supabase';
+import { TABLES } from './constants';
 
 /**
  * Log a completed activity session.
@@ -37,9 +39,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
     const isNotNullViolation = (err) =>
       err?.code === '23502' || /violates not-null constraint/i.test(err?.message || '');
 
-    // Support both schemas:
-    // - new schema: session_logs.student_id
-    // - legacy schema: session_logs.user_id
+    // Insert session log — support both schemas (student_id vs user_id)
     const attempts = [
       { ...basePayload, student_id: studentId, user_id: studentId },
       { ...basePayload, student_id: studentId },
@@ -49,7 +49,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
     let session = null;
     let logError = null;
     for (const payload of attempts) {
-      const res = await supabase.from('session_logs').insert(payload).select().single();
+      const res = await supabase.from(TABLES.SESSION_LOGS).insert(payload).select().single();
       if (!res.error) {
         session = res.data;
         logError = null;
@@ -76,7 +76,7 @@ export const logSession = async ({ studentId, activityType, score, total, durati
 
 /**
  * Get session log summary for a student.
- *
+ * 
  * @param {string} studentId
  * @param {number} [daysBack=7] - How many days of data to include
  * @returns {Object} { totalSessions, avgAccuracy, byActivity, recentSessions }
@@ -94,7 +94,7 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
     let sessErr = null;
 
     ({ data: sessions, error: sessErr } = await supabase
-      .from('session_logs')
+      .from(TABLES.SESSION_LOGS)
       .select('*')
       .eq('student_id', studentId)
       .gte('created_at', since.toISOString())
@@ -102,7 +102,7 @@ export const getStudentProgress = async (studentId, daysBack = 7) => {
 
     if (sessErr && isUndefinedColumn(sessErr)) {
       ({ data: sessions, error: sessErr } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('*')
         .eq('user_id', studentId)
         .gte('created_at', since.toISOString())
@@ -157,7 +157,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
 
     // Get all students (exclude parents and admins)
     const { data: students } = await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .select('id, full_name, email, created_at')
       .eq('role', 'student')
       .order('created_at', { ascending: false });
@@ -165,7 +165,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
     // Get session logs for the date range (support both student_id and user_id columns)
     let sessions = [];
     const { data: byStudentId, error: err1 } = await supabase
-      .from('session_logs')
+      .from(TABLES.SESSION_LOGS)
       .select('*')
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
@@ -175,7 +175,7 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
     } else {
       // Fallback to user_id if student_id doesn't exist
       const { data: byUserId } = await supabase
-        .from('session_logs')
+        .from(TABLES.SESSION_LOGS)
         .select('*')
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: false });
@@ -304,12 +304,17 @@ export const getComprehensiveAnalytics = async (daysBack = 30) => {
 
       const sortedDates = Array.from(activityDates).sort((a, b) => b - a);
 
-      for (let i = 0; i < sortedDates.length; i++) {
-        const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
-        if (daysDiff === streak) {
-          streak++;
-        } else {
-          break;
+      const mostRecentDiff = sortedDates.length > 0
+        ? Math.floor((today - sortedDates[0]) / (1000 * 60 * 60 * 24))
+        : Infinity;
+      if (mostRecentDiff <= 1) {
+        for (let i = 0; i < sortedDates.length; i++) {
+          const daysDiff = Math.floor((today - sortedDates[i]) / (1000 * 60 * 60 * 24));
+          if (daysDiff === streak) {
+            streak++;
+          } else {
+            break;
+          }
         }
       }
 
@@ -425,7 +430,6 @@ export const formatActivityType = (activityType) => {
   const typeMap = {
     'phonics': 'Phonics',
     'phonics_blend': 'Phonics Blending',
-    'phonics_rhyme': 'Phonics Rhyming',
     'phonics_segment': 'Phonics Segmenting',
     'spelling': 'Spelling',
     'writing': 'Writing Practice',

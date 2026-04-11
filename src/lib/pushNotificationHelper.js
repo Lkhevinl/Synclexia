@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
+import { TABLES } from './constants';
 
 // expo-notifications and expo-device are native-only — not available on web.
 // All helpers gracefully no-op when running outside a native device.
@@ -53,7 +54,7 @@ export async function registerForPushNotificationsAsync(userId) {
 
   if (userId && token) {
     await supabase
-      .from('profiles')
+      .from(TABLES.PROFILES)
       .update({ push_token: token })
       .eq('id', userId);
   }

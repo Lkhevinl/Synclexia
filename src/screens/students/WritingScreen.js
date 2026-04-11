@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, Animated, Easing, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
+import Svg, { Path, Circle, G, Polygon, Text as SvgText } from 'react-native-svg';
+import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { checkQuestProgress } from '../../lib/questHelper';
+import { TABLES } from '../../lib/constants';
 import { logSession } from '../../lib/analyticsHelper';
-import GoBackBtn from '../../components/GoBackBtn';
+import ScreenWrapper from '../../components/ScreenWrapper';
+import StudentPageHeader from '../../components/student/StudentPageHeader';
+import StudentCard from '../../components/student/StudentCard';
+import c from '../../components/student/candyTokens';
 import { useTheme } from '../../context/ThemeContext';
 
 // Optional dependency: expo-speech-recognition (dev/production build, not Expo Go)
@@ -24,7 +26,77 @@ try {
 
 const STT_AVAILABLE = !!ExpoSpeechRecognitionModule;
 
-const DEFAULT_LETTERS = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+// ── Replace this with your actual tutorial video URL ──────────────────────────
+const VIDEO_TUTORIAL_URL = 'https://www.youtube.com/results?search_query=letter+tracing+tutorial+for+kids+dyslexia';
+
+// ── Normalized [x,y] waypoints (0-1) for each letter's strokes ────────────────
+// Used to animate a tracing dot showing how to draw each letter
+const LETTER_PATHS = {
+  A: [[[0.5,0.05],[0.15,0.92]], [[0.5,0.05],[0.85,0.92]], [[0.28,0.55],[0.72,0.55]]],
+  B: [[[0.22,0.08],[0.22,0.92],[0.65,0.88],[0.72,0.7],[0.65,0.5],[0.22,0.5],[0.68,0.46],[0.74,0.28],[0.68,0.12],[0.22,0.08]]],
+  C: [[[0.82,0.22],[0.62,0.06],[0.38,0.06],[0.15,0.22],[0.08,0.5],[0.15,0.78],[0.38,0.94],[0.62,0.94],[0.82,0.78]]],
+  D: [[[0.22,0.08],[0.22,0.92]], [[0.22,0.08],[0.6,0.12],[0.82,0.3],[0.82,0.7],[0.6,0.88],[0.22,0.92]]],
+  E: [[[0.25,0.08],[0.25,0.92]], [[0.25,0.08],[0.78,0.08]], [[0.25,0.5],[0.65,0.5]], [[0.25,0.92],[0.78,0.92]]],
+  F: [[[0.25,0.08],[0.25,0.92]], [[0.25,0.08],[0.78,0.08]], [[0.25,0.5],[0.65,0.5]]],
+  G: [[[0.82,0.22],[0.62,0.06],[0.38,0.06],[0.15,0.22],[0.08,0.5],[0.15,0.78],[0.38,0.94],[0.62,0.94],[0.82,0.78],[0.82,0.5],[0.55,0.5]]],
+  H: [[[0.2,0.08],[0.2,0.92]], [[0.8,0.08],[0.8,0.92]], [[0.2,0.5],[0.8,0.5]]],
+  I: [[[0.35,0.08],[0.65,0.08]], [[0.5,0.08],[0.5,0.92]], [[0.35,0.92],[0.65,0.92]]],
+  J: [[[0.65,0.08],[0.65,0.75],[0.5,0.9],[0.3,0.82],[0.25,0.68]]],
+  K: [[[0.22,0.08],[0.22,0.92]], [[0.78,0.08],[0.22,0.5],[0.78,0.92]]],
+  L: [[[0.28,0.08],[0.28,0.92],[0.78,0.92]]],
+  M: [[[0.12,0.92],[0.12,0.08],[0.5,0.55],[0.88,0.08],[0.88,0.92]]],
+  N: [[[0.18,0.92],[0.18,0.08],[0.82,0.92],[0.82,0.08]]],
+  O: [[[0.5,0.05],[0.82,0.15],[0.95,0.5],[0.82,0.85],[0.5,0.95],[0.18,0.85],[0.05,0.5],[0.18,0.15],[0.5,0.05]]],
+  P: [[[0.22,0.08],[0.22,0.92]], [[0.22,0.08],[0.65,0.12],[0.72,0.28],[0.65,0.46],[0.22,0.5]]],
+  Q: [[[0.5,0.05],[0.82,0.15],[0.95,0.5],[0.82,0.85],[0.5,0.95],[0.18,0.85],[0.05,0.5],[0.18,0.15],[0.5,0.05]], [[0.62,0.72],[0.85,0.92]]],
+  R: [[[0.22,0.08],[0.22,0.92]], [[0.22,0.08],[0.65,0.12],[0.72,0.28],[0.65,0.46],[0.22,0.5],[0.78,0.92]]],
+  S: [[[0.78,0.18],[0.55,0.06],[0.25,0.12],[0.15,0.3],[0.35,0.46],[0.65,0.54],[0.85,0.7],[0.75,0.88],[0.45,0.94],[0.22,0.82]]],
+  T: [[[0.1,0.08],[0.9,0.08]], [[0.5,0.08],[0.5,0.92]]],
+  U: [[[0.18,0.08],[0.18,0.72],[0.3,0.9],[0.5,0.95],[0.7,0.9],[0.82,0.72],[0.82,0.08]]],
+  V: [[[0.12,0.08],[0.5,0.92],[0.88,0.08]]],
+  W: [[[0.08,0.08],[0.25,0.88],[0.5,0.62],[0.75,0.88],[0.92,0.08]]],
+  X: [[[0.12,0.08],[0.88,0.92]], [[0.88,0.08],[0.12,0.92]]],
+  Y: [[[0.12,0.08],[0.5,0.5],[0.88,0.08]], [[0.5,0.5],[0.5,0.92]]],
+  Z: [[[0.12,0.08],[0.88,0.08],[0.12,0.92],[0.88,0.92]]],
+};
+
+// Normalized [x,y] waypoints (0-1) for lowercase letters
+// Y range: ascenders ~0.08, x-height top ~0.28, baseline ~0.78, descenders ~0.95
+const LETTER_PATHS_LOWER = {
+  a: [[[0.72,0.32],[0.48,0.22],[0.26,0.32],[0.2,0.5],[0.26,0.68],[0.48,0.78],[0.68,0.7],[0.72,0.5],[0.72,0.78]]],
+  b: [[[0.28,0.08],[0.28,0.78]], [[0.28,0.4],[0.5,0.25],[0.72,0.35],[0.75,0.52],[0.72,0.68],[0.5,0.78],[0.28,0.78]]],
+  c: [[[0.75,0.35],[0.55,0.22],[0.32,0.25],[0.2,0.42],[0.2,0.58],[0.32,0.75],[0.55,0.78],[0.75,0.65]]],
+  d: [[[0.72,0.08],[0.72,0.78]], [[0.72,0.4],[0.5,0.25],[0.28,0.35],[0.24,0.52],[0.28,0.68],[0.5,0.78],[0.72,0.78]]],
+  e: [[[0.2,0.52],[0.75,0.52],[0.75,0.38],[0.6,0.25],[0.38,0.22],[0.2,0.36],[0.18,0.52],[0.22,0.68],[0.42,0.78],[0.65,0.75]]],
+  f: [[[0.62,0.12],[0.45,0.08],[0.32,0.18],[0.3,0.35],[0.3,0.78]], [[0.18,0.42],[0.52,0.42]]],
+  g: [[[0.72,0.28],[0.5,0.2],[0.28,0.3],[0.22,0.5],[0.28,0.68],[0.5,0.78],[0.72,0.68],[0.72,0.28],[0.72,0.88],[0.55,0.95],[0.32,0.9]]],
+  h: [[[0.25,0.08],[0.25,0.78]], [[0.25,0.45],[0.45,0.25],[0.68,0.32],[0.72,0.52],[0.72,0.78]]],
+  i: [[[0.5,0.32],[0.5,0.78]], [[0.5,0.14],[0.5,0.17]]],
+  j: [[[0.55,0.32],[0.55,0.88],[0.42,0.95],[0.28,0.88]], [[0.55,0.14],[0.55,0.17]]],
+  k: [[[0.28,0.08],[0.28,0.78]], [[0.7,0.28],[0.28,0.55],[0.7,0.78]]],
+  l: [[[0.5,0.08],[0.5,0.78]]],
+  m: [[[0.15,0.32],[0.15,0.78]], [[0.15,0.48],[0.32,0.28],[0.5,0.35],[0.5,0.78]], [[0.5,0.48],[0.65,0.28],[0.8,0.35],[0.8,0.78]]],
+  n: [[[0.22,0.32],[0.22,0.78]], [[0.22,0.48],[0.45,0.26],[0.65,0.32],[0.72,0.52],[0.72,0.78]]],
+  o: [[[0.5,0.22],[0.72,0.3],[0.78,0.5],[0.72,0.7],[0.5,0.78],[0.28,0.7],[0.22,0.5],[0.28,0.3],[0.5,0.22]]],
+  p: [[[0.28,0.32],[0.28,0.95]], [[0.28,0.42],[0.5,0.25],[0.72,0.35],[0.75,0.52],[0.72,0.68],[0.5,0.78],[0.28,0.78]]],
+  q: [[[0.72,0.32],[0.5,0.22],[0.28,0.32],[0.22,0.5],[0.28,0.68],[0.5,0.78],[0.72,0.68],[0.72,0.32]], [[0.72,0.32],[0.72,0.95]]],
+  r: [[[0.25,0.32],[0.25,0.78]], [[0.25,0.44],[0.42,0.28],[0.62,0.25],[0.72,0.32]]],
+  s: [[[0.72,0.32],[0.52,0.22],[0.28,0.28],[0.22,0.42],[0.45,0.52],[0.7,0.62],[0.72,0.72],[0.55,0.8],[0.28,0.75]]],
+  t: [[[0.5,0.1],[0.5,0.78],[0.6,0.82]], [[0.28,0.35],[0.68,0.35]]],
+  u: [[[0.22,0.32],[0.22,0.65],[0.35,0.78],[0.5,0.8],[0.65,0.78],[0.72,0.65],[0.72,0.32],[0.72,0.78]]],
+  v: [[[0.2,0.32],[0.5,0.78],[0.78,0.32]]],
+  w: [[[0.12,0.32],[0.28,0.78],[0.5,0.55],[0.72,0.78],[0.88,0.32]]],
+  x: [[[0.2,0.32],[0.78,0.78]], [[0.78,0.32],[0.2,0.78]]],
+  y: [[[0.2,0.32],[0.5,0.62]], [[0.78,0.32],[0.5,0.62],[0.38,0.82],[0.25,0.9]]],
+  z: [[[0.2,0.32],[0.78,0.32],[0.2,0.78],[0.78,0.78]]],
+};
+
+// Combined lookup: uppercase key = 'A', lowercase key = 'a'
+const ALL_LETTER_PATHS = { ...LETTER_PATHS };
+Object.entries(LETTER_PATHS_LOWER).forEach(([k, v]) => { ALL_LETTER_PATHS[k] = v; });
+
+const DEFAULT_LETTERS_UPPER = Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+const DEFAULT_LETTERS_LOWER = Array.from("abcdefghijklmnopqrstuvwxyz");
 const COLORS = ['#000000', '#F44336', '#2196F3', '#4CAF50', '#FFEB3B'];
 
 // Helper function for level colors
@@ -86,14 +158,20 @@ const compareTexts = (original, studentText) => {
 
 export default function WritingScreen() {
   const { profile } = useAuth();
-  const { a11yTextStyle } = useTheme();
+  const { colors, a11yTextStyle } = useTheme();
 
   // Mode: tracing, story selection, or composition
   const [mode, setMode] = useState('trace'); // 'trace' | 'stories' | 'compose'
 
   // STATE
-  const [items, setItems] = useState(DEFAULT_LETTERS.map(l => ({ id: l, label: l })));
+  const [letterCase, setLetterCase] = useState('upper'); // 'upper' | 'lower'
+  const [items, setItems] = useState(DEFAULT_LETTERS_UPPER.map(l => ({ id: l, label: l })));
   const [selectedItem, setSelectedItem] = useState(null);
+
+  useEffect(() => {
+    const letters = letterCase === 'upper' ? DEFAULT_LETTERS_UPPER : DEFAULT_LETTERS_LOWER;
+    setItems(letters.map(l => ({ id: l, label: l })));
+  }, [letterCase]);
 
   // Stories from admin
   const [stories, setStories] = useState([]);
@@ -116,27 +194,76 @@ export default function WritingScreen() {
   const composeStartRef = useRef(null);
   
   // DRAWING STATE
-  const [paths, setPaths] = useState([]); 
-  const [currentPath, setCurrentPath] = useState([]); 
-  const [strokeColor, setStrokeColor] = useState(COLORS[0]); 
-  
+  const [paths, setPaths] = useState([]);
+  const [currentPath, setCurrentPath] = useState([]);
+  const [strokeColor, setStrokeColor] = useState(COLORS[0]);
+  const [canvasLayout, setCanvasLayout] = useState({ width: 350, height: 500 });
+
   const [successVisible, setSuccessVisible] = useState(false);
   const [demoVisible, setDemoVisible] = useState(false);
-  const [demoPath, setDemoPath] = useState(new Animated.Value(0)); // For Demo Animation
+
+  // Animation dot for live canvas guide and demo modal
+  const [animDot, setAnimDot] = useState(null);
+  const animTimerRef = useRef(null);
+  const animRunningRef = useRef(false);
 
   // --- REFS (The Fix for "Disappearing" & "Wrong Color") ---
   // These keep track of live data without waiting for re-renders
   const colorRef = useRef(strokeColor);
   
-  // Update the ref whenever the state changes
+  useEffect(() => { colorRef.current = strokeColor; }, [strokeColor]);
+
+  // ── Letter tracing animation ────────────────────────────────────────────────
+  const startLetterAnimation = (label, cW, cH) => {
+    if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    const strokes = LETTER_PATHS[label] || [];
+    if (!strokes.length) { setAnimDot(null); return; }
+
+    // Flatten all stroke waypoints into a sequence
+    const pts = [];
+    strokes.forEach((stroke, si) => {
+      stroke.forEach((pt, pi) => {
+        pts.push({ x: pt[0] * cW, y: pt[1] * cH, pause: pi === 0 && si > 0 });
+      });
+      // Hold at end of each stroke briefly
+      const last = stroke[stroke.length - 1];
+      for (let i = 0; i < 4; i++) pts.push({ x: last[0] * cW, y: last[1] * cH, pause: true });
+    });
+
+    let idx = 0;
+    animRunningRef.current = true;
+
+    const tick = () => {
+      if (!animRunningRef.current) return;
+      setAnimDot({ x: pts[idx].x, y: pts[idx].y });
+      idx = (idx + 1) % pts.length;
+      const delay = pts[idx]?.pause ? 80 : 30;
+      animTimerRef.current = setTimeout(tick, delay);
+    };
+    tick();
+  };
+
+  const stopLetterAnimation = () => {
+    animRunningRef.current = false;
+    if (animTimerRef.current) { clearTimeout(animTimerRef.current); animTimerRef.current = null; }
+    setAnimDot(null);
+  };
+
+  // Run animation whenever a letter is selected (canvas guide) or demo modal opens
   useEffect(() => {
-    colorRef.current = strokeColor;
-  }, [strokeColor]);
+    if (selectedItem) {
+      startLetterAnimation(selectedItem.label, 200, 200);
+    } else {
+      stopLetterAnimation();
+    }
+    return stopLetterAnimation;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.label]);
 
   // --- FETCH DATA ---
   useEffect(() => {
     const fetchItems = async () => {
-      const { data } = await supabase.from('writing_practice').select('*').order('label');
+      const { data } = await supabase.from(TABLES.WRITING_PRACTICE).select('*').order('label');
       if (data && data.length > 0) setItems(data);
     };
     fetchItems();
@@ -147,9 +274,8 @@ export default function WritingScreen() {
     const fetchStories = async () => {
       setLoadingStories(true);
       const { data, error } = await supabase
-        .from('stories')
+        .from(TABLES.STORIES)
         .select('*')
-        .eq('is_active', true)
         .order('level', { ascending: true });
       if (data && data.length > 0) {
         setStories(data);
@@ -304,7 +430,6 @@ export default function WritingScreen() {
       durationSeconds,
       details: { word_count: wordCount, char_count: (draftRef.current || '').length },
     });
-    checkQuestProgress(profile.id, 'Writing');
   };
 
   // Check student's copy against the original story
@@ -340,15 +465,10 @@ export default function WritingScreen() {
         },
       });
       if (result.isPassing) {
-        checkQuestProgress(profile.id, 'Writing');
+        Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
+      } else {
+        Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
       }
-    }
-
-    // Speak feedback
-    if (result.isPassing) {
-      Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
-    } else {
-      Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
     }
   };
 
@@ -375,7 +495,11 @@ export default function WritingScreen() {
       onMoveShouldSetPanResponder: () => true,
 
       onPanResponderGrant: () => {
-        setCurrentPath([]); // Start fresh stroke
+        // Stop the tracing guide once the user starts drawing
+        animRunningRef.current = false;
+        if (animTimerRef.current) { clearTimeout(animTimerRef.current); animTimerRef.current = null; }
+        setAnimDot(null);
+        setCurrentPath([]);
       },
       
       onPanResponderMove: (evt) => {
@@ -402,10 +526,10 @@ export default function WritingScreen() {
                  };
 
                  const d = `M ${latestCurrentPath.join(' L ')}`;
-                 // Add to history using the LIVE color from the Ref
+                 // Store pts for validation + color from live ref
                  setPaths((prevPaths) => [
-                     ...prevPaths, 
-                     { d, color: colorRef.current, points: latestCurrentPath.length, bounds }
+                     ...prevPaths,
+                     { d, color: colorRef.current, pts: latestCurrentPath, bounds }
                  ]);
              }
              return []; // Clear current path
@@ -414,18 +538,73 @@ export default function WritingScreen() {
     })
   ).current;
 
+  // --- VALIDATION ---
+  const validateDrawing = () => {
+    const { width: cW, height: cH } = canvasLayout;
+
+    // Collect all drawn points from stored paths
+    const allPts = [];
+    paths.forEach(p => {
+      (p.pts || []).forEach(pt => {
+        const [x, y] = pt.split(',').map(Number);
+        allPts.push({ x, y });
+      });
+    });
+
+    if (allPts.length < 20) {
+      return { valid: false, reason: 'Keep tracing! Your drawing is too short.' };
+    }
+
+    // Compute overall drawn bounding box
+    const drawnBounds = paths.reduce((acc, p) => ({
+      minX: Math.min(acc.minX, p.bounds?.minX ?? Infinity),
+      maxX: Math.max(acc.maxX, p.bounds?.maxX ?? -Infinity),
+      minY: Math.min(acc.minY, p.bounds?.minY ?? Infinity),
+      maxY: Math.max(acc.maxY, p.bounds?.maxY ?? -Infinity),
+    }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+
+    const drawnW = drawnBounds.maxX - drawnBounds.minX;
+    const drawnH = drawnBounds.maxY - drawnBounds.minY;
+
+    // Must span at least 20% of canvas in both directions (no tiny scribbles)
+    if (drawnW < cW * 0.2 || drawnH < cH * 0.2) {
+      return { valid: false, reason: 'Make your letter bigger! Trace the full guide.' };
+    }
+
+    // At least 55% of drawn points must fall within the letter guide area
+    // (centre 76% of canvas in each direction)
+    const padX = cW * 0.12;
+    const padY = cH * 0.05;
+    const inRegion = allPts.filter(p =>
+      p.x >= padX && p.x <= cW - padX &&
+      p.y >= padY && p.y <= cH - padY
+    );
+    const coverage = inRegion.length / allPts.length;
+
+    if (coverage < 0.55) {
+      return { valid: false, reason: 'Stay inside the letter guide and trace over it.' };
+    }
+
+    return { valid: true };
+  };
+
   // --- ACTIONS ---
   const handleCheck = () => {
     if (paths.length === 0) {
-      Alert.alert("Canvas Empty", "Please trace something on the canvas!");
+      Alert.alert('Canvas Empty', 'Please trace the letter first!');
       return;
     }
 
-    // Allow any trace, no strict validation required
-    Speech.speak(`Great! You completed writing ${selectedItem.label}!`, { rate: 0.9 });
+    const result = validateDrawing();
+    if (!result.valid) {
+      Speech.speak('Try again!', { rate: 0.9 });
+      Alert.alert('Not Quite Right', result.reason);
+      return;
+    }
+
+    Speech.speak(`Great job! You wrote the letter ${selectedItem.label}!`, { rate: 0.9 });
     setSuccessVisible(true);
     if (profile?.id) {
-      checkQuestProgress(profile.id, 'Writing');
       logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
     }
   };
@@ -442,6 +621,8 @@ export default function WritingScreen() {
   const clearCanvas = () => {
     setPaths([]);
     setCurrentPath([]);
+    // Restart the tracing guide after clearing
+    if (selectedItem) startLetterAnimation(selectedItem.label, 200, 200);
   };
 
   // --- DEMO ANIMATION ---
@@ -452,19 +633,17 @@ export default function WritingScreen() {
   // --- RENDER: STORIES SELECTION ---
   if (mode === 'stories') {
     return (
-      <View style={styles.mainContainer}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-          <GoBackBtn />
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Story Writing 📖</Text>
-            <Text style={styles.headerSub}>Choose a story to practice writing</Text>
-          </View>
-          <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePill}>
-            <Ionicons name="brush-outline" size={16} color="#fff" />
-            <Text style={styles.modePillText}>Trace</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
+        <StudentPageHeader
+          title="Story Writing"
+          onBack={() => setMode('trace')}
+          right={
+            <TouchableOpacity onPress={() => setMode('trace')} style={styles.modePillCandy}>
+              <Icon name="brush" size="md" color={c.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView contentContainerStyle={styles.storiesContainer}>
           {loadingStories ? (
@@ -474,7 +653,7 @@ export default function WritingScreen() {
             </View>
           ) : stories.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📚</Text>
+              <Icon name="book-open" size="xl" color="#9575CD" />
               <Text style={[styles.emptyText, a11yTextStyle]}>No stories available yet.</Text>
               <Text style={[styles.emptySubtext, a11yTextStyle]}>Ask your teacher to add some stories!</Text>
             </View>
@@ -494,61 +673,49 @@ export default function WritingScreen() {
                 >
                   <View style={styles.storyCardHeader}>
                     <Text style={[styles.storyTitle, a11yTextStyle]} numberOfLines={1}>{story.title}</Text>
-                    <View style={[styles.levelBadge, { backgroundColor: getLevelColor(story.level) }]}>
-                      <Text style={styles.levelText}>Level {story.level}</Text>
-                    </View>
                   </View>
                   <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
                   <View style={styles.storyMeta}>
                     <Text style={styles.storyMetaText}>{story.content.split(' ').length} words</Text>
-                    <Ionicons name="chevron-forward" size={18} color="#9575CD" />
+                    <Icon name="chevron-forward" size="md" color="#9575CD" />
                   </View>
                 </TouchableOpacity>
               ))}
             </>
           )}
         </ScrollView>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   // --- RENDER: COMPOSE MODE ---
   if (mode === 'compose') {
     return (
-      <View style={styles.composeContainer}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.composeHeader}>
-          <GoBackBtn />
-          <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={[styles.composeTitle, a11yTextStyle]} numberOfLines={1}>
-              {selectedStory ? `✍️ ${selectedStory.title}` : 'Writing (Compose) ✍️'}
-            </Text>
-            <Text style={[styles.composeSub, a11yTextStyle]}>
-              {selectedStory ? 'Copy the story below' : 'Dictate, type, then review corrections'}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePill}>
-            <Ionicons name="library-outline" size={16} color="#fff" />
-            <Text style={styles.modePillText}>Stories</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
+        <StudentPageHeader
+          title={selectedStory ? selectedStory.title : 'Free Writing'}
+          onBack={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }}
+          right={
+            <TouchableOpacity onPress={() => { logComposeSession(); setMode('stories'); setSelectedStory(null); }} style={styles.modePillCandy}>
+              <Icon name="library" size="md" color={c.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView contentContainerStyle={styles.composeBody} keyboardShouldPersistTaps="handled">
           {/* Story Reference Card */}
           {selectedStory && (
             <View style={styles.storyRefCard}>
               <View style={styles.storyRefHeader}>
-                <Text style={[styles.storyRefLabel, a11yTextStyle]}>📖 Story to Copy:</Text>
-                <View style={[styles.levelBadge, { backgroundColor: getLevelColor(selectedStory.level) }]}>
-                  <Text style={styles.levelText}>Level {selectedStory.level}</Text>
-                </View>
+                <Text style={[styles.storyRefLabel, a11yTextStyle]}>Story to Copy:</Text>
               </View>
               <Text style={[styles.storyRefText, a11yTextStyle]}>{selectedStory.content}</Text>
               <TouchableOpacity
                 style={styles.speakStoryBtn}
                 onPress={() => Speech.speak(selectedStory.content, { rate: 0.85 })}
               >
-                <Ionicons name="volume-high" size={16} color="#fff" />
+                <Icon name="volume-2" size="md" color="#fff" />
                 <Text style={styles.speakStoryText}>Hear Story</Text>
               </TouchableOpacity>
             </View>
@@ -570,12 +737,12 @@ export default function WritingScreen() {
 
             <View style={styles.composeBtnRow}>
               <TouchableOpacity style={[styles.composeBtn, isListening && styles.composeBtnStop]} onPress={toggleDictation}>
-                <Ionicons name={isListening ? 'stop' : 'mic'} size={20} color="#fff" />
+                <Icon name={isListening ? 'square' : 'mic'} size="md" color="#fff" />
                 <Text style={styles.composeBtnText}>{isListening ? 'Stop' : 'Dictate'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={[styles.composeBtn, composeSpeaking && styles.composeBtnStop]} onPress={speakDraft}>
-                <Ionicons name={composeSpeaking ? 'stop' : 'volume-high'} size={20} color="#fff" />
+                <Icon name={composeSpeaking ? 'square' : 'volume-2'} size="md" color="#fff" />
                 <Text style={styles.composeBtnText}>{composeSpeaking ? 'Stop' : 'Read Aloud'}</Text>
               </TouchableOpacity>
 
@@ -585,7 +752,7 @@ export default function WritingScreen() {
                   style={[styles.composeBtn, styles.composeBtnSubmit]}
                   onPress={checkMyCopy}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Icon name="check-circle" size="md" color="#fff" />
                   <Text style={styles.composeBtnText}>Check Copy</Text>
                 </TouchableOpacity>
               ) : (
@@ -598,7 +765,7 @@ export default function WritingScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <>
-                      <Ionicons name="sparkles" size={20} color="#fff" />
+                      <Icon name="sparkles" size="md" color="#fff" />
                       <Text style={styles.composeBtnText}>Check</Text>
                     </>
                   )}
@@ -664,10 +831,10 @@ export default function WritingScreen() {
             <View style={styles.comparisonCard}>
               <View style={styles.comparisonHeader}>
                 <Text style={styles.comparisonTitle}>
-                  {comparisonResult?.isPassing ? '🎉 Great Job!' : '📝 Keep Practicing!'}
+                  {comparisonResult?.isPassing ? 'Great Job!' : 'Keep Practicing!'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowComparisonModal(false)}>
-                  <Ionicons name="close" size={28} color="#333" />
+                  <Icon name="close" size={28} color="#333" />
                 </TouchableOpacity>
               </View>
 
@@ -719,7 +886,7 @@ export default function WritingScreen() {
                     draftRef.current = '';
                   }}
                 >
-                  <Ionicons name="refresh" size={18} color="#fff" />
+                  <Icon name="refresh-cw" size="md" color="#fff" />
                   <Text style={styles.tryAgainText}>Try Again</Text>
                 </TouchableOpacity>
 
@@ -735,32 +902,58 @@ export default function WritingScreen() {
                     }}
                   >
                     <Text style={styles.nextStoryText}>Next Story</Text>
-                    <Ionicons name="arrow-forward" size={18} color="#fff" />
+                    <Icon name="arrow-right" size="md" color="#fff" />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
           </View>
         </Modal>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   if (!selectedItem) {
     return (
-      <View style={styles.mainContainer}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient colors={['#E8927C', '#C87456']} style={styles.header}>
-            <GoBackBtn />
-            <View style={styles.headerContent}>
-                <Text style={styles.headerTitle}>Writing Lab ✍️</Text>
-                <Text style={styles.headerSub}>Trace letters or practice stories</Text>
-            </View>
-            <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePill}>
-              <Ionicons name="library-outline" size={16} color="#fff" />
-              <Text style={styles.modePillText}>Stories</Text>
+      <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
+        <StudentPageHeader
+          title="Writing Lab"
+          right={
+            <TouchableOpacity onPress={() => setMode('stories')} style={styles.modePillCandy}>
+              <Icon name="library" size="md" color={c.primary} />
             </TouchableOpacity>
-        </LinearGradient>
+          }
+        />
+
+        {/* Instruction hint + video tutorial button */}
+        <View style={styles.mainHintRow}>
+          <View style={styles.mainHint}>
+            <Icon name="info" size="md" color="#E8927C" />
+            <Text style={styles.mainHintText}>Tap a letter to start tracing, or tap "Stories" to practice copying.</Text>
+          </View>
+          <TouchableOpacity style={styles.watchVideoBtn} onPress={() => Linking.openURL(VIDEO_TUTORIAL_URL)} activeOpacity={0.85}>
+            <Icon name="play-circle" size="md" color="#fff" />
+            <Text style={styles.watchVideoBtnText}>Watch Tutorial</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Uppercase / Lowercase toggle */}
+        <View style={styles.caseTabRow}>
+          <TouchableOpacity
+            style={[styles.caseTab, letterCase === 'upper' && styles.caseTabActive]}
+            onPress={() => setLetterCase('upper')}
+          >
+            <Text style={[styles.caseTabText, letterCase === 'upper' && styles.caseTabTextActive]}>A  Uppercase</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.caseTab, letterCase === 'lower' && styles.caseTabActive]}
+            onPress={() => setLetterCase('lower')}
+          >
+            <Text style={[styles.caseTabText, letterCase === 'lower' && styles.caseTabTextActive]}>a  Lowercase</Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView contentContainerStyle={styles.gridContainer}>
            {items.map((item) => (
                <TouchableOpacity key={item.id} style={styles.gridCard} onPress={() => setSelectedItem(item)}>
@@ -768,42 +961,79 @@ export default function WritingScreen() {
                </TouchableOpacity>
            ))}
         </ScrollView>
-      </View>
+      </ScreenWrapper>
     );
   }
 
   // --- RENDER 2: CANVAS ---
   return (
-    <View style={styles.mainContainer}>
-      <StatusBar barStyle="light-content" />
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
+
       
       {/* Header */}
-      <LinearGradient colors={['#673AB7', '#512DA8']} style={styles.header}>
-         <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.backBtn}>
-             <Ionicons name="grid-outline" size={24} color="#fff" />
-             <Text style={styles.backText}>Grid</Text>
-         </TouchableOpacity>
-         
-         <Text style={styles.headerTitle}>{selectedItem.label}</Text>
-
-         {/* DEMO BUTTON */}
-         <TouchableOpacity onPress={playDemo} style={styles.demoBtn}>
-             <Ionicons name="play-circle" size={28} color="#fff" />
-         </TouchableOpacity>
-      </LinearGradient>
+      <View style={styles.canvasHeaderCandy}>
+        <TouchableOpacity onPress={() => setSelectedItem(null)} style={styles.candyNavBtn}>
+          <Icon name="chevron-left" size="md" color={c.primary} />
+        </TouchableOpacity>
+        <Text style={styles.canvasLetterTitle}>{selectedItem.label}</Text>
+        <TouchableOpacity onPress={playDemo} style={styles.candyNavBtn}>
+          <Icon name="play-circle" size="md" color={c.primary} />
+        </TouchableOpacity>
+      </View>
 
       {/* DRAWING AREA */}
-      <View style={styles.canvasContainer}>
-         
-         {/* Layer 1: Ghost Guide */}
-         <View style={styles.layer}>
-            <Text style={[styles.ghostText, { fontSize: selectedItem.label.length > 1 ? 100 : 280 }]}>
-                {selectedItem.label}
-            </Text>
+      <View
+        style={styles.canvasContainer}
+        onLayout={e => {
+          const { width, height } = e.nativeEvent.layout;
+          setCanvasLayout({ width, height });
+        }}
+      >
+         {/* Layer 1: Dotted SVG Guide — stroke paths with numbered order & arrows */}
+         <View style={[styles.layer, { pointerEvents: 'none' }]}>
+           <Svg width={canvasLayout.width} height={canvasLayout.height}>
+             {(ALL_LETTER_PATHS[selectedItem.label] || []).map((stroke, strokeIdx) => {
+               const pts = stroke.map(([nx, ny]) => [nx * canvasLayout.width, ny * canvasLayout.height]);
+               const d = 'M ' + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L ');
+               const [sx, sy] = pts[0];
+               const [ex, ey] = pts[pts.length - 1];
+               const prev = pts.length > 1 ? pts[pts.length - 2] : pts[0];
+               const dx = ex - prev[0];
+               const dy = ey - prev[1];
+               const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+               const dotSize = Math.max(canvasLayout.width, canvasLayout.height) * 0.028;
+               const numR = dotSize * 1.3;
+               return (
+                 <G key={`g-${strokeIdx}`}>
+                   <Path d={d} stroke="rgba(232,146,124,0.18)" strokeWidth={dotSize * 2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                   <Path d={d} stroke="#E8927C" strokeWidth={dotSize * 1.1} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dotSize * 1.2} ${dotSize * 1.6}`} fill="none" opacity={0.7} />
+                   {pts.length > 1 && (
+                     <G transform={`translate(${ex.toFixed(1)},${ey.toFixed(1)}) rotate(${angle.toFixed(1)})`}>
+                       <Polygon points={`${dotSize*1.8},0 ${-dotSize*1.0},${-dotSize*0.9} ${-dotSize*1.0},${dotSize*0.9}`} fill="#E8927C" opacity={0.85} />
+                     </G>
+                   )}
+                   <Circle cx={sx.toFixed(1)} cy={sy.toFixed(1)} r={numR.toFixed(1)} fill="#E8927C" />
+                   <SvgText x={sx.toFixed(1)} y={(sy + numR * 0.38).toFixed(1)} textAnchor="middle" fill="#fff" fontSize={(numR * 1.1).toFixed(1)} fontWeight="bold">{strokeIdx + 1}</SvgText>
+                 </G>
+               );
+             })}
+           </Svg>
          </View>
 
-         {/* Layer 2: The Demo Animation (Overlay) */}
-         {/* This is a simple visual trick: A moving hand or highlight could go here */}
+         {/* Layer 2: Animated tracing dot (shows stroke direction guide) */}
+         {animDot && paths.length === 0 && (
+           <View
+             style={[styles.animDotOuter, {
+               position: 'absolute',
+               left: (animDot.x / 200) * canvasLayout.width - 14,
+               top: (animDot.y / 200) * canvasLayout.height - 14,
+               zIndex: 8,
+               pointerEvents: 'none',
+             }]}
+           >
+             <View style={styles.animDotInner} />
+           </View>
+         )}
 
          {/* Layer 3: The Ink (SVG) */}
          <View style={[styles.layer, { pointerEvents: 'none' }]}> 
@@ -863,7 +1093,7 @@ export default function WritingScreen() {
       <Modal visible={successVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
               <View style={styles.successCard}>
-                  <Text style={styles.emoji}>🌟</Text>
+                  <Icon name="star" size="xl" color="#FFD700" />
                   <Text style={styles.successTitle}>Awesome!</Text>
                   <Text style={styles.successSub}>You wrote {selectedItem.label} perfectly!</Text>
                   <TouchableOpacity style={styles.nextBtn} onPress={nextItem}>
@@ -878,66 +1108,101 @@ export default function WritingScreen() {
           <View style={styles.modalOverlay}>
               <View style={styles.demoCard}>
                   <View style={styles.demoHeader}>
-                      <Text style={styles.demoTitle}>How to Write {selectedItem?.label}</Text>
+                      <View style={styles.demoHeaderLeft}>
+                        <View style={styles.demoLetterBadge}>
+                          <Text style={styles.demoLetterText}>{selectedItem?.label}</Text>
+                        </View>
+                        <Text style={styles.demoTitle}>How to Write "{selectedItem?.label}"</Text>
+                      </View>
                       <TouchableOpacity onPress={() => setDemoVisible(false)}>
-                          <Ionicons name="close" size={28} color="#333" />
+                          <Icon name="x" size="xl" color="#333" />
                       </TouchableOpacity>
                   </View>
-                  
-                  <ScrollView style={styles.demoContent}>
-                      <Text style={styles.demoInstructions}>
-                        📝 Instructions:
-                      </Text>
-                      <Text style={styles.demoText}>
-                        1. Look at the letter guide in the background
-                      </Text>
-                      <Text style={styles.demoText}>
-                        2. Trace over the letter with your finger
-                      </Text>
-                      <Text style={styles.demoText}>
-                        3. Try to stay within the lines
-                      </Text>
-                      <Text style={styles.demoText}>
-                        4. You can use different colors if you want
-                      </Text>
-                      <Text style={styles.demoText}>
-                        5. Tap "DONE" when you're finished
-                      </Text>
-                      
-                      <Text style={[styles.demoInstructions, { marginTop: 20 }]}>
-                        💡 Tips:
-                      </Text>
-                      <Text style={styles.demoText}>
-                        • Don't worry about being perfect
-                      </Text>
-                      <Text style={styles.demoText}>
-                        • Write slowly and carefully
-                      </Text>
-                      <Text style={styles.demoText}>
-                        • Try writing in different colors
-                      </Text>
-                      <Text style={styles.demoText}>
-                        • Use the "Clear" button to start over
-                      </Text>
 
-                      <View style={{ height: 30 }} />
+                  {/* Animated letter preview */}
+                  <View style={styles.demoPreviewCanvas}>
+                    <Text style={styles.demoPreviewGhost}>{selectedItem?.label}</Text>
+                    {animDot && (
+                      <View style={[styles.animDotOuter, {
+                        position: 'absolute',
+                        left: animDot.x - 14,
+                        top: animDot.y - 14,
+                      }]}>
+                        <View style={styles.animDotInner} />
+                      </View>
+                    )}
+                    <View style={styles.demoPreviewLabel}>
+                      <Text style={styles.demoPreviewLabelText}>Follow the dot</Text>
+                    </View>
+                  </View>
+
+                  {/* Video Tutorial Button */}
+                  <TouchableOpacity
+                    style={styles.videoBtn}
+                    onPress={() => Linking.openURL(VIDEO_TUTORIAL_URL)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.videoBtnIcon}>
+                      <Icon name="play-circle" size="xl" color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.videoBtnTitle}>Watch Video Tutorial</Text>
+                      <Text style={styles.videoBtnSub}>See how to trace letters step by step</Text>
+                    </View>
+                    <Icon name="external-link" size="md" color="rgba(255,255,255,0.8)" />
+                  </TouchableOpacity>
+
+                  <ScrollView style={styles.demoContent}>
+                      <Text style={styles.demoSectionLabel}>Steps to follow:</Text>
+                      {[
+                        { num: '1', text: 'Look at the faded letter guide in the background' },
+                        { num: '2', text: 'Place your finger at the starting point of the letter' },
+                        { num: '3', text: 'Slowly trace over the letter, following its shape' },
+                        { num: '4', text: 'Lift your finger, then trace again to practice more' },
+                        { num: '5', text: 'Tap "DONE" when you feel confident' },
+                      ].map(({ num, text }) => (
+                        <View key={num} style={styles.demoStep}>
+                          <View style={styles.demoStepNum}>
+                            <Text style={styles.demoStepNumText}>{num}</Text>
+                          </View>
+                          <Text style={styles.demoText}>{text}</Text>
+                        </View>
+                      ))}
+
+                      <Text style={[styles.demoSectionLabel, { marginTop: 16 }]}>Tips:</Text>
+                      {[
+                        'Pick a color you like from the color dots at the bottom',
+                        'Tap "Clear" if you want to start your trace over',
+                        "Don't worry about being perfect — just keep practicing!",
+                      ].map((tip, i) => (
+                        <View key={i} style={styles.demoTip}>
+                          <Icon name="lightbulb" size="md" color="#E8927C" />
+                          <Text style={[styles.demoText, { flex: 1 }]}>{tip}</Text>
+                        </View>
+                      ))}
+
+                      <View style={{ height: 16 }} />
                   </ScrollView>
 
                   <TouchableOpacity style={styles.demoCloseBtn} onPress={() => setDemoVisible(false)}>
-                      <Text style={styles.demoCloseText}>Got it! Let's start ✍️</Text>
+                      <Icon name="pencil" size="md" color="#fff" />
+                      <Text style={styles.demoCloseText}>Got it! Start Tracing</Text>
                   </TouchableOpacity>
               </View>
           </View>
       </Modal>
 
-    </View>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#FAF5F1' },
+  mainContainer: { flex: 1 },
   
-  header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, elevation: 5 },
+  canvasHeaderCandy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, backgroundColor: '#FFF0E8', borderBottomWidth: 2, borderBottomColor: '#E8927C20' },
+  canvasLetterTitle: { fontSize: 42, fontWeight: '900', color: '#E8927C', letterSpacing: 2 },
+  candyNavBtn: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40', elevation: 2 },
+  modePillCandy: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40' },
   headerContent: { alignItems: 'center' },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
@@ -948,34 +1213,80 @@ const styles = StyleSheet.create({
   backBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 12 },
   backText: { color: '#fff', marginLeft: 5, fontWeight: 'bold' },
   demoBtn: { padding: 5 },
+  demoBtnLarge: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: 8, borderRadius: 12 },
+  demoHint: { color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
 
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', padding: 20, gap: 15 },
-  gridCard: { width: 70, height: 70, backgroundColor: '#fff', borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 3 },
-  gridText: { fontSize: 32, fontWeight: 'bold', color: '#555' },
+  mainHintRow: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4, gap: 10 },
+  mainHint: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E8', borderRadius: 12, padding: 10, gap: 8, borderWidth: 1, borderColor: '#E8927C20' },
+  mainHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 18 },
+  watchVideoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E8927C', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' },
+  watchVideoBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
 
-  canvasContainer: { 
-      flex: 1, 
-      backgroundColor: '#fff', 
-      margin: 20, 
-      borderRadius: 20, 
-      elevation: 5, 
+  caseTabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 10, gap: 10 },
+  caseTab: { flex: 1, paddingVertical: 10, borderRadius: 14, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center', backgroundColor: '#fff' },
+  caseTabActive: { backgroundColor: '#E8927C' },
+  caseTabText: { fontSize: 15, fontWeight: 'bold', color: '#E8927C' },
+  caseTabTextActive: { color: '#fff' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', padding: 16, gap: 12 },
+  gridCard: { width: 80, height: 80, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4, borderWidth: 2, borderColor: '#E8927C40' },
+  gridText: { fontSize: 38, fontWeight: 'bold', color: '#E8927C' },
+
+  canvasContainer: {
+      flex: 1,
+      backgroundColor: '#fff',
+      marginHorizontal: 12,
+      marginTop: 12,
+      marginBottom: 8,
+      borderRadius: 20,
+      elevation: 5,
       overflow: 'hidden',
-      position: 'relative'
+      position: 'relative',
+      minHeight: 220,
   },
   
   layer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  ghostText: { fontWeight: 'bold', color: '#E1BEE7', textAlign: 'center' }, // Light purple ghost
 
-  controls: { padding: 20, paddingBottom: 40 },
-  colorRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  colorDot: { width: 45, height: 45, borderRadius: 25, borderWidth: 2, borderColor: '#fff', elevation: 2 },
+  // Tracing animation dot
+  animDotOuter: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(232, 146, 124, 0.35)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  animDotInner: {
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: '#E8927C',
+  },
+
+  // Demo modal letter preview
+  demoPreviewCanvas: {
+    width: 200, height: 200, alignSelf: 'center',
+    backgroundColor: '#FFF8F5', borderRadius: 20,
+    borderWidth: 2, borderColor: '#E8927C30',
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 14, overflow: 'hidden',
+  },
+  demoPreviewGhost: {
+    fontSize: 140, fontWeight: '900',
+    color: 'rgba(232, 146, 124, 0.25)',
+    includeFontPadding: false,
+  },
+  demoPreviewLabel: {
+    position: 'absolute', bottom: 8,
+    backgroundColor: 'rgba(232,146,124,0.15)',
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
+  },
+  demoPreviewLabelText: { fontSize: 11, color: '#E8927C', fontWeight: '700' },
+
+  controls: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
+  colorRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  colorDot: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#fff', elevation: 2 },
   activeColor: { borderWidth: 3, borderColor: '#333', transform: [{scale: 1.15}] },
 
-  btnRow: { flexDirection: 'row', gap: 15 },
-  clearBtn: { flex: 1, padding: 15, backgroundColor: '#fff', borderRadius: 15, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center' },
+  btnRow: { flexDirection: 'row', gap: 10 },
+  clearBtn: { flex: 1, paddingVertical: 12, backgroundColor: '#fff', borderRadius: 14, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center' },
   clearText: { color: '#E8927C', fontWeight: 'bold' },
-  checkBtn: { flex: 2, padding: 15, backgroundColor: '#E8927C', borderRadius: 15, alignItems: 'center', elevation: 5 },
-  checkText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  checkBtn: { flex: 2, paddingVertical: 12, backgroundColor: '#E8927C', borderRadius: 14, alignItems: 'center', elevation: 5 },
+  checkText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   successCard: { width: '80%', backgroundColor: '#fff', borderRadius: 25, padding: 30, alignItems: 'center', elevation: 10 },
@@ -986,17 +1297,30 @@ const styles = StyleSheet.create({
   nextText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // Demo modal styles
-  demoCard: { width: '95%', backgroundColor: '#fff', borderRadius: 25, padding: 20, elevation: 10, maxHeight: '90%' },
-  demoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E0E0E0', paddingBottom: 12 },
-  demoTitle: { fontSize: 22, fontWeight: 'bold', color: '#333' },
-  demoContent: { maxHeight: '70%', marginBottom: 16 },
-  demoInstructions: { fontSize: 16, fontWeight: 'bold', color: '#673AB7', marginBottom: 8 },
-  demoText: { fontSize: 14, color: '#555', marginBottom: 8, lineHeight: 20 },
-  demoCloseBtn: { backgroundColor: '#673AB7', borderRadius: 15, paddingVertical: 14, alignItems: 'center' },
+  demoCard: { width: '95%', backgroundColor: '#fff', borderRadius: 25, padding: 20, elevation: 10, maxHeight: '92%' },
+  demoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 12 },
+  demoHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  demoLetterBadge: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40' },
+  demoLetterText: { fontSize: 22, fontWeight: 'bold', color: '#E8927C' },
+  demoTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', flex: 1 },
+
+  videoBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8927C', borderRadius: 16, padding: 14, marginBottom: 16, gap: 12 },
+  videoBtnIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  videoBtnTitle: { color: '#fff', fontWeight: 'bold', fontSize: 15, marginBottom: 2 },
+  videoBtnSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
+
+  demoSectionLabel: { fontSize: 13, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  demoStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
+  demoStepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
+  demoStepNumText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  demoTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
+  demoContent: { maxHeight: '65%', marginBottom: 14 },
+  demoText: { fontSize: 14, color: '#555', lineHeight: 20, flex: 1 },
+  demoCloseBtn: { backgroundColor: '#E8927C', borderRadius: 15, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 },
   demoCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // ── Compose mode styles ───────────────────────────────────────────
-  composeContainer: { flex: 1, backgroundColor: '#FAF5F1' },
+  composeContainer: { flex: 1 },
   composeHeader: { paddingTop: 60, paddingBottom: 18, paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   composeTitle: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   composeSub: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2 },

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { TABLES } from './constants';
 
 /**
  * Fetch all enrollments for a teacher along with student profiles.
@@ -9,7 +10,7 @@ export async function fetchEnrollmentsWithProfiles(teacherId) {
   if (!teacherId) return [];
 
   const { data, error } = await supabase
-    .from('enrollments')
+    .from(TABLES.ENROLLMENTS)
     .select(`
       id,
       created_at,
@@ -43,7 +44,7 @@ export async function isStudentEnrolled(teacherId, studentId) {
   if (!teacherId || !studentId) return false;
 
   const { data, error } = await supabase
-    .from('enrollments')
+    .from(TABLES.ENROLLMENTS)
     .select('id')
     .eq('teacher_id', teacherId)
     .eq('student_id', studentId)
@@ -64,7 +65,7 @@ export async function enrollStudent(teacherId, studentId) {
   }
 
   const { error } = await supabase
-    .from('enrollments')
+    .from(TABLES.ENROLLMENTS)
     .insert({ teacher_id: teacherId, student_id: studentId });
 
   if (error) {
@@ -86,7 +87,7 @@ export async function removeEnrollment(enrollmentId) {
   }
 
   const { error } = await supabase
-    .from('enrollments')
+    .from(TABLES.ENROLLMENTS)
     .delete()
     .eq('id', enrollmentId);
 
