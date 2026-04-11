@@ -34,7 +34,7 @@ const ACTIVITY_ICON_NAMES = {
 };
 
 export default function ParentDashboardScreen({ navigation }) {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { theme, colors, a11yTextStyle } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -392,6 +392,9 @@ export default function ParentDashboardScreen({ navigation }) {
             <Icon name="plus-circle" size="md" color="#fff" />
             <Text style={[s.linkChildBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Link a Child</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={s.logOutBtn} onPress={signOut}>
+            <Text style={[s.logOutBtnText, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Log Out</Text>
+          </TouchableOpacity>
         </View>
       </ScreenWrapper>
     );
@@ -697,6 +700,8 @@ const s = StyleSheet.create({
   emptyHint:          { fontSize: 14, color: '#999', marginTop: tokens.spacing.sm, textAlign: 'center', lineHeight: 22 },
   linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#E8927C', borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.lg, elevation: 3 },
   linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  logOutBtn:          { borderWidth: 1.5, borderColor: '#E05C5C', borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.md, minWidth: 160, alignItems: 'center' },
+  logOutBtnText:      { color: '#E05C5C', fontWeight: 'bold', fontSize: 16 },
 
   header:             { paddingTop: 50, paddingBottom: tokens.spacing.md, paddingHorizontal: tokens.spacing.md },
   headerContent:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
