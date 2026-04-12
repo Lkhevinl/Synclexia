@@ -64,6 +64,10 @@ import AddMaintenanceLogScreen from '../screens/admin/AddMaintenanceLogScreen';
 import AdminManageContentsScreen from '../screens/admin/AdminManageContentsScreen';
 import AdminAddStoryScreen from '../screens/admin/AdminAddStoryScreen';
 import AdminPhonicsScreen from '../screens/admin/AdminPhonicsScreen';
+import AdminSpellingScreen from '../screens/admin/AdminSpellingScreen';
+import AdminPhonicsActivityScreen from '../screens/admin/AdminPhonicsActivityScreen';
+import AdminPhonologicalScreen from '../screens/admin/AdminPhonologicalScreen';
+import AdminSettingsScreen from '../screens/admin/AdminSettingsScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -284,6 +288,10 @@ function AppScreens() {
           <Stack.Screen name="AdminManageContents" component={AdminManageContentsScreen} />
           <Stack.Screen name="AdminAddStory" component={AdminAddStoryScreen} />
           <Stack.Screen name="AdminPhonics" component={AdminPhonicsScreen} />
+          <Stack.Screen name="AdminSpelling" component={AdminSpellingScreen} />
+          <Stack.Screen name="AdminPhonicsActivity" component={AdminPhonicsActivityScreen} />
+          <Stack.Screen name="AdminPhonological" component={AdminPhonologicalScreen} />
+          <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
         </>
       )}
     </Stack.Navigator>

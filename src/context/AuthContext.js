@@ -78,13 +78,13 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (userId, retryCount = 0, startTime = Date.now()) => {
     if (Date.now() - startTime > TIMEOUTS.PROFILE_TOTAL_MS) {
-      console.warn('fetchProfile: total time exceeded 20s');
+      console.warn(`fetchProfile: total time exceeded ${TIMEOUTS.PROFILE_TOTAL_MS / 1000}s`);
       setProfileError('server_error');
       setProfileLoaded(true);
       return null;
     }
     try {
-      // Race the Supabase query against a 8-second hard timeout so a hanging
+      // Race the Supabase query against a hard timeout so a hanging
       // network request can never block the app indefinitely.
       const queryPromise = supabase.from(TABLES.PROFILES).select('*').eq('id', userId).single();
       const timeoutPromise = new Promise((_, reject) =>
@@ -95,6 +95,8 @@ export const AuthProvider = ({ children }) => {
         console.warn('fetchProfile error:', error.message, '| code:', error.code, '| status:', error.status);
         const isInfiniteRecursion = error.code === '42P17' ||
           error.message?.toLowerCase().includes('infinite recursion');
+        // PGRST116 = .single() returned 0 rows — profile may not exist yet (signup race)
+        const isNotFound = error.code === 'PGRST116';
         const isTransient500 = error.status === 500 && !isInfiniteRecursion;
 
         if (isInfiniteRecursion) {
@@ -102,16 +104,16 @@ export const AuthProvider = ({ children }) => {
           setProfileLoaded(true);
           return null;
         }
-        if (isTransient500 && retryCount < 3) {
-          console.log(`fetchProfile: transient 500, retrying… (attempt ${retryCount + 1})`);
+        if ((isTransient500 || isNotFound) && retryCount < 3) {
+          console.log(`fetchProfile: ${isNotFound ? 'profile not found' : 'transient 500'}, retrying… (attempt ${retryCount + 1})`);
           await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
           return fetchProfile(userId, retryCount + 1, startTime);
         }
-        if (isTransient500) {
-          setProfileError('server_error');
-          setProfileLoaded(true);
-          return null;
-        }
+        // All other errors (RLS denial, bad request, exhausted retries, etc.)
+        // — surface immediately rather than falling through to the not-found retry path.
+        setProfileError(isNotFound ? 'not_found' : 'server_error');
+        setProfileLoaded(true);
+        return null;
       }
       if (data) {
         if (data.is_banned) {
@@ -130,12 +132,8 @@ export const AuthProvider = ({ children }) => {
         registerForPushNotificationsAsync(data.id).catch(() => {});
         setProfileLoaded(true);
         return data;
-      } else if (retryCount < 3) {
-        // Profile may not exist yet (signup race) or network issue — retry up to 3 times
-        console.log(`fetchProfile: profile not found, retrying… (attempt ${retryCount + 1})`);
-        await new Promise(r => setTimeout(r, TIMEOUTS.RETRY_DELAY_MS));
-        return fetchProfile(userId, retryCount + 1, startTime);
       }
+      // data is null with no error — shouldn't happen with .single(), but guard it
       setProfileError('not_found');
       setProfileLoaded(true);
       return null;

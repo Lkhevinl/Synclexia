@@ -92,7 +92,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       subtitle: `${contentStats.spelling} words`,
       icon: 'type',
       bgColor: '#BBDEFB',
-      route: 'TeacherSpelling',
+      route: 'AdminSpelling',
     },
     {
       id: 'phonicsActivities',
@@ -100,7 +100,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       subtitle: `${contentStats.phonicsActivities} activities`,
       icon: 'gamepad-2',
       bgColor: '#FFE0B2',
-      route: 'TeacherPhonicsActivity',
+      route: 'AdminPhonicsActivity',
     },
     {
       id: 'phonological',
@@ -108,7 +108,7 @@ export default function AdminManageContentsScreen({ navigation }) {
       subtitle: `${contentStats.phonological} items`,
       icon: 'headphones',
       bgColor: '#E1BEE7',
-      route: 'TeacherPhonological',
+      route: 'AdminPhonological',
     },
   ];
 

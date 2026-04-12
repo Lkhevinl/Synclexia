@@ -181,7 +181,7 @@ export default function SettingsScreen({ navigation }) {
             <View style={[styles.card, { backgroundColor: colors.surfaceCard }, tokens.shadows.low]}>
               <SettingRow icon="information-circle-outline" iconColor="#1976D2" label="About" onPress={() => navigation.navigate('Support', { initialTab: 'About' })} />
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <SettingRow icon="chatbubble-ellipses-outline" iconColor="#2E7D32" label="Send Feedback to Admin" onPress={() => navigation.navigate('Support', { initialTab: 'Rate' })} />
+              <SettingRow icon="chatbubble-ellipses-outline" iconColor="#2E7D32" label="Send Feedback" onPress={() => navigation.navigate('Support', { initialTab: 'Rate' })} />
             </View>
           </>
         )}

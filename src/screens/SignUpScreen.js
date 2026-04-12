@@ -18,7 +18,6 @@ import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { TABLES, ROLES } from '../lib/constants';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
 import CustomButton from '../components/CustomButton';
@@ -52,12 +51,7 @@ export default function SignUpScreen({ navigation }) {
   const { colors } = useTheme();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
 
-  const generateUniqueCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  };
-
-  const handleRoleSelect = (selectedRole) => setRole(selectedRole);
+const handleRoleSelect = (selectedRole) => setRole(selectedRole);
   const handleContinue = () => setStep(2);
   const handleBack = () => {
     if (step === 2) setStep(1);
@@ -112,27 +106,11 @@ export default function SignUpScreen({ navigation }) {
         return;
       }
 
-      const profileData = { id: user.id, full_name: trimmedName, email: trimmedEmail, role };
-      let profileError = null;
-
-      if (role === 'student') {
-        for (let attempt = 0; attempt < 5; attempt++) {
-          profileData.unique_code = generateUniqueCode();
-          const result = await supabase.from(TABLES.PROFILES).upsert([profileData], { onConflict: 'id' });
-          profileError = result.error;
-          if (!profileError || profileError.code !== '23505') break;
-        }
-      } else {
-        const result = await supabase.from(TABLES.PROFILES).upsert([profileData], { onConflict: 'id' });
-        profileError = result.error;
-      }
-
-      if (profileError) {
-        showAlert('Profile Save Failed', 'Could not save your profile.');
-      } else {
-        setSignedUpSession(data.session);
-        setShowSuccessModal(true);
-      }
+      // Profile is created server-side by the handle_new_user() trigger
+      // (SECURITY DEFINER) using the role/full_name passed in options.data above.
+      // Client-side upsert is blocked by RLS and is not needed.
+      setSignedUpSession(data.session);
+      setShowSuccessModal(true);
     } catch (e) {
       showAlert('Unexpected Error', 'Something went wrong.');
     } finally {

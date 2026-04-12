@@ -10,15 +10,18 @@ import StudentIconBadge from './student/StudentIconBadge';
 import c from './student/candyTokens';
 
 const FONT_STYLES = [
-  { label: 'System',         value: 'System'        },
-  { label: 'Arial',          value: 'Arial'         },
-  { label: 'Open Dyslexic',  value: 'OpenDyslexic'  },
-  { label: 'Verdana',        value: 'Verdana'       },
-  { label: 'Tahoma',         value: 'Tahoma'        },
-  { label: 'Century Gothic', value: 'Century Gothic'},
-  { label: 'Trebuchet',      value: 'Trebuchet MS'  },
-  { label: 'Calibri',        value: 'Calibri'       },
-  { label: 'Open Sans',      value: 'Open Sans'     },
+  { label: 'Inter',          value: 'Inter'          },
+  { label: 'Inter Medium',   value: 'Inter Medium'   },
+  { label: 'Inter SemiBold', value: 'Inter SemiBold' },
+  { label: 'Inter Bold',     value: 'Inter Bold'     },
+  { label: 'Arial',          value: 'Arial'          },
+  { label: 'Open Dyslexic',  value: 'OpenDyslexic'   },
+  { label: 'Verdana',        value: 'Verdana'        },
+  { label: 'Tahoma',         value: 'Tahoma'         },
+  { label: 'Century Gothic', value: 'Century Gothic' },
+  { label: 'Trebuchet',      value: 'Trebuchet MS'   },
+  { label: 'Calibri',        value: 'Calibri'        },
+  { label: 'Open Sans',      value: 'Open Sans'      },
 ];
 
 const OVERLAY_OPTIONS = [
@@ -230,7 +233,7 @@ export default function Sidebar({ visible, onClose }) {
                     <View style={s.divider} />
                     <TouchableOpacity style={s.row} onPress={() => navigate('Support', { initialTab: 'Rate' })}>
                       <View style={[s.iconWrap, { backgroundColor: '#2E7D3218' }]}><Icon name="message-square-dashed" size="sm" color="#2E7D32" /></View>
-                      <Text style={s.rowLabel}>Send Feedback to Admin</Text>
+                      <Text style={s.rowLabel}>Send Feedback</Text>
                       <Icon name="chevron-forward" size="sm" color="#D0D9E0" />
                     </TouchableOpacity>
                   </View>

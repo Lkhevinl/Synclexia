@@ -15,12 +15,9 @@ export const TABLES = {
   PARENT_LINKS:             'parent_links',
   STORIES:                  'stories',
   PHONICS_ITEMS:            'phonics_items',
-  PHONOLOGICAL_ITEMS:       'phonological_items',
+  PHONOLOGICAL_ITEMS:       'phonological_content',
   MAINTENANCE_LOGS:         'maintenance_logs',
   FEEDBACK:                 'feedback',
-  ENROLLMENTS:              'enrollments',
-  PARENT_MESSAGES:          'parent_messages',
-  ASSIGNMENTS:              'assignments',
   WRITING_PRACTICE:         'writing_practice',
 };
 

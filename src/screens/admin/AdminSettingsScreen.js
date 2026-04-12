@@ -20,8 +20,8 @@ export default function AdminSettingsScreen({ navigation }) {
   };
 
   const FontSizeBtn = ({ label, value }) => (
-    <TouchableOpacity 
-      style={[styles.optionBtn, theme.fontSize === value && styles.optionBtnActive]} 
+    <TouchableOpacity
+      style={[styles.optionBtn, theme.fontSize === value && styles.optionBtnActive]}
       onPress={() => updateTheme({ fontSize: value })}
     >
         <Text style={[styles.optionText, { fontSize: value }, theme.fontSize === value && styles.optionTextActive]}>
@@ -30,10 +30,18 @@ export default function AdminSettingsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  const ColorBtn = ({ color }) => (
-    <TouchableOpacity 
-      style={[styles.colorCircle, { backgroundColor: color }, theme.bgColor === color && styles.colorActive]} 
-      onPress={() => updateTheme({ bgColor: color })}
+  // colorOverlay is the real source of truth — bgColor is derived from it
+  const COLOR_OPTIONS = [
+    { overlay: 'none',   bg: '#FAF5F1' },
+    { overlay: 'orange', bg: '#FFF3E0' },
+    { overlay: 'blue',   bg: '#E3F2FD' },
+    { overlay: 'pink',   bg: '#FCE4EC' },
+  ];
+
+  const ColorBtn = ({ overlay, bg }) => (
+    <TouchableOpacity
+      style={[styles.colorCircle, { backgroundColor: bg }, theme.colorOverlay === overlay && styles.colorActive]}
+      onPress={() => updateTheme({ colorOverlay: overlay })}
     />
   );
 
@@ -60,16 +68,15 @@ export default function AdminSettingsScreen({ navigation }) {
               </View>
               <Text style={styles.label}>Text Size</Text>
               <View style={styles.row}>
-                  <FontSizeBtn label="Small" value={14} />
-                  <FontSizeBtn label="Medium" value={18} />
-                  <FontSizeBtn label="Large" value={24} />
+                  <FontSizeBtn label="Small" value={12} />
+                  <FontSizeBtn label="Medium" value={14} />
+                  <FontSizeBtn label="Large" value={17} />
               </View>
               <Text style={styles.label}>Theme</Text>
               <View style={styles.row}>
-                  <ColorBtn color="#F5F7FA" /> 
-                  <ColorBtn color="#FFF3E0" />
-                  <ColorBtn color="#E3F2FD" /> 
-                  <ColorBtn color="#F3E5F5" />
+                  {COLOR_OPTIONS.map(opt => (
+                    <ColorBtn key={opt.overlay} overlay={opt.overlay} bg={opt.bg} />
+                  ))}
               </View>
           </View>
 

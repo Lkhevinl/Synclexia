@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   Share,
   Platform,
+  Modal,
 } from 'react-native';
+import * as Print from 'expo-print';
 import Icon from '../../components/icons/Icon';
 import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
@@ -27,6 +29,7 @@ import {
   getComprehensiveAnalytics,
   exportAnalyticsCSV,
   exportAnalyticsJSON,
+  exportAnalyticsPDF,
   formatActivityType,
 } from '../../lib/analyticsHelper';
 
@@ -37,6 +40,8 @@ export default function AdminReportsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState(30);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadAnalytics();
@@ -57,30 +62,50 @@ export default function AdminReportsScreen() {
 
   const handleExportCSV = async () => {
     if (!analytics) return;
-    const csvData = exportAnalyticsCSV(analytics);
-    if (Platform.OS === 'web') {
-      // Download as file on web
-      const blob = new Blob([csvData], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `analytics_report_${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-    } else {
-      await Share.share({
-        message: csvData,
-        title: 'Analytics Report (CSV)',
-      });
+    setExporting(true);
+    try {
+      const csvData = exportAnalyticsCSV(analytics);
+      if (Platform.OS === 'web') {
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `synclexia_report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+      } else {
+        await Share.share({
+          message: csvData,
+          title: `Synclexia Analytics Report (CSV) — Last ${dateRange} days`,
+        });
+      }
+    } finally {
+      setExporting(false);
+      setExportModalVisible(false);
     }
   };
 
-  const handleExportJSON = async () => {
+  const handleExportPDF = async () => {
     if (!analytics) return;
-    const jsonData = exportAnalyticsJSON(analytics);
-    await Share.share({
-      message: jsonData,
-      title: 'Analytics Report (JSON)',
-    });
+    setExporting(true);
+    try {
+      const html = exportAnalyticsPDF(analytics, dateRange);
+      if (Platform.OS === 'web') {
+        // Open in a new tab for printing on web
+        const win = window.open('', '_blank');
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          win.print();
+        }
+      } else {
+        await Print.printAsync({ html });
+      }
+    } catch (err) {
+      console.warn('PDF export error:', err);
+    } finally {
+      setExporting(false);
+      setExportModalVisible(false);
+    }
   };
 
   const renderTabButton = (value, label, icon) => {
@@ -395,7 +420,7 @@ export default function AdminReportsScreen() {
       <AppHeader
         title="Reports & Analytics"
         right={
-          <TouchableOpacity onPress={handleExportCSV} style={styles.exportBtn}>
+          <TouchableOpacity onPress={() => setExportModalVisible(true)} style={styles.exportBtn}>
             <Icon name="download" size="md" color="#fff" />
           </TouchableOpacity>
         }
@@ -425,6 +450,69 @@ export default function AdminReportsScreen() {
 
       {/* Tab Content */}
       {renderContent()}
+
+      {/* Export Format Modal */}
+      <Modal
+        visible={exportModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setExportModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Export Report</Text>
+            <Text style={styles.modalSubtitle}>
+              Select a format to export the analytics report for the last {dateRange} days.
+            </Text>
+
+            {exporting ? (
+              <View style={styles.exportingContainer}>
+                <ActivityIndicator size="large" color="#607D8B" />
+                <Text style={styles.exportingText}>Generating report...</Text>
+              </View>
+            ) : (
+              <View style={styles.formatOptions}>
+                {/* PDF Option */}
+                <TouchableOpacity style={styles.formatCard} onPress={handleExportPDF} activeOpacity={0.8}>
+                  <View style={[styles.formatIconBox, { backgroundColor: '#FFEBEE' }]}>
+                    <Icon name="file-text" size="lg" color="#E53935" />
+                  </View>
+                  <View style={styles.formatInfo}>
+                    <Text style={styles.formatTitle}>Export as PDF</Text>
+                    <Text style={styles.formatDesc}>
+                      Structured report with overview, activity breakdown, and student progress. Ready to print or share.
+                    </Text>
+                  </View>
+                  <Icon name="chevron-forward" size="md" color="#B0BEC5" />
+                </TouchableOpacity>
+
+                {/* CSV Option */}
+                <TouchableOpacity style={styles.formatCard} onPress={handleExportCSV} activeOpacity={0.8}>
+                  <View style={[styles.formatIconBox, { backgroundColor: '#E8F5E9' }]}>
+                    <Icon name="grid" size="lg" color="#43A047" />
+                  </View>
+                  <View style={styles.formatInfo}>
+                    <Text style={styles.formatTitle}>Export as CSV</Text>
+                    <Text style={styles.formatDesc}>
+                      Spreadsheet-friendly format. Open in Excel or Google Sheets for further analysis.
+                    </Text>
+                  </View>
+                  <Icon name="chevron-forward" size="md" color="#B0BEC5" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setExportModalVisible(false)}
+              disabled={exporting}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -433,6 +521,95 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   exportBtn: {
     padding: 4,
+  },
+
+  // Export Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 36,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#263238',
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#78909C',
+    marginBottom: 24,
+    lineHeight: 18,
+  },
+  formatOptions: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  formatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 16,
+    padding: 16,
+    gap: 14,
+  },
+  formatIconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  formatInfo: {
+    flex: 1,
+  },
+  formatTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#263238',
+    marginBottom: 4,
+  },
+  formatDesc: {
+    fontSize: 12,
+    color: '#78909C',
+    lineHeight: 17,
+  },
+  exportingContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 14,
+  },
+  exportingText: {
+    fontSize: 14,
+    color: '#607D8B',
+    fontWeight: '500',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#ECEFF1',
+  },
+  cancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#546E7A',
   },
   dateRangeContainer: {
     backgroundColor: '#fff',
