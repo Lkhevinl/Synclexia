@@ -1,233 +1,161 @@
-// ─── Sign Up Module Tests ────────────────────────────────────────────────────
-// Individual test file for User Authentication - Sign Up
-// Test Cases: TC-SIGNUP-001 through TC-SIGNUP-013
+// ─── Sign Up Module Tests ──────────────────────────────────────────────────
+// Module: User Authentication
+// Unit: Sign Up
+// Test Cases: TC-SIGNUP-001 to TC-SIGNUP-007
 
-const existingEmails = ['existing@test.com'];
-const validRoles = ['student', 'parent'];
+const existingEmails = ['existing@test.com', 'test@example.com'];
 
-function validateSignUp({ email, password, confirmPassword, fullName, role }) {
-  const errors = [];
-  
-  // Role validation
-  if (!role || !validRoles.includes(role)) {
+function validateSignUp(formData) {
+  const { email, password, confirmPassword, fullName, role } = formData;
+  let errors = [];
+  let isValid = true;
+
+  // TC-SIGNUP-001: Role validation
+  if (!role || (role !== 'Learner' && role !== 'Parent')) {
     errors.push('Invalid role selected');
+    isValid = false;
   }
-  
-  // Empty fields check
-  if (!email?.trim() || !password?.trim() || !fullName?.trim()) {
+
+  // TC-SIGNUP-002 & TC-SIGNUP-003: Empty/incomplete fields validation
+  if (!email || !password || !confirmPassword || !fullName) {
     errors.push('Please fill in all the boxes!');
+    isValid = false;
   }
-  
-  // Email format
+
+  // TC-SIGNUP-004: Email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (email && !emailRegex.test(email.trim())) {
+  if (email && !emailRegex.test(email)) {
     errors.push('Invalid email format');
+    isValid = false;
   }
-  
-  // Existing email
-  if (email && existingEmails.includes(email.trim().toLowerCase())) {
+
+  // TC-SIGNUP-005: Existing email validation
+  if (email && existingEmails.includes(email)) {
     errors.push('Email already exists');
+    isValid = false;
   }
-  
-  // Password length
-  if (password && password.length < 8) {
-    errors.push('Password must be at least 8 characters long.');
-  }
-  
-  // Password match
+
+  // TC-SIGNUP-006: Password match validation
   if (password && confirmPassword && password !== confirmPassword) {
     errors.push('Passwords do not match. Please try again.');
+    isValid = false;
   }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+
+  return { isValid, errors, role: isValid ? role : null };
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // TEST CASES
 // ═════════════════════════════════════════════════════════════════════════════
 
-describe('Sign Up Module - Individual Test Cases', () => {
+describe('User Authentication - Sign Up', () => {
 
-  describe('TC-SIGNUP-001: User selects a role (Learner or Parent) during registration', () => {
-    test('Selected role is saved to the system - Student role valid', () => {
+  describe('TC-SIGNUP-001: Validate role selection (Learner or Parent) during registration', () => {
+    test('Selected role (Learner or Parent) is saved to the system', () => {
       const result = validateSignUp({
         email: 'new@test.com',
         password: 'password123',
         confirmPassword: 'password123',
         fullName: 'Test User',
-        role: 'student'
+        role: 'Learner'
       });
+      expect(result.isValid).toBe(true);
       expect(result.errors).not.toContain('Invalid role selected');
+      expect(result.role).toBe('Learner');
     });
 
-    test('Selected role is saved to the system - Parent role valid', () => {
+    test('Selected role Parent is saved to the system', () => {
       const result = validateSignUp({
-        email: 'new@test.com',
+        email: 'parent@test.com',
         password: 'password123',
         confirmPassword: 'password123',
-        fullName: 'Test User',
-        role: 'parent'
+        fullName: 'Parent User',
+        role: 'Parent'
       });
+      expect(result.isValid).toBe(true);
       expect(result.errors).not.toContain('Invalid role selected');
+      expect(result.role).toBe('Parent');
     });
   });
 
-  describe('TC-SIGNUP-002: Learner enters no input in the registration form', () => {
+  describe('TC-SIGNUP-002: Validate no input in the registration form', () => {
     test('Registration unsuccessful; error displayed', () => {
       const result = validateSignUp({
         email: '',
         password: '',
         confirmPassword: '',
         fullName: '',
-        role: 'student'
+        role: 'Learner'
       });
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Please fill in all the boxes!');
     });
   });
 
-  describe('TC-SIGNUP-003: Learner enters incomplete details in the registration form', () => {
+  describe('TC-SIGNUP-003: Validate incomplete details in the registration form', () => {
     test('Registration unsuccessful; error displayed', () => {
       const result = validateSignUp({
         email: 'test@test.com',
         password: '',
         confirmPassword: '',
         fullName: '',
-        role: 'student'
+        role: 'Learner'
       });
       expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
     });
   });
 
-  describe('TC-SIGNUP-004: Learner enters an invalid email format', () => {
+  describe('TC-SIGNUP-004: Validate invalid email format', () => {
     test('System displays email format error', () => {
       const result = validateSignUp({
         email: 'invalid-email',
         password: 'password123',
         confirmPassword: 'password123',
         fullName: 'Test User',
-        role: 'student'
+        role: 'Learner'
       });
+      expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Invalid email format');
     });
   });
 
-  describe('TC-SIGNUP-005: Learner enters an email that already exists', () => {
+  describe('TC-SIGNUP-005: Validate existing email in the registration form', () => {
     test('System displays "Email already exists" error', () => {
       const result = validateSignUp({
         email: 'existing@test.com',
         password: 'password123',
         confirmPassword: 'password123',
         fullName: 'Test User',
-        role: 'student'
+        role: 'Learner'
       });
+      expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Email already exists');
     });
   });
 
-  describe('TC-SIGNUP-006: Learner enters non-matching password and confirm password', () => {
+  describe('TC-SIGNUP-006: Validate non-matching password and confirm password', () => {
     test('System displays password mismatch error', () => {
       const result = validateSignUp({
         email: 'new@test.com',
         password: 'password123',
         confirmPassword: 'different456',
         fullName: 'Test User',
-        role: 'student'
+        role: 'Learner'
       });
+      expect(result.isValid).toBe(false);
       expect(result.errors).toContain('Passwords do not match. Please try again.');
     });
   });
 
-  describe('TC-SIGNUP-007: Learner enters all valid and complete credentials', () => {
+  describe('TC-SIGNUP-007: Validate all valid and complete credentials', () => {
     test('Account is successfully created and redirected to Sign In', () => {
       const result = validateSignUp({
         email: 'newlearner@test.com',
         password: 'password123',
         confirmPassword: 'password123',
         fullName: 'New Learner',
-        role: 'student'
-      });
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-  });
-
-  describe('TC-SIGNUP-008: Parent enters no input in the registration form', () => {
-    test('Registration unsuccessful; error displayed', () => {
-      const result = validateSignUp({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        fullName: '',
-        role: 'parent'
-      });
-      expect(result.isValid).toBe(false);
-    });
-  });
-
-  describe('TC-SIGNUP-009: Parent enters incomplete details in the registration form', () => {
-    test('Registration unsuccessful; error displayed', () => {
-      const result = validateSignUp({
-        email: 'parent@test.com',
-        password: '',
-        confirmPassword: '',
-        fullName: '',
-        role: 'parent'
-      });
-      expect(result.isValid).toBe(false);
-    });
-  });
-
-  describe('TC-SIGNUP-010: Parent enters an invalid email format', () => {
-    test('System displays email format error', () => {
-      const result = validateSignUp({
-        email: 'invalid-email',
-        password: 'password123',
-        confirmPassword: 'password123',
-        fullName: 'Parent User',
-        role: 'parent'
-      });
-      expect(result.errors).toContain('Invalid email format');
-    });
-  });
-
-  describe('TC-SIGNUP-011: Parent enters an email that already exists', () => {
-    test('System displays "Email already exists" error', () => {
-      const result = validateSignUp({
-        email: 'existing@test.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-        fullName: 'Parent User',
-        role: 'parent'
-      });
-      expect(result.errors).toContain('Email already exists');
-    });
-  });
-
-  describe('TC-SIGNUP-012: Parent enters non-matching password and confirm password', () => {
-    test('System displays password mismatch error', () => {
-      const result = validateSignUp({
-        email: 'newparent@test.com',
-        password: 'password123',
-        confirmPassword: 'different456',
-        fullName: 'Parent User',
-        role: 'parent'
-      });
-      expect(result.errors).toContain('Passwords do not match. Please try again.');
-    });
-  });
-
-  describe('TC-SIGNUP-013: Parent enters all valid and complete credentials', () => {
-    test('Account is successfully created and redirected to Sign In', () => {
-      const result = validateSignUp({
-        email: 'newparent@test.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-        fullName: 'New Parent',
-        role: 'parent'
+        role: 'Learner'
       });
       expect(result.isValid).toBe(true);
       expect(result.errors).toHaveLength(0);

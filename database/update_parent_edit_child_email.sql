@@ -36,14 +36,7 @@ BEGIN
                    THEN TRIM(p_email)
                    ELSE email
                  END,
-    avatar_url = COALESCE(NULLIF(TRIM(p_avatar_url), ''), avatar_url),
-    email_confirmed_at = CASE
-                          WHEN p_email IS NOT NULL
-                            AND TRIM(p_email) != ''
-                            AND TRIM(p_email) != email
-                          THEN NULL  -- Reset confirmation when email changes
-                          ELSE email_confirmed_at
-                        END
+    avatar_url = COALESCE(NULLIF(TRIM(p_avatar_url), ''), avatar_url)
   WHERE id = p_student_id AND role = 'student';
 
   -- If email was changed, trigger Supabase auth email change

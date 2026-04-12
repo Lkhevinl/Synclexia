@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image,
+  ActivityIndicator, RefreshControl, StatusBar, Modal, FlatList, Image, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../../components/icons/Icon';
@@ -320,12 +320,14 @@ export default function ParentDashboardScreen({ navigation }) {
 
       if (error) {
         console.error('Error clearing all notifications:', error);
-        return;
+        // Still clear UI even if DB save fails (table may not exist yet)
       }
       setNotifications([]);
       setNotifCount(0);
     } catch (error) {
       console.error('Error clearing all notifications:', error);
+      setNotifications([]);
+      setNotifCount(0);
     }
   };
 

@@ -10,6 +10,59 @@ import { TABLES } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import tokens from '../theme/tokens';
 
+const ABOUT_SECTIONS = [
+  {
+    icon: 'info',
+    title: 'What is Synclexia?',
+    body: 'Synclexia is an AI-powered reading and writing assistance app that integrates synthetic phonics to support learners with dyslexia. It combines guided learning modules, text-to-speech, speech-to-text, and OCR scanning to make literacy practice more accessible and engaging for students, parents, and teachers.',
+  },
+  {
+    icon: 'mic',
+    title: 'Phonics',
+    body: 'Learn letter sounds through structured synthetic phonics lessons. Each lesson introduces letter-sound relationships with visual aids and audio playback so learners can hear and practice each sound correctly before moving on.',
+  },
+  {
+    icon: 'book-open',
+    title: 'Reading',
+    body: 'Read passages and stories designed for dyslexic learners using dyslexia-friendly fonts and spacing. The built-in Text-to-Speech (TTS) feature reads content aloud so students can follow along and improve reading fluency at their own pace.',
+  },
+  {
+    icon: 'pencil',
+    title: 'Writing',
+    body: 'Practice writing with guided prompts and structured exercises. The app provides instant feedback to help students build confidence in forming words and sentences, reinforcing what they learn in phonics and reading modules.',
+  },
+  {
+    icon: 'type',
+    title: 'Spelling',
+    body: "Interactive spelling exercises where students listen to a word and type or select the correct spelling. Words are matched to the student's current level and difficulty increases gradually as they improve.",
+  },
+  {
+    icon: 'volume-2',
+    title: 'Text-to-Speech (TTS)',
+    body: 'Any text in the app can be read aloud using the TTS feature. Students can paste or type text and have it spoken back clearly, helping with comprehension and reducing the frustration of silent reading for dyslexic learners.',
+  },
+  {
+    icon: 'mic-2',
+    title: 'Speech-to-Text',
+    body: 'Students can speak into the microphone and have their voice converted into written text. This helps learners who struggle with typing to express their ideas and complete writing tasks without barriers.',
+  },
+  {
+    icon: 'camera',
+    title: 'OCR Scanner',
+    body: 'Point the camera at any printed text – books, worksheets, or signs – and the app will scan and convert it into digital text. The scanned text can then be read aloud via TTS, making physical materials fully accessible.',
+  },
+  {
+    icon: 'headphones',
+    title: 'Phonological Awareness',
+    body: 'Sound-based games and activities that train students to identify, blend, and manipulate sounds in words. These exercises build the foundational auditory skills needed for reading and spelling success.',
+  },
+  {
+    icon: 'bar-chart-2',
+    title: 'Progress Tracking',
+    body: 'Every activity is recorded – scores, attempts, time spent, and completion status are all logged. Students can see their own progress on the dashboard, while parents can monitor their child\'s learning journey through the Parent Dashboard.',
+  },
+];
+
 export default function SupportScreen({ route }) {
   const { profile } = useAuth();
   const { colors } = useTheme();
@@ -103,48 +156,23 @@ export default function SupportScreen({ route }) {
     );
 
     if (tab === 'About') return (
-      <View style={{ alignItems: 'center' }}>
-        <AppText variant="display" style={{ color: colors.onSurface }}>Synclexia</AppText>
-        <AppText variant="body" style={[styles.aboutBody, { color: colors.onSurfaceMuted }]}>
-          Composed of college students taking up Bachelor of Science in Information Technology
-          in University of Cebu Lapu-lapu and Mandaue.
+      <View>
+        <AppText variant="display" style={[styles.aboutTitle, { color: colors.onSurface }]}>Synclexia</AppText>
+        <AppText variant="caption" style={[styles.aboutTagline, { color: colors.primary }]}>
+          AI-powered literacy support for dyslexic learners
         </AppText>
-        <View style={styles.teamGrid}>
-          <View style={styles.memberCard}>
-            <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-              <Icon name="user" size="lg" color="#fff" />
+
+        {ABOUT_SECTIONS.map(({ icon, title, body }) => (
+          <View key={title} style={[styles.featureCard, { backgroundColor: colors.surfaceCard }]}>
+            <View style={[styles.featureIconWrap, { backgroundColor: colors.primaryLight }]}>
+              <Icon name={icon} size="md" color={colors.primary} />
             </View>
-            <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Project Manager</AppText>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Lead Developer</AppText>
-            </View>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>UI/UX Designer</AppText>
+            <View style={styles.featureText}>
+              <AppText variant="label" style={[styles.featureTitle, { color: colors.onSurface }]}>{title}</AppText>
+              <AppText variant="body" style={[styles.featureBody, { color: colors.onSurfaceMuted }]}>{body}</AppText>
             </View>
           </View>
-          <View style={styles.row}>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Business Analyst</AppText>
-            </View>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>QA Tester</AppText>
-            </View>
-          </View>
-        </View>
+        ))}
       </View>
     );
   };
@@ -182,11 +210,13 @@ const styles = StyleSheet.create({
   qBody:        { marginBottom: tokens.spacing.md },
   textArea:     { width: '100%', height: 150, borderWidth: 1.5, borderRadius: tokens.radius.md, padding: tokens.spacing.md, textAlignVertical: 'top' },
   submitBtn:    { marginTop: tokens.spacing.md, paddingHorizontal: tokens.spacing.xl, paddingVertical: tokens.spacing.sm, borderRadius: tokens.radius.full },
-  aboutBody:    { textAlign: 'center', marginVertical: tokens.spacing.md },
-  teamGrid:     { marginTop: tokens.spacing.md, width: '100%', alignItems: 'center' },
-  row:          { flexDirection: 'row', gap: 40, marginTop: tokens.spacing.md },
-  memberCard:   { alignItems: 'center' },
-  avatarCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: tokens.spacing.xs },
+  aboutTitle:     { textAlign: 'center', marginBottom: tokens.spacing.xs },
+  aboutTagline:   { textAlign: 'center', marginBottom: tokens.spacing.lg, fontStyle: 'italic' },
+  featureCard:    { flexDirection: 'row', borderRadius: tokens.radius.md, padding: tokens.spacing.md, marginBottom: tokens.spacing.sm, gap: tokens.spacing.sm },
+  featureIconWrap:{ width: 36, height: 36, borderRadius: tokens.radius.sm, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  featureText:    { flex: 1 },
+  featureTitle:   { marginBottom: 2 },
+  featureBody:    { lineHeight: 20 },
   infoBox:      { flexDirection: 'row', alignItems: 'center', padding: tokens.spacing.sm, borderRadius: tokens.radius.md, marginTop: tokens.spacing.md, gap: tokens.spacing.sm, maxWidth: '90%' },
   infoText:     { flex: 1, lineHeight: 16 },
 });
