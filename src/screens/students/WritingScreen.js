@@ -216,7 +216,7 @@ export default function WritingScreen() {
   // ── Letter tracing animation ────────────────────────────────────────────────
   const startLetterAnimation = (label, cW, cH) => {
     if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    const strokes = LETTER_PATHS[label] || [];
+    const strokes = ALL_LETTER_PATHS[label] || [];
     if (!strokes.length) { setAnimDot(null); return; }
 
     // Flatten all stroke waypoints into a sequence
@@ -583,6 +583,35 @@ export default function WritingScreen() {
 
     if (coverage < 0.55) {
       return { valid: false, reason: 'Stay inside the letter guide and trace over it.' };
+    }
+
+    // Letter-specific check: the drawn path must cover the expected letter waypoints.
+    // Scale the normalized guide points to canvas pixels and check that the user
+    // traced within tolerance of at least 50% of them.
+    const expectedStrokes = ALL_LETTER_PATHS[selectedItem?.label] ?? [];
+    if (expectedStrokes.length > 0) {
+      const tolerance = Math.min(cW, cH) * 0.18; // 18% of shorter dimension
+      let hitCount = 0;
+      let totalWaypoints = 0;
+
+      expectedStrokes.forEach(stroke => {
+        stroke.forEach(([nx, ny]) => {
+          totalWaypoints++;
+          const ex = nx * cW;
+          const ey = ny * cH;
+          const hit = allPts.some(dp => {
+            const dx = dp.x - ex;
+            const dy = dp.y - ey;
+            return (dx * dx + dy * dy) <= tolerance * tolerance;
+          });
+          if (hit) hitCount++;
+        });
+      });
+
+      const waypointCoverage = hitCount / totalWaypoints;
+      if (waypointCoverage < 0.5) {
+        return { valid: false, reason: 'Follow the letter guide more closely. Try tracing every part of the letter!' };
+      }
     }
 
     return { valid: true };

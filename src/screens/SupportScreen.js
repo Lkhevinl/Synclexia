@@ -93,57 +93,106 @@ export default function SupportScreen({ route }) {
         <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={submitFeedback}>
           <AppText variant="body" style={{ fontWeight: 'bold', color: colors.onPrimary }}>Submit</AppText>
         </TouchableOpacity>
-        <View style={[styles.infoBox, { backgroundColor: colors.primaryLight }]}>
-          <Icon name="info" size="md" color={colors.primary} />
-          <AppText variant="caption" style={[styles.infoText, { color: colors.primary }]}>
-            Your feedback is logged in our maintenance system for better tracking and response.
-          </AppText>
-        </View>
       </View>
     );
 
     if (tab === 'About') return (
-      <View style={{ alignItems: 'center' }}>
-        <AppText variant="display" style={{ color: colors.onSurface }}>Synclexia</AppText>
-        <AppText variant="body" style={[styles.aboutBody, { color: colors.onSurfaceMuted }]}>
-          Composed of college students taking up Bachelor of Science in Information Technology
-          in University of Cebu Lapu-lapu and Mandaue.
-        </AppText>
-        <View style={styles.teamGrid}>
-          <View style={styles.memberCard}>
-            <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-              <Icon name="user" size="lg" color="#fff" />
-            </View>
-            <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Project Manager</AppText>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Lead Developer</AppText>
-            </View>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>UI/UX Designer</AppText>
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Business Analyst</AppText>
-            </View>
-            <View style={styles.memberCard}>
-              <View style={[styles.avatarCircle, { backgroundColor: colors.onSurfaceMuted }]}>
-                <Icon name="user" size="lg" color="#fff" />
-              </View>
-              <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>QA Tester</AppText>
-            </View>
-          </View>
+      <View>
+        <View style={styles.aboutLogoBox}>
+          <Icon name="book-open" size="xl" color={colors.primary} />
+          <AppText variant="display" style={{ color: colors.onSurface }}>Synclexia</AppText>
+          <AppText variant="caption" style={[{ color: colors.onSurfaceMuted, textAlign: 'center' }]}>
+            AI-powered literacy support for dyslexic learners
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>What is Synclexia?</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Synclexia is an AI-powered reading and writing assistance app that integrates synthetic phonics to support learners with dyslexia. It combines guided learning modules, text-to-speech, speech-to-text, and OCR scanning to make literacy practice more accessible and engaging for students, parents, and teachers.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Phonics</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Learn letter sounds through structured synthetic phonics lessons. Each lesson introduces letter-sound relationships with visual aids and audio playback so learners can hear and practice each sound correctly before moving on.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Reading</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Read passages and stories designed for dyslexic learners using dyslexia-friendly fonts and spacing. The built-in Text-to-Speech (TTS) feature reads content aloud so students can follow along and improve reading fluency at their own pace.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Writing</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Practice writing with guided prompts and structured exercises. The app provides instant feedback to help students build confidence in forming words and sentences, reinforcing what they learn in phonics and reading modules.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Spelling</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Interactive spelling exercises where students listen to a word and type or select the correct spelling. Words are matched to the student's current level and difficulty increases gradually as they improve.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Text-to-Speech (TTS)</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Any text in the app can be read aloud using the TTS feature. Students can paste or type text and have it spoken back clearly, helping with comprehension and reducing the frustration of silent reading for dyslexic learners.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Speech-to-Text</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Students can speak into the microphone and have their voice converted into written text. This helps learners who struggle with typing to express their ideas and complete writing tasks without barriers.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>OCR Scanner</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Point the camera at any printed text — books, worksheets, or signs — and the app will scan and convert it into digital text. The scanned text can then be read aloud via TTS, making physical materials fully accessible.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Phonological Awareness</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Sound-based games and activities that train students to identify, blend, and manipulate sounds in words. These exercises build the foundational auditory skills needed for reading and spelling success.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Progress Tracking</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            {`Every activity is recorded — scores, attempts, time spent, and completion status are all logged. Students can see their own progress on the Dashboard, while parents can monitor their child's learning journey through the Parent Dashboard.`}
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Parent Monitoring</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            Parents link to their child's account using a unique Student Link Code. Once linked, they can view completed activities, scores, and overall progress — keeping them informed and involved in their child's learning without needing to sit beside them.
+          </AppText>
+        </View>
+
+        <View style={[styles.aboutCard, { backgroundColor: colors.surfaceCard }]}>
+          <AppText variant="label" style={[styles.aboutCardTitle, { color: colors.primary }]}>Dyslexia-Friendly Design</AppText>
+          <AppText variant="caption" style={[styles.aboutCardBody, { color: colors.onSurfaceMuted }]}>
+            The entire app is built with accessibility in mind — dyslexia-friendly fonts (like OpenDyslexic), adjustable letter spacing, high-contrast color themes, and clear visual layouts reduce cognitive load and make reading easier for every user.
+          </AppText>
+        </View>
+
+        <View style={styles.aboutFooter}>
+          <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>Version 1.0.0</AppText>
+          <AppText variant="caption" style={{ color: colors.onSurfaceMuted }}>© 2024 Synclexia. All rights reserved.</AppText>
         </View>
       </View>
     );
@@ -182,11 +231,11 @@ const styles = StyleSheet.create({
   qBody:        { marginBottom: tokens.spacing.md },
   textArea:     { width: '100%', height: 150, borderWidth: 1.5, borderRadius: tokens.radius.md, padding: tokens.spacing.md, textAlignVertical: 'top' },
   submitBtn:    { marginTop: tokens.spacing.md, paddingHorizontal: tokens.spacing.xl, paddingVertical: tokens.spacing.sm, borderRadius: tokens.radius.full },
-  aboutBody:    { textAlign: 'center', marginVertical: tokens.spacing.md },
-  teamGrid:     { marginTop: tokens.spacing.md, width: '100%', alignItems: 'center' },
-  row:          { flexDirection: 'row', gap: 40, marginTop: tokens.spacing.md },
-  memberCard:   { alignItems: 'center' },
-  avatarCircle: { width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: tokens.spacing.xs },
+  aboutLogoBox:   { alignItems: 'center', marginBottom: tokens.spacing.md, gap: tokens.spacing.xs },
+  aboutCard:      { borderRadius: tokens.radius.lg, padding: tokens.spacing.md, marginBottom: tokens.spacing.sm },
+  aboutCardTitle: { marginBottom: tokens.spacing.xs },
+  aboutCardBody:  { lineHeight: 22 },
+  aboutFooter:    { alignItems: 'center', marginTop: tokens.spacing.lg, gap: tokens.spacing.xs },
   infoBox:      { flexDirection: 'row', alignItems: 'center', padding: tokens.spacing.sm, borderRadius: tokens.radius.md, marginTop: tokens.spacing.md, gap: tokens.spacing.sm, maxWidth: '90%' },
   infoText:     { flex: 1, lineHeight: 16 },
 });

@@ -175,8 +175,6 @@ RETURNS TABLE (
   id          uuid,
   full_name   text,
   email       text,
-  xp          integer,
-  level       integer,
   unique_code text
 )
 LANGUAGE plpgsql
@@ -189,8 +187,6 @@ BEGIN
       p.id,
       p.full_name,
       p.email,
-      p.xp,
-      (FLOOR(p.xp / 100) + 1)::integer AS level,
       p.unique_code
     FROM public.profiles p
     WHERE p.role = 'student'
