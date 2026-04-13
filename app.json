@@ -19,7 +19,8 @@
     },
     "scheme": "synclexia",
     "plugins": [
-      "expo-speech-recognition"
+      "expo-speech-recognition",
+      "expo-image-picker"
     ],
     "ios": {
       "bundleIdentifier": "com.synclexia.app",
@@ -38,7 +39,8 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
