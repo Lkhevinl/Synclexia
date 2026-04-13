@@ -85,7 +85,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     if (cooldown > 0 || loading) return;
     setLoading(true);
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: 'https://synclexia-password-reset.netlify.app' });
+      await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: AUTH.PASSWORD_RESET_REDIRECT_URL });
       startCooldown();
     } catch (_) {}
     finally { setLoading(false); }

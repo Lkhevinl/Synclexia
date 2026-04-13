@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView 
 import Icon from '../../components/icons/Icon';
 import * as Speech from 'expo-speech';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
 import StudentButton from '../../components/student/StudentButton';
@@ -144,7 +143,8 @@ export default function TextToSpeechScreen() {
       // For .txt files, read the content
       if (fileExtension === '.txt') {
         try {
-          const content = await FileSystem.readAsStringAsync(file.uri);
+          const response = await fetch(file.uri);
+          const content = await response.text();
           setText(content);
           showAlert('File Loaded', `Successfully loaded ${file.name}`);
         } catch (error) {

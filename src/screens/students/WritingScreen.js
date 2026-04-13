@@ -619,19 +619,7 @@ export default function WritingScreen() {
 
   // --- ACTIONS ---
   const handleCheck = () => {
-    if (paths.length === 0) {
-      Alert.alert('Canvas Empty', 'Please trace the letter first!');
-      return;
-    }
-
-    const result = validateDrawing();
-    if (!result.valid) {
-      Speech.speak('Try again!', { rate: 0.9 });
-      Alert.alert('Not Quite Right', result.reason);
-      return;
-    }
-
-    Speech.speak(`Great job! You wrote the letter ${selectedItem.label}!`, { rate: 0.9 });
+    Speech.speak('Proceed to the next letter!', { rate: 0.9 });
     setSuccessVisible(true);
     if (profile?.id) {
       logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
@@ -1124,7 +1112,7 @@ export default function WritingScreen() {
               <View style={styles.successCard}>
                   <Icon name="star" size="xl" color="#FFD700" />
                   <Text style={styles.successTitle}>Awesome!</Text>
-                  <Text style={styles.successSub}>You wrote {selectedItem.label} perfectly!</Text>
+                  <Text style={styles.successSub}>Proceed to next letter!</Text>
                   <TouchableOpacity style={styles.nextBtn} onPress={nextItem}>
                       <Text style={styles.nextText}>Next 👉</Text>
                   </TouchableOpacity>

@@ -10,6 +10,7 @@ import { TABLES } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import tokens from '../theme/tokens';
 
+
 export default function SupportScreen({ route }) {
   const { profile } = useAuth();
   const { colors } = useTheme();
