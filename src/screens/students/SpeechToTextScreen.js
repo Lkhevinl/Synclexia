@@ -22,7 +22,9 @@ try {
   useSpeechRecognitionEvent = () => {};
 }
 
-const AVAILABLE = !!ExpoSpeechRecognitionModule;
+const AVAILABLE = !!ExpoSpeechRecognitionModule &&
+  (typeof ExpoSpeechRecognitionModule.isRecognitionAvailable !== 'function' ||
+   ExpoSpeechRecognitionModule.isRecognitionAvailable());
 
 export default function SpeechToTextScreen() {
   const { profile } = useAuth();

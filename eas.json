@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 14.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
@@ -42,11 +42,10 @@
   },
   "submit": {
     "production": {
-       "android": {
+      "android": {
         "serviceAccountKeyPath": "./ServiceAccountSynclexia.json",
         "track": "internal"
-       }
       }
     }
   }
-   
+}

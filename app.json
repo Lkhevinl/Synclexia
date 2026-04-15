@@ -2,7 +2,7 @@
   "expo": {
     "name": "Synclexia",
     "slug": "Synclexia",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "extra": {
@@ -28,11 +28,14 @@
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone.",
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access the camera for scanning text.",
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photo library for scanning text.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.synclexia.app",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#f9a8c9"

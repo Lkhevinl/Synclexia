@@ -24,7 +24,9 @@ try {
   useSpeechRecognitionEvent = () => {};
 }
 
-const STT_AVAILABLE = !!ExpoSpeechRecognitionModule;
+const STT_AVAILABLE = !!ExpoSpeechRecognitionModule &&
+  (typeof ExpoSpeechRecognitionModule.isRecognitionAvailable !== 'function' ||
+   ExpoSpeechRecognitionModule.isRecognitionAvailable());
 
 // ── Replace this with your actual tutorial video URL ──────────────────────────
 const VIDEO_TUTORIAL_URL = 'https://www.youtube.com/results?search_query=letter+tracing+tutorial+for+kids+dyslexia';
