@@ -6,7 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -252,87 +252,38 @@ function BlendGame({ onBack, userId, items }) {
 
   useEffect(() => {
     return () => {
-      Speech.stop();
+      ttsService.stop();
     };
   }, []);
 
   const stopSpeech = () => {
     speechRunIdRef.current += 1;
-    Speech.stop();
+    ttsService.stop();
     setActivePhonemeIndex(null);
   };
 
-  const speakWithHighlight = (phoneme, phonemeIndex, opts = {}) => {
+  const speakWithHighlight = async (phoneme, phonemeIndex) => {
     stopSpeech();
     const runId = speechRunIdRef.current;
     setActivePhonemeIndex(phonemeIndex);
-    Speech.speak(phoneme, {
-      rate: 0.8,
-      pitch: 1.1,
-      ...opts,
-      onDone: () => {
-        if (runId !== speechRunIdRef.current) return;
-        setActivePhonemeIndex(null);
-        opts.onDone?.();
-      },
-      onStopped: () => {
-        if (runId !== speechRunIdRef.current) return;
-        setActivePhonemeIndex(null);
-        opts.onStopped?.();
-      },
-      onError: (e) => {
-        if (runId !== speechRunIdRef.current) return;
-        setActivePhonemeIndex(null);
-        opts.onError?.(e);
-      },
-    });
+    await ttsService.speak(phoneme);
+    if (runId !== speechRunIdRef.current) return;
+    setActivePhonemeIndex(null);
   };
 
-  const speakPhonemeSequenceThenWord = (phonemes, word) => {
+  const speakPhonemeSequenceThenWord = async (phonemes, word) => {
     stopSpeech();
     const runId = speechRunIdRef.current;
-
-    const speakNext = (i) => {
+    for (let i = 0; i < phonemes.length; i++) {
       if (runId !== speechRunIdRef.current) return;
-      if (i >= phonemes.length) {
-        setActivePhonemeIndex(null);
-        Speech.speak(word, {
-          rate: 0.75,
-          pitch: 1.1,
-          onDone: () => {
-            if (runId !== speechRunIdRef.current) return;
-            setActivePhonemeIndex(null);
-          },
-          onStopped: () => {
-            if (runId !== speechRunIdRef.current) return;
-            setActivePhonemeIndex(null);
-          },
-          onError: () => {
-            if (runId !== speechRunIdRef.current) return;
-            setActivePhonemeIndex(null);
-          },
-        });
-        return;
-      }
-
-      const phoneme = phonemes[i];
       setActivePhonemeIndex(i);
-      Speech.speak(phoneme, {
-        rate: 0.8,
-        pitch: 1.1,
-        onDone: () => speakNext(i + 1),
-        onStopped: () => {
-          if (runId !== speechRunIdRef.current) return;
-          setActivePhonemeIndex(null);
-        },
-        onError: () => {
-          if (runId !== speechRunIdRef.current) return;
-          setActivePhonemeIndex(null);
-        },
-      });
-    };
-
-    speakNext(0);
+      await ttsService.speak(phonemes[i]);
+    }
+    if (runId !== speechRunIdRef.current) return;
+    setActivePhonemeIndex(null);
+    await ttsService.speak(word);
+    if (runId !== speechRunIdRef.current) return;
+    setActivePhonemeIndex(null);
   };
 
   const speakPhoneme = (ph, phonemeIndex) => {
@@ -350,7 +301,7 @@ function BlendGame({ onBack, userId, items }) {
         Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
         Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
       ]).start();
-      Speech.speak('Tap each sound first!', { rate: 0.9 });
+      ttsService.speak('Tap each sound first!');
       return;
     }
     // Phoneme-synced playback: highlight each phoneme as it is spoken, then speak the whole word.
@@ -377,7 +328,7 @@ function BlendGame({ onBack, userId, items }) {
   if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Blend It!" color="#E53935" />;
 
   const speakInstruction = () => {
-    Speech.speak('Tap each sound, then BLEND!', { rate: 0.85 });
+    ttsService.speak('Tap each sound, then BLEND!');
   };
 
   return (
@@ -459,37 +410,24 @@ function SegmentGame({ onBack, userId, items }) {
 
   useEffect(() => {
     return () => {
-      Speech.stop();
+      ttsService.stop();
     };
   }, []);
 
-  const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
+  const speakWord = () => ttsService.speak(current.word);
 
-  const handleTap = () => {
+  const handleTap = async () => {
     if (answered) return;
     if (taps >= current.count) return;
     const next = taps + 1;
     setTaps(next);
     speechRunIdRef.current += 1;
     const runId = speechRunIdRef.current;
-    Speech.stop();
+    ttsService.stop();
     const nextIndex = next - 1;
     setActiveTapIndex(nextIndex);
-    Speech.speak(current.phonemes[nextIndex] || '', {
-      rate: 0.8,
-      onDone: () => {
-        if (runId !== speechRunIdRef.current) return;
-        setActiveTapIndex(null);
-      },
-      onStopped: () => {
-        if (runId !== speechRunIdRef.current) return;
-        setActiveTapIndex(null);
-      },
-      onError: () => {
-        if (runId !== speechRunIdRef.current) return;
-        setActiveTapIndex(null);
-      },
-    });
+    await ttsService.speak(current.phonemes[nextIndex] || '');
+    if (runId === speechRunIdRef.current) setActiveTapIndex(null);
     // Pulse animation
     Animated.sequence([
       Animated.timing(tapAnim, { toValue: 1.3, duration: 100, useNativeDriver: true }),
@@ -513,10 +451,10 @@ function SegmentGame({ onBack, userId, items }) {
     setAnswered(true);
     const isCorrect = taps === current.count;
     if (isCorrect) {
-      Speech.speak(`That's right! ${current.word} has ${current.count} sounds.`, { rate: 0.85 });
+      ttsService.speak(`That's right! ${current.word} has ${current.count} sounds.`);
       setScore(s => s + 1);
     } else {
-      Speech.speak(`${current.word} has ${current.count} sounds. Let's try again next time!`, { rate: 0.85 });
+      ttsService.speak(`${current.word} has ${current.count} sounds. Let's try again next time!`);
     }
   };
 
@@ -605,7 +543,7 @@ function ScoreScreen({ score, total, onBack, label, color }) {
   const percent = Math.round((score / total) * 100);
   const msg = percent >= 80 ? 'Amazing!' : percent >= 50 ? 'Good effort!' : 'Keep practising!';
   React.useEffect(() => {
-    Speech.speak(`${msg} You got ${score} out of ${total}.`, { rate: 0.85 });
+    ttsService.speak(`${msg} You got ${score} out of ${total}.`);
   }, []);
   const stars = percent >= 80 ? ['⭐','⭐','⭐'] : percent >= 50 ? ['⭐','⭐','☆'] : ['⭐','☆','☆'];
   return (
@@ -663,17 +601,17 @@ function SoundMatchGame({ onBack, userId }) {
 
   const current = items[idx];
 
-  const speak = (sound) => Speech.speak(sound, { rate: 0.7, pitch: 1.1 });
+  const speak = (sound) => ttsService.speak(sound);
 
   const handleSelect = (option) => {
     if (selected) return;
     setSelected(option);
     const isCorrect = option === current.sound;
     if (isCorrect) {
-      Speech.speak('Great job! That\'s the right sound!', { rate: 0.85 });
+      ttsService.speak('Great job! That\'s the right sound!');
       setScore(s => s + 1);
     } else {
-      Speech.speak(`Not quite! ${current.letter} says ${current.sound}`, { rate: 0.85 });
+      ttsService.speak(`Not quite! ${current.letter} says ${current.sound}`);
     }
   };
 
@@ -760,7 +698,7 @@ function WordBuilderGame({ onBack, userId }) {
   const current = words[idx];
   const shuffledPhonemes = useMemo(() => shuffleArr(current.phonemes), [idx]);
 
-  const speak = (text) => Speech.speak(text, { rate: 0.7, pitch: 1.1 });
+  const speak = (text) => ttsService.speak(text);
 
   const handlePhonemePress = (ph) => {
     if (built.includes(ph)) {
@@ -775,10 +713,10 @@ function WordBuilderGame({ onBack, userId }) {
     const isCorrect = builtWord === current.word;
     
     if (isCorrect) {
-      Speech.speak(`Great job! You built ${current.word}!`, { rate: 0.85 });
+      ttsService.speak(`Great job! You built ${current.word}!`);
       setScore(s => s + 1);
     } else {
-      Speech.speak(`Almost! The word is ${current.word}. Try again!`, { rate: 0.85 });
+      ttsService.speak(`Almost! The word is ${current.word}. Try again!`);
     }
 
     setTimeout(() => {
@@ -890,10 +828,10 @@ function TrickyWordsGame({ onBack, userId }) {
     setSelected(word);
     const isCorrect = word === current.word;
     if (isCorrect) {
-      Speech.speak('Excellent! Tricky word mastered!', { rate: 0.85 });
+      ttsService.speak('Excellent! Tricky word mastered!');
       setScore(s => s + 1);
     } else {
-      Speech.speak(`Remember! The word is ${current.word}`, { rate: 0.85 });
+      ttsService.speak(`Remember! The word is ${current.word}`);
     }
   };
 
