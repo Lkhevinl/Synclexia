@@ -4,14 +4,12 @@ import {
 } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
-import * as Speech from 'expo-speech';
 import Icon from '../../components/icons/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { logSession } from '../../lib/analyticsHelper';
-import { playPhoneme } from '../../lib/phonicsSynth';
+import * as ttsService from '../../lib/ttsService';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 54) / 2;
 
@@ -315,9 +313,6 @@ export default function PhonicsScreen() {
 
   const group = JP_GROUPS[groupIdx];
 
-  useEffect(() => {
-    Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false }).catch(() => {});
-  }, []);
 
   const switchGroup = (idx) => {
     Animated.sequence([
@@ -337,7 +332,7 @@ export default function PhonicsScreen() {
   }, [toastAnim]);
 
   const handleCardPress = useCallback((item) => {
-    playPhoneme(item.letter);
+    ttsService.speak(item.letter);
     showToast(`${item.emoji} ${item.sound}… like a ${item.word}!`);
     if (profile?.id) {
       tapCountRef.current += 1;
