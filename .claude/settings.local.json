@@ -6,7 +6,25 @@
       "Bash(npm run:*)",
       "Bash(grep -l \"getBgColor\\\\|getThemeColors\\\\|getPrimaryColor\\\\|backgroundColor.*#F5F5F5\\\\|backgroundColor.*#FAF5F1\\\\|SafeAreaView\\\\|LinearGradient.*header\\\\|View style=\\\\{styles\\\\.container\\\\}\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/\"*.js)",
       "Bash(grep -rL \"ScreenWrapper\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/\"*.js)",
-      "Bash(grep -n \"closing.*container\\\\|</View>$\\\\|</SafeAreaView>$\\\\|</ScrollView>$\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/TeacherMessagesScreen.js\")"
+      "Bash(grep -n \"closing.*container\\\\|</View>$\\\\|</SafeAreaView>$\\\\|</ScrollView>$\" \"c:/Users/James Kevin Velasco/Synclexia/src/screens/admin/teachers/TeacherMessagesScreen.js\")",
+      "Bash(keytool -list -v -keystore \"c:/Users/James Kevin Velasco/Synclexia/android/app/debug.keystore\" -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(keytool -list -keystore \"c:/Users/James Kevin Velasco/Synclexia/android/app/debug.keystore\" -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(\"/c/Program Files/Android/Android Studio/jbr/bin/keytool\" -list -keystore \"c:/Users/James Kevin Velasco/Synclexia/android/app/debug.keystore\" -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(cmd.exe /c \"where keytool 2>&1\")",
+      "Bash(cmd.exe /c \"where java & where keytool & where gradlew\")",
+      "Bash(cmd.exe /c \"dir \\\\\"C:\\\\\\\\Program Files\\\\\\\\Android\\\\\\\\\\\\\" /b 2>&1 && dir \\\\\"C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Android\\\\\\\\Sdk\\\\\\\\\\\\\" /b 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\\\\\' | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\\\\\Program Files\\\\\\\\Java' -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem 'C:\\\\\\\\Program Files\\\\\\\\Android' -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Android\\\\\\\\Sdk\\\\\\\\build-tools' -ErrorAction SilentlyContinue | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\\\\\Program Files' | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\AppData\\\\\\\\Local' | Select-Object Name\")",
+      "Bash(powershell.exe -Command \"& 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\AppData\\\\\\\\Local\\\\\\\\eas-cli\\\\\\\\bin\\\\\\\\eas' --version\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\AppData\\\\\\\\Local\\\\\\\\eas-cli' -Recurse | Select-Object FullName\")",
+      "Bash(powershell.exe -Command \"npx eas --version\")",
+      "Bash(powershell.exe -Command \"npx eas whoami\")",
+      "Bash(powershell.exe -Command \"Select-String -Path 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\Synclexia\\\\\\\\.gitignore' -Pattern 'android' | Select-Object Line\")",
+      "Bash(powershell.exe -Command \"Select-String -Path 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\Synclexia\\\\\\\\app.json' -Pattern 'plugin|withGoogle' | Select-Object Line\")",
+      "Bash(powershell.exe -Command \"cd 'C:\\\\\\\\Users\\\\\\\\James Kevin Velasco\\\\\\\\Synclexia'; npx eas build --platform android --profile staging --non-interactive 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-Content 'C:\\\\\\\\Users\\\\\\\\JAMESK~1\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\c--Users-James-Kevin-Velasco-Synclexia\\\\\\\\7c35cf5f-ce98-4819-b399-a17ea67ad6aa\\\\\\\\tasks\\\\\\\\bet16afn6.output' -Wait 2>&1 | Select-String -Pattern 'error|failed|success|Build|URL|https|Download|APK|complete|finish|upload|warning' -AllMatches\")"
     ]
   }
 }

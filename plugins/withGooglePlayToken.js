@@ -25,8 +25,14 @@ const withGooglePlayToken = (config) => {
         fs.mkdirSync(assetsDir, { recursive: true });
       }
 
-      // Write the token file — filename must match the token exactly
-      const tokenFilePath = path.join(assetsDir, TOKEN);
+      // Remove old incorrectly-named file if it exists
+      const oldTokenFilePath = path.join(assetsDir, TOKEN);
+      if (fs.existsSync(oldTokenFilePath)) {
+        fs.unlinkSync(oldTokenFilePath);
+      }
+
+      // Write the token file — must be named adi-registration.properties
+      const tokenFilePath = path.join(assetsDir, 'adi-registration.properties');
       fs.writeFileSync(tokenFilePath, TOKEN);
 
       console.log(`✅ Google Play token file written to: ${tokenFilePath}`);
