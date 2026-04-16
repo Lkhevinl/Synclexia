@@ -81,6 +81,12 @@ export const SPEECH = {
   ELEVENLABS_PLAYBACK_RATE:     0.92,
 };
 
+// ── Gemini TTS ────────────────────────────────────────────────────────────────
+export const GEMINI_TTS = {
+  API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent',
+  VOICE_NAME: 'Kore',
+};
+
 // ── Auth / Password ───────────────────────────────────────────────────────────
 export const AUTH = {
   PASSWORD_RESET_REDIRECT_URL: process.env.EXPO_PUBLIC_PASSWORD_RESET_URL || 'https://synclexia-password-reset.netlify.app',
