@@ -4,7 +4,7 @@
     "slug": "Synclexia",
     "version": "1.2.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/adaptive-icon.png",
     "extra": {
       "eas": {
         "projectId": "dedb3934-30bb-4ec0-9651-38d930042e3d"
@@ -13,14 +13,15 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#f9a8c9"
     },
     "scheme": "synclexia",
     "plugins": [
       "expo-speech-recognition",
-      "expo-image-picker"
+      "expo-image-picker",
+      "./plugins/withGooglePlayToken"
     ],
     "ios": {
       "bundleIdentifier": "com.synclexia.app",
@@ -35,9 +36,9 @@
     },
     "android": {
       "package": "com.synclexia.app",
-      "versionCode": 2,
+      "versionCode": 4,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#f9a8c9"
       },
       "edgeToEdgeEnabled": true,

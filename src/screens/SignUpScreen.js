@@ -171,7 +171,7 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
       {/* Username */}
       <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
-        <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Email" placeholderTextColor={colors.onSurfaceMuted} value={fullName} onChangeText={setFullName} />
+        <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Username" placeholderTextColor={colors.onSurfaceMuted} value={fullName} onChangeText={setFullName} />
       </View>
 
       {/* Password */}

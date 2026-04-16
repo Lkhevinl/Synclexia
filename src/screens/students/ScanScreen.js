@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Speech from 'expo-speech';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -28,6 +29,15 @@ export default function ScanScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  const prepareImage = async (uri) => {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 1000 } }],
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return { base64: result.base64, mimeType: 'image/jpeg' };
+  };
+
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -37,13 +47,13 @@ export default function ScanScreen() {
 
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, base64: true, quality: 0.6,
+      allowsEditing: true, quality: 1,
     });
     if (!result.canceled) {
       const asset = result.assets?.[0];
       setImage(asset?.uri || null);
       setScannedText("");
-      return { base64: asset?.base64 || null, mimeType: asset?.mimeType || 'image/jpeg' };
+      return prepareImage(asset.uri);
     }
   };
 
@@ -55,13 +65,13 @@ export default function ScanScreen() {
     }
 
     let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true, base64: true, quality: 0.6,
+      allowsEditing: true, quality: 1,
     });
     if (!result.canceled) {
       const asset = result.assets?.[0];
       setImage(asset?.uri || null);
       setScannedText("");
-      return { base64: asset?.base64 || null, mimeType: asset?.mimeType || 'image/jpeg' };
+      return prepareImage(asset.uri);
     }
   };
 
@@ -79,18 +89,24 @@ export default function ScanScreen() {
     setIsScanning(true);
     setScannedText(""); // Clear previous text
     try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+
         let formData = new FormData();
-        const safeMime = mimeType || 'image/jpeg';
-        formData.append("base64Image", `data:${safeMime};base64,${base64}`);
+        formData.append("base64Image", `data:image/jpeg;base64,${base64}`);
         formData.append("language", "eng");
-        formData.append("OCREngine", "2");
+        formData.append("OCREngine", "1");
+        formData.append("filetype", "JPG");
         formData.append("scale", "true");
+        formData.append("isOverlayRequired", "false");
 
         const response = await fetch("https://api.ocr.space/parse/image", {
             method: "POST",
             headers: { apikey: API_KEY },
-            body: formData
+            body: formData,
+            signal: controller.signal,
         });
+        clearTimeout(timeout);
 
         if (!response.ok) {
           throw new Error(`OCR request failed (${response.status})`);
@@ -118,7 +134,10 @@ export default function ScanScreen() {
           showAlert("OCR Error", data.ErrorMessage?.[0] || "Failed to process image. Please try again.");
         }
     } catch (error) {
-        showAlert("Scan Failed", `Error: ${error.message}. Please check your internet connection and try again.`);
+        const msg = error.name === 'AbortError'
+          ? 'The scan took too long. Try a clearer image or check your internet connection.'
+          : `Error: ${error.message}. Please check your internet connection and try again.`;
+        showAlert("Scan Failed", msg);
     } finally {
         setIsScanning(false);
     }
@@ -201,7 +220,7 @@ export default function ScanScreen() {
               onPress={() => {
                 if (!scannedText.trim()) return;
                 const speakText = scannedText.length > 900 ? scannedText.slice(0, 900) + '…' : scannedText;
-                Speech.speak(speakText);
+                Speech.speak(speakText, { rate: 1.1 });
               }}
               style={styles.speakBtn}
             >

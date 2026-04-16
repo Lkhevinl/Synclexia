@@ -132,7 +132,7 @@ export default function LoginScreen({ navigation }) {
             <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
             <TextInput
               style={[styles.input, { color: colors.onSurface }]}
-              placeholder="Enter Username"
+              placeholder="Enter Email"
               placeholderTextColor={colors.onSurfaceMuted}
               value={email}
               onChangeText={(v) => {
