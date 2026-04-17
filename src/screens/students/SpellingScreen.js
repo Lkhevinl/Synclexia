@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -116,10 +116,10 @@ function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
     setCorrect(false);
 
     // Auto-speak the word
-    setTimeout(() => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 }), 300);
+    setTimeout(() => ttsService.speak(current.word), 300);
   }, [wordIdx]);
 
-  const speakWord = () => Speech.speak(current.word, { rate: 0.65, pitch: 1.1 });
+  const speakWord = () => ttsService.speak(current.word);
 
   const handleTileTap = (tile) => {
     if (checked) return;
@@ -141,11 +141,11 @@ function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
 
     if (isCorrect) {
       setScore(s => s + 1);
-      Speech.speak('Correct! Well done!', { rate: 0.85 });
+      ttsService.speak('Correct! Well done!');
       // Bounce animation
       Animated.spring(bounceAnim, { toValue: 1, useNativeDriver: true, friction: 4 }).start();
     } else {
-      Speech.speak(`Almost! The word is ${current.word}.`, { rate: 0.85 });
+      ttsService.speak(`Almost! The word is ${current.word}.`);
       // Shake animation
       Animated.sequence([
         Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
@@ -329,7 +329,7 @@ function FinishScreen({ score, total, onBack }) {
   const msg = percent >= 80 ? 'Spelling Star!' : percent >= 50 ? 'Nice Work!' : 'Keep Practising!';
 
   useEffect(() => {
-    Speech.speak(`${msg.replace(/[^\w\s!]/g, '')}. You spelled ${score} out of ${total} words correctly!`, { rate: 0.85 });
+    ttsService.speak(`${msg.replace(/[^\w\s!]/g, '')}. You spelled ${score} out of ${total} words correctly!`);
   }, []);
 
   return (

@@ -9,7 +9,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   ScrollView, Animated, ActivityIndicator,
 } from 'react-native';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
@@ -158,7 +158,7 @@ function SyllableGame({ onBack, userId, items: rawItems }) {
   const current = items[idx];
   const options = Array.from({ length: Math.min(4, 4) }, (_, i) => i + 1).filter(n => n <= 5);
 
-  const speak = () => { if (current) Speech.speak(current.word, { rate: 0.6 }); };
+  const speak = () => { if (current) ttsService.speak(current.word); };
 
   useEffect(() => { if (current) speak(); }, [idx]);
 
@@ -169,11 +169,11 @@ function SyllableGame({ onBack, userId, items: rawItems }) {
     setFeedback(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
       setScore(s => s + 1);
-      Speech.speak('Correct!', { rate: 0.9 });
+      ttsService.speak('Correct!');
       Animated.spring(bounceAnim, { toValue: 1.25, useNativeDriver: true, friction: 4 }).start(() =>
         bounceAnim.setValue(1));
     } else {
-      Speech.speak(`${current.word} has ${current.syllables} syllable${current.syllables > 1 ? 's' : ''}.`, { rate: 0.8 });
+      ttsService.speak(`${current.word} has ${current.syllables} syllable${current.syllables > 1 ? 's' : ''}.`);
     }
     setTimeout(() => {
       if (idx + 1 >= items.length) {
@@ -237,7 +237,7 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
   const [done, setDone] = useState(false);
 
   const current = items[idx];
-  useEffect(() => { if (current) Speech.speak(current.word, { rate: 0.6 }); }, [idx]);
+  useEffect(() => { if (current) ttsService.speak(current.word); }, [idx]);
 
   const handleSelect = (opt) => {
     if (feedback) return;
@@ -247,9 +247,9 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
     setFeedback(isCorrect ? 'correct' : 'wrong');
     if (isCorrect) {
       setScore(s => s + 1);
-      Speech.speak('Correct!', { rate: 0.9 });
+      ttsService.speak('Correct!');
     } else {
-      Speech.speak(`The ${current.position} sound is ${current.answer}.`, { rate: 0.8 });
+      ttsService.speak(`The ${current.position} sound is ${current.answer}.`);
     }
     setTimeout(() => {
       if (idx + 1 >= items.length) {
@@ -274,7 +274,7 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
         right={<Text style={g.headerSub}>{idx + 1}/{items.length}  {score}</Text>}
       />
       <View style={g.body}>
-        <TouchableOpacity style={g.wordCard} onPress={() => Speech.speak(current.word, { rate: 0.6 })}>
+        <TouchableOpacity style={g.wordCard} onPress={() => ttsService.speak(current.word)}>
           <Icon name="ear" size="xl" color="#E91E63" />
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>

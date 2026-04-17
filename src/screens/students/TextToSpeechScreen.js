@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import Icon from '../../components/icons/Icon';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import * as DocumentPicker from 'expo-document-picker';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
@@ -52,44 +52,15 @@ export default function TextToSpeechScreen() {
     return { tokens, wordCount: wordCursor };
   };
 
-  const stopSpeaking = async (shouldLog = true) => {
+  const stopSpeaking = (shouldLog = true) => {
     speakRunIdRef.current += 1;
-    try { await Speech.stop(); } catch (_) {}
+    ttsService.stop();
     if (shouldLog) {
       const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
       doLogSession(text, elapsed);
     }
     setIsSpeaking(false);
     setActiveWordIndex(-1);
-  };
-
-  const speakWordByIndex = (words, idx, runId, capturedText) => {
-    if (runId !== speakRunIdRef.current) return;
-    if (!words || idx >= words.length) {
-      setIsSpeaking(false);
-      setActiveWordIndex(-1);
-      const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
-      doLogSession(capturedText, elapsed);
-      return;
-    }
-
-    setActiveWordIndex(idx);
-    Speech.speak(words[idx], {
-      rate: 0.85,
-      onDone: () => speakWordByIndex(words, idx + 1, runId, capturedText),
-      onStopped: () => {
-        if (runId === speakRunIdRef.current) {
-          setIsSpeaking(false);
-          setActiveWordIndex(-1);
-        }
-      },
-      onError: () => {
-        if (runId === speakRunIdRef.current) {
-          setIsSpeaking(false);
-          setActiveWordIndex(-1);
-        }
-      },
-    });
   };
 
   const speak = async () => {
@@ -99,7 +70,7 @@ export default function TextToSpeechScreen() {
     }
 
     if (isSpeaking) {
-      await stopSpeaking(true);
+      stopSpeaking(true);
       return;
     }
 
@@ -113,9 +84,20 @@ export default function TextToSpeechScreen() {
 
     setIsSpeaking(true);
     startTimeRef.current = Date.now();
-    await Speech.stop();
     const runId = (speakRunIdRef.current += 1);
-    speakWordByIndex(words, 0, runId, capturedText);
+
+    for (let i = 0; i < words.length; i++) {
+      if (runId !== speakRunIdRef.current) return;
+      setActiveWordIndex(i);
+      await ttsService.speak(words[i]);
+    }
+
+    if (runId === speakRunIdRef.current) {
+      setIsSpeaking(false);
+      setActiveWordIndex(-1);
+      const elapsed = startTimeRef.current ? Math.round((Date.now() - startTimeRef.current) / 1000) : 0;
+      doLogSession(capturedText, elapsed);
+    }
   };
 
   const handleUpload = async () => {

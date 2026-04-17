@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
 import Svg, { Path, Circle, G, Polygon, Text as SvgText } from 'react-native-svg';
 import Icon from '../../components/icons/Icon';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { TABLES } from '../../lib/constants';
@@ -402,18 +402,13 @@ export default function WritingScreen() {
       return;
     }
     if (composeSpeaking) {
-      try { await Speech.stop(); } catch (_) {}
+      ttsService.stop();
       setComposeSpeaking(false);
       return;
     }
     setComposeSpeaking(true);
     if (!composeStartRef.current) composeStartRef.current = Date.now();
-    Speech.speak(t, {
-      rate: 0.85,
-      onDone: () => setComposeSpeaking(false),
-      onStopped: () => setComposeSpeaking(false),
-      onError: () => setComposeSpeaking(false),
-    });
+    ttsService.speak(t).then(() => setComposeSpeaking(false));
   };
 
   const logComposeSession = () => {
@@ -465,9 +460,9 @@ export default function WritingScreen() {
         },
       });
       if (result.isPassing) {
-        Speech.speak(`Great job! You got ${result.accuracy} percent correct!`, { rate: 0.9 });
+        ttsService.speak(`Great job! You got ${result.accuracy} percent correct!`);
       } else {
-        Speech.speak(`You got ${result.accuracy} percent. Keep practicing!`, { rate: 0.9 });
+        ttsService.speak(`You got ${result.accuracy} percent. Keep practicing!`);
       }
     }
   };
@@ -481,7 +476,7 @@ export default function WritingScreen() {
       setLtError(null);
       setComparisonResult(null);
       composeStartRef.current = null;
-      try { Speech.stop(); } catch (_) {}
+      ttsService.stop();
       try { if (STT_AVAILABLE) ExpoSpeechRecognitionModule.stop(); } catch (_) {}
     } else {
       composeStartRef.current = Date.now();
@@ -590,7 +585,7 @@ export default function WritingScreen() {
 
   // --- ACTIONS ---
   const handleCheck = () => {
-    Speech.speak('Proceed to the next letter!', { rate: 0.9 });
+    ttsService.speak('Proceed to the next letter!');
     setSuccessVisible(true);
     if (profile?.id) {
       logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
@@ -701,7 +696,7 @@ export default function WritingScreen() {
               <Text style={[styles.storyRefText, a11yTextStyle]}>{selectedStory.content}</Text>
               <TouchableOpacity
                 style={styles.speakStoryBtn}
-                onPress={() => Speech.speak(selectedStory.content, { rate: 0.85 })}
+                onPress={() => ttsService.speak(selectedStory.content)}
               >
                 <Icon name="volume-2" size="md" color="#fff" />
                 <Text style={styles.speakStoryText}>Hear Story</Text>

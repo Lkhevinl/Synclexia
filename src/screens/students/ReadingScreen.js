@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import Icon from '../../components/icons/Icon';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
@@ -64,45 +64,17 @@ export default function ReadingScreen() {
     return { tokens, wordCount: wordCursor };
   };
 
-  const stopSpeaking = async () => {
+  const stopSpeaking = () => {
     speakRunIdRef.current += 1; // cancels any pending continuation
     setIsSpeaking(false);
     setActiveWordIndex(-1);
-    try { await Speech.stop(); } catch (_) {}
-  };
-
-  const speakWordByIndex = (words, idx, runId) => {
-    if (runId !== speakRunIdRef.current) return;
-    if (!words || idx >= words.length) {
-      setIsSpeaking(false);
-      setActiveWordIndex(-1);
-      return;
-    }
-
-    setActiveWordIndex(idx);
-    Speech.speak(words[idx], {
-      rate: 0.8,
-      pitch: 1.1,
-      onDone: () => speakWordByIndex(words, idx + 1, runId),
-      onStopped: () => {
-        if (runId === speakRunIdRef.current) {
-          setIsSpeaking(false);
-          setActiveWordIndex(-1);
-        }
-      },
-      onError: () => {
-        if (runId === speakRunIdRef.current) {
-          setIsSpeaking(false);
-          setActiveWordIndex(-1);
-        }
-      },
-    });
+    ttsService.stop();
   };
 
   const handleSpeak = async () => {
     if (!selectedStory?.content) return;
     if (isSpeaking) {
-      await stopSpeaking();
+      stopSpeaking();
       return;
     }
 
@@ -110,10 +82,19 @@ export default function ReadingScreen() {
     const words = tokens.filter(t => t.isWord).map(t => t.text);
     if (words.length === 0) return;
 
-    await Speech.stop();
     setIsSpeaking(true);
     const runId = (speakRunIdRef.current += 1);
-    speakWordByIndex(words, 0, runId);
+
+    for (let i = 0; i < words.length; i++) {
+      if (runId !== speakRunIdRef.current) return;
+      setActiveWordIndex(i);
+      await ttsService.speak(words[i]);
+    }
+
+    if (runId === speakRunIdRef.current) {
+      setIsSpeaking(false);
+      setActiveWordIndex(-1);
+    }
   };
 
   const closeBook = () => {
@@ -192,7 +173,7 @@ export default function ReadingScreen() {
                   return (
                     <Text
                       key={`w-${i}`}
-                      onPress={() => Speech.speak(t.text, { rate: 0.8, pitch: 1.1 })}
+                      onPress={() => ttsService.speak(t.text)}
                       style={isActive ? styles.activeWord : null}
                     >
                       {t.text}

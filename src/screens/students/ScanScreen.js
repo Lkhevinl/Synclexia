@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Speech from 'expo-speech';
+import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentCard from '../../components/student/StudentCard';
@@ -24,7 +24,7 @@ export default function ScanScreen() {
   const API_KEY = process.env.EXPO_PUBLIC_OCR_API_KEY?.trim();
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => Speech.stop());
+    const unsubscribe = navigation.addListener('blur', () => ttsService.stop());
     return unsubscribe;
   }, [navigation]);
 
@@ -201,7 +201,7 @@ export default function ScanScreen() {
               onPress={() => {
                 if (!scannedText.trim()) return;
                 const speakText = scannedText.length > 900 ? scannedText.slice(0, 900) + '…' : scannedText;
-                Speech.speak(speakText);
+                ttsService.speak(speakText);
               }}
               style={styles.speakBtn}
             >
