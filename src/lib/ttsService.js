@@ -1,9 +1,9 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { Alert, Platform } from 'react-native';
-import { GEMINI_TTS } from './constants';
+import { GOOGLE_TTS } from './constants';
 
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
+const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_TTS_API_KEY;
 
 let _sound = null;
 let _resolveCurrentSpeak = null;
@@ -12,53 +12,17 @@ let _abortController = null;
 // In-memory cache: text → audio URI (avoids re-fetching the same word/letter)
 const _audioCache = new Map();
 
-// Build raw WAV bytes (ArrayBuffer) from base64-encoded PCM (24 kHz, 16-bit, mono)
-function buildWavBuffer(pcmBase64) {
-  const pcmBytes = Uint8Array.from(atob(pcmBase64), (c) => c.charCodeAt(0));
-  const buf = new ArrayBuffer(44 + pcmBytes.length);
-  const view = new DataView(buf);
-  const writeStr = (off, s) => {
-    for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
-  };
-  writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + pcmBytes.length, true);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, 24000, true);
-  view.setUint32(28, 48000, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, 'data');
-  view.setUint32(40, pcmBytes.length, true);
-  new Uint8Array(buf).set(pcmBytes, 44);
-  return buf;
-}
-
-// Returns a URI that expo-av can load, handling web vs native
-async function getAudioUri(pcmBase64) {
-  const wavBuf = buildWavBuffer(pcmBase64);
-
+// Returns a URI expo-av can load from a base64 MP3 string
+async function getAudioUri(mp3Base64, cacheKey) {
   if (Platform.OS === 'web') {
-    // On web, create a Blob URL — expo-av uses HTML5 Audio which supports this
-    const blob = new Blob([wavBuf], { type: 'audio/wav' });
+    const bytes = Uint8Array.from(atob(mp3Base64), (c) => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'audio/mp3' });
     return URL.createObjectURL(blob);
   }
-
-  // On native, write to the filesystem cache
-  const bytes = new Uint8Array(wavBuf);
-  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let b64 = '';
-  for (let i = 0; i < bytes.length; i += 3) {
-    const a = bytes[i], b = bytes[i + 1] ?? 0, c = bytes[i + 2] ?? 0;
-    b64 += CHARS[a >> 2] + CHARS[((a & 3) << 4) | (b >> 4)]
-         + (i + 1 < bytes.length ? CHARS[((b & 15) << 2) | (c >> 6)] : '=')
-         + (i + 2 < bytes.length ? CHARS[c & 63] : '=');
-  }
-  const fileUri = FileSystem.cacheDirectory + 'tts_audio.wav';
-  await FileSystem.writeAsStringAsync(fileUri, b64, {
+  // Native: write to filesystem cache with a stable filename per text
+  const safe = cacheKey.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
+  const fileUri = `${FileSystem.cacheDirectory}tts_${safe}.mp3`;
+  await FileSystem.writeAsStringAsync(fileUri, mp3Base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
   return fileUri;
@@ -85,26 +49,25 @@ export async function speak(text) {
   if (!text?.trim()) return;
 
   try {
-    // Serve from cache if available
     let uri = _audioCache.get(text);
 
     if (!uri) {
       _abortController = new AbortController();
       const response = await fetch(
-        `${GEMINI_TTS.API_URL}?key=${API_KEY}`,
+        `${GOOGLE_TTS.API_URL}?key=${API_KEY}`,
         {
           method: 'POST',
           signal: _abortController.signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: `Say: ${text}` }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: {
-                voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: GEMINI_TTS.VOICE_NAME },
-                },
-              },
+            input: { text },
+            voice: {
+              languageCode: GOOGLE_TTS.LANGUAGE_CODE,
+              name: GOOGLE_TTS.VOICE_NAME,
+            },
+            audioConfig: {
+              audioEncoding: 'MP3',
+              speakingRate: GOOGLE_TTS.SPEAKING_RATE,
             },
           }),
         }
@@ -113,7 +76,6 @@ export async function speak(text) {
       if (!response.ok) {
         const errBody = await response.text().catch(() => '');
         console.error('[TTS] API error', response.status, errBody);
-        // 429 = quota exhausted — fail silently, don't spam the user
         if (response.status !== 429) {
           Alert.alert('TTS Error', `Status ${response.status}`);
         }
@@ -121,13 +83,13 @@ export async function speak(text) {
       }
 
       const json = await response.json();
-      const pcmBase64 = json.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!pcmBase64) {
-        console.error('[TTS] Unexpected response shape', JSON.stringify(json));
+      const mp3Base64 = json.audioContent;
+      if (!mp3Base64) {
+        console.error('[TTS] No audioContent in response', JSON.stringify(json));
         return;
       }
 
-      uri = await getAudioUri(pcmBase64);
+      uri = await getAudioUri(mp3Base64, text);
       _audioCache.set(text, uri);
     }
 
@@ -155,7 +117,7 @@ export async function speak(text) {
     });
   } catch (e) {
     if (e?.name === 'AbortError') return;
-    console.error('[TTS] fetch/playback error', e);
+    console.error('[TTS] error', e);
     Alert.alert('No Internet', 'Sound requires internet connection.');
   }
 }

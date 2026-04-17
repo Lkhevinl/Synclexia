@@ -81,10 +81,12 @@ export const SPEECH = {
   ELEVENLABS_PLAYBACK_RATE:     0.92,
 };
 
-// ── Gemini TTS ────────────────────────────────────────────────────────────────
-export const GEMINI_TTS = {
-  API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
-  VOICE_NAME: 'Kore',
+// ── Google Cloud Text-to-Speech ───────────────────────────────────────────────
+export const GOOGLE_TTS = {
+  API_URL: 'https://texttospeech.googleapis.com/v1/text:synthesize',
+  LANGUAGE_CODE: 'en-US',
+  VOICE_NAME: 'en-US-Wavenet-F', // clear female WaveNet voice
+  SPEAKING_RATE: 0.9,            // slightly slower for kids/phonics
 };
 
 // ── Auth / Password ───────────────────────────────────────────────────────────

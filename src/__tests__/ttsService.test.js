@@ -18,19 +18,17 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-const mockPcmBase64 = btoa(String.fromCharCode(...new Uint8Array(100)));
+const mockMp3Base64 = btoa(String.fromCharCode(...new Uint8Array(100)));
 
 const mockGoodFetch = () => {
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({
-      candidates: [{ content: { parts: [{ inlineData: { data: mockPcmBase64 } }] } }],
-    }),
+    json: async () => ({ audioContent: mockMp3Base64 }),
   });
 };
 
 describe('ttsService.speak', () => {
-  it('calls Gemini API and plays audio on success', async () => {
+  it('calls Google Cloud TTS API and plays audio on success', async () => {
     const { Audio } = require('expo-av');
     const { speak } = require('../lib/ttsService');
 
@@ -52,11 +50,39 @@ describe('ttsService.speak', () => {
     expect(Audio.Sound.createAsync).toHaveBeenCalledTimes(1);
   });
 
+  it('serves second call from cache without fetching again', async () => {
+    const { Audio } = require('expo-av');
+    const { speak } = require('../lib/ttsService');
+
+    mockGoodFetch();
+    let statusCb;
+    const mockSound = {
+      setOnPlaybackStatusUpdate: jest.fn(cb => { statusCb = cb; }),
+      stopAsync: jest.fn().mockResolvedValue(undefined),
+      unloadAsync: jest.fn().mockResolvedValue(undefined),
+    };
+    Audio.Sound.createAsync.mockResolvedValue({ sound: mockSound });
+
+    // First call — fetches
+    const p1 = speak('hello');
+    await new Promise(r => setTimeout(r, 20));
+    statusCb({ didJustFinish: true });
+    await p1;
+
+    // Second call — should use cache, no new fetch
+    const p2 = speak('hello');
+    await new Promise(r => setTimeout(r, 20));
+    statusCb({ didJustFinish: true });
+    await p2;
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('does not create audio when API returns non-ok response', async () => {
     const { Audio } = require('expo-av');
     const { speak } = require('../lib/ttsService');
 
-    global.fetch = jest.fn().mockResolvedValue({ ok: false });
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, text: async () => '' });
     await speak('hello');
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -106,6 +132,6 @@ describe('ttsService.stop', () => {
     const p = speak('hello world');
     await new Promise(r => setTimeout(r, 50));
     stop();
-    await p; // must resolve, not hang
+    await p;
   });
 });
