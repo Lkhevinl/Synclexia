@@ -9,6 +9,9 @@ let _sound = null;
 let _resolveCurrentSpeak = null;
 let _abortController = null;
 
+// In-memory cache: text → audio URI (avoids re-fetching the same word/letter)
+const _audioCache = new Map();
+
 // Build raw WAV bytes (ArrayBuffer) from base64-encoded PCM (24 kHz, 16-bit, mono)
 function buildWavBuffer(pcmBase64) {
   const pcmBytes = Uint8Array.from(atob(pcmBase64), (c) => c.charCodeAt(0));
@@ -82,42 +85,51 @@ export async function speak(text) {
   if (!text?.trim()) return;
 
   try {
-    _abortController = new AbortController();
-    const response = await fetch(
-      `${GEMINI_TTS.API_URL}?key=${API_KEY}`,
-      {
-        method: 'POST',
-        signal: _abortController.signal,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `Say: ${text}` }] }],
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: GEMINI_TTS.VOICE_NAME },
+    // Serve from cache if available
+    let uri = _audioCache.get(text);
+
+    if (!uri) {
+      _abortController = new AbortController();
+      const response = await fetch(
+        `${GEMINI_TTS.API_URL}?key=${API_KEY}`,
+        {
+          method: 'POST',
+          signal: _abortController.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `Say: ${text}` }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: GEMINI_TTS.VOICE_NAME },
+                },
               },
             },
-          },
-        }),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '');
+        console.error('[TTS] API error', response.status, errBody);
+        // 429 = quota exhausted — fail silently, don't spam the user
+        if (response.status !== 429) {
+          Alert.alert('TTS Error', `Status ${response.status}`);
+        }
+        return;
       }
-    );
 
-    if (!response.ok) {
-      const errBody = await response.text().catch(() => '');
-      console.error('[TTS] API error', response.status, errBody);
-      Alert.alert('TTS Error', `Status ${response.status} — check console for details.`);
-      return;
+      const json = await response.json();
+      const pcmBase64 = json.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!pcmBase64) {
+        console.error('[TTS] Unexpected response shape', JSON.stringify(json));
+        return;
+      }
+
+      uri = await getAudioUri(pcmBase64);
+      _audioCache.set(text, uri);
     }
-
-    const json = await response.json();
-    const pcmBase64 = json.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!pcmBase64) {
-      console.error('[TTS] Unexpected response shape', JSON.stringify(json));
-      return;
-    }
-
-    const uri = await getAudioUri(pcmBase64);
 
     await Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
