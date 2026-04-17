@@ -83,7 +83,7 @@ export const SPEECH = {
 
 // ── Gemini TTS ────────────────────────────────────────────────────────────────
 export const GEMINI_TTS = {
-  API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent',
+  API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent',
   VOICE_NAME: 'Kore',
 };
 

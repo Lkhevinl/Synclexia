@@ -7,6 +7,7 @@ const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 
 let _sound = null;
 let _resolveCurrentSpeak = null;
+let _abortController = null;
 
 // Build a base64-encoded WAV from raw base64-encoded PCM (24 kHz, 16-bit, mono)
 function buildWavBase64(pcmBase64) {
@@ -46,6 +47,10 @@ function buildWavBase64(pcmBase64) {
 
 /** Stop and unload any currently playing audio. Resolves any in-flight speak() Promise. */
 export function stop() {
+  if (_abortController) {
+    _abortController.abort();
+    _abortController = null;
+  }
   if (_resolveCurrentSpeak) {
     _resolveCurrentSpeak();
     _resolveCurrentSpeak = null;
@@ -67,10 +72,12 @@ export async function speak(text) {
   if (!text?.trim()) return;
 
   try {
+    _abortController = new AbortController();
     const response = await fetch(
       `${GEMINI_TTS.API_URL}?key=${API_KEY}`,
       {
         method: 'POST',
+        signal: _abortController.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text }] }],
@@ -121,7 +128,8 @@ export async function speak(text) {
         }
       });
     });
-  } catch {
+  } catch (e) {
+    if (e?.name === 'AbortError') return;
     Alert.alert('No Internet', 'Sound requires internet connection.');
   }
 }
