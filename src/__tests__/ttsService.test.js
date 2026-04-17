@@ -18,17 +18,15 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-const mockMp3Base64 = btoa(String.fromCharCode(...new Uint8Array(100)));
-
 const mockGoodFetch = () => {
   global.fetch = jest.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ audioContent: mockMp3Base64 }),
+    arrayBuffer: async () => new ArrayBuffer(100),
   });
 };
 
 describe('ttsService.speak', () => {
-  it('calls Google Cloud TTS API and plays audio on success', async () => {
+  it('calls ElevenLabs API and plays audio on success', async () => {
     const { Audio } = require('expo-av');
     const { speak } = require('../lib/ttsService');
 
@@ -63,13 +61,11 @@ describe('ttsService.speak', () => {
     };
     Audio.Sound.createAsync.mockResolvedValue({ sound: mockSound });
 
-    // First call — fetches
     const p1 = speak('hello');
     await new Promise(r => setTimeout(r, 20));
     statusCb({ didJustFinish: true });
     await p1;
 
-    // Second call — should use cache, no new fetch
     const p2 = speak('hello');
     await new Promise(r => setTimeout(r, 20));
     statusCb({ didJustFinish: true });
@@ -101,7 +97,6 @@ describe('ttsService.speak', () => {
 
   it('does nothing for empty text', async () => {
     const { speak } = require('../lib/ttsService');
-
     global.fetch = jest.fn();
     await speak('');
     expect(global.fetch).not.toHaveBeenCalled();
@@ -109,7 +104,6 @@ describe('ttsService.speak', () => {
 
   it('does nothing for whitespace-only text', async () => {
     const { speak } = require('../lib/ttsService');
-
     global.fetch = jest.fn();
     await speak('   ');
     expect(global.fetch).not.toHaveBeenCalled();

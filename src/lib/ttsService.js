@@ -1,28 +1,36 @@
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
 import { Alert, Platform } from 'react-native';
-import { GOOGLE_TTS } from './constants';
+import { ELEVENLABS_TTS } from './constants';
 
-const API_KEY = process.env.EXPO_PUBLIC_GOOGLE_TTS_API_KEY;
+const API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
 
 let _sound = null;
 let _resolveCurrentSpeak = null;
 let _abortController = null;
 
-// In-memory cache: text → audio URI (avoids re-fetching the same word/letter)
+// In-memory cache: text → audio URI
 const _audioCache = new Map();
 
-// Returns a URI expo-av can load from a base64 MP3 string
-async function getAudioUri(mp3Base64, cacheKey) {
+// ElevenLabs returns raw MP3 binary — convert to a URI expo-av can load
+async function getAudioUri(arrayBuffer, cacheKey) {
   if (Platform.OS === 'web') {
-    const bytes = Uint8Array.from(atob(mp3Base64), (c) => c.charCodeAt(0));
-    const blob = new Blob([bytes], { type: 'audio/mp3' });
+    const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
     return URL.createObjectURL(blob);
   }
-  // Native: write to filesystem cache with a stable filename per text
+  // Native: encode to base64 and write to cache file
+  const bytes = new Uint8Array(arrayBuffer);
+  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let b64 = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const a = bytes[i], b = bytes[i + 1] ?? 0, c = bytes[i + 2] ?? 0;
+    b64 += CHARS[a >> 2] + CHARS[((a & 3) << 4) | (b >> 4)]
+         + (i + 1 < bytes.length ? CHARS[((b & 15) << 2) | (c >> 6)] : '=')
+         + (i + 2 < bytes.length ? CHARS[c & 63] : '=');
+  }
   const safe = cacheKey.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
   const fileUri = `${FileSystem.cacheDirectory}tts_${safe}.mp3`;
-  await FileSystem.writeAsStringAsync(fileUri, mp3Base64, {
+  await FileSystem.writeAsStringAsync(fileUri, b64, {
     encoding: FileSystem.EncodingType.Base64,
   });
   return fileUri;
@@ -54,20 +62,21 @@ export async function speak(text) {
     if (!uri) {
       _abortController = new AbortController();
       const response = await fetch(
-        `${GOOGLE_TTS.API_URL}?key=${API_KEY}`,
+        `${ELEVENLABS_TTS.API_URL}/${ELEVENLABS_TTS.VOICE_ID}`,
         {
           method: 'POST',
           signal: _abortController.signal,
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'xi-api-key': API_KEY,
+            'Content-Type': 'application/json',
+            'Accept': 'audio/mpeg',
+          },
           body: JSON.stringify({
-            input: { text },
-            voice: {
-              languageCode: GOOGLE_TTS.LANGUAGE_CODE,
-              name: GOOGLE_TTS.VOICE_NAME,
-            },
-            audioConfig: {
-              audioEncoding: 'MP3',
-              speakingRate: GOOGLE_TTS.SPEAKING_RATE,
+            text,
+            model_id: ELEVENLABS_TTS.MODEL_ID,
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
             },
           }),
         }
@@ -82,14 +91,8 @@ export async function speak(text) {
         return;
       }
 
-      const json = await response.json();
-      const mp3Base64 = json.audioContent;
-      if (!mp3Base64) {
-        console.error('[TTS] No audioContent in response', JSON.stringify(json));
-        return;
-      }
-
-      uri = await getAudioUri(mp3Base64, text);
+      const arrayBuffer = await response.arrayBuffer();
+      uri = await getAudioUri(arrayBuffer, text);
       _audioCache.set(text, uri);
     }
 
