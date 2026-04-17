@@ -90,10 +90,7 @@ export async function speak(text) {
         signal: _abortController.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: 'You are a text-to-speech assistant. Read aloud exactly what the user provides, nothing else.' }],
-          },
-          contents: [{ role: 'user', parts: [{ text }] }],
+          contents: [{ parts: [{ text: `Say: ${text}` }] }],
           generationConfig: {
             responseModalities: ['AUDIO'],
             speechConfig: {
