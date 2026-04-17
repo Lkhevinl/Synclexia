@@ -7,6 +7,12 @@ jest.mock('expo-av', () => ({
   },
 }));
 
+jest.mock('expo-file-system', () => ({
+  cacheDirectory: 'file:///cache/',
+  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
+  EncodingType: { Base64: 'base64' },
+}));
+
 beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
