@@ -28,6 +28,9 @@ export default function ReadingScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [activeWordIndex, setActiveWordIndex] = useState(-1);
   const speakRunIdRef = useRef(0);
+  const [wordTapped, setWordTapped] = useState(false);
+  const [storyFinished, setStoryFinished] = useState(false);
+  const wordTapTimerRef = useRef(null);
 
   useEffect(() => {
     supabase
@@ -46,6 +49,8 @@ export default function ReadingScreen() {
     readStartTime.current = Date.now();
     setIsSpeaking(false);
     setActiveWordIndex(-1);
+    setWordTapped(false);
+    setStoryFinished(false);
   };
 
   const tokenize = (text) => {
@@ -68,6 +73,7 @@ export default function ReadingScreen() {
     speakRunIdRef.current += 1; // cancels any pending continuation
     setIsSpeaking(false);
     setActiveWordIndex(-1);
+    setStoryFinished(false);
     try { await Speech.stop(); } catch (_) {}
   };
 
@@ -83,7 +89,17 @@ export default function ReadingScreen() {
     Speech.speak(words[idx], {
       rate: 0.8,
       pitch: 1.1,
-      onDone: () => speakWordByIndex(words, idx + 1, runId),
+      onDone: () => {
+        if (idx + 1 >= words.length) {
+          if (runId === speakRunIdRef.current) {
+            setIsSpeaking(false);
+            setActiveWordIndex(-1);
+            setStoryFinished(true);
+          }
+        } else {
+          speakWordByIndex(words, idx + 1, runId);
+        }
+      },
       onStopped: () => {
         if (runId === speakRunIdRef.current) {
           setIsSpeaking(false);
@@ -105,6 +121,9 @@ export default function ReadingScreen() {
       await stopSpeaking();
       return;
     }
+    setWordTapped(false);
+    setStoryFinished(false);
+    clearTimeout(wordTapTimerRef.current);
 
     const { tokens } = tokenize(selectedStory.content);
     const words = tokens.filter(t => t.isWord).map(t => t.text);
@@ -117,6 +136,9 @@ export default function ReadingScreen() {
   };
 
   const closeBook = () => {
+    clearTimeout(wordTapTimerRef.current);
+    setWordTapped(false);
+    setStoryFinished(false);
     stopSpeaking();
     if (profile?.id && selectedStory && readStartTime.current) {
       const duration = Math.round((Date.now() - readStartTime.current) / 1000);
@@ -192,7 +214,19 @@ export default function ReadingScreen() {
                   return (
                     <Text
                       key={`w-${i}`}
-                      onPress={() => Speech.speak(t.text, { rate: 0.8, pitch: 1.1 })}
+                      onPress={() => {
+                        if (isSpeaking) return;
+                        setWordTapped(false);
+                        clearTimeout(wordTapTimerRef.current);
+                        Speech.speak(t.text, {
+                          rate: 0.8,
+                          pitch: 1.1,
+                          onDone: () => {
+                            setWordTapped(true);
+                            wordTapTimerRef.current = setTimeout(() => setWordTapped(false), 5000);
+                          },
+                        });
+                      }}
                       style={isActive ? styles.activeWord : null}
                     >
                       {t.text}
@@ -202,13 +236,25 @@ export default function ReadingScreen() {
               </Text>
             </ScrollView>
             <View style={styles.readerControls}>
+              {wordTapped && !isSpeaking && (
+                <StudentButton
+                  variant="success"
+                  onPress={handleSpeak}
+                  style={[styles.speakBtn, styles.playAllBtn]}
+                >
+                  <Icon name="play" size="md" color="#fff" />
+                  <Text style={styles.speakText}>Play All</Text>
+                </StudentButton>
+              )}
               <StudentButton
-                variant={isSpeaking ? 'muted' : 'success'}
+                variant={isSpeaking ? 'muted' : 'primary'}
                 onPress={handleSpeak}
                 style={styles.speakBtn}
               >
                 <Icon name={isSpeaking ? 'square' : 'volume-2'} size="md" color="#fff" />
-                <Text style={styles.speakText}>{isSpeaking ? 'Stop' : 'Read to Me'}</Text>
+                <Text style={styles.speakText}>
+                  {isSpeaking ? 'Stop' : storyFinished ? 'Play Again' : 'Read to Me'}
+                </Text>
               </StudentButton>
             </View>
           </StudentCard>
@@ -234,6 +280,7 @@ const styles = StyleSheet.create({
   storyText: { fontSize: 24, lineHeight: 40, color: c.text, textAlign: 'center' },
   readerControls: { padding: 16, borderTopWidth: 1, borderColor: '#eee', alignItems: 'center' },
   speakBtn: { alignSelf: 'stretch' },
+  playAllBtn: { marginBottom: 8 },
   speakText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   activeWord: { backgroundColor: 'rgba(255, 235, 59, 0.6)' },
 });

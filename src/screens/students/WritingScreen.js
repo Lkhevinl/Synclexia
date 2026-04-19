@@ -201,6 +201,12 @@ export default function WritingScreen() {
   const [strokeColor, setStrokeColor] = useState(COLORS[0]);
   const [canvasLayout, setCanvasLayout] = useState({ width: 350, height: 500 });
 
+  const PRAISE_MESSAGES = [
+    { title: 'Awesome!', sub: 'Good job! You can proceed to the next letter.', tts: 'Awesome, good job! You can proceed to the next letter.' },
+    { title: 'Awesome!', sub: "Great job! You're doing well—go ahead and move on to the next letter.", tts: "Awesome, great job! You're doing well—go ahead and move on to the next letter." },
+    { title: 'Excellent!', sub: 'You may now proceed to the next letter.', tts: 'Excellent work! You may now proceed to the next letter.' },
+  ];
+  const [currentPraise, setCurrentPraise] = useState(PRAISE_MESSAGES[0]);
   const [successVisible, setSuccessVisible] = useState(false);
   const [demoVisible, setDemoVisible] = useState(false);
 
@@ -621,7 +627,9 @@ export default function WritingScreen() {
 
   // --- ACTIONS ---
   const handleCheck = () => {
-    Speech.speak('Proceed to the next letter!', { rate: 0.9 });
+    const praise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
+    setCurrentPraise(praise);
+    Speech.speak(praise.tts, { rate: 0.9 });
     setSuccessVisible(true);
     if (profile?.id) {
       logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
@@ -1113,8 +1121,8 @@ export default function WritingScreen() {
           <View style={styles.modalOverlay}>
               <View style={styles.successCard}>
                   <Icon name="star" size="xl" color="#FFD700" />
-                  <Text style={styles.successTitle}>Awesome!</Text>
-                  <Text style={styles.successSub}>Proceed to next letter!</Text>
+                  <Text style={styles.successTitle}>{currentPraise.title}</Text>
+                  <Text style={styles.successSub}>{currentPraise.sub}</Text>
                   <TouchableOpacity style={styles.nextBtn} onPress={nextItem}>
                       <Text style={styles.nextText}>Next 👉</Text>
                   </TouchableOpacity>
