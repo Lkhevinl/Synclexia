@@ -1,126 +1,216 @@
+import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
-import { Alert, Platform } from 'react-native';
-import { ELEVENLABS_TTS } from './constants';
+import { Platform } from 'react-native';
+import { supabase } from './supabase';
+import { toPhonicsSound } from './constants';
 
-const API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const BUCKET = 'phonics audio';
+const FOLDER = 'phonics sounds';
+
+const STORAGE_MAP = {
+  // Schwa
+  schwa:      'Schwa-What',
+  // Short vowels
+  a:          'a-apple',
+  e:          'e-elephant',
+  i:          'i-igloo',
+  o:          'o-octopus',
+  u:          'u-up',
+  // Long vowels  — /ā/
+  ai:         'a-cake',
+  ay:         'a-cake',
+  'a_e':      'a-cake',
+  // Long vowels  — /ē/
+  ee:         'e-team',
+  ea:         'e-team',
+  'e_e':      'e-team',
+  // Long vowels  — /ī/
+  ie:         'i-kite',
+  igh:        'i-kite',
+  'i_e':      'i-kite',
+  // Long vowels  — /ō/
+  oa:         'o-rope',
+  'o_e':      'o-rope',
+  // Long vowels  — /oo/ and /yoo/
+  ue:         'u-lute-glue',
+  ew:         'u-lute-glue',
+  'u_e':      'u-lute-glue',
+  u_oo:       'u-lute-glue',
+  u_yoo:      'u-use-cue',
+  // Consonants
+  b:          'b-bat',
+  c:          'c-cut',
+  ck:         'c-cut',
+  d:          'd-dip',
+  f:          'f-fun',
+  g:          'g-get',
+  h:          'h-hat',
+  j:          'j-jog',
+  k:          'k-kit',
+  l:          'l-lip',
+  m:          'm-mug',
+  n:          'n-nap',
+  p:          'p-pick',
+  qu:         'qu-quest',
+  r:          'r-rid',
+  s:          's-sit-mess',
+  t:          't-tuck',
+  v:          'v-van',
+  w:          'w-will',
+  x:          'x-mix-rocks',
+  y:          'y-yes',
+  z:          'z-zip-buzz',
+  // Soft consonants
+  soft_c:     's-cent-circus-cycle',
+  soft_g:     'j-gem-giant-gym',
+  // Digraphs
+  ch:         'ch-chick',
+  sh:         'sh-ship',
+  th:         'th-thin',
+  th_voiced:  'th-the',
+  ng:         'ng-ring',
+  wh:         'hw-whip',
+  // Silent consonants
+  kn:         'n-knife',
+  gn:         'n-gnome',
+  wr:         'wr-wrist',
+  // Voiced /z/ via 's'
+  z_s:        's-his',
+  // R-controlled vowels
+  ar:         'ar-jar',
+  er:         'er-herd-bird-turn',
+  ir:         'er-herd-bird-turn',
+  ur:         'er-herd-bird-turn',
+  or:         'or-fork',
+  air:        'air-pair-share',
+  ear:        'ear-hear',
+  ure:        'ure-lure',
+  // Other vowel teams
+  oi:         'oi-soil-toy',
+  oy:         'oi-soil-toy',
+  ou:         'ou-how-out',
+  ow:         'ou-how-out',
+  aw:         'aw-haul-hawk-ball',
+  au:         'aw-haul-hawk-ball',
+  al:         'aw-haul-hawk-ball',
+  oo:         'oo-boot-new',
+  oo_short:   'oo-book-bush',
+};
+
+// ─── State ────────────────────────────────────────────────────────────────────
 
 let _sound = null;
-let _resolveCurrentSpeak = null;
-let _abortController = null;
 
-// In-memory cache: text → audio URI
-const _audioCache = new Map();
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// ElevenLabs returns raw MP3 binary — convert to a URI expo-av can load
-async function getAudioUri(arrayBuffer, cacheKey) {
-  if (Platform.OS === 'web') {
-    const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
-    return URL.createObjectURL(blob);
-  }
-  // Native: encode to base64 and write to cache file
-  const bytes = new Uint8Array(arrayBuffer);
-  const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let b64 = '';
-  for (let i = 0; i < bytes.length; i += 3) {
-    const a = bytes[i], b = bytes[i + 1] ?? 0, c = bytes[i + 2] ?? 0;
-    b64 += CHARS[a >> 2] + CHARS[((a & 3) << 4) | (b >> 4)]
-         + (i + 1 < bytes.length ? CHARS[((b & 15) << 2) | (c >> 6)] : '=')
-         + (i + 2 < bytes.length ? CHARS[c & 63] : '=');
-  }
-  const safe = cacheKey.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
-  const fileUri = `${FileSystem.cacheDirectory}tts_${safe}.mp3`;
-  await FileSystem.writeAsStringAsync(fileUri, b64, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  return fileUri;
-}
-
-export function stop() {
-  if (_abortController) {
-    _abortController.abort();
-    _abortController = null;
-  }
-  if (_resolveCurrentSpeak) {
-    _resolveCurrentSpeak();
-    _resolveCurrentSpeak = null;
-  }
+async function stopSound() {
   if (_sound) {
-    _sound.stopAsync().catch(() => {});
-    _sound.unloadAsync().catch(() => {});
+    try { await _sound.stopAsync(); } catch {}
+    try { await _sound.unloadAsync(); } catch {}
     _sound = null;
   }
 }
 
+export async function stop() {
+  await stopSound();
+  if (Platform.OS === 'web') {
+    window.speechSynthesis?.cancel();
+  } else {
+    Speech.stop();
+  }
+}
+
+// ─── Device TTS ───────────────────────────────────────────────────────────────
+
+function getBestVoice(voices) {
+  const en = voices.filter(v => v.lang.startsWith('en'));
+  const pick = (...keywords) =>
+    en.find(v => keywords.every(k => v.name.toLowerCase().includes(k.toLowerCase())));
+  return (
+    pick('aria', 'natural') || pick('jenny', 'natural') ||
+    pick('guy', 'natural') || pick('natasha', 'natural') ||
+    pick('google', 'uk', 'female') || pick('google', 'us', 'female') ||
+    pick('google', 'us') || pick('google') ||
+    en.find(v => v.name.toLowerCase().includes('online')) ||
+    en.find(v => v.lang === 'en-US') || en[0] || null
+  );
+}
+
 export async function speak(text) {
-  stop();
   if (!text?.trim()) return;
+  await stop();
+  if (Platform.OS === 'web') {
+    return new Promise((resolve) => {
+      const synth = window.speechSynthesis;
+      const trySpeak = () => {
+        const voice = getBestVoice(synth.getVoices());
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'en-US'; utter.rate = 0.80; utter.pitch = 1.05;
+        if (voice) utter.voice = voice;
+        utter.onend = resolve; utter.onerror = resolve;
+        synth.speak(utter);
+      };
+      synth.getVoices().length > 0 ? trySpeak()
+        : (synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); });
+    });
+  }
+  return new Promise((resolve) => {
+    Speech.speak(text, { language: 'en-US', rate: 0.80, pitch: 1.05,
+      onDone: resolve, onError: resolve, onStopped: resolve });
+  });
+}
+
+// ─── Main phonics entry point ─────────────────────────────────────────────────
+
+export async function speakPhonics(letter) {
+  if (!letter) return;
+  const key = letter.toLowerCase();
+  const filename = STORAGE_MAP[key];
+
+  await stopSound();
+  Speech.stop();
+
+  if (!filename) {
+    await speak(toPhonicsSound(key));
+    return;
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${FOLDER}/${filename}.mp3`);
+  const url = data?.publicUrl?.replace(/ /g, '%20');
+
+  console.log('[ttsService] url:', url);
+
+  if (!url) {
+    await speak(toPhonicsSound(key));
+    return;
+  }
 
   try {
-    let uri = _audioCache.get(text);
-
-    if (!uri) {
-      _abortController = new AbortController();
-      const response = await fetch(
-        `${ELEVENLABS_TTS.API_URL}/${ELEVENLABS_TTS.VOICE_ID}`,
-        {
-          method: 'POST',
-          signal: _abortController.signal,
-          headers: {
-            'xi-api-key': API_KEY,
-            'Content-Type': 'application/json',
-            'Accept': 'audio/mpeg',
-          },
-          body: JSON.stringify({
-            text,
-            model_id: ELEVENLABS_TTS.MODEL_ID,
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errBody = await response.text().catch(() => '');
-        console.error('[TTS] API error', response.status, errBody);
-        if (response.status !== 429) {
-          Alert.alert('TTS Error', `Status ${response.status}`);
-        }
-        return;
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      uri = await getAudioUri(arrayBuffer, text);
-      _audioCache.set(text, uri);
-    }
-
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-    }).catch(() => {});
-
-    const { sound } = await Audio.Sound.createAsync(
-      { uri },
-      { shouldPlay: true, volume: 1.0 }
-    );
-    _sound = sound;
-
-    return new Promise((resolve) => {
-      _resolveCurrentSpeak = resolve;
-      sound.setOnPlaybackStatusUpdate((st) => {
-        if (st.didJustFinish || st.error) {
+    if (Platform.OS === 'web') {
+      await new Promise((resolve, reject) => {
+        const audio = new window.Audio(url);
+        audio.onended = resolve;
+        audio.onerror = (e) => reject(new Error('web audio error'));
+        audio.play().catch(reject);
+      });
+    } else {
+      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, shouldDuckAndroid: true });
+      const { sound, status } = await Audio.Sound.createAsync({ uri: url });
+      console.log('[ttsService] loaded:', status.isLoaded);
+      if (!status.isLoaded) throw new Error('load failed');
+      _sound = sound;
+      await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if (s.didJustFinish) {
           sound.unloadAsync().catch(() => {});
           if (_sound === sound) _sound = null;
-          if (_resolveCurrentSpeak === resolve) _resolveCurrentSpeak = null;
-          resolve();
         }
       });
-    });
+    }
   } catch (e) {
-    if (e?.name === 'AbortError') return;
-    console.error('[TTS] error', e);
-    Alert.alert('No Internet', 'Sound requires internet connection.');
+    console.warn('[ttsService] failed:', e?.message);
+    await speak(toPhonicsSound(key));
   }
 }

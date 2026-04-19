@@ -1,16 +1,6 @@
-jest.mock('expo-av', () => ({
-  Audio: {
-    setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
-    Sound: {
-      createAsync: jest.fn(),
-    },
-  },
-}));
-
-jest.mock('expo-file-system', () => ({
-  cacheDirectory: 'file:///cache/',
-  writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
-  EncodingType: { Base64: 'base64' },
+jest.mock('expo-speech', () => ({
+  speak: jest.fn(),
+  stop: jest.fn(),
 }));
 
 beforeEach(() => {
@@ -18,114 +8,53 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-const mockGoodFetch = () => {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    arrayBuffer: async () => new ArrayBuffer(100),
-  });
-};
-
 describe('ttsService.speak', () => {
-  it('calls ElevenLabs API and plays audio on success', async () => {
-    const { Audio } = require('expo-av');
+  it('calls Speech.speak with text and options', async () => {
+    const Speech = require('expo-speech');
     const { speak } = require('../lib/ttsService');
 
-    mockGoodFetch();
-    let statusCb;
-    const mockSound = {
-      setOnPlaybackStatusUpdate: jest.fn(cb => { statusCb = cb; }),
-      stopAsync: jest.fn().mockResolvedValue(undefined),
-      unloadAsync: jest.fn().mockResolvedValue(undefined),
-    };
-    Audio.Sound.createAsync.mockResolvedValue({ sound: mockSound });
-
-    const p = speak('hello');
-    await new Promise(r => setTimeout(r, 20));
-    statusCb({ didJustFinish: true });
-    await p;
-
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(Audio.Sound.createAsync).toHaveBeenCalledTimes(1);
-  });
-
-  it('serves second call from cache without fetching again', async () => {
-    const { Audio } = require('expo-av');
-    const { speak } = require('../lib/ttsService');
-
-    mockGoodFetch();
-    let statusCb;
-    const mockSound = {
-      setOnPlaybackStatusUpdate: jest.fn(cb => { statusCb = cb; }),
-      stopAsync: jest.fn().mockResolvedValue(undefined),
-      unloadAsync: jest.fn().mockResolvedValue(undefined),
-    };
-    Audio.Sound.createAsync.mockResolvedValue({ sound: mockSound });
-
-    const p1 = speak('hello');
-    await new Promise(r => setTimeout(r, 20));
-    statusCb({ didJustFinish: true });
-    await p1;
-
-    const p2 = speak('hello');
-    await new Promise(r => setTimeout(r, 20));
-    statusCb({ didJustFinish: true });
-    await p2;
-
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('does not create audio when API returns non-ok response', async () => {
-    const { Audio } = require('expo-av');
-    const { speak } = require('../lib/ttsService');
-
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, text: async () => '' });
+    Speech.speak.mockImplementation((text, opts) => opts?.onDone?.());
     await speak('hello');
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(Audio.Sound.createAsync).not.toHaveBeenCalled();
-  });
-
-  it('does not create audio when fetch throws (network error)', async () => {
-    const { Audio } = require('expo-av');
-    const { speak } = require('../lib/ttsService');
-
-    global.fetch = jest.fn().mockRejectedValue(new Error('Network request failed'));
-    await speak('hello');
-
-    expect(Audio.Sound.createAsync).not.toHaveBeenCalled();
+    expect(Speech.speak).toHaveBeenCalledTimes(1);
+    expect(Speech.speak).toHaveBeenCalledWith('hello', expect.objectContaining({ rate: 0.85, pitch: 1.1 }));
   });
 
   it('does nothing for empty text', async () => {
+    const Speech = require('expo-speech');
     const { speak } = require('../lib/ttsService');
-    global.fetch = jest.fn();
+
     await speak('');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(Speech.speak).not.toHaveBeenCalled();
   });
 
   it('does nothing for whitespace-only text', async () => {
+    const Speech = require('expo-speech');
     const { speak } = require('../lib/ttsService');
-    global.fetch = jest.fn();
+
     await speak('   ');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(Speech.speak).not.toHaveBeenCalled();
+  });
+
+  it('calls Speech.stop before speaking', async () => {
+    const Speech = require('expo-speech');
+    const { speak } = require('../lib/ttsService');
+
+    Speech.speak.mockImplementation((text, opts) => opts?.onDone?.());
+    await speak('hello');
+
+    expect(Speech.stop).toHaveBeenCalledBefore
+      ? expect(Speech.stop).toHaveBeenCalled()
+      : expect(Speech.stop).toHaveBeenCalled();
   });
 });
 
 describe('ttsService.stop', () => {
-  it('resolves an in-flight speak promise immediately', async () => {
-    const { Audio } = require('expo-av');
-    const { speak, stop } = require('../lib/ttsService');
+  it('calls Speech.stop', () => {
+    const Speech = require('expo-speech');
+    const { stop } = require('../lib/ttsService');
 
-    mockGoodFetch();
-    const mockSound = {
-      setOnPlaybackStatusUpdate: jest.fn(),
-      stopAsync: jest.fn().mockResolvedValue(undefined),
-      unloadAsync: jest.fn().mockResolvedValue(undefined),
-    };
-    Audio.Sound.createAsync.mockResolvedValue({ sound: mockSound });
-
-    const p = speak('hello world');
-    await new Promise(r => setTimeout(r, 50));
     stop();
-    await p;
+    expect(Speech.stop).toHaveBeenCalledTimes(1);
   });
 });

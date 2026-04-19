@@ -163,7 +163,7 @@ export default function SpeechToTextScreen() {
             <Icon name={isListening ? 'square' : 'mic'} size="xl" color="#fff" />
           </TouchableOpacity>
 
-          <View style={styles.clearBtn} />
+          <View style={{ width: 60 }} />
         </View>
 
         {!AVAILABLE && (

@@ -22,6 +22,7 @@ export const TABLES = {
   PARENT_MESSAGES:          'parent_messages',
   ASSIGNMENTS:              'assignments',
   WRITING_PRACTICE:         'writing_practice',
+  PHONEME_REFERENCE:        'phoneme_reference',
 };
 
 // ── User Roles ────────────────────────────────────────────────────────────────
@@ -81,11 +82,105 @@ export const SPEECH = {
   ELEVENLABS_PLAYBACK_RATE:     0.92,
 };
 
+// ── Phonics Sound Map ─────────────────────────────────────────────────────────
+// Maps each letter/digraph to text the TTS pronounces as its phonics sound.
+export const PHONICS_SOUNDS = {
+  // ── Short vowels ──────────────────────────────────────────────
+  a:   'aah',    // /æ/  cat
+  e:   'eh',     // /ɛ/  egg
+  i:   'in',     // /ɪ/  igloo  (avoids "i,h" spelling)
+  o:   'aw',     // /ɒ/  orange
+  u:   'uh',     // /ʌ/  mug
+
+  // ── Consonants ────────────────────────────────────────────────
+  b:   'buh',    // /b/  ball
+  c:   'kuh',    // /k/  cat
+  d:   'duh',    // /d/  dog
+  f:   'fuh',    // /f/  fan
+  g:   'guh',    // /g/  grapes
+  h:   'huh',    // /h/  hat
+  j:   'juh',    // /dʒ/ jellyfish
+  k:   'kuh',    // /k/  kite
+  l:   'luh',    // /l/  leaf
+  m:   'muh',    // /m/  monkey
+  n:   'nuh',    // /n/  nest
+  p:   'puh',    // /p/  pig
+  q:   'kwuh',   // /kw/ queen
+  r:   'ruh',    // /r/  robot
+  s:   'sah',    // /s/  sun
+  t:   'tuh',    // /t/  tap
+  v:   'vuh',    // /v/  van
+  w:   'wuh',    // /w/  web
+  x:   'ex',     // /ks/ box
+  y:   'yuh',    // /j/  yo-yo
+  z:   'zuh',    // /z/  zebra (avoids "z,z,z" spelling)
+
+  // ── Digraphs ──────────────────────────────────────────────────
+  sh:  'shh',    // /ʃ/  shark
+  ch:  'chuh',   // /tʃ/ cheese
+  th:  'thuh',   // /θ/  thongs / /ð/ feather
+  ng:  'ing',    // /ŋ/  ring  (avoids "n,g" spelling)
+  ph:  'fuh',    // /f/  phone
+  zh:  'zhuh',   // /ʒ/  treasure
+  wh:  'wuh',    // /w/  why
+
+  // ── Long vowels ───────────────────────────────────────────────
+  ai:  'ay',  ay:  'ay',          // /eɪ/ snail
+  ee:  'ee',  ea:  'ee',          // /iː/ bee
+  ie:  'eye', igh: 'eye',         // /aɪ/ spider
+  oa:  'oh',  oe:  'oh',          // /oʊ/ boat
+  oo:  'oo',                      // /uː/ moon  /ʊ/ book
+  ue:  'yoo', ew:  'yoo',         // /juː/ uniform
+
+  // ── Diphthongs ────────────────────────────────────────────────
+  oi:  'oy',  oy:  'oy',          // /ɔɪ/ coin
+  ou:  'ow',  ow:  'ow',          // /aʊ/ cow
+
+  // ── R-controlled vowels ───────────────────────────────────────
+  ar:  'ar',                      // /ɑː/ car
+  er:  'er',  ir:  'er', ur: 'er',// /ɜː/ bird
+  or:  'or',                      // /ɔː/ fork
+  air: 'air',                     // /eə/ chair
+  ear: 'ear',                     // /ɪə/ ear
+  ure: 'yoor',                    // /ʊə/ cure
+
+  // ── Magic-e (split digraph / long vowels) ─────────────────────
+  'a_e': 'ay',   // cake
+  'e_e': 'ee',   // these
+  'i_e': 'eye',  // kite
+  'o_e': 'oh',   // rope
+  'u_e': 'yoo',  // cube
+
+  // ── More vowel teams ──────────────────────────────────────────
+  aw:  'aw',     // claw
+  au:  'aw',     // sauce
+  al:  'awl',    // ball
+
+  // ── Silent-letter clusters ─────────────────────────────────────
+  kn:  'n',      // knee
+  gn:  'n',      // gnome
+  wr:  'r',      // write
+
+  // ── Other ─────────────────────────────────────────────────────
+  qu:       'kwuh',
+  oo_short: 'oo',   // short /ŏo/ — book, bush
+};
+
+// Converts a raw phoneme string to TTS-friendly text using the map above.
+// Consonant clusters with no vowel get "uh" appended so TTS blends them.
+export function toPhonicsSound(ph) {
+  if (!ph) return ph;
+  const lower = ph.toLowerCase();
+  if (PHONICS_SOUNDS[lower]) return PHONICS_SOUNDS[lower];
+  if (!/[aeiou]/.test(lower) && lower.length > 1) return lower + 'uh';
+  return ph;
+}
+
 // ── ElevenLabs Text-to-Speech ─────────────────────────────────────────────────
 export const ELEVENLABS_TTS = {
   API_URL: 'https://api.elevenlabs.io/v1/text-to-speech',
   VOICE_ID: '21m00Tcm4TlvDq8ikWAM', // Rachel — clear, calm female voice
-  MODEL_ID: 'eleven_monolingual_v1',
+  MODEL_ID: 'eleven_turbo_v2_5',
 };
 
 // ── Auth / Password ───────────────────────────────────────────────────────────

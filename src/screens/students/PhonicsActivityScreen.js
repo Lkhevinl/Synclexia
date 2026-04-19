@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../lib/supabase';
-import { TABLES } from '../../lib/constants';
+import { TABLES, toPhonicsSound } from '../../lib/constants';
 import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
@@ -76,6 +76,9 @@ const JP_GROUPS = [
   { letters: ['z','w','ng','v','oo','oo'], color: '#1E88E5', light: '#E3F2FD', name: 'Group 5' },
   { letters: ['y','x','ch','sh','th','th'], color: '#8E24AA', light: '#F3E5F5', name: 'Group 6' },
   { letters: ['qu','ou','oi','ue','er','ar'], color: '#00897B', light: '#E0F2F1', name: 'Group 7' },
+  { letters: ['a_e','i_e','o_e','u_e','e_e'], color: '#E91E8C', light: '#FCE4EC', name: 'Group 8' },
+  { letters: ['aw','au','oo_short'], color: '#F57F17', light: '#FFF9C4', name: 'Group 9' },
+  { letters: ['kn','wr','gn','wh'], color: '#5E35B1', light: '#EDE7F6', name: 'Group 10' },
 ];
 
 function JollyLetterTile({ letter, groupIdx, delay = 0 }) {
@@ -266,7 +269,7 @@ function BlendGame({ onBack, userId, items }) {
     stopSpeech();
     const runId = speechRunIdRef.current;
     setActivePhonemeIndex(phonemeIndex);
-    await ttsService.speak(phoneme);
+    await ttsService.speak(toPhonicsSound(phoneme));
     if (runId !== speechRunIdRef.current) return;
     setActivePhonemeIndex(null);
   };
@@ -277,7 +280,7 @@ function BlendGame({ onBack, userId, items }) {
     for (let i = 0; i < phonemes.length; i++) {
       if (runId !== speechRunIdRef.current) return;
       setActivePhonemeIndex(i);
-      await ttsService.speak(phonemes[i]);
+      await ttsService.speak(toPhonicsSound(phonemes[i]));
     }
     if (runId !== speechRunIdRef.current) return;
     setActivePhonemeIndex(null);
@@ -426,7 +429,7 @@ function SegmentGame({ onBack, userId, items }) {
     ttsService.stop();
     const nextIndex = next - 1;
     setActiveTapIndex(nextIndex);
-    await ttsService.speak(current.phonemes[nextIndex] || '');
+    await ttsService.speak(toPhonicsSound(current.phonemes[nextIndex] || ''));
     if (runId === speechRunIdRef.current) setActiveTapIndex(null);
     // Pulse animation
     Animated.sequence([
@@ -601,7 +604,7 @@ function SoundMatchGame({ onBack, userId }) {
 
   const current = items[idx];
 
-  const speak = (sound) => ttsService.speak(sound);
+  const speak = (sound) => ttsService.speak(toPhonicsSound(sound));
 
   const handleSelect = (option) => {
     if (selected) return;
