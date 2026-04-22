@@ -25,6 +25,7 @@ export default function AdminDashboardScreen({ navigation }) {
     phonicsActivities: 0,
     phonological: 0,
   });
+  const [parentFeedbackCount, setParentFeedbackCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,7 +33,7 @@ export default function AdminDashboardScreen({ navigation }) {
     setLoading(true);
     setError(null);
     try {
-      await Promise.all([fetchNotifications(), fetchUserCounts(), fetchContentStats()]);
+      await Promise.all([fetchNotifications(), fetchUserCounts(), fetchContentStats(), fetchParentFeedbackCount()]);
     } catch (error) {
       setError('Failed to load admin dashboard. Please check your connection and try again.');
     } finally {
@@ -214,6 +215,18 @@ export default function AdminDashboardScreen({ navigation }) {
         phonological: 0,
       });
     }
+  };
+
+  const fetchParentFeedbackCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from(TABLES.MAINTENANCE_LOGS)
+        .select('*', { count: 'exact', head: true })
+        .eq('reporter_role', 'parent')
+        .eq('category', 'user_feedback')
+        .eq('status', 'open');
+      if (!error) setParentFeedbackCount(count || 0);
+    } catch (_) {}
   };
 
   const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
@@ -402,6 +415,36 @@ export default function AdminDashboardScreen({ navigation }) {
               </Text>
               <View style={styles.enhancedCardFooter}>
                 <Text style={styles.enhancedCardStats}>{notifications.length} active notifications</Text>
+                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* PARENT FEEDBACK */}
+          <TouchableOpacity
+            style={[styles.enhancedCard, styles.wideCard]}
+            onPress={() => navigation.navigate('MaintenanceLogs')}
+            activeOpacity={0.85}
+          >
+            <LinearGradient colors={['#e96c6c', '#c0392b']} style={styles.enhancedCardGradient}>
+              <View style={styles.enhancedCardHeader}>
+                <View style={styles.enhancedIconWrap}>
+                  <Icon name="message-circle" size="lg" color="#fff" />
+                </View>
+                <Text style={styles.enhancedCardTitle}>Parent Feedback</Text>
+                {parentFeedbackCount > 0 && (
+                  <View style={styles.feedbackBadge}>
+                    <Text style={styles.feedbackBadgeText}>{parentFeedbackCount}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.enhancedCardDescription}>
+                Review ratings and messages submitted by parents
+              </Text>
+              <View style={styles.enhancedCardFooter}>
+                <Text style={styles.enhancedCardStats}>
+                  {parentFeedbackCount > 0 ? `${parentFeedbackCount} open item${parentFeedbackCount !== 1 ? 's' : ''}` : 'No open feedback'}
+                </Text>
                 <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
               </View>
             </LinearGradient>
@@ -610,6 +653,9 @@ const styles = StyleSheet.create({
   enhancedCardDescription: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: 16 },
   enhancedCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
   enhancedCardStats: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
+
+  feedbackBadge: { backgroundColor: '#fff', borderRadius: 12, minWidth: 24, height: 24, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6, marginLeft: 8 },
+  feedbackBadgeText: { color: '#c0392b', fontWeight: 'bold', fontSize: 13 },
 
   reportFeatureList: { marginBottom: 16, gap: 10 },
   reportFeatureItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

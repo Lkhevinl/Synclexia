@@ -10,10 +10,12 @@ import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Tab: Learners & Parents ──────────────────────────────────────────────────
 function UsersTab({ role }) {
   const { colors } = useTheme();
+  const { suppressNextSignIn } = useAuth();
   const [users, setUsers] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState('');
@@ -97,6 +99,8 @@ function UsersTab({ role }) {
       return;
     }
     setAdding(true);
+    // Prevent the SIGNED_IN event fired by signUp from replacing the admin's session.
+    suppressNextSignIn();
     const { data, error } = await supabase.auth.signUp({
       email: addForm.email.trim(),
       password: addForm.password,

@@ -17,6 +17,9 @@ export const AuthProvider = ({ children }) => {
   const [dashboardMode, setDashboardMode] = useState('auto');
   const [recoveryMode, setRecoveryMode] = useState(false);
   const signingOutRef = useRef(false);
+  // Suppresses the next SIGNED_IN event — used by admin user creation so that
+  // calling supabase.auth.signUp() doesn't replace the admin's own session.
+  const suppressSignInRef = useRef(false);
 
   const clearStaleSession = async () => {
     try {
@@ -66,6 +69,10 @@ export const AuthProvider = ({ children }) => {
         // Ignore spurious SIGNED_IN events that fire during/after an intentional logout
         // (e.g. a pending autoRefreshToken call that resolves after signOut)
         if (signingOutRef.current) return;
+        // Admin user-creation calls signUp() which fires SIGNED_IN for the new user.
+        // suppressSignInRef lets the admin panel block that one event so the admin
+        // session is not replaced.
+        if (suppressSignInRef.current) { suppressSignInRef.current = false; return; }
         if (!s) { setLoading(false); return; }
         setSession(s);
         await fetchProfile(s.user.id);
@@ -194,6 +201,10 @@ export const AuthProvider = ({ children }) => {
 
   const clearRecoveryMode = () => setRecoveryMode(false);
 
+  // Call this immediately before supabase.auth.signUp() in admin flows so the
+  // resulting SIGNED_IN event is swallowed and the admin's session is preserved.
+  const suppressNextSignIn = () => { suppressSignInRef.current = true; };
+
   return (
     <AuthContext.Provider value={{
         session,
@@ -210,6 +221,7 @@ export const AuthProvider = ({ children }) => {
         setProfileError,
         setLoading,
         resetSigningOut,
+        suppressNextSignIn,
         recoveryMode,
         clearRecoveryMode,
     }}>

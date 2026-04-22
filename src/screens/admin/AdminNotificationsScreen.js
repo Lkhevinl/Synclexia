@@ -66,7 +66,16 @@ export default function AdminNotificationsScreen() {
       setTitle('');
       setContent('');
       setTargetRole('all');
-      fetchNotifications();
+
+      // Switch to the tab that will show the saved item so the result is
+      // immediately visible. If the tab is already correct the useEffect
+      // dependency won't fire, so call fetchNotifications explicitly then.
+      const targetTab = asDraft ? 'Drafts' : 'Posted';
+      if (activeTab === targetTab) {
+        fetchNotifications();
+      } else {
+        setActiveTab(targetTab); // useEffect([activeTab]) will call fetchNotifications
+      }
 
     } catch (error) {
       showAlert("Error", error.message);

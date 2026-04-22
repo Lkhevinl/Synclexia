@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, FlatList, StatusBar, Image, Dimensions, DeviceEventEmitter, Alert, ActivityIndicator, Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
@@ -96,6 +97,14 @@ export default function DashboardScreen({ navigation }) {
     const sub = DeviceEventEmitter.addListener('openSidebar', () => setSidebarVisible(true));
     return () => sub.remove();
   }, []);
+
+  // Re-fetch notifications each time this screen comes into focus so that
+  // announcements posted after the initial mount are reflected immediately.
+  useFocusEffect(
+    useCallback(() => {
+      if (profile?.id) fetchNotifications();
+    }, [profile?.id])
+  );
 
   const fetchNotifications = async () => {
     if (!profile?.id) {
