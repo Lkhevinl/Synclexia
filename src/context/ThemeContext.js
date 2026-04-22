@@ -65,7 +65,7 @@ const COLOR_THEMES = {
 };
 
 const DEFAULT_THEME = {
-  fontSize: 12,            // Default Text Size
+  fontSize: 14,            // Default Text Size
   bgColor: '#FAF5F1',      // Default Background — warm cream
   fontStyle: 'Inter',      // Default Font
   primaryColor: '#C06080', // Default Accent — rose
@@ -83,7 +83,7 @@ const normalizeTheme = (rawTheme = {}) => {
   if (merged.fontStyle === 'System') merged.fontStyle = 'Inter';
   // Clamp fontSize to a safe range so UI cannot break with extreme values
   if (typeof merged.fontSize === 'number') {
-    merged.fontSize = Math.max(10, Math.min(17, merged.fontSize));
+    merged.fontSize = Math.max(14, Math.min(17, merged.fontSize));
   } else {
     merged.fontSize = DEFAULT_THEME.fontSize;
   }

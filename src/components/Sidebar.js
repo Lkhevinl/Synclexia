@@ -149,8 +149,8 @@ export default function Sidebar({ visible, onClose }) {
                 <View style={s.block}>
                   <Text style={s.blockLabel}>Font Size</Text>
                   <View style={s.chipRow}>
-                    <FontSizeBtn label="Normal" value={12} />
-                    <FontSizeBtn label="Medium" value={14} />
+                    <FontSizeBtn label="Normal" value={14} />
+                    <FontSizeBtn label="Medium" value={15.5} />
                     <FontSizeBtn label="Large" value={17} />
                   </View>
                 </View>

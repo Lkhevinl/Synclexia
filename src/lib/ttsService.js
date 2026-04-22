@@ -2,15 +2,14 @@ import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
-import { toPhonicsSound, PHONICS_SOUNDS } from './constants';
-import * as phonicsSynth from './phonicsSynth';
+import { toPhonicsSound } from './constants';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ─── Config for General Phonics (Listing/Reference Screen) ───────────────────
 
-const BUCKET = 'phonics audio';
-const FOLDER = 'phonics sounds';
+const GENERAL_BUCKET = 'phonics audio';
+const GENERAL_FOLDER = 'phonics sounds';
 
-const STORAGE_MAP = {
+const GENERAL_STORAGE_MAP = {
   // Schwa
   schwa:      'Schwa-What',
   // Short vowels
@@ -19,22 +18,22 @@ const STORAGE_MAP = {
   i:          'i-igloo',
   o:          'o-octopus',
   u:          'u-up',
-  // Long vowels  — /ā/
+  // Long vowels — /ā/
   ai:         'a-cake',
   ay:         'a-cake',
   'a_e':      'a-cake',
-  // Long vowels  — /ē/
+  // Long vowels — /ē/
   ee:         'e-team',
   ea:         'e-team',
   'e_e':      'e-team',
-  // Long vowels  — /ī/
+  // Long vowels — /ī/
   ie:         'i-kite',
   igh:        'i-kite',
   'i_e':      'i-kite',
-  // Long vowels  — /ō/
+  // Long vowels — /ō/
   oa:         'o-rope',
   'o_e':      'o-rope',
-  // Long vowels  — /oo/ and /yoo/
+  // Long vowels — /oo/ and /yoo/
   ue:         'u-lute-glue',
   ew:         'u-lute-glue',
   'u_e':      'u-lute-glue',
@@ -110,11 +109,85 @@ const STORAGE_MAP = {
   oo_short:   'oo-book-bush',
 };
 
+// ─── Config for Phonics Games (The specific phonemes sounds bucket) ──────────
+
+const ACTIVITY_BUCKET = 'phonemes sounds';
+const ACTIVITY_FOLDER = 'phonemes sounds';
+
+// Keys map phoneme → filename (without .mp3). Based on phoneme chart.
+// Phonemes with no matching bucket file fall back to TTS automatically.
+const ACTIVITY_MAP = {
+  // ── Short vowels ──
+  'a':       'a',       // /æ/ cat, apple
+  'e':       'e',       // /ɛ/ bed, egg
+  'i':       'i_alt3',  // /ɪ/ if, gym, women, busy, pretty
+  'o':       'o_alt1',  // /ɒ/ on, was, quad
+  'u':       'u',       // /ʌ/ up, son, young
+
+  // ── Long vowels / vowel teams ──
+  'ai':      'ai',      // /eɪ/ wait
+  'ay':      'ai',      // /eɪ/ day
+  'a_e':     'ai',      // /eɪ/ cake
+  'ee':      'ee',      // /iː/ see
+  'ea':      'ee',      // /iː/ team
+  'e_e':     'ee',      // /iː/ theme
+  'eer':     'eer',     // /ɪər/ beer
+  'igh':     'igh',     // /aɪ/ night, my
+  'ie':      'igh',     // /aɪ/ tie, pie
+  'i_e':     'igh',     // /aɪ/ like, fine
+  'oa':      'oa',      // /oʊ/ boat, go, home
+  'o_e':     'oa',      // /oʊ/ home, bone
+  'oi':      'oi',      // /ɔɪ/ coin
+  'oy':      'oi',      // /ɔɪ/ boy
+  'ow':      'ow',      // /aʊ/ cow, drought
+  'ou':      'ow',      // /aʊ/ out, cloud
+
+  // ── R-controlled vowels ──
+  'ar':      'ar',      // /ɑːr/ jar, car
+  'or':      'or',      // /ɔːr/ for, more
+  'aw':      'or',      // /ɔː/ saw → or file
+  'au':      'or',      // /ɔː/ Paul → or file
+  'al':      'or',      // /ɔː/ talk, ball → or file
+  'ur':      'ur',      // /ɜːr/ hurt
+  'er':      'ur',      // /ɜːr/ her → ur file
+  'ir':      'ur',      // /ɜːr/ girl → ur file
+  'air':     'air',     // /eər/ pair, share
+
+  // ── Consonants ──
+  'b':       'b_alt1',  // bat
+  'c':       'c',       // /k/ cat, school
+  'ck':      'c',       // /k/ duck
+  'ch':      'ch',      // /tʃ/ chick
+  'd':       'd_alt1',  // dip
+  'f':       'f',       // fan, photo
+  'g':       'g_alt2',  // /g/ go
+  'gz':      'Gz_new',  // /gz/ exam (x in exam)
+  'h':       'h',       // hen
+  'j':       'j',       // /dʒ/ jet, giant, gem
+  'k':       'k',       // kit
+  'l':       'l_alt2',  // leg, bell
+  'm':       'm',       // map
+  'n':       'n',       // net
+  'p':       'p',       // pen
+  'r':       'ar',      // rat, carrot → ar file
+  's':       's',       // sun, cell
+  'sh':      'sh',      // /ʃ/ shop
+  't':       't',       // tap
+  'th':      'th',      // /θ/ thin
+  'v':       'v',       // van
+  'w':       'w',       // wig
+  'x':       'Gz_new',  // x → gz/ks sound, Gz_new best match
+  'y':       'y',       // yes
+  'z':       'z',       // zip, buzz
+  'str':     's',       // /str/ string, street → s file (closest match)
+  'nght':    'igh',     // night → igh file (/aɪ/ sound)
+  'ght':     'igh',     // /ght/ → igh file (/aɪ/ sound)
+  // 'ng', 'kw', 'qu', 'wh', 'ks', 'zh', 'schwa' → no bucket file, fall back to TTS
+};
+
 // ─── State ────────────────────────────────────────────────────────────────────
 
 let _sound = null;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function stopSound() {
   if (_sound) {
@@ -133,51 +206,25 @@ export async function stop() {
   }
 }
 
-// ─── Device TTS ───────────────────────────────────────────────────────────────
-
-function getBestVoice(voices) {
-  const en = voices.filter(v => v.lang.startsWith('en'));
-  const pick = (...keywords) =>
-    en.find(v => keywords.every(k => v.name.toLowerCase().includes(k.toLowerCase())));
-  return (
-    pick('aria', 'natural') || pick('jenny', 'natural') ||
-    pick('guy', 'natural') || pick('natasha', 'natural') ||
-    pick('google', 'uk', 'female') || pick('google', 'us', 'female') ||
-    pick('google', 'us') || pick('google') ||
-    en.find(v => v.name.toLowerCase().includes('online')) ||
-    en.find(v => v.lang === 'en-US') || en[0] || null
-  );
-}
-
-// ─── OpenAI TTS Config ──────────────────────────────────────────────────────
-
-const OPENAI_INSTRUCTIONS = `
-Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence.
-Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
-Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
-Emotion: Genuine empathy and understanding; speak with warmth, especially during apologies.
-Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
-Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
-`;
+// ─── Main Speak (OpenAI Ash Voice) ───────────────────────────────────────────
 
 export async function speak(text, isPhonics = false) {
   if (!text?.trim()) return;
   await stop();
 
-  // 1. Try OpenAI TTS via Supabase Edge Function (Premium Teacher Voice)
-  // This is the MOST natural voice (Ash).
+  // If it's a key like 'schwa', we might want to speak the IPA sound instead of the name
+  const ttsText = isPhonics ? (toPhonicsSound(text.toLowerCase()) || text) : text;
+
   try {
     const { data, error } = await supabase.functions.invoke('openai-tts', {
-      body: { text, instructions: OPENAI_INSTRUCTIONS },
+      body: { text: ttsText, voice: 'ash' },
     });
-
     if (!error && data) {
       const fr = new FileReader();
       fr.readAsDataURL(data);
       return new Promise((resolve) => {
         fr.onloadend = async () => {
-          const base64data = fr.result;
-          const { sound } = await Audio.Sound.createAsync({ uri: base64data });
+          const { sound } = await Audio.Sound.createAsync({ uri: fr.result });
           _sound = sound;
           await sound.playAsync();
           sound.setOnPlaybackStatusUpdate((s) => { if (s.didJustFinish) resolve(); });
@@ -185,92 +232,62 @@ export async function speak(text, isPhonics = false) {
       });
     }
   } catch (e) {
-    console.warn('[ttsService] OpenAI TTS failed, falling back:', e.message);
-  }
-
-  // 2. Fallback to Device TTS (High-quality Teacher Persona)
-  const TEACHER_RATE = 0.72;
-  const TEACHER_PITCH = 1.02;
-
-  if (isPhonics) {
-    const lower = text.toLowerCase();
-
-    // Check if it's a known single phoneme or digraph
-    if (STORAGE_MAP[lower] || PHONICS_SOUNDS[lower]) {
-      // Note: We bypass phonicsSynth because it's purely mathematical/robotic.
-      const mapped = toPhonicsSound(lower);
-      return new Promise((resolve) => {
-        Speech.speak(mapped, { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: resolve, onError: resolve });
-      });
-    }
-
-    // Breakdown clusters
-    if (lower.length > 1 && !/[aeiou]/.test(lower)) {
-      for (const char of lower) {
-        // Use device TTS for each character instead of synth
-        await new Promise((res) => {
-          Speech.speak(toPhonicsSound(char), { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: res, onError: res });
-        });
-      }
-      return;
-    }
-  }
-
-  if (Platform.OS === 'web') {
-    return new Promise((resolve) => {
-      const synth = window.speechSynthesis;
-      const trySpeak = () => {
-        const voice = getBestVoice(synth.getVoices());
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US'; utter.rate = TEACHER_RATE; utter.pitch = TEACHER_PITCH;
-        if (voice) utter.voice = voice;
-        utter.onend = resolve; utter.onerror = resolve;
-        synth.speak(utter);
-      };
-      synth.getVoices().length > 0 ? trySpeak() : (synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); });
-    });
+    console.warn('[ttsService] OpenAI failed:', e.message);
   }
 
   return new Promise((resolve) => {
-    Speech.speak(text, { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: resolve, onError: resolve, onStopped: resolve });
+    Speech.speak(ttsText, { language: 'en-US', rate: 0.75, onDone: resolve });
   });
 }
 
-// ─── Main phonics entry point ─────────────────────────────────────────────────
+// ─── General Phonics (For Listing/Reference Screen) ──────────────────────────
 
 export async function speakPhonics(letter) {
-  if (!letter) return;
-  const lower = letter.toLowerCase();
-  const fileName = STORAGE_MAP[lower];
+  const lower = letter?.toLowerCase();
+  // Try mapping first, then try the key itself as a fallback filename
+  const fileName = GENERAL_STORAGE_MAP[lower] || lower;
 
-  // 1. Try playing from Supabase Storage (MP3s)
+  try {
+    await stop();
+    const { data } = supabase.storage.from(GENERAL_BUCKET).getPublicUrl(`${GENERAL_FOLDER}/${fileName}.mp3`);
+
+    // We attempt to play. If it fails (e.g. 404), it will catch and use OpenAI.
+    const { sound } = await Audio.Sound.createAsync({ uri: data.publicUrl }, { shouldPlay: true });
+    _sound = sound;
+    return new Promise((resolve) => {
+      sound.setOnPlaybackStatusUpdate((s) => {
+        if (s.didJustFinish) {
+          sound.unloadAsync();
+          resolve();
+        }
+      });
+    });
+  } catch (err) {
+    // Fallback to OpenAI Ash voice for anything not in the bucket
+    return speak(letter, true);
+  }
+}
+
+// ─── SPECIFIC FOR PHONICS GAMES (Phonemes Sounds Bucket) ─────────────────────
+
+export async function speakActivityPhonics(phoneme) {
+  const lower = phoneme?.toLowerCase();
+  const fileName = ACTIVITY_MAP[lower];
+
   if (fileName) {
     try {
       await stop();
-      const { data } = supabase.storage
-        .from(BUCKET)
-        .getPublicUrl(`${FOLDER}/${fileName}.mp3`);
-
+      const { data } = supabase.storage.from(ACTIVITY_BUCKET).getPublicUrl(`${ACTIVITY_FOLDER}/${fileName}.mp3`);
       if (data?.publicUrl) {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: data.publicUrl },
-          { shouldPlay: true }
-        );
+        const { sound } = await Audio.Sound.createAsync({ uri: data.publicUrl }, { shouldPlay: true });
         _sound = sound;
         return new Promise((resolve) => {
-          sound.setOnPlaybackStatusUpdate((s) => {
-            if (s.didJustFinish) {
-              sound.unloadAsync();
-              resolve();
-            }
-          });
+          sound.setOnPlaybackStatusUpdate((s) => { if (s.didJustFinish) { sound.unloadAsync(); resolve(); } });
         });
       }
     } catch (err) {
-      console.warn(`[ttsService] Storage play failed for ${fileName}:`, err.message);
+      console.warn(`[ttsService] Activity sound failed:`, err.message);
     }
   }
-
-  // 2. Fallback to Teacher TTS if MP3 is missing
-  await speak(letter, true);
+  return speak(phoneme, true);
 }

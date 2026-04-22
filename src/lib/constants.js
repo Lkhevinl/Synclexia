@@ -162,6 +162,7 @@ export const PHONICS_SOUNDS = {
   // ── Other ─────────────────────────────────────────────────────
   qu:       'kwuh',
   oo_short: 'oo',   // short /ŏo/ — book, bush
+  schwa:    'uh',   // /ə/ as in about, sofa
 };
 
 // Converts a raw phoneme string to TTS-friendly text using the map above.

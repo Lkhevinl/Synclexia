@@ -152,7 +152,7 @@ function ModeSelector({ onSelect }) {
       id: 'sounds',
       title: 'Sound Match!',
       desc: 'Match the sounds you hear',
-      icon: '�',
+      icon: '🎵',
       colors: ['#2196F3', '#1976D2'],
     },
   ];
@@ -162,7 +162,6 @@ function ModeSelector({ onSelect }) {
       {/* Header Card */}
       <View style={gms.headerCard}>
         <LinearGradient colors={['#FF9800', '#F57C00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={gms.headerGradient}>
-          <Text style={gms.headerEmoji}>🎮</Text>
           <View style={gms.headerTextContainer}>
             <Text style={gms.headerTitle}>Phonics Activities</Text>
             <Text style={gms.headerSubtitle}>Choose a game to play</Text>
@@ -269,7 +268,7 @@ function BlendGame({ onBack, userId, items }) {
     stopSpeech();
     const runId = speechRunIdRef.current;
     setActivePhonemeIndex(phonemeIndex);
-    await ttsService.speakPhonics(phoneme);
+    await ttsService.speakActivityPhonics(phoneme);
     if (runId !== speechRunIdRef.current) return;
     setActivePhonemeIndex(null);
   };
@@ -280,7 +279,7 @@ function BlendGame({ onBack, userId, items }) {
     for (let i = 0; i < phonemes.length; i++) {
       if (runId !== speechRunIdRef.current) return;
       setActivePhonemeIndex(i);
-      await ttsService.speakPhonics(phonemes[i]);
+      await ttsService.speakActivityPhonics(phonemes[i]);
     }
 
     // Ibalik ang paglitok sa tibuok pulong pagkahuman sa phonemes
@@ -429,7 +428,7 @@ function SegmentGame({ onBack, userId, items }) {
     ttsService.stop();
     const nextIndex = next - 1;
     setActiveTapIndex(nextIndex);
-    await ttsService.speakPhonics(current.phonemes[nextIndex] || '');
+    await ttsService.speakActivityPhonics(current.phonemes[nextIndex] || '');
     if (runId === speechRunIdRef.current) setActiveTapIndex(null);
     // Pulse animation
     Animated.sequence([
@@ -587,34 +586,40 @@ const ss = StyleSheet.create({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── Sound Match Game ───────────────────────────────────────────────────────────
-const SAMPLE_SOUNDS = [
-  { letter: 's', sound: 'ssss', options: ['ssss', 'mmm', 'nnn', 'k-k-k'] },
-  { letter: 'a', sound: 'a-a-a', options: ['e-e-e', 'a-a-a', 'i-i-i', 'o-o-o'] },
-  { letter: 't', sound: 't-t-t', options: ['p-p-p', 't-t-t', 'd-d-d', 'b-b-b'] },
-  { letter: 'm', sound: 'mmm', options: ['nnn', 'mmm', 'rrr', 'l-l-l'] },
-  { letter: 'c', sound: 'k-k-k', options: ['k-k-k', 's-s-s', 'z-z-z', 'sh'] },
-];
 
-function SoundMatchGame({ onBack, userId }) {
-  const items = useState(() => shuffleArr(SAMPLE_SOUNDS))[0];
+function SoundMatchGame({ onBack, userId, items: itemsProp }) {
+  const items = useState(() => shuffleArr(itemsProp ?? []))[0];
   const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
+  const [wrongTapped, setWrongTapped] = useState(new Set());
+  const [solved, setSolved] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
+  if (!items.length) return <EmptyContent label="Sound Match!" color="#43A047" onBack={onBack} />;
+
   const current = items[idx];
 
-  const speak = (sound) => ttsService.speakPhonics(sound);
+  const speakOption = (optLabel) => {
+    const optIdx = current.options.indexOf(optLabel);
+    const phoneme = optIdx >= 0 ? current.optionPhonemes[optIdx] : current.phoneme;
+    ttsService.speakActivityPhonics(phoneme);
+  };
 
   const handleSelect = (option) => {
-    if (selected) return;
-    setSelected(option);
+    if (solved) return; // Dili na kapili kon solved na
+
     const isCorrect = option === current.sound;
+    speakOption(option);
+
     if (isCorrect) {
-      ttsService.speak('Great job! That\'s the right sound!');
-      setScore(s => s + 1);
+      setSolved(true);
+      // I-update lang ang score kon wala pa'y nasaypan sa kani nga round
+      if (wrongTapped.size === 0) {
+        setScore(s => s + 1);
+      }
     } else {
-      ttsService.speak(`Not quite! ${current.letter} says ${current.sound}`);
+      // I-add sa listahan sa mga sayop nga na-tap
+      setWrongTapped(prev => new Set([...prev, option]));
     }
   };
 
@@ -625,83 +630,203 @@ function SoundMatchGame({ onBack, userId }) {
       return;
     }
     setIdx(i => i + 1);
-    setSelected(null);
+    setWrongTapped(new Set());
+    setSolved(false);
   };
 
   if (finished) return <ScoreScreen score={score} total={items.length} onBack={onBack} label="Sound Match!" color="#43A047" />;
 
+  const progressPct = `${(idx / items.length) * 100}%`;
+
   return (
     <View style={smg.container}>
-      <StudentPageHeader title="Sound Match!" onBack={onBack} right={<Text style={smg.headerSub}>{idx + 1}/{items.length}</Text>} />
-      <View style={smg.card}>
-        <Text style={smg.emoji}>👂</Text>
-        <Text style={smg.question}>What sound does</Text>
-        <Text style={smg.letter}>{current.letter}</Text>
-        <Text style={smg.question2}>make?</Text>
+      <StudentPageHeader
+        title="Sound Match!"
+        onBack={onBack}
+        right={<Text style={smg.headerSub}>{idx + 1}/{items.length}</Text>}
+      />
 
-        <View style={smg.optionsRow}>
-          {current.options.map((opt, i) => {
-            let style = smg.optionBtn;
-            if (selected === opt) {
-              style = opt === current.sound ? smg.optionCorrect : smg.optionWrong;
-            } else if (selected && opt === current.sound) {
-              style = smg.optionCorrect;
-            }
-            return (
-              <TouchableOpacity key={i} style={style} onPress={() => { speak(opt); handleSelect(opt); }} activeOpacity={0.8}>
-                <Text style={smg.optionText}>{opt}</Text>
-              </TouchableOpacity>
-            );
-          })}
+      {/* Progress bar */}
+      <View style={smg.progressWrap}>
+        <View style={smg.progressBg}>
+          <View style={[smg.progressFill, { width: progressPct }]} />
+        </View>
+      </View>
+
+      {/* Question card */}
+      <View style={[smg.card, { flex: 1, minHeight: 450, justifyContent: 'center', backgroundColor: '#fff', elevation: 0 }]}>
+        <Text style={{ fontSize: 22, color: '#555', fontWeight: '600', marginBottom: 30 }}>What sound does</Text>
+
+        {/* IMAGE-STYLE LETTER (Bold & Black) */}
+        <View style={{
+          width: 280,
+          height: 280,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#fff',
+        }}>
+          <Text noPatch style={{
+            fontSize: 250,
+            fontWeight: '900',
+            color: '#1a1a1a',
+            textAlign: 'center',
+            includeFontPadding: false
+          }}>
+            {current.letter}
+          </Text>
         </View>
 
-        {selected && (
-          <TouchableOpacity style={smg.nextBtn} onPress={handleNext}>
-            <Text style={smg.nextBtnText}>Next →</Text>
-          </TouchableOpacity>
-        )}
+        <Text style={{ fontSize: 22, color: '#555', fontWeight: '600', marginTop: 30 }}>make?</Text>
       </View>
+
+      {/* 2×2 answer grid */}
+      <View style={smg.optionsGrid}>
+        {current.options.map((opt, i) => {
+          const isWrong = wrongTapped.has(opt);
+          const isCorrect = opt === current.sound;
+          let btnStyle = smg.optionBtn;
+          let txtStyle = smg.optionText;
+          if (isWrong) { btnStyle = smg.optionWrong; txtStyle = smg.optionTextWrong; }
+          else if (solved && isCorrect) { btnStyle = smg.optionCorrect; txtStyle = smg.optionTextCorrect; }
+          return (
+            <TouchableOpacity
+              key={i}
+              style={btnStyle}
+              onPress={() => handleSelect(opt)}
+              disabled={isWrong}
+              activeOpacity={0.8}
+            >
+              <Text style={txtStyle}>{opt}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {solved && (
+        <TouchableOpacity style={smg.nextBtn} onPress={handleNext}>
+          <Text style={smg.nextBtnText}>Next →</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 const smg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#E8F5E9' },
-  headerSub: { color: '#2E7D32', fontSize: 14, fontWeight: '700' },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#43A047' },
-  emoji: { fontSize: 60, marginBottom: 12 },
-  question: { fontSize: 17, color: '#2E7D32', fontWeight: '600', marginBottom: 6 },
-  letter: { fontSize: 90, fontWeight: 'bold', color: '#43A047', marginBottom: 6, textShadowColor: 'rgba(67,160,71,0.2)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4 },
-  question2: { fontSize: 17, color: '#2E7D32', fontWeight: '600', marginBottom: 22 },
-  optionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 24 },
-  optionBtn: { backgroundColor: '#E8F5E9', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, borderWidth: 3, borderColor: '#43A047', minWidth: 100, alignItems: 'center', elevation: 3, shadowColor: '#43A047', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
-  optionCorrect: { backgroundColor: '#C8E6C9', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, borderWidth: 3, borderColor: '#43A047', minWidth: 100, alignItems: 'center' },
-  optionWrong: { backgroundColor: '#FFEBEE', borderRadius: 16, paddingHorizontal: 20, paddingVertical: 16, borderWidth: 3, borderColor: '#E53935', minWidth: 100, alignItems: 'center' },
-  optionText: { fontSize: 20, fontWeight: 'bold', color: '#37474F' },
-  nextBtn: { backgroundColor: '#43A047', borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: '#43A047', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
-  nextBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
+  container: { flex: 1, backgroundColor: '#f0f9ec' },
+  headerSub: { color: '#7dc668', fontSize: 14, fontWeight: '700' },
+
+  // Progress bar
+  progressWrap: { paddingHorizontal: 20, paddingBottom: 10 },
+  progressBg: { backgroundColor: '#d6eecf', borderRadius: 99, height: 7, overflow: 'hidden' },
+  progressFill: { backgroundColor: '#4caf50', height: 7, borderRadius: 99 },
+
+  // Question card
+  card: {
+    marginHorizontal: 16,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    paddingTop: 10,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    overflow: 'visible',
+    elevation: 3,
+    shadowColor: '#64b450',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    minHeight: 300,
+  },
+  question: { fontSize: 16, color: '#6aaa50', fontWeight: '700', marginBottom: 6 },
+  letterContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  letter: {
+    fontSize: 160,
+    fontWeight: '900',
+    color: '#2e7d32',
+    textAlign: 'center',
+  },
+
+  question2: { fontSize: 16, color: '#6aaa50', fontWeight: '700', marginTop: 6 },
+
+  // 2×2 answer grid
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    margin: 20,
+    justifyContent: 'center',
+  },
+  optionBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    borderWidth: 2.5,
+    borderColor: '#a8dfa0',
+    paddingVertical: 22,
+    width: '46%',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#64b450',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+  },
+  optionCorrect: {
+    backgroundColor: '#c8f0b8',
+    borderRadius: 18,
+    borderWidth: 2.5,
+    borderColor: '#4caf50',
+    paddingVertical: 22,
+    width: '46%',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  optionWrong: {
+    backgroundColor: '#fde8e8',
+    borderRadius: 18,
+    borderWidth: 2.5,
+    borderColor: '#e57373',
+    paddingVertical: 22,
+    width: '46%',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  optionText: { fontSize: 22, fontWeight: '800', color: '#3a7d2c', letterSpacing: 1 },
+  optionTextCorrect: { fontSize: 22, fontWeight: '800', color: '#2a6a1c', letterSpacing: 1 },
+  optionTextWrong: { fontSize: 22, fontWeight: '800', color: '#c0392b', letterSpacing: 1 },
+
+  // Next button
+  nextBtn: {
+    backgroundColor: '#43A047',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    paddingVertical: 18,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#43A047',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+  },
+  nextBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 20, letterSpacing: 1 },
 });
 
 // ─── Word Builder Game ────────────────────────────────────────────────────────
-const BUILDER_WORDS = [
-  { word: 'cat', phonemes: ['c', 'a', 't'], emoji: '🐱' },
-  { word: 'dog', phonemes: ['d', 'o', 'g'], emoji: '🐕' },
-  { word: 'sun', phonemes: ['s', 'u', 'n'], emoji: '☀️' },
-  { word: 'hat', phonemes: ['h', 'a', 't'], emoji: '🎩' },
-  { word: 'bed', phonemes: ['b', 'e', 'd'], emoji: '🛏️' },
-];
 
-function WordBuilderGame({ onBack, userId }) {
-  const words = useState(() => shuffleArr(BUILDER_WORDS))[0];
+function WordBuilderGame({ onBack, userId, items }) {
+  const words = useState(() => shuffleArr(items ?? []))[0];
   const [idx, setIdx] = useState(0);
   const [built, setBuilt] = useState([]);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
+  if (!words.length) return <EmptyContent label="Word Builder!" color="#1E88E5" onBack={onBack} />;
+
   const current = words[idx];
   const shuffledPhonemes = useMemo(() => shuffleArr(current.phonemes), [idx]);
-
-  const speak = (text) => ttsService.speak(text);
 
   const handlePhonemePress = (ph) => {
     if (built.includes(ph)) {
@@ -714,14 +839,12 @@ function WordBuilderGame({ onBack, userId }) {
   const handleCheck = () => {
     const builtWord = built.join('');
     const isCorrect = builtWord === current.word;
-    
     if (isCorrect) {
       ttsService.speak(`Great job! You built ${current.word}!`);
       setScore(s => s + 1);
     } else {
       ttsService.speak(`Almost! The word is ${current.word}. Try again!`);
     }
-
     setTimeout(() => {
       if (idx + 1 >= words.length) {
         if (userId) logSession({ studentId: userId, activityType: 'phonics_word_build', score: isCorrect ? score + 1 : score, total: words.length, details: { game: 'Word Builder' } });
@@ -744,7 +867,6 @@ function WordBuilderGame({ onBack, userId }) {
         <Text style={wbg.emoji}>{current.emoji}</Text>
         <Text style={wbg.instruction}>Build the word:</Text>
 
-        {/* Building area */}
         <View style={wbg.buildArea}>
           {built.length === 0 ? (
             <Text style={wbg.placeholder}>Tap letters below ↓</Text>
@@ -757,12 +879,11 @@ function WordBuilderGame({ onBack, userId }) {
           )}
         </View>
 
-        {/* Phoneme bank */}
         <View style={wbg.phonemeBank}>
           {shuffledPhonemes.map((ph, i) => (
-            <TouchableOpacity 
-              key={i} 
-              style={[wbg.phonemeTile, built.includes(ph) && wbg.phonemeUsed]} 
+            <TouchableOpacity
+              key={i}
+              style={[wbg.phonemeTile, built.includes(ph) && wbg.phonemeUsed]}
               onPress={() => handlePhonemePress(ph)}
               disabled={built.includes(ph)}
             >
@@ -771,8 +892,8 @@ function WordBuilderGame({ onBack, userId }) {
           ))}
         </View>
 
-        <TouchableOpacity 
-          style={[wbg.checkBtn, !isComplete && wbg.checkBtnDisabled]} 
+        <TouchableOpacity
+          style={[wbg.checkBtn, !isComplete && wbg.checkBtnDisabled]}
           onPress={handleCheck}
           disabled={!isComplete}
         >
@@ -804,21 +925,15 @@ const wbg = StyleSheet.create({
 });
 
 // ─── Tricky Words Game ──────────────────────────────────────────────────────────
-const TRICKY_WORDS_GAME = [
-  { word: 'I', sentence: '___ like ice cream!' },
-  { word: 'he', sentence: '___ is my friend.' },
-  { word: 'she', sentence: '___ has a cat.' },
-  { word: 'we', sentence: '___ go to school.' },
-  { word: 'me', sentence: 'Can you see ___?' },
-  { word: 'the', sentence: 'Look at ___ dog!' },
-];
 
-function TrickyWordsGame({ onBack, userId }) {
-  const words = useState(() => shuffleArr(TRICKY_WORDS_GAME))[0];
+function TrickyWordsGame({ onBack, userId, items }) {
+  const words = useState(() => shuffleArr(items ?? []))[0];
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+
+  if (!words.length) return <EmptyContent label="Tricky Words!" color="#8E24AA" onBack={onBack} />;
 
   const current = words[idx];
   const options = useMemo(() => {
@@ -924,9 +1039,12 @@ export default function PhonicsActivityScreen() {
       setLoading(true);
       try {
         // 1. Fetch from custom activity content table
-        const [blendData, segmentData] = await Promise.all([
+        const [blendData, segmentData, soundsData, buildData, trickyData] = await Promise.all([
           fetchActivityContent('blend'),
           fetchActivityContent('segment'),
+          fetchActivityContent('sounds'),
+          fetchActivityContent('build'),
+          fetchActivityContent('tricky'),
         ]);
 
         // 2. Fetch from Phonics Reference (Listing) to align words
@@ -943,13 +1061,13 @@ export default function PhonicsActivityScreen() {
           category: item.category
         })).filter(item => item.word); // Ensure it has a word
 
-        // 4. Merge: Priority to activity content, then reference items
+        // 4. Merge: Priority to activity content, then reference/hardcoded fallbacks
         setContentMap({
           blend: blendData.length > 0 ? blendData : refItems,
           segment: segmentData.length > 0 ? segmentData : refItems,
-          sounds: refData || [], // For Sound Match
-          build: refItems,
-          tricky: []
+          sounds: soundsData,
+          build: buildData.length > 0 ? buildData : refItems,
+          tricky: trickyData,
         });
       } catch (err) {
         console.error('Error loading aligned content:', err);
@@ -966,9 +1084,9 @@ export default function PhonicsActivityScreen() {
   const renderGame = () => {
     if (mode === 'blend')   return <BlendGame   onBack={handleBack} userId={profile?.id} items={contentMap.blend} />;
     if (mode === 'segment') return <SegmentGame onBack={handleBack} userId={profile?.id} items={contentMap.segment} />;
-    if (mode === 'sounds')  return <SoundMatchGame onBack={handleBack} userId={profile?.id} />;
-    if (mode === 'build')   return <WordBuilderGame onBack={handleBack} userId={profile?.id} />;
-    if (mode === 'tricky')  return <TrickyWordsGame onBack={handleBack} userId={profile?.id} />;
+    if (mode === 'sounds')  return <SoundMatchGame onBack={handleBack} userId={profile?.id} items={contentMap.sounds} />;
+    if (mode === 'build')   return <WordBuilderGame onBack={handleBack} userId={profile?.id} items={contentMap.build} />;
+    if (mode === 'tricky')  return <TrickyWordsGame onBack={handleBack} userId={profile?.id} items={contentMap.tricky} />;
     return null;
   };
 
@@ -1008,7 +1126,6 @@ const gms = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
   },
-  headerEmoji: { fontSize: 32, marginBottom: 8 },
   headerTextContainer: { alignItems: 'center' },
   headerTitle: {
     fontSize: 20,

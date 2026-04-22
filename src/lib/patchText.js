@@ -48,6 +48,7 @@ function computeDyslexiaScalePatch(type, props) {
 
 function injectA11yStyle(type, props) {
   if (!shouldPatchType(type)) return props;
+  if (props?.noPatch) return props;
 
   const flattened = StyleSheet.flatten(props?.style) || {};
 
@@ -63,15 +64,27 @@ function injectA11yStyle(type, props) {
   if (isVectorIconFont) return props;
 
   const a11y = a11yStyleRef.current;
-  const hasA11y = !!a11y && Object.keys(a11y).length > 0;
   const scalePatch = computeDyslexiaScalePatch(type, props);
   const hasScale = !!scalePatch;
 
-  if (!hasA11y && !hasScale) return props;
+  // Compute a relative font size scale instead of injecting an absolute value.
+  // Normal=14 is the baseline (scale 1×). Medium=15.5 → 1.11×, Large=17 → 1.21×.
+  const BASE_FONT_SIZE = 14;
+  const globalFontSize = typeof a11y?.fontSize === 'number' ? a11y.fontSize : BASE_FONT_SIZE;
+  const sizeScale = globalFontSize / BASE_FONT_SIZE;
+  const componentFontSize = typeof flattened.fontSize === 'number' ? flattened.fontSize : BASE_FONT_SIZE;
+  const scaledFontSize = sizeScale !== 1 ? Math.round(componentFontSize * sizeScale) : null;
 
-  let injected = hasA11y && hasScale ? { ...a11y, ...scalePatch }
-    : hasScale ? scalePatch
-    : a11y;
+  // Strip fontSize from a11y — scaling is applied separately above.
+  const { fontSize: _gfs, ...a11yWithoutSize } = a11y || {};
+  const hasA11y = Object.keys(a11yWithoutSize).length > 0;
+
+  if (!hasA11y && !hasScale && !scaledFontSize) return props;
+
+  let injected = hasA11y ? { ...a11yWithoutSize } : {};
+  if (scaledFontSize) injected.fontSize = scaledFontSize;
+  // Dyslexia scale patch wins over global size scale (it already factors in component fontSize).
+  if (hasScale) injected = { ...injected, ...scalePatch };
 
   // Respect explicit per-component styles: don't override if the component
   // already defined these keys.
