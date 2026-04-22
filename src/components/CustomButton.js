@@ -28,7 +28,6 @@ export default function CustomButton({ title, onPress, loading, type = 'primary'
     paddingHorizontal: sz.paddingHorizontal,
     alignItems:        'center',
     marginTop:         tokens.spacing.sm,
-    ...tokens.shadows.low,
   };
 
   const textStyle = {

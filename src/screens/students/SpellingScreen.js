@@ -23,8 +23,11 @@ const fetchSpellingWords = async () => {
     .select('id, word, emoji, hint, difficulty_level')
     .eq('is_active', true)
     .order('difficulty_level', { ascending: true });
+
   if (error || !data) return [];
-  return data;
+
+  // Filter words to only include those between 3 and 5 characters long
+  return data.filter(item => item.word.length >= 3 && item.word.length <= 5);
 };
 
 // Shuffle an array (Fisher-Yates)

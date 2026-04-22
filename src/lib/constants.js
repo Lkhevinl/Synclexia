@@ -38,12 +38,12 @@ export const STORAGE_KEYS = {
 
 // ── Network / Timeout Constants ───────────────────────────────────────────────
 export const TIMEOUTS = {
-  FETCH_MS:             20000,  // supabase fetch timeout (increased from 15s)
-  PROFILE_QUERY_MS:     12000,  // single fetchProfile query cap (increased from 8s)
-  PROFILE_TOTAL_MS:     30000,  // total fetchProfile ceiling (increased from 20s)
-  PROFILE_SAFETY_NET_MS:45000,  // AppNavigator loading safety-net (increased from 35s)
-  RETRY_DELAY_MS:       2000,   // delay between retries (increased from 1.5s)
-  SIGN_OUT_AUTO_DELAY_MS:2000,  // auto sign-out delay after password reset
+  FETCH_MS:             15000,  // Faster response
+  PROFILE_QUERY_MS:     10000,
+  PROFILE_TOTAL_MS:     30000,
+  PROFILE_SAFETY_NET_MS:35000,
+  RETRY_DELAY_MS:       2000,
+  SIGN_OUT_AUTO_DELAY_MS:2000,
 };
 
 // ── Adaptive Engine ───────────────────────────────────────────────────────────
@@ -83,51 +83,52 @@ export const SPEECH = {
 // Maps each letter/digraph to text the TTS pronounces as its phonics sound.
 export const PHONICS_SOUNDS = {
   // ── Short vowels ──────────────────────────────────────────────
-  a:   'aah',    // /æ/  cat
-  e:   'eh',     // /ɛ/  egg
-  i:   'in',     // /ɪ/  igloo  (avoids "i,h" spelling)
-  o:   'aw',     // /ɒ/  orange
-  u:   'uh',     // /ʌ/  mug
+  a:   'ah',      // /æ/ as in apple (not "ay")
+  e:   'eh',      // /ɛ/ as in egg
+  i:   'ih',      // /ɪ/ as in igloo (not "eye")
+  o:   'aw',      // /ɒ/ as in orange
+  u:   'uh',      // /ʌ/ as in mug
 
   // ── Consonants ────────────────────────────────────────────────
-  b:   'buh',    // /b/  ball
-  c:   'kuh',    // /k/  cat
-  d:   'duh',    // /d/  dog
-  f:   'fuh',    // /f/  fan
-  g:   'guh',    // /g/  grapes
-  h:   'huh',    // /h/  hat
-  j:   'juh',    // /dʒ/ jellyfish
-  k:   'kuh',    // /k/  kite
-  l:   'luh',    // /l/  leaf
-  m:   'muh',    // /m/  monkey
-  n:   'nuh',    // /n/  nest
-  p:   'puh',    // /p/  pig
-  q:   'kwuh',   // /kw/ queen
-  r:   'ruh',    // /r/  robot
-  s:   'sah',    // /s/  sun
-  t:   'tuh',    // /t/  tap
-  v:   'vuh',    // /v/  van
-  w:   'wuh',    // /w/  web
-  x:   'ex',     // /ks/ box
-  y:   'yuh',    // /j/  yo-yo
-  z:   'zuh',    // /z/  zebra (avoids "z,z,z" spelling)
+  // Adding spaces and extra letters helps the TTS sustain the sound
+  b:   'buh',
+  c:   'k ',
+  d:   'duh',
+  f:   'fffff',
+  g:   'guh',
+  h:   ' h ',
+  j:   'juh',
+  k:   ' k ',
+  l:   'lllll',
+  m:   'mmmmm',
+  n:   'nnnnn',
+  p:   'puh',
+  q:   'kw',
+  r:   'rrrrr',
+  s:   'sssss',
+  t:   ' t ',
+  v:   'vvvvv',
+  w:   'wuh',
+  x:   'ks',
+  y:   'yuh',
+  z:   'zzzzz',
 
   // ── Digraphs ──────────────────────────────────────────────────
-  sh:  'shh',    // /ʃ/  shark
-  ch:  'chuh',   // /tʃ/ cheese
-  th:  'thuh',   // /θ/  thongs / /ð/ feather
-  ng:  'ing',    // /ŋ/  ring  (avoids "n,g" spelling)
-  ph:  'fuh',    // /f/  phone
-  zh:  'zhuh',   // /ʒ/  treasure
-  wh:  'wuh',    // /w/  why
+  sh:  'shhhh',
+  ch:  'ch ',
+  th:  'th ',
+  ng:  'ng ',
+  ph:  'f ',
+  zh:  'zh ',
+  wh:  'wuh',
 
-  // ── Long vowels ───────────────────────────────────────────────
-  ai:  'ay',  ay:  'ay',          // /eɪ/ snail
-  ee:  'ee',  ea:  'ee',          // /iː/ bee
-  ie:  'eye', igh: 'eye',         // /aɪ/ spider
-  oa:  'oh',  oe:  'oh',          // /oʊ/ boat
-  oo:  'oo',                      // /uː/ moon  /ʊ/ book
-  ue:  'yoo', ew:  'yoo',         // /juː/ uniform
+  // ── Long vowels (Letter Names) ────────────────────────────────
+  ai:  'ay',  ay:  'ay',
+  ee:  'ee',  ea:  'ee',  eam: 'ee',
+  ie:  'eye', igh: 'eye',
+  oa:  'oh',  oe:  'oh',
+  oo:  'oo',
+  ue:  'yoo', ew:  'yoo',
 
   // ── Diphthongs ────────────────────────────────────────────────
   oi:  'oy',  oy:  'oy',          // /ɔɪ/ coin

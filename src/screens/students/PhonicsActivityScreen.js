@@ -269,7 +269,7 @@ function BlendGame({ onBack, userId, items }) {
     stopSpeech();
     const runId = speechRunIdRef.current;
     setActivePhonemeIndex(phonemeIndex);
-    await ttsService.speak(toPhonicsSound(phoneme));
+    await ttsService.speakPhonics(phoneme);
     if (runId !== speechRunIdRef.current) return;
     setActivePhonemeIndex(null);
   };
@@ -280,13 +280,13 @@ function BlendGame({ onBack, userId, items }) {
     for (let i = 0; i < phonemes.length; i++) {
       if (runId !== speechRunIdRef.current) return;
       setActivePhonemeIndex(i);
-      await ttsService.speak(toPhonicsSound(phonemes[i]));
+      await ttsService.speakPhonics(phonemes[i]);
     }
+
+    // Ibalik ang paglitok sa tibuok pulong pagkahuman sa phonemes
     if (runId !== speechRunIdRef.current) return;
     setActivePhonemeIndex(null);
     await ttsService.speak(word);
-    if (runId !== speechRunIdRef.current) return;
-    setActivePhonemeIndex(null);
   };
 
   const speakPhoneme = (ph, phonemeIndex) => {
@@ -429,7 +429,7 @@ function SegmentGame({ onBack, userId, items }) {
     ttsService.stop();
     const nextIndex = next - 1;
     setActiveTapIndex(nextIndex);
-    await ttsService.speak(toPhonicsSound(current.phonemes[nextIndex] || ''));
+    await ttsService.speakPhonics(current.phonemes[nextIndex] || '');
     if (runId === speechRunIdRef.current) setActiveTapIndex(null);
     // Pulse animation
     Animated.sequence([
@@ -454,10 +454,10 @@ function SegmentGame({ onBack, userId, items }) {
     setAnswered(true);
     const isCorrect = taps === current.count;
     if (isCorrect) {
-      ttsService.speak(`That's right! ${current.word} has ${current.count} sounds.`);
+      ttsService.speak(`That's right! It has ${current.count} sounds.`);
       setScore(s => s + 1);
     } else {
-      ttsService.speak(`${current.word} has ${current.count} sounds. Let's try again next time!`);
+      ttsService.speak(`Not quite. It has ${current.count} sounds.`);
     }
   };
 
@@ -604,7 +604,7 @@ function SoundMatchGame({ onBack, userId }) {
 
   const current = items[idx];
 
-  const speak = (sound) => ttsService.speak(toPhonicsSound(sound));
+  const speak = (sound) => ttsService.speakPhonics(sound);
 
   const handleSelect = (option) => {
     if (selected) return;
@@ -920,13 +920,45 @@ export default function PhonicsActivityScreen() {
   const overlayColor = getOverlayColor ? getOverlayColor() : null;
 
   useEffect(() => {
-    Promise.all([
-      fetchActivityContent('blend'),
-      fetchActivityContent('segment'),
-    ]).then(([blend, segment]) => {
-      setContentMap({ blend, segment, sounds: [], build: [], tricky: [] });
-      setLoading(false);
-    });
+    const loadAllContent = async () => {
+      setLoading(true);
+      try {
+        // 1. Fetch from custom activity content table
+        const [blendData, segmentData] = await Promise.all([
+          fetchActivityContent('blend'),
+          fetchActivityContent('segment'),
+        ]);
+
+        // 2. Fetch from Phonics Reference (Listing) to align words
+        const { data: refData } = await supabase
+          .from(TABLES.PHONEME_REFERENCE)
+          .select('key, category, ipa, spellings, word');
+
+        // 3. Transform Reference data into game-ready items
+        const refItems = (refData || []).map(item => ({
+          word: item.word,
+          phonemes: item.key.split('_'), // Basic split logic, or use spellings
+          emoji: '📖', // Default emoji for reference words
+          count: item.key.split('_').length,
+          category: item.category
+        })).filter(item => item.word); // Ensure it has a word
+
+        // 4. Merge: Priority to activity content, then reference items
+        setContentMap({
+          blend: blendData.length > 0 ? blendData : refItems,
+          segment: segmentData.length > 0 ? segmentData : refItems,
+          sounds: refData || [], // For Sound Match
+          build: refItems,
+          tricky: []
+        });
+      } catch (err) {
+        console.error('Error loading aligned content:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllContent();
   }, []);
 
   const handleBack = () => setMode(null);

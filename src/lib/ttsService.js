@@ -2,7 +2,8 @@ import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
-import { toPhonicsSound } from './constants';
+import { toPhonicsSound, PHONICS_SOUNDS } from './constants';
+import * as phonicsSynth from './phonicsSynth';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -63,8 +64,18 @@ const STORAGE_MAP = {
   y:          'y-yes',
   z:          'z-zip-buzz',
   // Soft consonants
-  soft_c:     's-cent-circus-cycle',
+  soft_c:     's-cent-cirus-cycle',
+  'soft c':   's-cent-cirus-cycle',
+  'soft-c':   's-cent-cirus-cycle',
+  ce:         's-cent-cirus-cycle',
+  ci:         's-cent-cirus-cycle',
+  cy:         's-cent-cirus-cycle',
   soft_g:     'j-gem-giant-gym',
+  'soft g':   'j-gem-giant-gym',
+  'soft-g':   'j-gem-giant-gym',
+  ge:         'j-gem-giant-gym',
+  gi:         'j-gem-giant-gym',
+  gy:         'j-gem-giant-gym',
   // Digraphs
   ch:         'ch-chick',
   sh:         'sh-ship',
@@ -138,27 +149,90 @@ function getBestVoice(voices) {
   );
 }
 
-export async function speak(text) {
+// ─── OpenAI TTS Config ──────────────────────────────────────────────────────
+
+const OPENAI_INSTRUCTIONS = `
+Voice Affect: Calm, composed, and reassuring; project quiet authority and confidence.
+Tone: Sincere, empathetic, and gently authoritative—express genuine apology while conveying competence.
+Pacing: Steady and moderate; unhurried enough to communicate care, yet efficient enough to demonstrate professionalism.
+Emotion: Genuine empathy and understanding; speak with warmth, especially during apologies.
+Pronunciation: Clear and precise, emphasizing key reassurances ("smoothly," "quickly," "promptly") to reinforce confidence.
+Pauses: Brief pauses after offering assistance or requesting details, highlighting willingness to listen and support.
+`;
+
+export async function speak(text, isPhonics = false) {
   if (!text?.trim()) return;
   await stop();
+
+  // 1. Try OpenAI TTS via Supabase Edge Function (Premium Teacher Voice)
+  // This is the MOST natural voice (Ash).
+  try {
+    const { data, error } = await supabase.functions.invoke('openai-tts', {
+      body: { text, instructions: OPENAI_INSTRUCTIONS },
+    });
+
+    if (!error && data) {
+      const fr = new FileReader();
+      fr.readAsDataURL(data);
+      return new Promise((resolve) => {
+        fr.onloadend = async () => {
+          const base64data = fr.result;
+          const { sound } = await Audio.Sound.createAsync({ uri: base64data });
+          _sound = sound;
+          await sound.playAsync();
+          sound.setOnPlaybackStatusUpdate((s) => { if (s.didJustFinish) resolve(); });
+        };
+      });
+    }
+  } catch (e) {
+    console.warn('[ttsService] OpenAI TTS failed, falling back:', e.message);
+  }
+
+  // 2. Fallback to Device TTS (High-quality Teacher Persona)
+  const TEACHER_RATE = 0.72;
+  const TEACHER_PITCH = 1.02;
+
+  if (isPhonics) {
+    const lower = text.toLowerCase();
+
+    // Check if it's a known single phoneme or digraph
+    if (STORAGE_MAP[lower] || PHONICS_SOUNDS[lower]) {
+      // Note: We bypass phonicsSynth because it's purely mathematical/robotic.
+      const mapped = toPhonicsSound(lower);
+      return new Promise((resolve) => {
+        Speech.speak(mapped, { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: resolve, onError: resolve });
+      });
+    }
+
+    // Breakdown clusters
+    if (lower.length > 1 && !/[aeiou]/.test(lower)) {
+      for (const char of lower) {
+        // Use device TTS for each character instead of synth
+        await new Promise((res) => {
+          Speech.speak(toPhonicsSound(char), { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: res, onError: res });
+        });
+      }
+      return;
+    }
+  }
+
   if (Platform.OS === 'web') {
     return new Promise((resolve) => {
       const synth = window.speechSynthesis;
       const trySpeak = () => {
         const voice = getBestVoice(synth.getVoices());
         const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'en-US'; utter.rate = 0.80; utter.pitch = 1.05;
+        utter.lang = 'en-US'; utter.rate = TEACHER_RATE; utter.pitch = TEACHER_PITCH;
         if (voice) utter.voice = voice;
         utter.onend = resolve; utter.onerror = resolve;
         synth.speak(utter);
       };
-      synth.getVoices().length > 0 ? trySpeak()
-        : (synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); });
+      synth.getVoices().length > 0 ? trySpeak() : (synth.onvoiceschanged = () => { synth.onvoiceschanged = null; trySpeak(); });
     });
   }
+
   return new Promise((resolve) => {
-    Speech.speak(text, { language: 'en-US', rate: 0.80, pitch: 1.05,
-      onDone: resolve, onError: resolve, onStopped: resolve });
+    Speech.speak(text, { language: 'en-US', rate: TEACHER_RATE, pitch: TEACHER_PITCH, onDone: resolve, onError: resolve, onStopped: resolve });
   });
 }
 
@@ -166,51 +240,37 @@ export async function speak(text) {
 
 export async function speakPhonics(letter) {
   if (!letter) return;
-  const key = letter.toLowerCase();
-  const filename = STORAGE_MAP[key];
+  const lower = letter.toLowerCase();
+  const fileName = STORAGE_MAP[lower];
 
-  await stopSound();
-  Speech.stop();
+  // 1. Try playing from Supabase Storage (MP3s)
+  if (fileName) {
+    try {
+      await stop();
+      const { data } = supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(`${FOLDER}/${fileName}.mp3`);
 
-  if (!filename) {
-    await speak(toPhonicsSound(key));
-    return;
-  }
-
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${FOLDER}/${filename}.mp3`);
-  const url = data?.publicUrl?.replace(/ /g, '%20');
-
-  console.log('[ttsService] url:', url);
-
-  if (!url) {
-    await speak(toPhonicsSound(key));
-    return;
-  }
-
-  try {
-    if (Platform.OS === 'web') {
-      await new Promise((resolve, reject) => {
-        const audio = new window.Audio(url);
-        audio.onended = resolve;
-        audio.onerror = (e) => reject(new Error('web audio error'));
-        audio.play().catch(reject);
-      });
-    } else {
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, shouldDuckAndroid: true });
-      const { sound, status } = await Audio.Sound.createAsync({ uri: url });
-      console.log('[ttsService] loaded:', status.isLoaded);
-      if (!status.isLoaded) throw new Error('load failed');
-      _sound = sound;
-      await sound.playAsync();
-      sound.setOnPlaybackStatusUpdate((s) => {
-        if (s.didJustFinish) {
-          sound.unloadAsync().catch(() => {});
-          if (_sound === sound) _sound = null;
-        }
-      });
+      if (data?.publicUrl) {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: data.publicUrl },
+          { shouldPlay: true }
+        );
+        _sound = sound;
+        return new Promise((resolve) => {
+          sound.setOnPlaybackStatusUpdate((s) => {
+            if (s.didJustFinish) {
+              sound.unloadAsync();
+              resolve();
+            }
+          });
+        });
+      }
+    } catch (err) {
+      console.warn(`[ttsService] Storage play failed for ${fileName}:`, err.message);
     }
-  } catch (e) {
-    console.warn('[ttsService] failed:', e?.message);
-    await speak(toPhonicsSound(key));
   }
+
+  // 2. Fallback to Teacher TTS if MP3 is missing
+  await speak(letter, true);
 }
