@@ -14,6 +14,11 @@ const fetchWithTimeout = async (input, init = {}) => {
   // Respect an existing AbortSignal if provided.
   if (init?.signal) return fetch(input, init);
 
+  // Auth endpoints (e.g. password reset, sign-in) must not be cut off by a
+  // short timeout — they involve email dispatch and have their own retry logic.
+  const url = typeof input === 'string' ? input : input?.url ?? '';
+  if (url.includes('/auth/')) return fetch(input, init);
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_FETCH_TIMEOUT_MS);
   try {

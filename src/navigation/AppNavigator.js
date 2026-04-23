@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, DeviceEventEmitter } from 'react-native';
+import { View, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '../components/icons/Icon';
@@ -182,51 +182,22 @@ export function AuthNavigator() {
 
 // Renamed — internal screens, not exported
 function AppScreens() {
-  const { profile, profileLoaded, profileError, retryFetchProfile, signOut, session } = useAuth();
+  const { profile, profileLoaded, profileError } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
 
-  // Safety-net: fetchProfile can take up to ~36s (12s timeout + 3x2s retries).
-  // Only show the error screen if it still hasn't resolved after 45s.
+  // Safety-net: if profileLoaded stays false past the threshold, trip timedOut.
   React.useEffect(() => {
     if (profileLoaded) { setTimedOut(false); return; }
     const t = setTimeout(() => setTimedOut(true), TIMEOUTS.PROFILE_SAFETY_NET_MS);
     return () => clearTimeout(t);
   }, [profileLoaded]);
 
+  if (!profileLoaded && !timedOut) return <LoadingScreen />;
+  if ((profileError || timedOut) && !profile) return <LoadingScreen />;
+
   const isAdmin   = isUserAdmin(profile);
   const isParent  = isUserParent(profile);
   const isTeacher = isUserTeacher(profile);
-
-  if (!profileLoaded && !timedOut) return <LoadingScreen />;
-
-  // Profile failed to load (or timed out) — show error screen instead of
-  // silently falling back to the student dashboard
-  if ((profileError || timedOut) && !profile) {
-    return (
-      <View style={navStyles.errorContainer}>
-        <Icon name="alert-circle" size="xl" color="#E53935" />
-        <Text style={navStyles.errorTitle}>Couldn't Load Your Profile</Text>
-        <Text style={navStyles.errorMsg}>
-          {timedOut
-            ? "The connection is taking longer than expected. Please check your internet connection and try again."
-            : profileError === 'network_error'
-            ? "Network connection failed. Please check your internet connection and try again."
-            : "There was a problem connecting to the server. Please check your internet connection and try again."
-          }
-        </Text>
-        <TouchableOpacity style={navStyles.retryBtn} onPress={() => {
-          // Clear the timeout state and retry profile fetch
-          setTimedOut(false);
-          retryFetchProfile(session?.user?.id);
-        }}>
-          <Text style={navStyles.retryTxt}>Retry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={navStyles.signOutBtn} onPress={signOut}>
-          <Text style={navStyles.signOutTxt}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   // Role-based home tabs
   // Only students use the learner bottom tabs; parent/admin/teacher use the dashboard switcher.
@@ -303,15 +274,6 @@ function AppScreens() {
 // auth screens and app screens live in ONE Stack. When session becomes null
 // React Navigation instantly replaces the stack with Login — no NavigationContainer
 // remounting, no race conditions, no manual navigation calls needed.
-const navStyles = StyleSheet.create({
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, backgroundColor: '#fff' },
-  errorTitle:     { fontSize: 20, fontWeight: '700', color: '#333', marginTop: 16, textAlign: 'center' },
-  errorMsg:       { fontSize: 14, color: '#666', marginTop: 8, textAlign: 'center', lineHeight: 20 },
-  retryBtn:       { marginTop: 28, backgroundColor: '#4CAF50', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 40 },
-  retryTxt:       { color: '#fff', fontWeight: '700', fontSize: 15 },
-  signOutBtn:     { marginTop: 12, paddingVertical: 10, paddingHorizontal: 40 },
-  signOutTxt:     { color: '#E53935', fontWeight: '600', fontSize: 14 },
-});
 
 export default function RootNavigator() {
   const { session, loading, recoveryMode } = useAuth();

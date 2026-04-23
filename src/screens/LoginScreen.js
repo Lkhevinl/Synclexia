@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,12 @@ import {
   StatusBar,
   useWindowDimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { showAlert } from '../lib/uiAlert';
-import { TABLES } from '../lib/constants';
+import { STORAGE_KEYS } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AppText from '../components/AppText';
@@ -29,11 +30,22 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
 
-  const { setSession, resetSigningOut } = useAuth();
+  const passwordRef = useRef(null);
+  const { resetSigningOut } = useAuth();
   const { colors } = useTheme();
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
 
+  // Pre-fill last-used email
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.LAST_EMAIL)
+      .then(saved => { if (saved) setEmail(saved); })
+      .catch(() => {});
+  }, []);
+
   const handleLogin = async () => {
+    // Reset signingOutRef first so the SIGNED_IN handler is never blocked
+    resetSigningOut();
+
     if (!email || !password) {
       const msg = 'Please fill in all fields.';
       setFormError(msg);
@@ -44,9 +56,9 @@ export default function LoginScreen({ navigation }) {
     setFormError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
-        password: password,
+        password,
       });
 
       if (error) {
@@ -70,23 +82,10 @@ export default function LoginScreen({ navigation }) {
         setFormError(message);
         showAlert(title, message);
         return;
-      } else {
-        const { data: profileData } = await supabase
-          .from(TABLES.PROFILES)
-          .select('is_banned, role')
-          .eq('id', data.session.user.id)
-          .single();
-        if (profileData?.is_banned) {
-          await supabase.auth.signOut();
-          showAlert('Access Denied', 'Your account has been suspended. Please contact support.');
-          return;
-        }
-
-        if (resetSigningOut) resetSigningOut();
-        if (setSession) {
-          setSession(data.session);
-        }
       }
+
+      // Success — persist email for next time, let SIGNED_IN handler own the session
+      AsyncStorage.setItem(STORAGE_KEYS.LAST_EMAIL, email.trim().toLowerCase()).catch(() => {});
     } catch (err) {
       const msg = 'Something went wrong. Please check your internet and try again.';
       setFormError(msg);
@@ -127,7 +126,7 @@ export default function LoginScreen({ navigation }) {
 
           <AppText variant="caption" style={styles.subtitle}>Please enter your details to log in</AppText>
 
-          {/* Username/Email Input */}
+          {/* Email Input */}
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
             <TextInput
@@ -135,12 +134,12 @@ export default function LoginScreen({ navigation }) {
               placeholder="Enter Email"
               placeholderTextColor={colors.onSurfaceMuted}
               value={email}
-              onChangeText={(v) => {
-                setEmail(v);
-                if (formError) setFormError('');
-              }}
+              onChangeText={(v) => { setEmail(v); if (formError) setFormError(''); }}
               autoCapitalize="none"
               keyboardType="email-address"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -148,15 +147,15 @@ export default function LoginScreen({ navigation }) {
           <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
             <TextInput
+              ref={passwordRef}
               style={[styles.input, { color: colors.onSurface }]}
               placeholder="Enter Password"
               placeholderTextColor={colors.onSurfaceMuted}
               value={password}
-              onChangeText={(v) => {
-                setPassword(v);
-                if (formError) setFormError('');
-              }}
+              onChangeText={(v) => { setPassword(v); if (formError) setFormError(''); }}
               secureTextEntry={!showPassword}
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
             <TouchableOpacity onPress={() => setShowPassword((prev) => !prev)}>
               <Icon name={showPassword ? 'eye' : 'eye-off'} size="sm" color={colors.onSurfaceMuted} />

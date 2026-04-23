@@ -34,12 +34,13 @@ export const ROLES = {
 export const STORAGE_KEYS = {
   ONBOARDING_COMPLETE: '@synclexia_onboarding_complete',
   THEME:               '@synclexia_theme',
+  LAST_EMAIL:          '@synclexia_last_email',
 };
 
 // ── Network / Timeout Constants ───────────────────────────────────────────────
 export const TIMEOUTS = {
   FETCH_MS:             15000,  // Faster response
-  PROFILE_QUERY_MS:     10000,
+  PROFILE_QUERY_MS:     5000,
   PROFILE_TOTAL_MS:     30000,
   PROFILE_SAFETY_NET_MS:35000,
   RETRY_DELAY_MS:       2000,

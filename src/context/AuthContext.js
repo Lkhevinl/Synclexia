@@ -6,6 +6,8 @@ import { registerForPushNotificationsAsync } from '../lib/pushNotificationHelper
 import { navigationRef } from '../navigation/navigationRef';
 import { TIMEOUTS, TABLES, ROLES } from '../lib/constants';
 
+const profileCacheKey = (userId) => `@synclexia_cached_profile_${userId}`;
+
 const AuthContext = createContext({});
 
 export const AuthProvider = ({ children }) => {
@@ -34,17 +36,29 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // 1. Restore session on mount
-    supabase.auth.getSession().then(({ data: { session: s }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
       if (error) {
         clearStaleSession();
         supabase.auth.signOut().catch(() => {});
         return;
       }
       setSession(s);
-      // Unblock the navigator immediately — profile loads in the background
       setLoading(false);
-      if (s) fetchProfile(s.user.id);
-      else setProfileLoaded(true);
+      if (s) {
+        // Apply cached profile immediately so AppScreens skips the loading screen.
+        // fetchProfile still runs in the background to refresh with live data.
+        try {
+          const cached = await AsyncStorage.getItem(profileCacheKey(s.user.id));
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setProfile(parsed);
+            setProfileLoaded(true);
+          }
+        } catch (_) {}
+        fetchProfile(s.user.id);
+      } else {
+        setProfileLoaded(true);
+      }
     });
 
     // 2. Auth state listener — only react to explicit sign-in/sign-out events.
@@ -137,6 +151,8 @@ export const AuthProvider = ({ children }) => {
         setProfile(data);
         setProfileError(null);
         registerForPushNotificationsAsync(data.id).catch(() => {});
+        // Persist profile so next startup skips the loading screen.
+        AsyncStorage.setItem(profileCacheKey(data.id), JSON.stringify(data)).catch(() => {});
         setProfileLoaded(true);
         return data;
       }
@@ -170,6 +186,7 @@ export const AuthProvider = ({ children }) => {
   const signOut = () => {
     signingOutRef.current = true;
     // 1. Immediately clear all state — App.js sees !session → mounts AuthNavigator
+    const userId = supabase.auth.getUser?.()?.data?.user?.id;
     setSession(null);
     setProfile(null);
     setProfileLoaded(false);
@@ -180,7 +197,9 @@ export const AuthProvider = ({ children }) => {
     supabase.auth.signOut({ scope: 'local' }).catch(() => {});
     AsyncStorage.getAllKeys()
       .then(keys => {
-        const authKeys = keys.filter(k => k.startsWith('sb-') || k.includes('supabase'));
+        const authKeys = keys.filter(k =>
+          k.startsWith('sb-') || k.includes('supabase') || k.startsWith('@synclexia_cached_profile_')
+        );
         if (authKeys.length) AsyncStorage.multiRemove(authKeys).catch(() => {});
       })
       .catch(() => {});

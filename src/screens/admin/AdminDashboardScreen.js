@@ -13,7 +13,6 @@ export default function AdminDashboardScreen({ navigation }) {
   const { theme, colors } = useTheme();
   const { profile } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [dismissingId, setDismissingId] = useState(null);
   const [notifVisible, setNotifVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [studentCount, setStudentCount] = useState(0);
@@ -25,7 +24,6 @@ export default function AdminDashboardScreen({ navigation }) {
     phonicsActivities: 0,
     phonological: 0,
   });
-  const [parentFeedbackCount, setParentFeedbackCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,7 +31,7 @@ export default function AdminDashboardScreen({ navigation }) {
     setLoading(true);
     setError(null);
     try {
-      await Promise.all([fetchNotifications(), fetchUserCounts(), fetchContentStats(), fetchParentFeedbackCount()]);
+      await Promise.all([fetchNotifications(), fetchUserCounts(), fetchContentStats()]);
     } catch (error) {
       setError('Failed to load admin dashboard. Please check your connection and try again.');
     } finally {
@@ -51,121 +49,43 @@ export default function AdminDashboardScreen({ navigation }) {
       return;
     }
     try {
-      // Get notifications that the user has NOT dismissed
-      const { data: dismissed, error: dismissedError } = await supabase
-        .from(TABLES.USER_NOTIFICATIONS)
-        .select('notification_id')
-        .eq('user_id', profile.id)
-        .eq('is_dismissed', true);
+      const { data, error } = await supabase
+        .from(TABLES.MAINTENANCE_LOGS)
+        .select('id, title, description, created_at, reporter_role, status, priority')
+        .eq('reporter_role', 'parent')
+        .eq('category', 'user_feedback')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      // If table doesn't exist yet, just show all notifications
-      if (dismissedError) {
-        console.log('User notifications table not ready, showing all notifications');
-        const { data, error } = await supabase
-          .from(TABLES.NOTIFICATIONS)
-          .select('*')
-          .eq('is_draft', false)
-          .order('created_at', { ascending: false });
+      if (error) { setNotifications([]); return; }
 
-        if (error) {
-          setNotifications([]);
-          return;
-        }
-        setNotifications(data || []);
-        return;
-      }
-
-      const dismissedIds = (dismissed || []).map(d => d.notification_id);
-
-      // Build query for active notifications (admins see all)
-      let query = supabase
-        .from(TABLES.NOTIFICATIONS)
-        .select('*')
-        .eq('is_draft', false)
-        .order('created_at', { ascending: false });
-
-      // Filter out dismissed notifications
-      if (dismissedIds.length > 0) {
-        query = query.not('id', 'in', `(${dismissedIds.join(',')})`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        setNotifications([]);
-        return;
-      }
-
-      setNotifications(data || []);
+      setNotifications((data || []).map(f => ({
+        ...f,
+        content: f.description,
+        _isFeedback: true,
+      })));
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
   };
 
-  const dismissNotification = async (notificationId) => {
-    if (!profile?.id) return;
-    setDismissingId(notificationId);
-    try {
-      const { error } = await supabase
-        .from(TABLES.USER_NOTIFICATIONS)
-        .upsert({
-          user_id: profile.id,
-          notification_id: notificationId,
-          is_dismissed: true,
-          dismissed_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,notification_id' });
-
-      if (error) {
-        console.error('Error dismissing notification:', error);
-        // Still remove from UI even if DB save fails
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-        return;
-      }
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    } catch (error) {
-      console.error('Error dismissing notification:', error);
-      // Still remove from UI on error
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    } finally {
-      setDismissingId(null);
-    }
+  const dismissNotification = (notificationId) => {
+    // Dismissing hides the item from the bell view; the log stays in MaintenanceLogs.
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
   };
 
-  const dismissAllNotifications = async () => {
-    if (!profile?.id || notifications.length === 0) return;
-    try {
-      const records = notifications.map(n => ({
-        user_id: profile.id,
-        notification_id: n.id,
-        is_dismissed: true,
-        dismissed_at: new Date().toISOString(),
-      }));
-
-      const { error } = await supabase
-        .from(TABLES.USER_NOTIFICATIONS)
-        .upsert(records, { onConflict: 'user_id,notification_id' });
-
-      if (error) {
-        console.error('Error clearing all notifications:', error);
-        return;
-      }
-      setNotifications([]);
-    } catch (error) {
-      console.error('Error clearing all notifications:', error);
-    }
+  const dismissAllNotifications = () => {
+    setNotifications([]);
   };
 
   const clearAllNotifications = () => {
     if (notifications.length === 0) return;
-    Alert.alert(
-      'Clear All Notifications',
-      'Are you sure you want to clear all notifications?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications }
-      ]
-    );
+    Alert.alert('Clear All', 'Hide all feedback from this view?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear All', style: 'destructive', onPress: dismissAllNotifications },
+    ]);
   };
 
   const fetchUserCounts = async () => {
@@ -215,18 +135,6 @@ export default function AdminDashboardScreen({ navigation }) {
         phonological: 0,
       });
     }
-  };
-
-  const fetchParentFeedbackCount = async () => {
-    try {
-      const { count, error } = await supabase
-        .from(TABLES.MAINTENANCE_LOGS)
-        .select('*', { count: 'exact', head: true })
-        .eq('reporter_role', 'parent')
-        .eq('category', 'user_feedback')
-        .eq('status', 'open');
-      if (!error) setParentFeedbackCount(count || 0);
-    } catch (_) {}
   };
 
   const AdminCard = ({ title, subtitle, icon, color, onPress, badge }) => (
@@ -420,36 +328,6 @@ export default function AdminDashboardScreen({ navigation }) {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* PARENT FEEDBACK */}
-          <TouchableOpacity
-            style={[styles.enhancedCard, styles.wideCard]}
-            onPress={() => navigation.navigate('MaintenanceLogs')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={['#e96c6c', '#c0392b']} style={styles.enhancedCardGradient}>
-              <View style={styles.enhancedCardHeader}>
-                <View style={styles.enhancedIconWrap}>
-                  <Icon name="message-circle" size="lg" color="#fff" />
-                </View>
-                <Text style={styles.enhancedCardTitle}>Parent Feedback</Text>
-                {parentFeedbackCount > 0 && (
-                  <View style={styles.feedbackBadge}>
-                    <Text style={styles.feedbackBadgeText}>{parentFeedbackCount}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.enhancedCardDescription}>
-                Review ratings and messages submitted by parents
-              </Text>
-              <View style={styles.enhancedCardFooter}>
-                <Text style={styles.enhancedCardStats}>
-                  {parentFeedbackCount > 0 ? `${parentFeedbackCount} open item${parentFeedbackCount !== 1 ? 's' : ''}` : 'No open feedback'}
-                </Text>
-                <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-
           {/* REPORT ANALYTICS */}
           <TouchableOpacity
             style={[styles.enhancedCard, styles.wideCard]}
@@ -510,27 +388,31 @@ export default function AdminDashboardScreen({ navigation }) {
                 </View>
               }
               renderItem={({ item }) => (
-                <View style={styles.notifItem}>
-                  <View style={styles.notifIconBox}>
-                    <Icon name="megaphone" size="md" color="#4c669f" />
+                <TouchableOpacity
+                  style={[styles.notifItem, styles.notifItemFeedback]}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    setNotifVisible(false);
+                    navigation.navigate('MaintenanceLogDetail', { log: item });
+                  }}
+                >
+                  <View style={[styles.notifIconBox, styles.notifIconBoxFeedback]}>
+                    <Icon name="message-circle" size="md" color="#c0392b" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.notifTitle}>{item.title}</Text>
+                    <Text style={styles.notifFeedbackLabel}>Parent Feedback · Tap to reply</Text>
+                    <Text style={[styles.notifTitle, { color: '#c0392b' }]}>{item.title}</Text>
                     <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
                     <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => dismissNotification(item.id)}
-                    disabled={dismissingId === item.id}
                     style={styles.dismissBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    {dismissingId === item.id ? (
-                      <ActivityIndicator size="small" color="#999" />
-                    ) : (
-                      <Icon name="x" size="sm" color="#999" />
-                    )}
+                    <Icon name="x" size="sm" color="#999" />
                   </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               )}
             />
           </View>
@@ -570,7 +452,10 @@ const styles = StyleSheet.create({
   modalHeaderContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   notifItem: { flexDirection: 'row', marginBottom: 12, backgroundColor: '#F5F5F5', borderRadius: 12, padding: 12, alignItems: 'flex-start', gap: 10 },
+  notifItemFeedback: { backgroundColor: '#FFF0EE', borderLeftWidth: 3, borderLeftColor: '#c0392b' },
   notifIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  notifIconBoxFeedback: { backgroundColor: '#FDDEDE' },
+  notifFeedbackLabel: { fontSize: 10, fontWeight: 'bold', color: '#c0392b', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   notifTitle: { fontWeight: 'bold', color: '#1976D2', marginBottom: 4, fontSize: 14 },
   notifBody: { color: '#555', fontSize: 13, lineHeight: 18 },
   notifTime: { fontSize: 11, color: '#999', marginTop: 4 },
@@ -653,9 +538,6 @@ const styles = StyleSheet.create({
   enhancedCardDescription: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, marginBottom: 16 },
   enhancedCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
   enhancedCardStats: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-
-  feedbackBadge: { backgroundColor: '#fff', borderRadius: 12, minWidth: 24, height: 24, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6, marginLeft: 8 },
-  feedbackBadgeText: { color: '#c0392b', fontWeight: 'bold', fontSize: 13 },
 
   reportFeatureList: { marginBottom: 16, gap: 10 },
   reportFeatureItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

@@ -73,7 +73,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo: AUTH.PASSWORD_RESET_REDIRECT_URL });
-      if (error) { setInputError(error.message); shakeInput(); }
+      if (error) { console.error('[ForgotPassword] Supabase error:', error); setInputError(error.message); shakeInput(); }
       else        { showSuccess(); }
     } catch {
       setInputError('Something went wrong. Check your internet connection.');

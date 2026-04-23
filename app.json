@@ -4,7 +4,7 @@
     "slug": "Synclexia",
     "version": "1.2.0",
     "orientation": "portrait",
-    "icon": "./assets/adaptive-icon.png",
+    "icon": "./assets/1-removebg-preview.png",
     "extra": {
       "eas": {
         "projectId": "dedb3934-30bb-4ec0-9651-38d930042e3d"
@@ -13,7 +13,7 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/1-removebg-preview.png",
       "resizeMode": "contain",
       "backgroundColor": "#f9a8c9"
     },
@@ -36,9 +36,9 @@
     },
     "android": {
       "package": "com.synclexia.app",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/1-removebg-preview.png",
         "backgroundColor": "#f9a8c9"
       },
       "edgeToEdgeEnabled": true,

@@ -99,7 +99,13 @@ function UsersTab({ role }) {
       return;
     }
     setAdding(true);
-    // Prevent the SIGNED_IN event fired by signUp from replacing the admin's session.
+
+    // Save admin session — signUp() replaces the Supabase client's internal session
+    // with the new user's. suppressNextSignIn blocks the immediate SIGNED_IN event,
+    // but autoRefreshToken would later fire a second SIGNED_IN for the new user's token.
+    // Restoring the admin session after signUp() prevents that second redirect.
+    const { data: { session: adminSession } } = await supabase.auth.getSession();
+
     suppressNextSignIn();
     const { data, error } = await supabase.auth.signUp({
       email: addForm.email.trim(),
@@ -108,7 +114,7 @@ function UsersTab({ role }) {
     });
     if (error) { Alert.alert('Error', error.message); setAdding(false); return; }
 
-    // Upsert profile in case trigger hasn't fired yet
+    // Upsert profile using the new user's session (still active at this point)
     if (data?.user?.id) {
       await supabase.from(TABLES.PROFILES).upsert({
         id: data.user.id,
@@ -117,6 +123,17 @@ function UsersTab({ role }) {
         role: addForm.role,
       }, { onConflict: 'id' });
     }
+
+    // Restore admin session so the Supabase client and AsyncStorage hold the admin's
+    // tokens again — this prevents autoRefreshToken from emitting a SIGNED_IN for the
+    // newly created user's session.
+    if (adminSession) {
+      await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+    }
+
     setAdding(false);
     setAddVisible(false);
     setAddForm({ full_name: '', email: '', password: '', role });
@@ -201,7 +218,7 @@ function UsersTab({ role }) {
               <TextInput style={styles.input} value={editForm.email} onChangeText={t => setEditForm({ ...editForm, email: t })} keyboardType="email-address" />
               <Text style={styles.inputLabel}>Role</Text>
               <View style={styles.roleContainer}>
-                {['student', 'parent', 'user'].map(r => (
+                {['student', 'parent'].map(r => (
                   <TouchableOpacity
                     key={r}
                     style={[styles.roleBtn, editForm.role === r && styles.roleBtnActive]}
@@ -261,7 +278,7 @@ function UsersTab({ role }) {
               />
               <Text style={styles.inputLabel}>Role</Text>
               <View style={styles.roleContainer}>
-                {['student', 'parent', 'user'].map(r => (
+                {['student', 'parent'].map(r => (
                   <TouchableOpacity
                     key={r}
                     style={[styles.roleBtn, addForm.role === r && styles.roleBtnActive]}

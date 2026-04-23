@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
+import { View, StyleSheet, Text, Platform, Image } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Linking from 'expo-linking';
 import { supabase } from './src/lib/supabase';
@@ -66,7 +66,15 @@ function AppWithTheme() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) return (
+    <View style={styles.fontSplash}>
+      <Image
+        source={require('./assets/synclexia-logo2-removebg-preview.png')}
+        style={styles.fontSplashLogo}
+        resizeMode="contain"
+      />
+    </View>
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -82,3 +90,8 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  fontSplash:     { flex: 1, backgroundColor: '#FAF3F0', justifyContent: 'center', alignItems: 'center' },
+  fontSplashLogo: { width: 160, height: 65 },
+});
