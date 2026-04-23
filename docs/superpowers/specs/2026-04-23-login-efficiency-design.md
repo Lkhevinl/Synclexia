@@ -1,11 +1,11 @@
 # Login Efficiency — Design Spec
 **Date:** 2026-04-23
-**Scope:** `src/screens/LoginScreen.js` · `src/context/AuthContext.js`
+**Scope:** `src/screens/LoginScreen.js` · `src/context/AuthContext.js` · `src/lib/constants.js`
 
 ---
 
 ## Goal
-Reduce login latency by one network round-trip and eliminate redundant state calls, while adding keyboard flow and email persistence for a smoother UX.
+Reduce login latency by one network round-trip, eliminate the post-login loading screen for returning users, and add keyboard flow + email persistence for a smoother UX.
 
 ---
 
@@ -46,13 +46,29 @@ When `signInWithPassword` succeeds, Supabase fires a `SIGNED_IN` event. The `onA
 
 ---
 
+## Section 3 — Eliminate Post-Login Loading Screen
+
+After `signInWithPassword` succeeds, `AppScreens` blocks on `profileLoaded` while `fetchProfile` makes a full Supabase round-trip (up to 10s on slow connections). The user sees the loading screen logo for the entire duration.
+
+### 3a. Profile cache
+- **Write:** After every successful `fetchProfile`, serialize the profile object and write it to `AsyncStorage` under `@synclexia_cached_profile_{userId}`.
+- **Read:** In `AuthContext`, after `getSession()` resolves and a session exists, read the cache for that user ID before the `fetchProfile` call. If a cached profile is found, immediately call `setProfile(cached)` and `setProfileLoaded(true)`. The user lands on the dashboard instantly.
+- **Refresh:** The background `fetchProfile` call still runs. When it completes it overwrites state with fresh data. If `is_banned` is detected in the fresh fetch, the existing ban-handling logic (sign out + alert) fires normally.
+- **Invalidation:** Cache is deleted on `signOut()`. Cache is always overwritten after every successful `fetchProfile`. Cache is keyed by user ID — switching accounts never shows stale data from a previous user.
+- **Key:** `@synclexia_cached_profile_{userId}` — added as a helper function `profileCacheKey(userId)` in `AuthContext` (not a static string in `STORAGE_KEYS` since it includes the user ID).
+
+### 3b. Reduce query timeout
+`PROFILE_QUERY_MS` drops from `10000` → `5000`. With 3 retries and 2s delays, worst-case fetch time goes from ~36s to ~21s. For any user with a cached profile this path is never blocking the UI.
+
+---
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
 | `src/screens/LoginScreen.js` | Remove ban-check query, remove `setSession` call, move `resetSigningOut`, add keyboard refs, add email persistence |
-| `src/lib/constants.js` | Add `LAST_EMAIL` to `STORAGE_KEYS` |
-| `src/context/AuthContext.js` | No change required — existing logic is already correct |
+| `src/context/AuthContext.js` | Add profile cache read on startup, write cache after successful fetch, clear cache on sign-out |
+| `src/lib/constants.js` | Add `LAST_EMAIL` to `STORAGE_KEYS`; reduce `PROFILE_QUERY_MS` to 5000 |
 
 ---
 
