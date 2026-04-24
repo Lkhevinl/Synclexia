@@ -11,17 +11,6 @@ jest.mock('../lib/supabase', () => ({
   },
 }));
 
-jest.mock('react-native', () => {
-  const actualModule = jest.requireActual('react-native');
-  return {
-    ...actualModule,
-    Platform: {
-      ...actualModule.Platform,
-      OS: 'android',
-    },
-  };
-});
-
 jest.mock('expo-av', () => ({
   Audio: {
     Sound: {
@@ -30,14 +19,25 @@ jest.mock('expo-av', () => ({
   },
 }));
 
-global.window = {
-  speechSynthesis: {
-    cancel: jest.fn(),
-  },
-};
-
+// Setup global window for web platform fallback
 beforeEach(() => {
+  jest.resetModules();
   jest.clearAllMocks();
+
+  // Override Platform.OS after resetting modules
+  const { Platform } = require('react-native');
+  Object.defineProperty(Platform, 'OS', {
+    value: 'android',
+    configurable: true,
+  });
+
+  if (typeof window === 'undefined') {
+    global.window = {
+      speechSynthesis: {
+        cancel: jest.fn(),
+      },
+    };
+  }
 });
 
 describe('ttsService.speak', () => {
@@ -72,30 +72,24 @@ describe('ttsService.speak', () => {
   });
 
   it('calls stop before speaking', async () => {
+    const Speech = require('expo-speech');
     const { speak } = require('../lib/ttsService');
 
-    // speak() calls stop() which calls window.speechSynthesis.cancel (not Speech.stop) in web env
+    Speech.speak.mockImplementation((text, opts) => opts?.onDone?.());
     await speak('hello');
 
-    // Verify that the stop was called (by checking window.speechSynthesis)
-    expect(global.window.speechSynthesis.cancel).toHaveBeenCalled();
+    expect(Speech.stop).toHaveBeenCalled();
   });
 });
 
 describe('ttsService.stop', () => {
-  it('calls appropriate stop method based on platform', async () => {
+  it('calls Speech.stop on non-web platform', async () => {
+    const Speech = require('expo-speech');
     const { stop } = require('../lib/ttsService');
-    const { Platform } = require('react-native');
 
     await stop();
 
-    // Platform.OS is 'web' in test environment, so window.speechSynthesis.cancel should be called
-    if (Platform.OS === 'web') {
-      expect(global.window.speechSynthesis.cancel).toHaveBeenCalledTimes(1);
-    } else {
-      const Speech = require('expo-speech');
-      expect(Speech.stop).toHaveBeenCalledTimes(1);
-    }
+    expect(Speech.stop).toHaveBeenCalledTimes(1);
   });
 });
 

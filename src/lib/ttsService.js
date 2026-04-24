@@ -263,7 +263,7 @@ export async function speakPhonics(letter) {
       });
     });
   } catch (err) {
-    // Fallback to OpenAI Ash voice for anything not in the bucket
+    // Fallback to OpenAI TTS for anything not in the bucket
     return speak(letter, true);
   }
 }
