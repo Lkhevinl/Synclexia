@@ -182,8 +182,9 @@ export function AuthNavigator() {
 
 // Renamed — internal screens, not exported
 function AppScreens() {
-  const { profile, profileLoaded, profileError } = useAuth();
+  const { profile, profileLoaded, profileError, session, retryFetchProfile } = useAuth();
   const [timedOut, setTimedOut] = React.useState(false);
+  const retryDoneRef = React.useRef(false);
 
   // Safety-net: if profileLoaded stays false past the threshold, trip timedOut.
   React.useEffect(() => {
@@ -191,6 +192,27 @@ function AppScreens() {
     const t = setTimeout(() => setTimedOut(true), TIMEOUTS.PROFILE_SAFETY_NET_MS);
     return () => clearTimeout(t);
   }, [profileLoaded]);
+
+  // One-time auto-retry when the profile fails to load after signup.
+  // The DB trigger (handle_new_user) runs server-side but the SIGNED_IN
+  // event fires immediately after signUp returns — before the user even
+  // taps Continue on the success modal. By the time AppScreens mounts,
+  // the trigger has had plenty of time to complete, so a single retry
+  // is almost always sufficient to recover from the race condition.
+  // This also handles transient network/server errors on first load.
+  React.useEffect(() => {
+    const hasError  = profileLoaded && profileError;   // explicit fetch error
+    const hasTimedOut = timedOut && !profileLoaded;    // safety-net fired, fetch never ran
+    if (
+      !profile &&
+      session?.user?.id &&
+      !retryDoneRef.current &&
+      (hasError || hasTimedOut)
+    ) {
+      retryDoneRef.current = true;
+      retryFetchProfile(session.user.id);
+    }
+  }, [profileLoaded, profileError, profile, timedOut]);
 
   if (!profileLoaded && !timedOut) return <LoadingScreen />;
   if ((profileError || timedOut) && !profile) return <LoadingScreen />;
@@ -279,10 +301,18 @@ export default function RootNavigator() {
   const { session, loading, recoveryMode } = useAuth();
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
 
   useEffect(() => {
-    checkOnboardingStatus();
+    const fallback = setTimeout(() => setCheckingOnboarding(false), 1000);
+    checkOnboardingStatus().finally(() => clearTimeout(fallback));
   }, []);
+
+  useEffect(() => {
+    if (!loading) { setAuthTimedOut(false); return; }
+    const t = setTimeout(() => setAuthTimedOut(true), TIMEOUTS.AUTH_INIT_MS);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   const checkOnboardingStatus = async () => {
     try {
@@ -295,7 +325,7 @@ export default function RootNavigator() {
     }
   };
 
-  if (loading || checkingOnboarding) return <LoadingScreen />;
+  if ((loading && !authTimedOut) || checkingOnboarding) return <LoadingScreen />;
 
   if (recoveryMode) {
     return (

@@ -39,7 +39,8 @@ export const STORAGE_KEYS = {
 
 // ── Network / Timeout Constants ───────────────────────────────────────────────
 export const TIMEOUTS = {
-  FETCH_MS:             15000,  // Faster response
+  FETCH_MS:             15000,
+  AUTH_INIT_MS:         5000,   // max wait for getSession() before showing login
   PROFILE_QUERY_MS:     5000,
   PROFILE_TOTAL_MS:     30000,
   PROFILE_SAFETY_NET_MS:35000,

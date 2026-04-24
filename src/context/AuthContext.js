@@ -35,23 +35,36 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // 1. Restore session on mount
-    supabase.auth.getSession().then(async ({ data: { session: s }, error }) => {
+    // 1. Fast startup: read the stored session from AsyncStorage directly.
+    //    Supabase persists the session under a deterministic key — reading it
+    //    locally takes < 50ms and lets us dismiss the loading screen instantly
+    //    for returning users, without waiting for any network token refresh.
+    // Dismiss loading immediately — never block the UI on network operations.
+    setLoading(false);
+
+    // Background: validate / refresh session. onAuthStateChange handles the result.
+    Promise.race([
+      supabase.auth.getSession(),
+      new Promise(resolve =>
+        setTimeout(
+          () => resolve({ data: { session: null }, error: new Error('timeout') }),
+          TIMEOUTS.AUTH_INIT_MS
+        )
+      ),
+    ]).then(async ({ data: { session: s }, error }) => {
       if (error) {
-        clearStaleSession();
-        supabase.auth.signOut().catch(() => {});
+        if (error.message !== 'timeout') {
+          clearStaleSession();
+          supabase.auth.signOut().catch(() => {});
+        }
         return;
       }
       setSession(s);
-      setLoading(false);
       if (s) {
-        // Apply cached profile immediately so AppScreens skips the loading screen.
-        // fetchProfile still runs in the background to refresh with live data.
         try {
           const cached = await AsyncStorage.getItem(profileCacheKey(s.user.id));
           if (cached) {
-            const parsed = JSON.parse(cached);
-            setProfile(parsed);
+            setProfile(JSON.parse(cached));
             setProfileLoaded(true);
           }
         } catch (_) {}

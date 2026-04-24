@@ -47,7 +47,7 @@ export default function SignUpScreen({ navigation }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [signedUpSession, setSignedUpSession] = useState(null);
 
-  const { setSession } = useAuth();
+  const { setSession, resetSigningOut } = useAuth();
   const { colors } = useTheme();
   const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useWindowDimensions();
 
@@ -83,6 +83,7 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
     setLoading(true);
 
     try {
+      resetSigningOut();
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,

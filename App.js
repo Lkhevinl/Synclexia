@@ -65,8 +65,8 @@ function AppWithTheme() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
-  if (!fontsLoaded) return (
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold });
+  if (!fontsLoaded && !fontError) return (
     <View style={styles.fontSplash}>
       <Image
         source={require('./assets/synclexia-logo2-removebg-preview.png')}
