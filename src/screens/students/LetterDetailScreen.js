@@ -4,64 +4,11 @@ import {
   Animated, Dimensions, ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
-import { SPEECH } from '../../lib/constants';
+import { speak, stop } from '../../lib/ttsService';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-
-const ELEVENLABS_API_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY;
-const ELEVENLABS_VOICE_ID = SPEECH.ELEVENLABS_VOICE_ID;
-
-async function playElevenLabsTTS(text) {
-  if (!ELEVENLABS_API_KEY) return false;
-  try {
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${SPEECH.ELEVENLABS_VOICE_ID}`,
-      {
-        method: 'POST',
-        headers: { 'xi-api-key': ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          model_id: SPEECH.ELEVENLABS_MODEL,
-          voice_settings: { stability: SPEECH.ELEVENLABS_STABILITY, similarity_boost: SPEECH.ELEVENLABS_SIMILARITY_BOOST, style: SPEECH.ELEVENLABS_STYLE, use_speaker_boost: SPEECH.ELEVENLABS_SPEAKER_BOOST },
-        }),
-      }
-    );
-    if (!response.ok) return false;
-    const blob = await response.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        let sound = null;
-        try {
-          const base64 = reader.result.split(',')[1];
-          ({ sound } = await Audio.Sound.createAsync(
-            { uri: `data:audio/mp3;base64,${base64}` },
-            { shouldPlay: true, rate: SPEECH.ELEVENLABS_PLAYBACK_RATE }
-          ));
-          await new Promise((res, rej) => {
-            sound.setOnPlaybackStatusUpdate((st) => {
-              if (st.didJustFinish) res();
-              if (st.error) rej(new Error(st.error));
-            });
-          });
-          resolve(true);
-        } catch (e) {
-          reject(e);
-        } finally {
-          if (sound) sound.unloadAsync().catch(() => {});
-        }
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch {
-    return false;
-  }
-}
 
 const TABS = ['story', 'action', 'trace', 'song'];
 
@@ -88,7 +35,7 @@ export default function LetterDetailScreen() {
   const idx = currentIndex ?? 0;
 
   useEffect(() => {
-    return () => Speech.stop();
+    return () => stop();
   }, []);
 
   const handleSoundPress = async () => {
@@ -101,11 +48,7 @@ export default function LetterDetailScreen() {
     ]).start();
 
     try {
-      const text = `${item.story} ... ${item.sound}! Your turn!`;
-      const ok = await playElevenLabsTTS(text);
-      if (!ok) Speech.speak(item.sound || item.letter, { rate: SPEECH.DEFAULT_RATE, pitch: SPEECH.DEFAULT_PITCH });
-    } catch {
-      Speech.speak(item.sound || item.letter, { rate: SPEECH.DEFAULT_RATE, pitch: SPEECH.DEFAULT_PITCH });
+      await speak(`${item.story} ... ${item.sound}! Your turn!`);
     } finally {
       setTimeout(() => {
         setPlaying(false);
@@ -293,9 +236,8 @@ export default function LetterDetailScreen() {
                 </View>
                 <TouchableOpacity
                   style={[s.playSongBtn, { backgroundColor: TAB_COLORS.song.active, shadowColor: TAB_COLORS.song.active }]}
-                  onPress={() => Speech.speak(
-                    item.song ?? `${item.sound ?? item.letter}! ${item.sound ?? item.letter}! ${item.sound ?? item.letter}!`,
-                    { rate: SPEECH.SONG_RATE, pitch: SPEECH.SONG_PITCH }
+                  onPress={() => speak(
+                    item.song ?? `${item.sound ?? item.letter}! ${item.sound ?? item.letter}! ${item.sound ?? item.letter}!`
                   )}
                   activeOpacity={0.85}
                 >
