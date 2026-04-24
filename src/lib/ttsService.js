@@ -206,7 +206,7 @@ export async function stop() {
   }
 }
 
-// ─── Main Speak (OpenAI Ash Voice) ───────────────────────────────────────────
+// ─── Main Speak (OpenAI Onyx Voice) ──────────────────────────────────────────
 
 export async function speak(text, isPhonics = false) {
   if (!text?.trim()) return;
@@ -217,7 +217,7 @@ export async function speak(text, isPhonics = false) {
 
   try {
     const { data, error } = await supabase.functions.invoke('openai-tts', {
-      body: { text: ttsText, voice: 'ash' },
+      body: { text: ttsText, voice: 'onyx' },
     });
     if (!error && data) {
       const fr = new FileReader();
