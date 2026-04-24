@@ -67,17 +67,10 @@ export const ANALYSIS = {
 
 // ── Speech / TTS ──────────────────────────────────────────────────────────────
 export const SPEECH = {
-  DEFAULT_RATE:       0.85,
-  SONG_RATE:          0.75,
-  DEFAULT_PITCH:      1.1,
-  SONG_PITCH:         1.15,
-  ELEVENLABS_VOICE_ID: process.env.EXPO_PUBLIC_ELEVENLABS_VOICE_ID || 'Xb7hH8MSUJpSbSDYk0k2',
-  ELEVENLABS_MODEL:    process.env.EXPO_PUBLIC_ELEVENLABS_MODEL    || 'eleven_multilingual_v2',
-  ELEVENLABS_STABILITY:         0.35,
-  ELEVENLABS_SIMILARITY_BOOST:  0.60,
-  ELEVENLABS_STYLE:             0.55,
-  ELEVENLABS_SPEAKER_BOOST:     false,
-  ELEVENLABS_PLAYBACK_RATE:     0.92,
+  DEFAULT_RATE:  0.85,
+  SONG_RATE:     0.75,
+  DEFAULT_PITCH: 0.85,
+  SONG_PITCH:    0.90,
 };
 
 // ── Phonics Sound Map ─────────────────────────────────────────────────────────
@@ -175,13 +168,6 @@ export function toPhonicsSound(ph) {
   if (!/[aeiou]/.test(lower) && lower.length > 1) return lower + 'uh';
   return ph;
 }
-
-// ── ElevenLabs Text-to-Speech ─────────────────────────────────────────────────
-export const ELEVENLABS_TTS = {
-  API_URL: 'https://api.elevenlabs.io/v1/text-to-speech',
-  VOICE_ID: '21m00Tcm4TlvDq8ikWAM', // Rachel — clear, calm female voice
-  MODEL_ID: 'eleven_turbo_v2_5',
-};
 
 // ── Auth / Password ───────────────────────────────────────────────────────────
 export const AUTH = {
