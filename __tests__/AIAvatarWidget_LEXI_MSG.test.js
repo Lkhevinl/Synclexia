@@ -4,16 +4,13 @@
 function buildLexiMessage(firstName, data) {
   const s = data.strengths;
   const w = data.weaknesses;
-  if (s.length > 0 && w.length > 0) {
-    const top   = s.slice(0, 2).map(x => x.label);
-    const names = top.join(' & ');
-    const plural = top.length > 1;
-    return `👋 Hi ${firstName}! ${names} ${plural ? 'are' : 'is'} your superpower${plural ? 's' : ''} 💪 Let's give ${w[0].label} some love today!`;
-  }
   if (s.length > 0) {
-    const top   = s.slice(0, 2).map(x => x.label);
-    const names = top.join(' & ');
+    const top    = s.slice(0, 2).map(x => x.label);
+    const names  = top.join(' & ');
     const plural = top.length > 1;
+    if (w.length > 0) {
+      return `👋 Hi ${firstName}! ${names} ${plural ? 'are' : 'is'} your superpower${plural ? 's' : ''} 💪 Let's give ${w[0].label} some love today!`;
+    }
     return `👋 Hi ${firstName}! You're crushing it — ${names} ${plural ? 'are' : 'is'} looking great! Keep going! 🌟`;
   }
   if (w.length > 0) {
