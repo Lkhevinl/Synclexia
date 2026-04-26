@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Icon from './icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle } from 'react-native-svg';
 import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { analyzeStudentProfile } from '../lib/strengthsAnalysis';
@@ -207,6 +208,24 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                 </View>
                 <Text style={styles.lexiRole}>Your AI Learning Buddy</Text>
               </View>
+              {data && (
+                <View style={styles.arcChip}>
+                  <Svg width={28} height={28} viewBox="0 0 28 28">
+                    <Circle cx={14} cy={14} r={11} fill="none" stroke="#F0F0F0" strokeWidth={3} />
+                    <Circle
+                      cx={14} cy={14} r={11} fill="none"
+                      stroke={color} strokeWidth={3}
+                      strokeDasharray={`${Math.round(score / 100 * 69)} 69`}
+                      strokeLinecap="round"
+                      transform="rotate(-90, 14, 14)"
+                    />
+                  </Svg>
+                  <View>
+                    <Text style={[styles.arcChipScore, { color }]}>{score}%</Text>
+                    <Text style={styles.arcChipLabel}>{label}</Text>
+                  </View>
+                </View>
+              )}
               <TouchableOpacity onPress={close} style={styles.closeBtn}>
                 <Icon name="x" size="md" color="#90A4AE" />
               </TouchableOpacity>
@@ -431,6 +450,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
+  /* Arc score chip */
+  arcChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F9F9F9',
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingLeft: 6,
+    paddingRight: 10,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  arcChipScore: { fontSize: 11, fontWeight: '900' },
+  arcChipLabel:  { fontSize: 8, color: '#90A4AE' },
 
   /* Loading */
   loadingWrap: { alignItems: 'center', paddingVertical: 44 },
