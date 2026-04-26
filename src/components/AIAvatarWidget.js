@@ -505,6 +505,7 @@ const styles = StyleSheet.create({
   /* Scroll content */
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
 
+  /* Session meta */
   sessionMeta: { fontSize: 11, color: '#B0BEC5', marginTop: 2, marginBottom: 14 },
 
   /* Sections */
