@@ -14,6 +14,26 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // ── helpers ────────────────────────────────────────────────────────────────
 const scoreColor  = s => s >= 75 ? '#4CAF50' : s >= 50 ? '#FF9800' : '#EF5350';
 const scoreLabel  = s => s >= 75 ? 'Strong Learner!' : s >= 50 ? 'Making Progress!' : 'Keep Going!';
+const buildLexiMessage = (firstName, data) => {
+  const s = data.strengths;
+  const w = data.weaknesses;
+  if (s.length > 0 && w.length > 0) {
+    const top   = s.slice(0, 2).map(x => x.label);
+    const names = top.join(' & ');
+    const plural = top.length > 1;
+    return `👋 Hi ${firstName}! ${names} ${plural ? 'are' : 'is'} your superpower${plural ? 's' : ''} 💪 Let's give ${w[0].label} some love today!`;
+  }
+  if (s.length > 0) {
+    const top   = s.slice(0, 2).map(x => x.label);
+    const names = top.join(' & ');
+    const plural = top.length > 1;
+    return `👋 Hi ${firstName}! You're crushing it — ${names} ${plural ? 'are' : 'is'} looking great! Keep going! 🌟`;
+  }
+  if (w.length > 0) {
+    return `👋 Hi ${firstName}! Let's keep building — working on ${w[0].label} will make a big difference. You've got this! 💪`;
+  }
+  return `👋 Hi ${firstName}! Ready to learn something new today? Complete an activity and I'll track your progress! 🚀`;
+};
 
 // ── sub-components ─────────────────────────────────────────────────────────
 function ProgressBar({ value, color }) {
