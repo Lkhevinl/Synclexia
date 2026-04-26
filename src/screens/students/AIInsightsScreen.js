@@ -26,7 +26,7 @@ const TREND_ICON = { improving: 'trending-up', declining: 'trending-down', stabl
 const TREND_COLOR = { improving: '#4CAF50', declining: '#EF5350', stable: '#FF9800', none: '#90A4AE' };
 const LEVEL_LABELS = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
 
-export default function AIInsightsScreen({ navigation }) {
+export default function AIInsightsScreen({ navigation, route }) {
   const { profile } = useAuth();
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
@@ -36,13 +36,17 @@ export default function AIInsightsScreen({ navigation }) {
   const [applied, setApplied] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
 
+  // Parents pass studentId as a route param to view their child's report
+  const targetId = route?.params?.studentId || profile?.id;
+  const isViewingChild = !!route?.params?.studentId && route.params.studentId !== profile?.id;
+
   const load = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!targetId) return;
     setLoading(true);
     setError(null);
     setApplied(false);
     try {
-      const data = await analyzeStudentProfile(profile.id, 60);
+      const data = await analyzeStudentProfile(targetId, 60);
       setProfileData(data);
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } catch (e) {
@@ -51,15 +55,15 @@ export default function AIInsightsScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
-  }, [profile?.id]);
+  }, [targetId]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleApplyPath = async () => {
-    if (!profile?.id || !profile_data?.learningPath?.length) return;
+    if (!targetId || !profile_data?.learningPath?.length) return;
     setApplying(true);
     try {
-      const result = await applyLearningPath(profile.id, profile_data.learningPath);
+      const result = await applyLearningPath(targetId, profile_data.learningPath);
       setApplied(true);
       Alert.alert(
         'Learning Path Applied!',
@@ -77,8 +81,8 @@ export default function AIInsightsScreen({ navigation }) {
   // ── Render helpers ──────────────────────────────────────────────────────────
 
   const ScoreRing = ({ score }) => {
-    const color = score >= 75 ? '#4CAF50' : score >= 50 ? '#FF9800' : '#EF5350';
-    const label = score >= 75 ? 'Strong Learner' : score >= 50 ? 'Making Progress' : 'Needs Focus';
+    const color = p?.overallMasteryColor || (score >= 75 ? '#4CAF50' : score >= 50 ? '#FF9800' : '#EF5350');
+    const label = p?.overallMasteryLabel || (score >= 75 ? 'Strong Learner' : score >= 50 ? 'Making Progress' : 'Needs Focus');
     return (
       <View style={styles.scoreRingWrapper}>
         <LinearGradient colors={[color + '22', color + '44']} style={styles.scoreRingOuter}>
@@ -106,14 +110,17 @@ export default function AIInsightsScreen({ navigation }) {
       >
         <View style={styles.activityCardTop}>
           <View style={[styles.activityIconBg, { backgroundColor: item.color + '22' }]}>
-            <Text style={styles.activityIcon}>{item.icon}</Text>
+            <Icon name={item.icon} size="md" color={item.color} />
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={[styles.activityLabel, { color: accentColor }]}>{item.label}</Text>
             <View style={styles.accuracyRow}>
-              <Text style={styles.accuracyNumber}>{item.avgAccuracy}%</Text>
-              <Text style={styles.accuracyText}> accuracy</Text>
+              <Text style={styles.accuracyNumber}>{item.masteryScore ?? item.avgAccuracy}%</Text>
+              <Text style={styles.accuracyText}> mastery</Text>
             </View>
+            {item.masteryLabel ? (
+              <Text style={[styles.masteryTag, { color: item.masteryColor ?? accentColor }]}>{item.masteryLabel}</Text>
+            ) : null}
           </View>
           <View style={styles.trendBadge}>
             <Icon name={TREND_ICON[item.trend]} size="sm" color={TREND_COLOR[item.trend]} />
@@ -154,7 +161,7 @@ export default function AIInsightsScreen({ navigation }) {
     >
       <View style={styles.recHeader}>
         <View style={[styles.recIconBg, { backgroundColor: rec.color + '22' }]}>
-          <Text style={styles.recIcon}>{rec.icon}</Text>
+          <Icon name={rec.icon} size="md" color={rec.color} />
         </View>
         <Text style={[styles.recTitle, { color: rec.color }]}>{rec.title}</Text>
       </View>
@@ -171,7 +178,7 @@ export default function AIInsightsScreen({ navigation }) {
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.pathTitleRow}>
-            <Text style={styles.pathIcon}>{item.icon}</Text>
+            <Icon name={item.icon} size="sm" color="#E8927C" />
             <Text style={styles.pathLabel}>{item.label}</Text>
             {needsAdjustment && (
               <View style={styles.adjustBadge}>
@@ -217,6 +224,7 @@ export default function AIInsightsScreen({ navigation }) {
   const hasStrengths = p.strengths.length > 0;
   const hasWeaknesses = p.weaknesses.length > 0;
   const hasNotPracticed = p.notPracticed.length > 0;
+  const hasPracticeTools = (p.practiceTools ?? []).length > 0;
   const hasPath = p.learningPath.length > 0;
   const pathHasAdjustments = p.learningPath.some(i => i.suggestedLevel !== i.currentLevel);
 
@@ -318,7 +326,7 @@ export default function AIInsightsScreen({ navigation }) {
                       colors={[meta.color + 'CC', meta.color]}
                       style={styles.notPracticedGradient}
                     >
-                      <Text style={styles.notPracticedIcon}>{meta.icon}</Text>
+                      <Icon name={meta.icon} size="xl" color="#fff" />
                       <Text style={styles.notPracticedLabel}>{meta.label}</Text>
                       <Text style={styles.notPracticedTry}>Try it!</Text>
                     </LinearGradient>
@@ -326,6 +334,41 @@ export default function AIInsightsScreen({ navigation }) {
                 );
               })}
             </View>
+          </View>
+        )}
+
+        {/* PRACTICE TOOLS */}
+        {hasPracticeTools && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <LinearGradient colors={['#009688', '#00695C']} style={styles.sectionIconGradient}>
+                <Icon name="tool" size="sm" color="#fff" />
+              </LinearGradient>
+              <Text style={styles.sectionTitle}>Practice Tools Used</Text>
+            </View>
+            <View style={styles.toolsNote}>
+              <Icon name="info" size="sm" color="#888" />
+              <Text style={styles.toolsNoteText}>These tools support learning but are not scored by the AI.</Text>
+            </View>
+            {(p.practiceTools ?? []).map(tool => (
+              <TouchableOpacity
+                key={tool.activity}
+                style={styles.toolCard}
+                onPress={() => navigation.navigate(tool.route)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.toolIconBg, { backgroundColor: tool.color + '22' }]}>
+                  <Icon name={tool.icon} size="md" color={tool.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.toolLabel, { color: tool.color }]}>{tool.label}</Text>
+                  <Text style={styles.toolSessions}>{tool.totalSessions} session{tool.totalSessions !== 1 ? 's' : ''} logged</Text>
+                </View>
+                <View style={styles.toolBadge}>
+                  <Text style={styles.toolBadgeText}>No Scoring</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -363,7 +406,7 @@ export default function AIInsightsScreen({ navigation }) {
               ))}
             </View>
 
-            {pathHasAdjustments && (
+            {pathHasAdjustments && !isViewingChild && (
               <TouchableOpacity
                 style={[styles.applyBtn, applied && styles.applyBtnApplied]}
                 onPress={applied ? undefined : handleApplyPath}
@@ -457,7 +500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...tokens.shadows.mid,
   },
-  scoreRingWrapper: { alignItems: 'center', marginBottom: tokens.spacing.lg - 4 },
+  scoreRingWrapper: { alignItems: 'center', alignSelf: 'center', marginBottom: tokens.spacing.lg - 4 },
   scoreRingOuter: {
     width: 120,
     height: 120,
@@ -474,13 +517,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    alignItems: 'baseline',
   },
   scoreNumber: { fontSize: tokens.fontSize.display + 2, fontWeight: 'bold' },
-  scorePercent: { fontSize: tokens.fontSize.md + 1, fontWeight: '600', color: '#999' },
+  scorePercent: { fontSize: tokens.fontSize.sm + 2, fontWeight: '600', color: '#999', alignSelf: 'flex-start', paddingTop: 12 },
   scoreLabel: { marginTop: tokens.spacing.sm + 2, fontSize: tokens.fontSize.sm, fontWeight: '700', letterSpacing: 0.5 },
 
-  overallStats: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  overallStats: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: 0 },
   overallStatItem: { flex: 1, alignItems: 'center' },
   overallStatNum: { fontSize: tokens.fontSize.xl, fontWeight: 'bold', color: '#333' },
   overallStatLabel: { fontSize: tokens.fontSize.xs, color: '#888', marginTop: 2 },
@@ -535,6 +577,15 @@ const styles = StyleSheet.create({
   accuracyRow: { flexDirection: 'row', alignItems: 'baseline' },
   accuracyNumber: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   accuracyText: { fontSize: 12, color: '#666' },
+  masteryTag: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  toolsNote: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10, marginBottom: 10 },
+  toolsNoteText: { fontSize: 12, color: '#666', flex: 1 },
+  toolCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
+  toolIconBg: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  toolLabel: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
+  toolSessions: { fontSize: 12, color: '#888' },
+  toolBadge: { backgroundColor: '#F0F0F0', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  toolBadgeText: { fontSize: 11, color: '#888', fontWeight: '600' },
   trendBadge: {
     width: 28,
     height: 28,

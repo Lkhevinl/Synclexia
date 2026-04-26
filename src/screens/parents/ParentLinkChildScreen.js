@@ -24,6 +24,7 @@ const avatarColor = (name) =>
 export default function ParentLinkChildScreen({ navigation }) {
   const { profile } = useAuth();
   const { theme, colors, a11yTextStyle } = useTheme();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
 
   const [code, setCode]         = useState('');
   const [found, setFound]       = useState(null);
@@ -168,7 +169,7 @@ export default function ParentLinkChildScreen({ navigation }) {
               setFound(null);
             }}
             placeholder="AB12CD"
-            placeholderTextColor="#C9B8DC"
+            placeholderTextColor={colors.primary + '70'}
             autoCapitalize="characters"
             maxLength={6}
             autoFocus
@@ -178,7 +179,7 @@ export default function ParentLinkChildScreen({ navigation }) {
               onPress={() => { setCode(''); setFound(null); setError(''); }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Icon name="x-circle" size="md" color="#B0A0C8" />
+              <Icon name="x-circle" size="md" color={colors.onSurfaceMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -297,7 +298,7 @@ export default function ParentLinkChildScreen({ navigation }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // Header
   header:             { paddingTop: 55, paddingBottom: tokens.spacing.xl, paddingHorizontal: 22, marginHorizontal: -tokens.spacing.md },
   headerTitle:        { fontSize: 24, fontWeight: '900', color: '#fff', marginTop: 14, letterSpacing: 0.5 },
@@ -306,49 +307,49 @@ const s = StyleSheet.create({
   // Info card
   infoCard:           {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#EDE7F6', borderRadius: tokens.radius.md,
+    backgroundColor: colors.primaryLight, borderRadius: tokens.radius.md,
     padding: tokens.spacing.md, marginBottom: tokens.spacing.md, marginTop: tokens.spacing.md,
-    borderLeftWidth: 4, borderLeftColor: '#7B1FA2',
+    borderLeftWidth: 4, borderLeftColor: colors.primary,
   },
   infoIcon:           { marginTop: 2, marginRight: 10 },
-  infoText:           { flex: 1, color: '#4A148C', lineHeight: 22 },
-  infoBold:           { fontWeight: '800', color: '#6A1B9A' },
+  infoText:           { flex: 1, color: colors.onSurface, lineHeight: 22 },
+  infoBold:           { fontWeight: '800', color: colors.primary },
 
   // Steps
   stepsCard:          {
-    backgroundColor: '#F3E5F5', borderRadius: tokens.radius.md,
+    backgroundColor: colors.primaryLight, borderRadius: tokens.radius.md,
     padding: tokens.spacing.md, marginBottom: tokens.spacing.lg, gap: 14,
   },
   stepRow:            { flexDirection: 'row', alignItems: 'flex-start', gap: tokens.spacing.md },
   stepBadge:          {
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: '#7B1FA2', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center',
   },
   stepNum:            { color: '#fff', fontWeight: '900', fontSize: 14 },
-  stepTxt:            { flex: 1, color: '#4A148C', lineHeight: 22, paddingTop: tokens.spacing.xs },
+  stepTxt:            { flex: 1, color: colors.onSurface, lineHeight: 22, paddingTop: tokens.spacing.xs },
 
   // Divider
-  divider:            { height: 1, backgroundColor: '#E0D0F5', marginBottom: tokens.spacing.lg },
+  divider:            { height: 1, backgroundColor: colors.border, marginBottom: tokens.spacing.lg },
 
   // Input section
-  label:              { fontWeight: '800', color: '#4A148C', marginBottom: 10, letterSpacing: 0.4 },
+  label:              { fontWeight: '800', color: colors.primary, marginBottom: 10, letterSpacing: 0.4 },
   codeBox:            {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: tokens.radius.md,
-    borderWidth: 2.5, borderColor: '#CE93D8',
+    backgroundColor: colors.surfaceCard, borderRadius: tokens.radius.md,
+    borderWidth: 2.5, borderColor: colors.primary + '80',
     paddingHorizontal: tokens.spacing.lg, paddingVertical: 6,
     ...tokens.shadows.low,
   },
   codeBoxError:       { borderColor: '#D32F2F' },
   codeInput:          {
-    flex: 1, fontWeight: '900', color: '#6A1B9A',
+    flex: 1, fontWeight: '900', color: colors.primary,
     letterSpacing: 10, paddingVertical: tokens.spacing.md, textAlign: 'center',
   },
 
   // Dot indicators
   hintRow:            { flexDirection: 'row', justifyContent: 'center', gap: tokens.spacing.sm, marginTop: 10, marginBottom: 6 },
-  hintDot:            { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E0D0F5' },
-  hintDotFilled:      { backgroundColor: '#7B1FA2' },
+  hintDot:            { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary + '30' },
+  hintDotFilled:      { backgroundColor: colors.primary },
 
   // Error
   errorRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, marginTop: tokens.spacing.xs },
@@ -357,15 +358,15 @@ const s = StyleSheet.create({
   // Find button
   lookupBtn:          {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#7B1FA2', borderRadius: tokens.radius.md,
+    backgroundColor: colors.primary, borderRadius: tokens.radius.md,
     paddingVertical: 18, marginTop: 10, ...tokens.shadows.mid,
   },
-  lookupBtnDisabled:  { backgroundColor: '#CE93D8', elevation: 0, shadowOpacity: 0 },
+  lookupBtnDisabled:  { backgroundColor: colors.primary + '60', elevation: 0, shadowOpacity: 0 },
   lookupBtnText:      { color: '#fff', fontWeight: '900', letterSpacing: 0.5 },
 
   // Found card
   foundCard:          {
-    backgroundColor: '#fff', borderRadius: tokens.radius.lg,
+    backgroundColor: colors.surfaceCard, borderRadius: tokens.radius.lg,
     padding: tokens.spacing.lg, marginTop: tokens.spacing.xl, ...tokens.shadows.mid,
     borderWidth: 2.5, borderColor: '#4CAF50',
   },
@@ -386,8 +387,8 @@ const s = StyleSheet.create({
 
   // Student info
   foundInfo:          { flex: 1 },
-  foundName:          { fontWeight: '900', color: '#1A1A2E', lineHeight: 28 },
-  foundEmail:         { color: '#888', marginTop: 2, lineHeight: 20 },
+  foundName:          { fontWeight: '900', color: colors.onSurface, lineHeight: 28 },
+  foundEmail:         { color: colors.onSurfaceMuted, marginTop: 2, lineHeight: 20 },
   levelRow:           { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
   levelText:          { color: '#E65100', fontWeight: '700' },
   xpBadge:            { backgroundColor: '#FFF3E0', borderRadius: 10, paddingHorizontal: tokens.spacing.sm, paddingVertical: 2 },
@@ -409,5 +410,5 @@ const s = StyleSheet.create({
   linkErrorText: { flex: 1, color: '#C62828', fontWeight: '500' },
   linkSuccessBox: { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#E8F5E9', borderRadius: 10, padding: tokens.spacing.md, marginTop: 10 },
   linkSuccessText: { flex: 1, color: '#2E7D32', fontWeight: '600' },
-  cancelLinkText:     { color: '#9E9E9E', textDecorationLine: 'underline', lineHeight: 22 },
+  cancelLinkText:     { color: colors.onSurfaceMuted, textDecorationLine: 'underline', lineHeight: 22 },
 });

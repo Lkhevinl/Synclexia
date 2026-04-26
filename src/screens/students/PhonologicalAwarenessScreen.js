@@ -14,7 +14,7 @@ import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
@@ -82,6 +82,7 @@ function AnimatedCard({ children, style, onPress, delay = 0 }) {
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
 function ModeSelector({ onSelect }) {
+  const { colors } = useTheme();
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -89,14 +90,14 @@ function ModeSelector({ onSelect }) {
   }, []);
 
   const modes = [
-    { id: 'syllable', icon: 'hand-metal',  label: 'Clap & Snap', desc: 'How many syllables? Tap on each beat!', gradient: ['#2196F3', '#1565C0'] },
-    { id: 'phoneme',  icon: 'type',         label: 'Pick-a-Sound',  desc: 'What is the first or last sound?',     gradient: ['#E91E63', '#AD1457'] },
+    { id: 'syllable', icon: 'hand-metal',  label: 'Clap & Snap', desc: 'How many syllables? Tap on each beat!', bgColor: colors.primary },
+    { id: 'phoneme',  icon: 'type',         label: 'Pick-a-Sound',  desc: 'What is the first or last sound?',     bgColor: colors.primary },
   ];
 
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
-        <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
+        <View style={[ms.headerCard, { backgroundColor: colors.primary }]}>
           <Icon name="headphones" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Phonological Awareness</Text>
           <Text style={ms.sub}>Building blocks of reading & spelling</Text>
@@ -105,7 +106,7 @@ function ModeSelector({ onSelect }) {
 
       {modes.map((m, index) => (
         <AnimatedCard key={m.id} style={ms.cardWrapper} onPress={() => onSelect(m.id)} delay={index * 100}>
-          <View style={[ms.card, { backgroundColor: m.gradient[0] }]}>
+          <View style={[ms.card, { backgroundColor: m.bgColor }]}>
             <View style={ms.cardContent}>
               <View style={ms.emojiCircle}>
                 <Icon name={m.icon} size="md" color="#fff" />
@@ -135,12 +136,12 @@ const ms = StyleSheet.create({
   cardWrapper: { marginBottom: 16, borderRadius: 20, elevation: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   card:        { borderRadius: 20, padding: 20, overflow: 'hidden' },
   cardContent: { flexDirection: 'row', alignItems: 'center' },
-  emojiCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.25)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  emojiCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.12)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   cardEmoji:   { fontSize: 28 },
   cardLabel:   { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   cardDesc:    { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 18 },
-  playBtn:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
-  cardShine:   { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'rgba(255,255,255,0.1)', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  playBtn:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.12)', justifyContent: 'center', alignItems: 'center' },
+  cardShine:   { position: 'absolute', top: 0, left: 0, right: 0, height: '50%', backgroundColor: 'transparent', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
 });
 
 // ─── Syllable Game ─────────────────────────────────────────────────────────────
@@ -187,8 +188,8 @@ function SyllableGame({ onBack, userId, items: rawItems }) {
     }, 1200);
   };
 
-  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#2196F3" />;
-  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#2196F3" />;
+  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color={colors.primary} />;
+  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color={colors.primary} />;
 
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
@@ -202,8 +203,8 @@ function SyllableGame({ onBack, userId, items: rawItems }) {
           <Animated.Text style={[g.wordEmoji, { transform: [{ scale: bounceAnim }] }]}>{current.emoji}</Animated.Text>
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Icon name="volume-2" size="md" color="#2196F3" />
-            <Text style={[g.speakText, { color: '#2196F3' }]}>Tap to hear</Text>
+            <Icon name="volume-2" size="md" color={colors.primary} />
+            <Text style={[g.speakText, { color: colors.primary }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
         <Text style={g.question}>How many syllables?</Text>
@@ -263,8 +264,8 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
     }, 1200);
   };
 
-  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color="#E91E63" />;
-  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color="#E91E63" />;
+  if (!items.length || !current) return <FinishScreen score={0} total={0} onBack={onBack} color={colors.primary} />;
+  if (done) return <FinishScreen score={score} total={items.length} onBack={onBack} color={colors.primary} />;
 
   return (
     <View style={[g.container, { backgroundColor: colors.surface }]}>
@@ -275,11 +276,11 @@ function PhonemeGame({ onBack, userId, items: rawItems }) {
       />
       <View style={g.body}>
         <TouchableOpacity style={g.wordCard} onPress={() => Speech.speak(current.word, { rate: 0.6 })}>
-          <Icon name="ear" size="xl" color="#E91E63" />
+          <Icon name="ear" size="xl" color={colors.primary} />
           <Text style={g.wordText}>{current.word}</Text>
           <View style={g.speakBtn}>
-            <Icon name="volume-2" size="md" color="#E91E63" />
-            <Text style={[g.speakText, { color: '#E91E63' }]}>Tap to hear</Text>
+            <Icon name="volume-2" size="md" color={colors.primary} />
+            <Text style={[g.speakText, { color: colors.primary }]}>Tap to hear</Text>
           </View>
         </TouchableOpacity>
         <Text style={g.question}>
@@ -379,7 +380,7 @@ export default function PhonologicalAwarenessScreen() {
   if (contentLoading) {
     return (
       <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6A1B9A" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ marginTop: 12, color: '#78909C' }}>Loading activities…</Text>
       </ScreenWrapper>
     );
@@ -393,7 +394,7 @@ export default function PhonologicalAwarenessScreen() {
       <StudentPageHeader title="Sound Games" />
       <StudentCard variant="tinted" style={paRoot.hintCard}>
         <View style={paRoot.hintRow}>
-          <Icon name="info" size="md" color={c.primary} />
+          <Icon name="info" size="md" color={colors.primary} />
           <Text style={paRoot.hintText}>
             <Text style={{ fontWeight: 'bold' }}>How to use: </Text>
             Pick a game! Clap & Snap counts word parts, Pick-a-Sound identifies sounds.
@@ -408,5 +409,5 @@ export default function PhonologicalAwarenessScreen() {
 const paRoot = StyleSheet.create({
   hintCard: { margin: 16, marginBottom: 4 },
   hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  hintText: { flex: 1, fontSize: 13, color: '#78909C', lineHeight: 19 },
 });

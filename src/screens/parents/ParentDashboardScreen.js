@@ -13,6 +13,7 @@ import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
 import Sidebar from '../../components/Sidebar';
 import ScreenWrapper from '../../components/ScreenWrapper';
+import AIAvatarWidget from '../../components/AIAvatarWidget';
 import tokens from '../../theme/tokens';
 import { getStudentProgress } from '../../lib/analyticsHelper';
 import { analyzeStudentProfile, ACTIVITY_META } from '../../lib/strengthsAnalysis';
@@ -37,6 +38,7 @@ export default function ParentDashboardScreen({ navigation }) {
   const { profile, signOut } = useAuth();
   const { theme, colors, a11yTextStyle } = useTheme();
   const insets = useSafeAreaInsets();
+  const s = React.useMemo(() => makeStyles(colors), [colors]);
 
   const [children, setChildren] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -448,7 +450,7 @@ export default function ParentDashboardScreen({ navigation }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 20 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={['#E8927C']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); refresh(); }} colors={[colors.primary]} />}
       >
         {/* Child tabs (only when multiple children) */}
         {children.length > 1 && (
@@ -480,7 +482,7 @@ export default function ParentDashboardScreen({ navigation }) {
             style={s.editChildBtn}
             onPress={() => navigation.navigate('ParentEditChild', { child: children[selectedIdx] })}
           >
-            <Icon name="pencil" size="md" color="#E8927C" />
+            <Icon name="pencil" size="md" color={colors.primary} />
             <Text style={[s.editChildBtnText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -506,6 +508,135 @@ export default function ParentDashboardScreen({ navigation }) {
           </View>
         </View>
 
+        {/* ── Learning Report Summary ── */}
+        {aiInsights && aiInsights.totalSessions > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Learning Report Summary</Text>
+            <View style={s.reportCard}>
+              {/* 1. PURPOSE & 2. BACKGROUND Header */}
+              <View style={s.reportHeader}>
+                <View style={[s.reportBadge, { backgroundColor: aiInsights.overallScore >= 75 ? '#E8F5E9' : aiInsights.overallScore >= 50 ? '#FFF3E0' : '#FFEBEE' }]}>
+                  <Icon name="file-text" size="sm" color={aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#FF9800' : '#EF5350'} />
+                  <Text style={[s.reportBadgeText, { color: aiInsights.overallScore >= 75 ? '#2E7D32' : aiInsights.overallScore >= 50 ? '#E65100' : '#C62828' }]}>AI Assessment</Text>
+                </View>
+                <Text style={[s.reportDate, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
+                  {name} · Last 60 days
+                </Text>
+              </View>
+
+              {/* 3. METHODOLOGY */}
+              <View style={s.reportSection}>
+                <Text style={[s.reportSectionTitle, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                  <Icon name="database" size="xs" color="#666" /> Data Source
+                </Text>
+                <Text style={[s.reportSectionBody, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                  Analysis based on {aiInsights.totalSessions} completed sessions across {aiInsights.activitiesPracticed} learning activities.
+                </Text>
+              </View>
+
+              {/* 4. KEY FINDINGS */}
+              <View style={s.reportSection}>
+                <Text style={[s.reportSectionTitle, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                  <Icon name="search" size="xs" color="#666" /> Key Findings
+                </Text>
+
+                {/* Overall Score */}
+                <View style={s.reportFindingsRow}>
+                  <View style={[s.reportScoreRingSmall, { borderColor: aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#FF9800' : '#EF5350' }]}>
+                    <Text style={[s.reportScoreNumSmall, { color: aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#FF9800' : '#EF5350' }]}>{aiInsights.overallScore}</Text>
+                  </View>
+                  <View style={s.reportFindingText}>
+                    <Text style={[s.reportFindingLabel, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>Overall Learning Score</Text>
+                    <Text style={[s.reportFindingSub, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>
+                      {aiInsights.strengths.length} strength{aiInsights.strengths.length !== 1 ? 's' : ''} · {aiInsights.weaknesses.length} area{aiInsights.weaknesses.length !== 1 ? 's' : ''} to improve
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Top Strength */}
+                {aiInsights.strengths.length > 0 && (
+                  <View style={[s.reportFindingItem, { backgroundColor: '#E8F5E9' }]}>
+                    <Icon name="trending-up" size="sm" color="#4CAF50" />
+                    <View style={s.reportFindingItemText}>
+                      <Text style={[s.reportFindingItemLabel, { color: '#2E7D32' }, a11yTextStyle]}>
+                        Strongest: {aiInsights.strengths[0].label}
+                      </Text>
+                      <Text style={[s.reportFindingItemValue, { color: '#4CAF50' }, a11yTextStyle]}>
+                        {aiInsights.strengths[0].avgAccuracy}% accuracy
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Top Weakness */}
+                {aiInsights.weaknesses.length > 0 && (
+                  <View style={[s.reportFindingItem, { backgroundColor: '#FFF3E0' }]}>
+                    <Icon name="alert-circle" size="sm" color="#FF9800" />
+                    <View style={s.reportFindingItemText}>
+                      <Text style={[s.reportFindingItemLabel, { color: '#E65100' }, a11yTextStyle]}>
+                        Needs Focus: {aiInsights.weaknesses[0].label}
+                      </Text>
+                      <Text style={[s.reportFindingItemValue, { color: '#FF9800' }, a11yTextStyle]}>
+                        {aiInsights.weaknesses[0].avgAccuracy}% accuracy
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* 5. CONCLUSION */}
+              <View style={[s.reportConclusion, { backgroundColor: aiInsights.overallScore >= 75 ? '#E8F5E9' : aiInsights.overallScore >= 50 ? '#FFF8E1' : '#FFEBEE' }]}>
+                <Icon name="check-circle" size="md" color={aiInsights.overallScore >= 75 ? '#4CAF50' : aiInsights.overallScore >= 50 ? '#F57C00' : '#EF5350'} />
+                <View style={s.reportConclusionText}>
+                  <Text style={[s.reportConclusionTitle, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>
+                    {aiInsights.overallScore >= 75 ? 'Strong Learner' : aiInsights.overallScore >= 50 ? 'Making Progress' : 'Needs Support'}
+                  </Text>
+                  <Text style={[s.reportConclusionBody, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                    {aiInsights.overallScore >= 75
+                      ? `${name.split(' ')[0]} demonstrates excellent learning consistency with strong performance across multiple activities.`
+                      : aiInsights.overallScore >= 50
+                      ? `${name.split(' ')[0]} is showing steady improvement. Regular practice will help build stronger skills in focus areas.`
+                      : `${name.split(' ')[0]} would benefit from additional support and more frequent practice sessions.`}
+                  </Text>
+                </View>
+              </View>
+
+              {/* 6. RECOMMENDATIONS / NEXT STEPS */}
+              {aiInsights.recommendations && aiInsights.recommendations.length > 0 && (
+                <View style={s.reportSection}>
+                  <Text style={[s.reportSectionTitle, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>
+                    <Icon name="lightbulb" size="xs" color="#666" /> Recommended Actions
+                  </Text>
+                  {aiInsights.recommendations.slice(0, 2).map((rec, i) => (
+                    <View key={i} style={[s.reportRecItem, { borderLeftColor: rec.color }]}>
+                      <Icon name={rec.icon} size="sm" color={rec.color} />
+                      <View style={s.reportRecText}>
+                        <Text style={[s.reportRecTitle, { color: rec.color }, a11yTextStyle]}>{rec.title}</Text>
+                        <Text style={[s.reportRecBody, { fontSize: theme.fontSize - 3 }, a11yTextStyle]} numberOfLines={2}>
+                          {rec.body}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* View Full Report Button */}
+              <TouchableOpacity
+                style={s.reportViewBtn}
+                onPress={() => navigation.navigate('AIInsights', { studentId: childProfile?.id || child?.profiles?.id || child?.student_id })}
+                activeOpacity={0.85}
+              >
+                <LinearGradient colors={[colors.primary, colors.primaryDark ?? colors.primary]} style={s.reportViewGradient}>
+                  <Icon name="file-text" size="md" color="#fff" />
+                  <Text style={s.reportViewText}>View Detailed Report</Text>
+                  <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
         {/* ── Quick Nav ── */}
         <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Quick Access</Text>
         <View style={s.navList}>
@@ -521,7 +652,7 @@ export default function ParentDashboardScreen({ navigation }) {
                 <Text style={[s.navLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.label}</Text>
                 <Text style={[s.navDesc, { fontSize: theme.fontSize - 2 }, a11yTextStyle]}>{item.desc}</Text>
               </View>
-              <Icon name="chevron-forward" size="md" color="#E8927C" />
+              <Icon name="chevron-forward" size="md" color={colors.primary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -663,7 +794,7 @@ export default function ParentDashboardScreen({ navigation }) {
               renderItem={({ item }) => (
                 <View style={s.notifItem}>
                   <View style={s.notifItemIconBox}>
-                    <Icon name="megaphone" size="md" color="#E8927C" />
+                    <Icon name="megaphone" size="md" color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.notifItemTitle, { fontSize: theme.fontSize }, a11yTextStyle]}>{item.title}</Text>
@@ -687,20 +818,28 @@ export default function ParentDashboardScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* ── Floating AI Widget (shown when child selected) ── */}
+      {child && (
+        <AIAvatarWidget
+          studentId={childProfile?.id || child?.profiles?.id || child?.student_id}
+          studentName={childProfile?.full_name?.split(' ')[0] || child?.profiles?.full_name?.split(' ')[0] || 'Child'}
+        />
+      )}
     </ScreenWrapper>
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   container:          { flex: 1 },
   loadingContainer:   { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText:        { marginTop: tokens.spacing.md, color: '#E8927C', fontWeight: '600' },
+  loadingText:        { marginTop: tokens.spacing.md, color: colors.primary, fontWeight: '600' },
   emptyHeader:        { paddingTop: 60, paddingBottom: 30, paddingHorizontal: tokens.spacing.lg },
   emptyHeaderTitle:   { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   emptyBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
   emptyTitle:         { fontSize: 20, fontWeight: 'bold', color: '#555', marginTop: 20 },
   emptyHint:          { fontSize: 14, color: '#999', marginTop: tokens.spacing.sm, textAlign: 'center', lineHeight: 22 },
-  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: '#E8927C', borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.lg, elevation: 3 },
+  linkChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.sm, backgroundColor: colors.primary, borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.lg, elevation: 3 },
   linkChildBtnText:   { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   logOutBtn:          { borderWidth: 1.5, borderColor: '#E05C5C', borderRadius: 25, paddingHorizontal: tokens.spacing.lg, paddingVertical: 14, marginTop: tokens.spacing.md, minWidth: 160, alignItems: 'center' },
   logOutBtnText:      { color: '#E05C5C', fontWeight: 'bold', fontSize: 16 },
@@ -709,9 +848,9 @@ const s = StyleSheet.create({
   headerContent:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatarWrapper:      { width: 48, height: 48, borderRadius: 24, overflow: 'hidden', flexShrink: 0 },
   avatarImg:          { width: 48, height: 48, borderRadius: 24 },
-  avatarPlaceholder:  { width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center' },
+  avatarPlaceholder:  { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   avatarInitial:      { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  welcomeCard:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: tokens.radius.lg, paddingVertical: 14, paddingHorizontal: tokens.spacing.md, backgroundColor: '#E8927C', ...tokens.shadows.low },
+  welcomeCard:        { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: tokens.radius.lg, paddingVertical: 14, paddingHorizontal: tokens.spacing.md, backgroundColor: colors.primary, ...tokens.shadows.low },
   welcomeTitle:       { fontSize: 14, fontWeight: '700', color: '#fff' },
   welcomeSub:         { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   iconBtn:            { width: 42, height: 42, borderRadius: 21, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', ...tokens.shadows.low, flexShrink: 0, position: 'relative' },
@@ -720,20 +859,20 @@ const s = StyleSheet.create({
   badgeText:          { color: '#fff', fontSize: 9, fontWeight: 'bold' },
   childTabs:          { marginBottom: 14 },
   childTab:           { paddingHorizontal: tokens.spacing.md, paddingVertical: tokens.spacing.sm, borderRadius: tokens.radius.lg, backgroundColor: '#fff', marginRight: tokens.spacing.sm, elevation: 1, borderWidth: 1.5, borderColor: '#E0D8D4' },
-  childTabActive:     { backgroundColor: '#E8927C', borderColor: '#E8927C' },
+  childTabActive:     { backgroundColor: colors.primary, borderColor: colors.primary },
   childTabText:       { color: '#888', fontWeight: '600', fontSize: 13 },
   childTabTextActive: { color: '#fff' },
 
   scroll:             { padding: tokens.spacing.md },
 
-  heroCard:           { backgroundColor: '#fff', borderRadius: tokens.radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, ...tokens.shadows.mid, gap: 14, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
+  heroCard:           { backgroundColor: colors.surface, borderRadius: tokens.radius.lg, padding: 18, flexDirection: 'row', alignItems: 'center', marginBottom: 14, ...tokens.shadows.mid, gap: 14, borderLeftWidth: 4, borderLeftColor: colors.primary },
   heroAvatar:         { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center' },
-  heroAvatarImg:      { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: '#E8927C' },
+  heroAvatarImg:      { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: colors.primary },
   heroAvatarText:     { color: '#fff', fontSize: 28, fontWeight: 'bold' },
   heroName:           { fontSize: 18, fontWeight: '800', color: '#222' },
   heroEmail:          { fontSize: 12, color: '#aaa', marginTop: 3 },
-  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.xs, backgroundColor: '#FFF0EB', borderRadius: tokens.radius.lg, paddingHorizontal: tokens.spacing.md, paddingVertical: 7, alignSelf: 'flex-start' },
-  editChildBtnText:   { color: '#E8927C', fontWeight: '700', fontSize: 13 },
+  editChildBtn:       { flexDirection: 'row', alignItems: 'center', gap: tokens.spacing.xs, backgroundColor: colors.primaryLight, borderRadius: tokens.radius.lg, paddingHorizontal: tokens.spacing.md, paddingVertical: 7, alignSelf: 'flex-start' },
+  editChildBtnText:   { color: colors.primary, fontWeight: '700', fontSize: 13 },
 
   statsRow:           { flexDirection: 'row', backgroundColor: '#fff', borderRadius: tokens.radius.lg, marginBottom: tokens.spacing.md, ...tokens.shadows.low, overflow: 'hidden' },
   statBox:            { flex: 1, alignItems: 'center', paddingVertical: tokens.spacing.md },
@@ -741,11 +880,47 @@ const s = StyleSheet.create({
   statVal:            { fontSize: 20, fontWeight: 'bold', marginTop: 5 },
   statLbl:            { fontSize: 10, color: '#999', fontWeight: '600', textTransform: 'uppercase', marginTop: 2 },
 
+  // Report Summary Card - Essential Elements
+  reportCard:              { backgroundColor: '#fff', borderRadius: tokens.radius.lg, padding: 18, marginBottom: 14, ...tokens.shadows.mid },
+  // 1. Purpose & Background
+  reportHeader:            { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  reportBadge:             { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: tokens.radius.md, paddingHorizontal: 10, paddingVertical: 6 },
+  reportBadgeText:         { fontSize: 12, fontWeight: 'bold' },
+  reportDate:              { color: '#888' },
+  // 3. Methodology & 4. Key Findings
+  reportSection:           { marginBottom: 16 },
+  reportSectionTitle:      { fontWeight: 'bold', color: '#444', marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  reportSectionBody:       { color: '#666', lineHeight: 18 },
+  reportFindingsRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 },
+  reportScoreRingSmall:    { width: 56, height: 56, borderRadius: 28, borderWidth: 3, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  reportScoreNumSmall:     { fontSize: 20, fontWeight: 'bold' },
+  reportFindingText:       { flex: 1 },
+  reportFindingLabel:      { fontWeight: 'bold', color: '#333' },
+  reportFindingSub:        { color: '#888', marginTop: 2 },
+  reportFindingItem:       { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: tokens.radius.md, padding: 12, marginBottom: 8 },
+  reportFindingItemText:   { flex: 1 },
+  reportFindingItemLabel:  { fontWeight: '600', fontSize: 13 },
+  reportFindingItemValue:  { fontSize: 12, fontWeight: 'bold', marginTop: 2 },
+  // 5. Conclusion
+  reportConclusion:        { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: tokens.radius.md, padding: 14, marginBottom: 16 },
+  reportConclusionText:    { flex: 1 },
+  reportConclusionTitle:   { fontWeight: 'bold', marginBottom: 4 },
+  reportConclusionBody:    { color: '#555', lineHeight: 18 },
+  // 6. Recommendations
+  reportRecItem:           { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: '#FAFAFA', borderRadius: tokens.radius.md, padding: 12, marginBottom: 8, borderLeftWidth: 4 },
+  reportRecText:           { flex: 1 },
+  reportRecTitle:          { fontWeight: 'bold', fontSize: 13, marginBottom: 2 },
+  reportRecBody:           { color: '#666', lineHeight: 16 },
+  // View Button
+  reportViewBtn:           { borderRadius: tokens.radius.lg, overflow: 'hidden', marginTop: 4 },
+  reportViewGradient:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  reportViewText:          { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+
   sectionTitle:       { fontSize: 15, fontWeight: '800', color: '#333', marginBottom: 10, marginTop: tokens.spacing.xs },
 
   navList:            { gap: 10, marginBottom: tokens.spacing.md },
-  navCard:            { backgroundColor: '#fff', borderRadius: tokens.radius.md, padding: tokens.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14, ...tokens.shadows.low, borderLeftWidth: 4, borderLeftColor: '#E8927C' },
-  navIconSquare:      { width: 48, height: 48, borderRadius: tokens.radius.md, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  navCard:            { backgroundColor: colors.surfaceCard, borderRadius: tokens.radius.md, padding: tokens.spacing.md, flexDirection: 'row', alignItems: 'center', gap: 14, ...tokens.shadows.low, borderLeftWidth: 4, borderLeftColor: colors.primary },
+  navIconSquare:      { width: 48, height: 48, borderRadius: tokens.radius.md, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   navLabel:           { fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 2 },
   navDesc:            { fontSize: 12, color: '#888' },
 
@@ -765,7 +940,7 @@ const s = StyleSheet.create({
   emptySnap:          { alignItems: 'center', paddingVertical: tokens.spacing.lg },
   emptySnapText:      { color: '#bbb', marginTop: tokens.spacing.sm, fontSize: 13 },
   viewAll:            { marginTop: 14, alignItems: 'center', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#F5F5F5' },
-  viewAllText:        { color: '#E8927C', fontWeight: 'bold', fontSize: 13 },
+  viewAllText:        { color: colors.primary, fontWeight: 'bold', fontSize: 13 },
 
   assignRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', gap: 10 },
   assignIcon:         { fontSize: 24 },
@@ -796,10 +971,10 @@ const s = StyleSheet.create({
   notifOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   notifCard:          { backgroundColor: '#fff', borderTopLeftRadius: tokens.radius.xl, borderTopRightRadius: tokens.radius.xl, padding: tokens.spacing.lg, maxHeight: '75%' },
   notifHeader:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.md, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', paddingBottom: tokens.spacing.md },
-  notifTitle:         { fontSize: 18, fontWeight: 'bold', color: '#E8927C' },
-  notifItem:          { backgroundColor: '#FFF5F0', borderRadius: tokens.radius.md, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: tokens.spacing.md },
-  notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFE0D0', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: '#C87456', marginBottom: tokens.spacing.xs },
+  notifTitle:         { fontSize: 18, fontWeight: 'bold', color: colors.primary },
+  notifItem:          { backgroundColor: colors.primaryLight, borderRadius: tokens.radius.md, padding: 14, marginBottom: 10, flexDirection: 'row', alignItems: 'flex-start', gap: tokens.spacing.md },
+  notifItemIconBox:   { width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + '30', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  notifItemTitle:     { fontSize: 14, fontWeight: 'bold', color: colors.primary, marginBottom: tokens.spacing.xs },
   notifItemBody:      { fontSize: 13, color: '#555', marginBottom: 6, lineHeight: 18 },
   notifItemDate:      { fontSize: 11, color: '#aaa' },
   notifHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -813,6 +988,6 @@ const s = StyleSheet.create({
   errorBody:          { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: tokens.spacing.xl },
   errorTitle:         { fontSize: 20, fontWeight: 'bold', color: '#FF6B6B', marginTop: tokens.spacing.lg, marginBottom: tokens.spacing.md },
   errorMessage:       { color: '#666', textAlign: 'center', lineHeight: 22, marginBottom: tokens.spacing.xl },
-  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#E8927C', paddingVertical: 14, paddingHorizontal: tokens.spacing.xl, borderRadius: tokens.radius.md, ...tokens.shadows.mid },
+  retryBtn:           { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.primary, paddingVertical: 14, paddingHorizontal: tokens.spacing.xl, borderRadius: tokens.radius.md, ...tokens.shadows.mid },
   retryBtnText:       { color: '#fff', fontWeight: 'bold' },
 });

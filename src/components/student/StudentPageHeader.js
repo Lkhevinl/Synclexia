@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from '../icons/Icon';
 import { useNavigation } from '@react-navigation/native';
-import c from './candyTokens';
+import { useCandyTokens } from './candyTokens';
 
 export default function StudentPageHeader({ title, onBack, right, style }) {
   const navigation = useNavigation();
+  const c = useCandyTokens();
 
   const handleBack = () => {
     if (onBack) {
@@ -21,14 +22,14 @@ export default function StudentPageHeader({ title, onBack, right, style }) {
     <View style={[styles.bar, style]}>
       <TouchableOpacity
         onPress={handleBack}
-        style={styles.backBtn}
+        style={[styles.backBtn, { backgroundColor: c.primaryLight, borderColor: c.primary + '40', shadowColor: c.primary }]}
         activeOpacity={0.7}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Icon name="chevron-left" size="md" color={c.primary} />
       </TouchableOpacity>
 
-      <Text style={styles.title} numberOfLines={1}>{title}</Text>
+      <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>{title}</Text>
 
       <View style={styles.rightSlot}>
         {right ?? null}
@@ -48,13 +49,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: c.primaryLight,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: c.primary + '40',
     elevation: 2,
-    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
@@ -64,7 +62,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
-    color: c.text,
     marginHorizontal: 8,
   },
   rightSlot: {

@@ -8,15 +8,14 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
 import * as ttsService from '../../lib/ttsService';
+import { useTheme } from '../../context/ThemeContext';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 54) / 2;
 
-
 // ─── Sound Card ───────────────────────────────────────────────────────────────
 
-const BADGE_COLOR = '#27AE60';
-
 function SoundCard({ item, delay, onPress }) {
+  const { colors } = useTheme();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const pressAnim = useRef(new Animated.Value(1)).current;
@@ -45,7 +44,7 @@ function SoundCard({ item, delay, onPress }) {
         }}
       >
         {/* Category badge */}
-        <View style={{ backgroundColor: BADGE_COLOR, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3, alignSelf: 'flex-start' }}>
+        <View style={{ backgroundColor: colors.primary, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3, alignSelf: 'flex-start' }}>
           <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>{item.category}</Text>
         </View>
 
@@ -81,6 +80,7 @@ const ALL_LABELS = FILTER_GROUPS.map(g => g.label);
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function PhonicsScreen() {
+  const { colors } = useTheme();
   const navigation = useNavigation();
   const [phonemes, setPhonemes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -129,7 +129,7 @@ export default function PhonicsScreen() {
   const visiblePhonemes = phonemes.filter(p => activeCats.has(p.category));
 
   return (
-    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: '#FFF8F0' }}>
+    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
       <View style={styles.blobTopRight} pointerEvents="none" />
       <View style={styles.blobBottomLeft} pointerEvents="none" />
 
@@ -147,7 +147,7 @@ export default function PhonicsScreen() {
         {/* Activities Button */}
         <View style={styles.activitiesSection}>
           <TouchableOpacity
-            style={styles.activitiesButton}
+            style={[styles.activitiesButton, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('PhonicsActivity')}
             activeOpacity={0.85}
           >
@@ -176,7 +176,7 @@ export default function PhonicsScreen() {
                   key={g.label}
                   onPress={() => toggleFilter(g.label)}
                   activeOpacity={0.75}
-                  style={[styles.chip, on && styles.chipOn]}
+                  style={[styles.chip, on && { backgroundColor: colors.primary, borderColor: colors.primary }]}
                 >
                   {on && <Text style={styles.chipCheck}>✓ </Text>}
                   <Text style={[styles.chipText, on && styles.chipTextOn]}>{g.label}</Text>
@@ -188,7 +188,7 @@ export default function PhonicsScreen() {
 
         {/* Reference Grid — filtered phonemes */}
         {loading ? (
-          <ActivityIndicator size="large" color="#27AE60" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
         ) : (
         <View style={styles.grid}>
           {visiblePhonemes.map((item, i) => (

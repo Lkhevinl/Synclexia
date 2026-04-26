@@ -10,7 +10,7 @@ import * as ttsService from '../../lib/ttsService';
 import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -133,27 +133,28 @@ function GameCard({ game, onPress, delay = 0 }) {
 }
 
 function ModeSelector({ onSelect }) {
+  const { colors } = useTheme();
   const games = [
     {
       id: 'blend',
       title: 'Blend It!',
       desc: 'Put sounds together to make a word',
       icon: '🔗',
-      colors: ['#FF9800', '#F57C00'],
+      colors: [colors.primary, colors.primary],
     },
     {
       id: 'segment',
       title: 'Count the Sounds!',
       desc: 'How many sounds does the word have?',
       icon: '🔢',
-      colors: ['#4CAF50', '#388E3C'],
+      colors: [colors.primary, colors.primary],
     },
     {
       id: 'sounds',
       title: 'Sound Match!',
       desc: 'Match the sounds you hear',
       icon: '🎵',
-      colors: ['#2196F3', '#1976D2'],
+      colors: [colors.primary, colors.primary],
     },
   ];
 
@@ -161,7 +162,7 @@ function ModeSelector({ onSelect }) {
     <ScrollView contentContainerStyle={gms.container} showsVerticalScrollIndicator={false}>
       {/* Header Card */}
       <View style={gms.headerCard}>
-        <LinearGradient colors={['#FF9800', '#F57C00']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={gms.headerGradient}>
+        <LinearGradient colors={[colors.primary, colors.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={gms.headerGradient}>
           <View style={gms.headerTextContainer}>
             <Text style={gms.headerTitle}>Phonics Activities</Text>
             <Text style={gms.headerSubtitle}>Choose a game to play</Text>
@@ -240,6 +241,7 @@ function EmptyContent({ label, color, onBack }) {
 }
 
 function BlendGame({ onBack, userId, items }) {
+  const { colors } = useTheme();
   const words = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [tappedPhonemes, setTappedPhonemes] = useState([]);
@@ -340,7 +342,7 @@ function BlendGame({ onBack, userId, items }) {
         onBack={onBack}
         right={
           <TouchableOpacity onPress={speakInstruction} style={bg.helpBtn}>
-            <Icon name="help-circle" size="md" color={c.primary} />
+            <Icon name="help-circle" size="md" color={colors.primary} />
           </TouchableOpacity>
         }
       />
@@ -1095,7 +1097,7 @@ export default function PhonicsActivityScreen() {
         <StudentPageHeader title="Phonics Games" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#FF9800" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{ marginTop: 10, color: '#78909C' }}>Loading activities...</Text>
           </View>
         ) : mode ? renderGame() : <ModeSelector onSelect={setMode} />}
@@ -1115,9 +1117,9 @@ const gms = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 24,
     elevation: 6,
-    shadowColor: '#FF9800',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
   },
   headerGradient: {
@@ -1161,7 +1163,7 @@ const gms = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -1183,7 +1185,7 @@ const gms = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 12,

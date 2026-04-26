@@ -49,11 +49,12 @@ export const TIMEOUTS = {
 
 // ── Adaptive Engine ───────────────────────────────────────────────────────────
 export const ADAPTIVE = {
-  MIN_LEVEL:        1,
-  MAX_LEVEL:        3,
-  PROMOTE_STREAK:   3,   // consecutive correct sessions to level up
-  PROMOTE_ACCURACY: 80,  // % accuracy required to level up
-  DEMOTE_ACCURACY:  40,  // % accuracy threshold to level down
+  MIN_LEVEL:                   1,
+  MAX_LEVEL:                   3,
+  PROMOTE_STREAK:              3,   // consecutive correct sessions to level up
+  PROMOTE_ACCURACY:            80,  // % accuracy required to level up
+  DEMOTE_ACCURACY:             40,  // % accuracy threshold to level down
+  INACTIVITY_STREAK_DECAY_DAYS: 7,  // days without practice → reduce streak by 1
 };
 
 // ── Strengths Analysis ────────────────────────────────────────────────────────

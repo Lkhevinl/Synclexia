@@ -62,13 +62,19 @@ const bubble = StyleSheet.create({
 });
 
 // ── main component ─────────────────────────────────────────────────────────
-export default function AIAvatarWidget() {
+export default function AIAvatarWidget({ studentId, studentName }) {
   const { profile } = useAuth();
   const navigation  = useNavigation();
+  const targetId = studentId || profile?.id;
 
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data,    setData]    = useState(null);
+
+  // Reset cached data whenever the target student changes (parent switching children)
+  useEffect(() => {
+    setData(null);
+  }, [targetId]);
 
   // Idle bounce for the floating button
   const bounceY  = useRef(new Animated.Value(0)).current;
@@ -106,9 +112,9 @@ export default function AIAvatarWidget() {
       Animated.timing(fadeIn,  { toValue: 1, duration: 260, useNativeDriver: true }),
     ]).start();
 
-    if (!data && profile?.id) {
+    if (!data && targetId) {
       setLoading(true);
-      try   { setData(await analyzeStudentProfile(profile.id, 60)); }
+      try   { setData(await analyzeStudentProfile(targetId, 60)); }
       catch (_) {}
       finally { setLoading(false); }
     }
@@ -123,7 +129,8 @@ export default function AIAvatarWidget() {
   };
 
   // ── derived values ──
-  const firstName   = profile?.full_name?.split(' ')[0] ?? 'Learner';
+  // Use studentName prop if provided (parent viewing child), else use logged-in user's name
+  const firstName   = studentName || profile?.full_name?.split(' ')[0] || 'Learner';
   const score       = data?.overallScore ?? 0;
   const color       = scoreColor(score);
   const label       = scoreLabel(score);
@@ -278,7 +285,7 @@ export default function AIAvatarWidget() {
                 {/* ── Full report button ── */}
                 <TouchableOpacity
                   style={styles.reportBtn}
-                  onPress={() => { close(); setTimeout(() => navigation.navigate('AIInsights'), 300); }}
+                  onPress={() => { close(); setTimeout(() => navigation.navigate('AIInsights', studentId ? { studentId } : undefined), 300); }}
                   activeOpacity={0.85}
                 >
                   <LinearGradient colors={['#FF8C69', '#C87456']} style={styles.reportGradient}>

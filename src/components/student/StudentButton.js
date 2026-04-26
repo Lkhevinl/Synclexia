@@ -1,20 +1,11 @@
 import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
-import c from './candyTokens';
-
-const FILL_COLORS = {
-  primary: c.primary,
-  success: '#66BB6A',
-  muted:   '#ccc',
-};
-
-const SHADOW_COLORS = {
-  primary: c.primaryDark,
-  success: c.successDark,
-  muted:   '#888',
-};
+import { useCandyTokens } from './candyTokens';
 
 export default function StudentButton({ children, onPress, variant = 'primary', style, disabled }) {
+  const c = useCandyTokens();
+  const FILL_COLORS = { primary: c.primary, success: '#66BB6A', muted: '#ccc' };
+  const SHADOW_COLORS = { primary: c.primaryDark, success: c.successDark, muted: '#888' };
   const activeVariant = disabled ? 'muted' : variant;
   const isOutline = activeVariant === 'outline';
 
@@ -23,11 +14,11 @@ export default function StudentButton({ children, onPress, variant = 'primary', 
       <TouchableOpacity
         onPress={disabled ? undefined : onPress}
         activeOpacity={0.75}
-        style={[styles.outlineOuter, style]}
+        style={[styles.outlineOuter, { borderColor: c.primary }, style]}
       >
         <View style={styles.outlineInner}>
           {typeof children === 'string'
-            ? <Text style={styles.outlineText}>{children}</Text>
+            ? <Text style={[styles.outlineText, { color: c.primary }]}>{children}</Text>
             : children}
         </View>
       </TouchableOpacity>

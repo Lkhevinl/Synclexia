@@ -1,21 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from '../icons/Icon';
-import c from './candyTokens';
+import { useCandyTokens } from './candyTokens';
 
 export default function StudentSectionTitle({ title, subtitle, iconName }) {
+  const c = useCandyTokens();
   return (
     <View style={styles.wrapper}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color: c.text }]}>{title}</Text>
         {iconName ? (
-          <View style={styles.iconBadge}>
+          <View style={[styles.iconBadge, { backgroundColor: c.primaryLight }]}>
             <Icon name={iconName} size="md" color={c.primary} />
           </View>
         ) : null}
       </View>
       {subtitle ? (
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={[styles.subtitle, { color: c.textMuted }]}>{subtitle}</Text>
       ) : null}
     </View>
   );
@@ -33,19 +34,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: c.text,
   },
   iconBadge: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F5F7FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   subtitle: {
     fontSize: 12,
-    color: c.textMuted,
     marginTop: 2,
     marginLeft: 2,
   },

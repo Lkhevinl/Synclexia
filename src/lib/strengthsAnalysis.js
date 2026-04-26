@@ -5,6 +5,15 @@
 
 import { supabase } from './supabase';
 import { ANALYSIS, TABLES } from './constants';
+import {
+  computeEWMA,
+  computeTrend,
+  computeMasteryScore,
+  computeLearningVelocity,
+  estimateRetention,
+  masteryLabel,
+  masteryColor,
+} from './mlEngine';
 
 const STRENGTH_THRESHOLD      = ANALYSIS.STRENGTH_THRESHOLD;
 const WEAKNESS_THRESHOLD      = ANALYSIS.WEAKNESS_THRESHOLD;
@@ -33,6 +42,23 @@ export const ACTIVITY_META = {
     color: '#E91E63',
     route: 'Reading',
     tip: 'Read one short story per day to build fluency.',
+    noScoring: true,
+  },
+  text_to_speech: {
+    label: 'Text-to-Speech',
+    icon: 'volume-2',
+    color: '#009688',
+    route: 'TextToSpeech',
+    tip: 'Use this tool to hear words and improve listening skills.',
+    noScoring: true,
+  },
+  speech_to_text: {
+    label: 'Speech-to-Text',
+    icon: 'mic',
+    color: '#3F51B5',
+    route: 'SpeechToText',
+    tip: 'Speak clearly and use this tool to practise verbal expression.',
+    noScoring: true,
   },
   writing: {
     label: 'Writing',
@@ -54,10 +80,13 @@ export const ACTIVITY_META = {
     color: '#0288D1',
     route: 'Scan',
     tip: 'Scan books or worksheets to practice reading real text!',
+    noScoring: true,
   },
 };
 
-const ALL_ACTIVITIES = Object.keys(ACTIVITY_META);
+const ALL_ACTIVITIES    = Object.keys(ACTIVITY_META);
+const SCORED_ACTIVITIES = ALL_ACTIVITIES.filter(a => !ACTIVITY_META[a].noScoring);
+const PRACTICE_TOOLS    = ALL_ACTIVITIES.filter(a =>  ACTIVITY_META[a].noScoring);
 
 /**
  * Analyse a student's session history and return a structured learning profile.
@@ -116,34 +145,42 @@ export async function analyzeStudentProfile(studentId, days = 60) {
     metrics[activity] = _computeMetrics(activity, actSessions, adaptiveLevels[activity]);
   });
 
-  // ── Classify activities ───────────────────────────────────────────────────
-  const strengths   = [];
-  const weaknesses  = [];
-  const averages    = [];
+  // ── Classify SCORED activities only (no-scoring tools are excluded) ───────
+  const strengths    = [];
+  const weaknesses   = [];
+  const averages     = [];
   const notPracticed = [];
 
-  ALL_ACTIVITIES.forEach(activity => {
+  SCORED_ACTIVITIES.forEach(activity => {
     const m = metrics[activity];
     if (m.totalSessions === 0) {
       notPracticed.push(activity);
-    } else if (m.avgAccuracy >= STRENGTH_THRESHOLD) {
+    } else if (m.masteryScore >= STRENGTH_THRESHOLD) {
       strengths.push({ activity, ...m, ...ACTIVITY_META[activity] });
-    } else if (m.avgAccuracy < WEAKNESS_THRESHOLD) {
+    } else if (m.masteryScore < WEAKNESS_THRESHOLD) {
       weaknesses.push({ activity, ...m, ...ACTIVITY_META[activity] });
     } else {
       averages.push({ activity, ...m, ...ACTIVITY_META[activity] });
     }
   });
 
-  // Sort: strengths highest first, weaknesses lowest first
-  strengths.sort((a, b) => b.avgAccuracy - a.avgAccuracy);
-  weaknesses.sort((a, b) => a.avgAccuracy - b.avgAccuracy);
+  // Sort: strengths highest mastery first, weaknesses lowest mastery first
+  strengths.sort((a, b) => b.masteryScore - a.masteryScore);
+  weaknesses.sort((a, b) => a.masteryScore - b.masteryScore);
 
-  // ── Overall score ─────────────────────────────────────────────────────────
-  const practicedActivities = ALL_ACTIVITIES.filter(a => metrics[a].totalSessions > 0);
+  // ── Practice tools (no scoring — tracked by engagement only) ─────────────
+  const practiceTools = PRACTICE_TOOLS.map(activity => ({
+    activity,
+    ...ACTIVITY_META[activity],
+    totalSessions: metrics[activity]?.totalSessions ?? 0,
+    lastUsed: metrics[activity]?.daysSinceLastSession,
+  })).filter(t => t.totalSessions > 0);
+
+  // ── Overall score — scored activities only ────────────────────────────────
+  const practicedActivities = SCORED_ACTIVITIES.filter(a => metrics[a].totalSessions > 0);
   const overallScore = practicedActivities.length > 0
     ? Math.round(
-        practicedActivities.reduce((sum, a) => sum + metrics[a].avgAccuracy, 0) /
+        practicedActivities.reduce((sum, a) => sum + metrics[a].masteryScore, 0) /
         practicedActivities.length
       )
     : 0;
@@ -154,14 +191,33 @@ export async function analyzeStudentProfile(studentId, days = 60) {
   // ── Generate learning path ────────────────────────────────────────────────
   const learningPath = _buildLearningPath(weaknesses, notPracticed, averages, adaptiveLevels);
 
+  // ── Consistency score (unique practice days in last 30 days) ─────────────
+  const last30 = sessions.filter(s => {
+    const daysAgo = (Date.now() - new Date(s.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    return daysAgo <= 30;
+  });
+  const uniquePracticeDays = new Set(last30.map(s => s.created_at.slice(0, 10))).size;
+  const consistencyScore   = Math.min(100, Math.round((uniquePracticeDays / 30) * 100));
+  const sessionsPerWeek    = parseFloat(((sessions.length / Math.max(days, 1)) * 7).toFixed(1));
+
+  // ── Overall mastery label ─────────────────────────────────────────────────
+  const overallMasteryLabel = masteryLabel(overallScore);
+  const overallMasteryColor = masteryColor(overallScore);
+
   return {
     overallScore,
+    overallMasteryLabel,
+    overallMasteryColor,
     totalSessions: sessions.length,
     activitiesPracticed: practicedActivities.length,
+    consistencyScore,
+    sessionsPerWeek,
+    uniquePracticeDays,
     strengths,
     weaknesses,
     averages,
     notPracticed,
+    practiceTools,
     metrics,
     adaptiveLevels,
     recommendations,
@@ -177,7 +233,12 @@ function _computeMetrics(activity, sessions, adaptive) {
     return {
       totalSessions: 0,
       avgAccuracy: 0,
+      ewmaAccuracy: 0,
       recentAccuracy: 0,
+      masteryScore: 0,
+      masteryLabel: 'Needs Support',
+      masteryColor: '#EF5350',
+      learningVelocity: 0,
       trend: 'none',
       daysSinceLastSession: null,
       adaptiveLevel: adaptive?.level ?? 1,
@@ -185,44 +246,56 @@ function _computeMetrics(activity, sessions, adaptive) {
     };
   }
 
+  // accuracies: newest first (matches Supabase order desc)
   const accuracies = sessions.map(s => {
-    // Use stored accuracy first; fall back to score/total
     if (s.accuracy != null) return Number(s.accuracy);
     if (s.total && s.total > 0) return (s.score / s.total) * 100;
     return 0;
   });
 
+  // Simple average (kept for backward-compat display)
   const avgAccuracy = Math.round(accuracies.reduce((a, b) => a + b, 0) / accuracies.length);
 
-  // Recent accuracy: last 5 sessions
-  const recentSlice = accuracies.slice(0, Math.min(RECENT_SESSIONS_SLICE, accuracies.length));
+  // ── ML metrics ────────────────────────────────────────────────────────────
+  // EWMA: recent sessions count more than old ones
+  const ewmaAccuracy = computeEWMA(accuracies);
+
+  // Recent accuracy: last 5 sessions (simple avg of recent slice)
+  const recentSlice    = accuracies.slice(0, Math.min(RECENT_SESSIONS_SLICE, accuracies.length));
   const recentAccuracy = Math.round(recentSlice.reduce((a, b) => a + b, 0) / recentSlice.length);
 
-  // Trend: compare first half vs second half (oldest → newest in array is reversed)
-  let trend = 'stable';
-  if (sessions.length >= 4) {
-    const half = Math.floor(sessions.length / 2);
-    const older = accuracies.slice(half);  // older sessions (higher index = older)
-    const newer = accuracies.slice(0, half);
-    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
-    const newerAvg = newer.reduce((a, b) => a + b, 0) / newer.length;
-    if (newerAvg - olderAvg >= TREND_DELTA) trend = 'improving';
-    else if (olderAvg - newerAvg >= TREND_DELTA) trend = 'declining';
-  }
+  // Trend via linear regression velocity (more reliable than half-split)
+  const trend           = computeTrend(accuracies);
+  const learningVelocity = computeLearningVelocity(accuracies);
 
   const lastSession = sessions[0];
   const daysSinceLastSession = Math.floor(
     (Date.now() - new Date(lastSession.created_at).getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  // Unique practice days (for this activity, within the session window)
+  const uniqueDays = new Set(sessions.map(s => s.created_at.slice(0, 10))).size;
+
+  // Mastery score: BKT-inspired, confidence-adjusted
+  const mScore = computeMasteryScore(ewmaAccuracy, sessions.length, trend, uniqueDays);
+
+  // Retention factor: how much skill is retained after inactivity
+  const retention = estimateRetention(daysSinceLastSession, sessions.length, ewmaAccuracy);
+
   return {
     totalSessions: sessions.length,
-    avgAccuracy,
+    avgAccuracy,                   // raw simple average (display only)
+    ewmaAccuracy,                  // EWMA-weighted accuracy (primary ML signal)
     recentAccuracy,
+    masteryScore: mScore,          // 0–100 confidence-adjusted mastery
+    masteryLabel: masteryLabel(mScore),
+    masteryColor: masteryColor(mScore),
+    learningVelocity,              // %/session slope (positive = improving)
+    retention,                     // forgetting curve retention factor
     trend,
     daysSinceLastSession,
     adaptiveLevel: adaptive?.level ?? 1,
-    insight: _activityInsight(avgAccuracy, trend, sessions.length),
+    insight: _activityInsight(ewmaAccuracy, trend, sessions.length),
   };
 }
 
@@ -236,35 +309,81 @@ function _activityInsight(avg, trend, sessions) {
 
 function _generateRecommendations(weaknesses, notPracticed, strengths, metrics) {
   const recs = [];
+  const URGENCY_DAYS = 5;
 
-  weaknesses.slice(0, 2).forEach(w => {
+  // 1. Declining trend — scored activities only (exclude no-scoring tools)
+  const decliningActivities = Object.entries(metrics)
+    .filter(([activity, m]) => !ACTIVITY_META[activity]?.noScoring && m.trend === 'declining' && m.totalSessions > 0)
+    .sort(([, a], [, b]) => a.masteryScore - b.masteryScore);
+
+  decliningActivities.slice(0, 1).forEach(([activity, m]) => {
+    const meta = ACTIVITY_META[activity];
+    if (!meta) return;
+    recs.push({
+      type: 'declining',
+      activity,
+      title: `${meta.label} scores are dropping`,
+      body: `Recent accuracy around ${m.ewmaAccuracy}%. ${meta.tip}`,
+      icon: meta.icon,
+      color: '#EF5350',
+    });
+  });
+
+  // 2. Overdue — weak activity not practiced in 5+ days
+  const overdueWeak = weaknesses.find(
+    w => w.daysSinceLastSession != null && w.daysSinceLastSession >= URGENCY_DAYS
+      && !decliningActivities.find(([a]) => a === w.activity)
+  );
+  if (overdueWeak) {
+    recs.push({
+      type: 'overdue',
+      activity: overdueWeak.activity,
+      title: `Time to revisit ${overdueWeak.label}!`,
+      body: `${overdueWeak.daysSinceLastSession} days without practice (last seen at ${overdueWeak.ewmaAccuracy}%). Jump back in!`,
+      icon: overdueWeak.icon,
+      color: '#9C27B0',
+    });
+  }
+
+  // 3. Remaining weaknesses (not already covered above)
+  const coveredActivities = new Set([
+    ...decliningActivities.map(([a]) => a),
+    overdueWeak?.activity,
+  ].filter(Boolean));
+
+  weaknesses.filter(w => !coveredActivities.has(w.activity)).slice(0, 2).forEach(w => {
     recs.push({
       type: 'improve',
       activity: w.activity,
       title: `Focus on ${w.label}`,
-      body: `Your accuracy is ${w.avgAccuracy}%. ${ACTIVITY_META[w.activity].tip}`,
+      body: `Mastery at ${w.masteryScore}% — ${ACTIVITY_META[w.activity].tip}`,
       icon: ACTIVITY_META[w.activity].icon,
       color: '#FF6B6B',
     });
   });
 
-  notPracticed.slice(0, 2).forEach(activity => {
+  // 4. Not explored yet
+  notPracticed.slice(0, 1).forEach(activity => {
     recs.push({
       type: 'explore',
       activity,
-      title: `Try ${ACTIVITY_META[activity].label}`,
-      body: `You haven't practiced this yet. ${ACTIVITY_META[activity].tip}`,
+      title: `Explore ${ACTIVITY_META[activity].label}`,
+      body: `You haven't tried this yet. ${ACTIVITY_META[activity].tip}`,
       icon: ACTIVITY_META[activity].icon,
       color: '#FF9800',
     });
   });
 
+  // 5. Celebrate top strength
   strengths.slice(0, 1).forEach(s => {
+    const celebTitle = s.trend === 'improving'
+      ? `${s.label} is your superpower and growing!`
+      : `${s.label} is your superpower!`;
     recs.push({
       type: 'celebrate',
       activity: s.activity,
-      title: `${s.label} is your superpower!`,
-      body: `${s.avgAccuracy}% accuracy — you're ready for even harder challenges.`,
+      title: celebTitle,
+      body: `Mastery score ${s.masteryScore}% — you're ready for even harder challenges!`,
       icon: s.icon,
       color: '#4CAF50',
     });
@@ -273,18 +392,50 @@ function _generateRecommendations(weaknesses, notPracticed, strengths, metrics) 
   return recs;
 }
 
+function _suggestLevel(activity, adaptiveLevels, m) {
+  const currentLevel = adaptiveLevels[activity]?.level ?? 1;
+  if (!m || m.totalSessions === 0) return 1;
+  // Very low mastery → step back one level for confidence
+  if (m.masteryScore < 35 && currentLevel > 1) return currentLevel - 1;
+  // Declining trend → ease off to rebuild
+  if (m.trend === 'declining' && currentLevel > 1) return currentLevel - 1;
+  // Long absence (2+ weeks) + retention degraded → ease off slightly
+  if (m.daysSinceLastSession != null && m.daysSinceLastSession > 14 && currentLevel > 1) return currentLevel - 1;
+  return currentLevel;
+}
+
+function _learningPathReason(m, suggestedLevel) {
+  const currentLevel = m.adaptiveLevel ?? 1;
+  const willStep = suggestedLevel < currentLevel;
+  if (m.trend === 'declining') {
+    return willStep
+      ? `Mastery dropping to ${m.masteryScore}% — easing difficulty to rebuild confidence`
+      : `Scores have been dropping — focused practice needed`;
+  }
+  if (m.daysSinceLastSession != null && m.daysSinceLastSession > 14) {
+    return `${m.daysSinceLastSession} days without practice — resuming at a comfortable level`;
+  }
+  if (m.masteryScore < 40) {
+    return willStep
+      ? `Mastery at ${m.masteryScore}% — stepping back to a more comfortable level`
+      : `Mastery at ${m.masteryScore}% — extra practice needed`;
+  }
+  return `Mastery at ${m.masteryScore}% — keep practising to improve!`;
+}
+
 function _buildLearningPath(weaknesses, notPracticed, averages, adaptiveLevels) {
   const path = [];
 
   weaknesses.forEach((w, i) => {
+    const suggestedLevel = _suggestLevel(w.activity, adaptiveLevels, w);
     path.push({
       priority: i + 1,
       activity: w.activity,
       label: ACTIVITY_META[w.activity].label,
       icon: ACTIVITY_META[w.activity].icon,
       route: ACTIVITY_META[w.activity].route,
-      reason: `Low accuracy (${w.avgAccuracy}%) — needs practice`,
-      suggestedLevel: 1, // restart from easy
+      reason: _learningPathReason(w, suggestedLevel),
+      suggestedLevel,
       currentLevel: adaptiveLevels[w.activity]?.level ?? 1,
     });
   });
@@ -296,22 +447,26 @@ function _buildLearningPath(weaknesses, notPracticed, averages, adaptiveLevels) 
       label: ACTIVITY_META[activity].label,
       icon: ACTIVITY_META[activity].icon,
       route: ACTIVITY_META[activity].route,
-      reason: 'Not practiced yet — explore this area!',
+      reason: 'Never practiced — start exploring this skill!',
       suggestedLevel: 1,
       currentLevel: adaptiveLevels[activity]?.level ?? 1,
     });
   });
 
   averages.slice(0, 1).forEach((a, i) => {
+    const currentLevel = adaptiveLevels[a.activity]?.level ?? 1;
+    const reason = a.trend === 'improving'
+      ? `Mastery growing to ${a.masteryScore}% — keep the momentum going!`
+      : `Mastery at ${a.masteryScore}% — consistent practice will push you higher!`;
     path.push({
       priority: weaknesses.length + notPracticed.length + i + 1,
       activity: a.activity,
       label: ACTIVITY_META[a.activity].label,
       icon: ACTIVITY_META[a.activity].icon,
       route: ACTIVITY_META[a.activity].route,
-      reason: 'Average performance — consistent practice will build mastery',
-      suggestedLevel: adaptiveLevels[a.activity]?.level ?? 1,
-      currentLevel: adaptiveLevels[a.activity]?.level ?? 1,
+      reason,
+      suggestedLevel: currentLevel,
+      currentLevel,
     });
   });
 
@@ -359,12 +514,18 @@ export async function applyLearningPath(studentId, learningPath) {
 function _emptyProfile() {
   return {
     overallScore: 0,
+    overallMasteryLabel: 'Needs Support',
+    overallMasteryColor: '#EF5350',
     totalSessions: 0,
     activitiesPracticed: 0,
+    consistencyScore: 0,
+    sessionsPerWeek: 0,
+    uniquePracticeDays: 0,
     strengths: [],
     weaknesses: [],
     averages: [],
-    notPracticed: ALL_ACTIVITIES,
+    notPracticed: SCORED_ACTIVITIES,
+    practiceTools: [],
     metrics: {},
     adaptiveLevels: {},
     recommendations: [],

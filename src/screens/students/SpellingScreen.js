@@ -10,7 +10,7 @@ import Icon from '../../components/icons/Icon';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 import { logSession } from '../../lib/analyticsHelper';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -48,6 +48,7 @@ function buildTiles(word) {
 // ─── Mode Selector ────────────────────────────────────────────────────────────
 
 function IntroCard({ onStart }) {
+  const { colors } = useTheme();
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -57,7 +58,7 @@ function IntroCard({ onStart }) {
   return (
     <ScrollView contentContainerStyle={ms.container} showsVerticalScrollIndicator={false}>
       <Animated.View style={{ transform: [{ scale: headerAnim }], opacity: headerAnim }}>
-        <View style={[ms.headerCard, { backgroundColor: c.primary }]}>
+        <View style={[ms.headerCard, { backgroundColor: colors.primary }]}>
           <Icon name="type" size="xl" color="rgba(255,255,255,0.9)" style={{ marginBottom: 8 }} />
           <Text style={ms.title}>Spelling Practice</Text>
           <Text style={ms.sub}>Listen and spell the words!</Text>
@@ -65,14 +66,14 @@ function IntroCard({ onStart }) {
       </Animated.View>
 
       <View style={ms.instructionsCard}>
-        <Icon name="volume-2" size="lg" color="#2196F3" />
+        <Icon name="volume-2" size="lg" color={colors.primary} />
         <Text style={ms.instructionsTitle}>How to Play</Text>
         <Text style={ms.instructionsText}>
           1. Listen to the word{'\n'}
           2. Tap the letters in order{'\n'}
           3. Press Check to see if you're right!
         </Text>
-        <TouchableOpacity style={ms.startBtn} onPress={onStart}>
+        <TouchableOpacity style={[ms.startBtn, { backgroundColor: colors.primary }]} onPress={onStart}>
           <Text style={ms.startBtnText}>Start Spelling</Text>
         </TouchableOpacity>
       </View>
@@ -97,6 +98,7 @@ const ms = StyleSheet.create({
 
 function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
   // Shuffle words fetched from DB for this session
+  const { colors } = useTheme();
   const [wordList] = useState(() => shuffle(wordBank).slice(0, Math.min(10, wordBank.length)));
   const [wordIdx, setWordIdx] = useState(0);
   const [tiles, setTiles] = useState(() => wordBank[0] ? buildTiles(wordBank[0].word) : []);
@@ -197,7 +199,7 @@ function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
   const spelled = answer.map(t => t.letter).join('');
   const bounceStyle = { transform: [{ scale: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) }] };
 
-  const accentColor = '#2196F3';
+  const accentColor = colors.primary;
 
   return (
     <View style={[game.container, { backgroundColor: accentColor + '10' }]}>
@@ -274,8 +276,8 @@ function SpellingGame({ onBack, userId, wordBank, dyslexiaTextStyle = {} }) {
             <Text style={game.tileBankLabel}>Available Letters</Text>
             <View style={game.tileRow}>
               {availableTiles.map(tile => (
-                <TouchableOpacity key={tile.id} style={game.tile} onPress={() => handleTileTap(tile)} activeOpacity={0.7}>
-                  <Text style={game.tileLetter}>{tile.letter.toUpperCase()}</Text>
+                <TouchableOpacity key={tile.id} style={[game.tile, { backgroundColor: colors.primaryLight, borderColor: accentColor + '80' }]} onPress={() => handleTileTap(tile)} activeOpacity={0.7}>
+                  <Text style={[game.tileLetter, { color: accentColor }]}>{tile.letter.toUpperCase()}</Text>
                 </TouchableOpacity>
               ))}
               {availableTiles.length === 0 && (
@@ -344,7 +346,7 @@ function FinishScreen({ score, total, onBack }) {
       <View style={fin.card}>
         <Icon name="trophy" size="xl" color="#FF9800" />
         <Text style={fin.msg}>{msg}</Text>
-        <Text style={fin.scoreText}>{score} / {total} words</Text>
+        <Text style={[fin.scoreText, { color: colors.primary }]}>{score} / {total} words</Text>
         <Text style={fin.percentText}>{percent}% Accuracy</Text>
 
         {/* Progress bar */}
@@ -352,7 +354,7 @@ function FinishScreen({ score, total, onBack }) {
           <View style={[fin.barFill, { width: `${percent}%`, backgroundColor: percent >= 80 ? '#4CAF50' : percent >= 50 ? '#FF9800' : '#F44336' }]} />
         </View>
 
-        <TouchableOpacity style={fin.btn} onPress={onBack}>
+        <TouchableOpacity style={[fin.btn, { backgroundColor: colors.primary }]} onPress={onBack}>
           <Text style={fin.btnText}>Play Again</Text>
         </TouchableOpacity>
       </View>
@@ -399,7 +401,7 @@ export default function SpellingScreen() {
         <StudentPageHeader title="Spelling Practice" />
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color={c.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{ marginTop: 10, color: '#78909C' }}>Loading words...</Text>
           </View>
         ) : wordBank.length === 0 ? (
@@ -423,5 +425,5 @@ const root = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
   hintCard: { margin: 16, marginBottom: 4 },
   hintRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  hintText: { flex: 1, fontSize: 13, color: c.textMuted, lineHeight: 19 },
+  hintText: { flex: 1, fontSize: 13, color: '#78909C', lineHeight: 19 },
 });

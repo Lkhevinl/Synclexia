@@ -21,6 +21,7 @@ const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_
 
 export default function ParentEditChildScreen({ route, navigation }) {
   const { theme, colors, a11yTextStyle } = useTheme();
+  const styles = React.useMemo(() => makeStyles(colors), [colors]);
   const { child } = route.params;
   const childProfile = child?.profiles;
   const studentId    = childProfile?.id ?? child?.student_id;
@@ -108,7 +109,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
         {/* ── Parental guidance notice ── */}
         <View style={styles.noticeBox}>
-          <Icon name="shield-check" size="md" color="#E8927C" style={{ marginRight: 8, marginTop: 1 }} />
+          <Icon name="shield-check" size="md" color={colors.primary} style={{ marginRight: 8, marginTop: 1 }} />
           <Text style={[styles.noticeText, { fontSize: theme.fontSize - 1 }, a11yTextStyle]}>
             As the parent/guardian, you can update your child's display name and email address.
           </Text>
@@ -118,7 +119,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
         <View style={styles.form}>
           <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S DISPLAY NAME</Text>
           <View style={styles.inputBox}>
-            <Icon name="user" size="md" color="#90A4AE" />
+            <Icon name="user" size="md" color={colors.onSurfaceMuted} />
             <TextInput
               style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
               value={fullName}
@@ -130,7 +131,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
 
           <Text style={[styles.fieldLabel, { fontSize: theme.fontSize - 3 }, a11yTextStyle]}>CHILD'S EMAIL</Text>
           <View style={styles.inputBox}>
-            <Icon name="mail" size="md" color="#90A4AE" />
+            <Icon name="mail" size="md" color={colors.onSurfaceMuted} />
             <TextInput
               style={[styles.input, { fontSize: theme.fontSize }, a11yTextStyle]}
               value={email}
@@ -166,7 +167,7 @@ export default function ParentEditChildScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   // Banner hero
   bannerWrapper:  { width: '100%', height: 200, position: 'relative', marginBottom: 60, marginHorizontal: -tokens.spacing.md },
   bannerImg:      { width: '100%', height: 200 },
@@ -181,35 +182,35 @@ const styles = StyleSheet.create({
   },
   avatarInitial:  { fontSize: 38, fontWeight: 'bold', color: '#fff' },
 
-  pageTitle:  { fontSize: 20, fontWeight: '800', color: '#222', marginBottom: 2 },
+  pageTitle:  { fontSize: 20, fontWeight: '800', color: colors.onSurface, marginBottom: 2 },
 
   noticeBox: {
     flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: '#FFF0EB', borderRadius: tokens.radius.md,
+    backgroundColor: colors.primaryLight, borderRadius: tokens.radius.md,
     padding: 14, marginBottom: tokens.spacing.lg,
-    borderWidth: 1, borderColor: '#F5C4B0',
+    borderWidth: 1, borderColor: colors.primary + '40',
   },
-  noticeText: { flex: 1, color: '#C87456', fontSize: 13, lineHeight: 19 },
+  noticeText: { flex: 1, color: colors.primary, fontSize: 13, lineHeight: 19 },
 
   form:       { },
-  fieldLabel: { fontSize: 11, fontWeight: '800', color: '#E8927C', letterSpacing: 1, marginBottom: 6, marginTop: tokens.spacing.md },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: colors.primary, letterSpacing: 1, marginBottom: 6, marginTop: tokens.spacing.md },
   inputBox:   {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: tokens.radius.md,
+    backgroundColor: colors.surfaceCard, borderRadius: tokens.radius.md,
     paddingHorizontal: 14, paddingVertical: 13,
-    borderWidth: 1.5, borderColor: '#E8D5CC',
+    borderWidth: 1.5, borderColor: colors.primary + '30',
     gap: 10, ...tokens.shadows.low,
   },
-  input:      { flex: 1, fontSize: 15, color: '#333' },
-  hintText:   { fontSize: 12, color: '#aaa', marginTop: 6, marginLeft: tokens.spacing.xs },
+  input:      { flex: 1, fontSize: 15, color: colors.onSurface },
+  hintText:   { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, marginLeft: tokens.spacing.xs },
 
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: tokens.spacing.sm, backgroundColor: '#E8927C',
+    gap: tokens.spacing.sm, backgroundColor: colors.primary,
     borderRadius: tokens.radius.md, paddingVertical: tokens.spacing.md, marginTop: tokens.spacing.xl,
     ...tokens.shadows.mid,
   },
-  saveBtnDisabled: { backgroundColor: '#F5C4B0', elevation: 0, shadowOpacity: 0 },
+  saveBtnDisabled: { backgroundColor: colors.primary + '60', elevation: 0, shadowOpacity: 0 },
   saveBtnText:     { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 
 });

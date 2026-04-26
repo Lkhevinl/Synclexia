@@ -14,6 +14,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../components/icons/Icon';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -30,9 +31,6 @@ const showAlert = (title, message) => {
     Alert.alert(title, message);
   }
 };
-
-// Fixed accent colors that don't change with theme (role card borders, success checkmark)
-const SUCCESS_GREEN = '#93C47D';
 
 export default function SignUpScreen({ navigation }) {
   const [step, setStep] = useState(1);
@@ -133,7 +131,7 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
 
       <View style={styles.roleCardsContainer}>
         <TouchableOpacity
-          style={[styles.roleCard, { backgroundColor: colors.surface, borderColor: role === 'student' ? colors.primary : 'transparent' }]}
+          style={[styles.roleCard, { backgroundColor: colors.surface, borderColor: role === 'student' ? colors.primary : colors.primary + '35' }]}
           onPress={() => handleRoleSelect('student')}
           activeOpacity={0.8}
         >
@@ -142,7 +140,7 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.roleCard, { backgroundColor: colors.surface, borderColor: role === 'parent' ? colors.primary : 'transparent' }]}
+          style={[styles.roleCard, { backgroundColor: colors.surface, borderColor: role === 'parent' ? colors.primary : colors.primary + '35' }]}
           onPress={() => handleRoleSelect('parent')}
           activeOpacity={0.8}
         >
@@ -163,19 +161,19 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
       <AppText variant="caption" style={styles.subtitle}>Please fill in your details to create an account</AppText>
 
       {/* Email */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
         <Icon name="mail" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Email Address" placeholderTextColor={colors.onSurfaceMuted} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
       </View>
 
       {/* Username */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
         <Icon name="user" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Username" placeholderTextColor={colors.onSurfaceMuted} value={fullName} onChangeText={setFullName} />
       </View>
 
       {/* Password */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
         <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Password" placeholderTextColor={colors.onSurfaceMuted} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} />
         <TouchableOpacity onPress={() => setShowPassword(p => !p)}>
@@ -184,7 +182,7 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
       </View>
 
       {/* Confirm Password */}
-      <View style={[styles.inputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: colors.primaryLight, borderColor: colors.primary + '40' }]}>
         <Icon name="lock" size="sm" color={colors.onSurfaceMuted} style={styles.inputIcon} />
         <TextInput style={[styles.input, { color: colors.onSurface }]} placeholder="Enter Password Again" placeholderTextColor={colors.onSurfaceMuted} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={!showConfirmPassword} />
         <TouchableOpacity onPress={() => setShowConfirmPassword(p => !p)}>
@@ -205,16 +203,22 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
 
   return (
     <ScreenWrapper padded={false}>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       {/* Back Button */}
-      <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+      <TouchableOpacity style={[styles.backBtn, { backgroundColor: 'rgba(255,255,255,0.25)' }]} onPress={handleBack}>
         <Icon name="arrow-left" size="md" color="#fff" />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={[styles.illustrationArea, { height: SCREEN_HEIGHT * 0.45 }]}>
           <Image source={require('../../assets/9__2_-removebg-preview.png')} style={styles.illustration} resizeMode="cover" />
+          <LinearGradient
+            colors={[colors.primary + '44', colors.primary + 'CC']}
+            style={StyleSheet.absoluteFillObject}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
         </View>
         {step === 1 ? renderRoleSelection() : renderForm()}
       </ScrollView>
@@ -223,8 +227,8 @@ const handleRoleSelect = (selectedRole) => setRole(selectedRole);
       <Modal visible={showSuccessModal} transparent animationType="fade" onRequestClose={handleSuccessClose}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surfaceCard, width: SCREEN_WIDTH - 60 }]}>
-            <View style={[styles.checkmarkContainer, { borderColor: SUCCESS_GREEN }]}>
-              <Icon name="check" size="xl" color={SUCCESS_GREEN} />
+            <View style={[styles.checkmarkContainer, { borderColor: colors.primary }]}>
+              <Icon name="check" size="xl" color={colors.primary} />
             </View>
             <AppText variant="heading" style={styles.modalTitle}>Account created successfully!</AppText>
             <AppText variant="caption" style={[styles.modalMessage, { color: colors.onSurfaceMuted }]}>
@@ -248,7 +252,6 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute', top: 50, left: 20, zIndex: 100,
     width: 40, height: 40, borderRadius: tokens.radius.full,
-    backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'center', alignItems: 'center',
   },
 

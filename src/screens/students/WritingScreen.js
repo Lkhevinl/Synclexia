@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, PanResponder, Modal, StatusBar, Alert, ScrollView, TextInput, ActivityIndicator, Linking } from 'react-native';
 import Svg, { Path, Circle, G, Polygon, Text as SvgText } from 'react-native-svg';
 import Icon from '../../components/icons/Icon';
@@ -10,7 +10,7 @@ import { logSession } from '../../lib/analyticsHelper';
 import ScreenWrapper from '../../components/ScreenWrapper';
 import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 import { useTheme } from '../../context/ThemeContext';
 
 // Optional dependency: expo-speech-recognition (dev/production build, not Expo Go)
@@ -161,6 +161,8 @@ const compareTexts = (original, studentText) => {
 export default function WritingScreen() {
   const { profile } = useAuth();
   const { colors, a11yTextStyle } = useTheme();
+  const c = useCandyTokens();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // Mode: tracing, story selection, or composition
   const [mode, setMode] = useState('trace'); // 'trace' | 'stories' | 'compose'
@@ -627,12 +629,18 @@ export default function WritingScreen() {
 
   // --- ACTIONS ---
   const handleCheck = () => {
-    const praise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
-    setCurrentPraise(praise);
-    Speech.speak(praise.tts, { rate: 0.9 });
-    setSuccessVisible(true);
-    if (profile?.id) {
-      logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
+    const result = validateDrawing();
+    if (result.valid) {
+      const praise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
+      setCurrentPraise(praise);
+      Speech.speak(praise.tts, { rate: 0.9 });
+      setSuccessVisible(true);
+      if (profile?.id) {
+        logSession({ studentId: profile.id, activityType: 'writing', score: 1, total: 1, details: { letter: selectedItem.label } });
+      }
+    } else {
+      Speech.speak(result.reason, { rate: 0.9 });
+      Alert.alert('Keep Trying!', result.reason, [{ text: 'OK' }]);
     }
   };
 
@@ -675,12 +683,12 @@ export default function WritingScreen() {
         <ScrollView contentContainerStyle={styles.storiesContainer}>
           {loadingStories ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#673AB7" />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, a11yTextStyle]}>Loading stories...</Text>
             </View>
           ) : stories.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Icon name="book-open" size="xl" color="#9575CD" />
+              <Icon name="book-open" size="xl" color={colors.primary} />
               <Text style={[styles.emptyText, a11yTextStyle]}>No stories available yet.</Text>
               <Text style={[styles.emptySubtext, a11yTextStyle]}>Ask your teacher to add some stories!</Text>
             </View>
@@ -704,7 +712,7 @@ export default function WritingScreen() {
                   <Text style={[styles.storyPreview, a11yTextStyle]} numberOfLines={2}>{story.content}</Text>
                   <View style={styles.storyMeta}>
                     <Text style={styles.storyMetaText}>{story.content.split(' ').length} words</Text>
-                    <Icon name="chevron-forward" size="md" color="#9575CD" />
+                    <Icon name="chevron-forward" size="md" color={colors.primary} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -956,7 +964,7 @@ export default function WritingScreen() {
         {/* Instruction hint + video tutorial button */}
         <View style={styles.mainHintRow}>
           <View style={styles.mainHint}>
-            <Icon name="info" size="md" color="#E8927C" />
+            <Icon name="info" size="md" color={colors.primary} />
             <Text style={styles.mainHintText}>Tap a letter to start tracing, or tap "Stories" to practice copying.</Text>
           </View>
           <TouchableOpacity style={styles.watchVideoBtn} onPress={() => Linking.openURL(VIDEO_TUTORIAL_URL)} activeOpacity={0.85}>
@@ -1032,14 +1040,14 @@ export default function WritingScreen() {
                const numR = dotSize * 1.3;
                return (
                  <G key={`g-${strokeIdx}`}>
-                   <Path d={d} stroke="rgba(232,146,124,0.18)" strokeWidth={dotSize * 2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                   <Path d={d} stroke="#E8927C" strokeWidth={dotSize * 1.1} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dotSize * 1.2} ${dotSize * 1.6}`} fill="none" opacity={0.7} />
+                   <Path d={d} stroke={colors.primary + '2E'} strokeWidth={dotSize * 2.8} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                   <Path d={d} stroke={colors.primary} strokeWidth={dotSize * 1.1} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dotSize * 1.2} ${dotSize * 1.6}`} fill="none" opacity={0.7} />
                    {pts.length > 1 && (
                      <G transform={`translate(${ex.toFixed(1)},${ey.toFixed(1)}) rotate(${angle.toFixed(1)})`}>
-                       <Polygon points={`${dotSize*1.8},0 ${-dotSize*1.0},${-dotSize*0.9} ${-dotSize*1.0},${dotSize*0.9}`} fill="#E8927C" opacity={0.85} />
+                       <Polygon points={`${dotSize*1.8},0 ${-dotSize*1.0},${-dotSize*0.9} ${-dotSize*1.0},${dotSize*0.9}`} fill={colors.primary} opacity={0.85} />
                      </G>
                    )}
-                   <Circle cx={sx.toFixed(1)} cy={sy.toFixed(1)} r={numR.toFixed(1)} fill="#E8927C" />
+                   <Circle cx={sx.toFixed(1)} cy={sy.toFixed(1)} r={numR.toFixed(1)} fill={colors.primary} />
                    <SvgText x={sx.toFixed(1)} y={(sy + numR * 0.38).toFixed(1)} textAnchor="middle" fill="#fff" fontSize={(numR * 1.1).toFixed(1)} fontWeight="bold">{strokeIdx + 1}</SvgText>
                  </G>
                );
@@ -1097,11 +1105,11 @@ export default function WritingScreen() {
       {/* CONTROLS */}
       <View style={styles.controls}>
           <View style={styles.colorRow}>
-              {COLORS.map(c => (
+              {COLORS.map(clr => (
                   <TouchableOpacity 
-                    key={c} 
-                    style={[styles.colorDot, { backgroundColor: c }, strokeColor === c && styles.activeColor]} 
-                    onPress={() => setStrokeColor(c)}
+                    key={clr} 
+                    style={[styles.colorDot, { backgroundColor: clr }, strokeColor === clr && styles.activeColor]} 
+                    onPress={() => setStrokeColor(clr)}
                   />
               ))}
           </View>
@@ -1203,7 +1211,7 @@ export default function WritingScreen() {
                         "Don't worry about being perfect — just keep practicing!",
                       ].map((tip, i) => (
                         <View key={i} style={styles.demoTip}>
-                          <Icon name="lightbulb" size="md" color="#E8927C" />
+                          <Icon name="lightbulb" size="md" color={colors.primary} />
                           <Text style={[styles.demoText, { flex: 1 }]}>{tip}</Text>
                         </View>
                       ))}
@@ -1223,13 +1231,13 @@ export default function WritingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors) => StyleSheet.create({
   mainContainer: { flex: 1 },
   
-  canvasHeaderCandy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, backgroundColor: '#FFF0E8', borderBottomWidth: 2, borderBottomColor: '#E8927C20' },
-  canvasLetterTitle: { fontSize: 42, fontWeight: '900', color: '#E8927C', letterSpacing: 2 },
-  candyNavBtn: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40', elevation: 2 },
-  modePillCandy: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40' },
+  canvasHeaderCandy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12, backgroundColor: colors.primaryLight, borderBottomWidth: 2, borderBottomColor: colors.primary + '20' },
+  canvasLetterTitle: { fontSize: 42, fontWeight: '900', color: colors.primary, letterSpacing: 2 },
+  candyNavBtn: { width: 40, height: 40, borderRadius: 22, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.primary + '40', elevation: 2 },
+  modePillCandy: { width: 40, height: 40, borderRadius: 22, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.primary + '40' },
   headerContent: { alignItems: 'center' },
   headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#fff' },
   headerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
@@ -1244,19 +1252,19 @@ const styles = StyleSheet.create({
   demoHint: { color: '#fff', fontSize: 10, fontWeight: 'bold', marginTop: 2 },
 
   mainHintRow: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4, gap: 10 },
-  mainHint: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF0E8', borderRadius: 12, padding: 10, gap: 8, borderWidth: 1, borderColor: '#E8927C20' },
+  mainHint: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 12, padding: 10, gap: 8, borderWidth: 1, borderColor: colors.primary + '20' },
   mainHintText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 18 },
-  watchVideoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E8927C', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' },
+  watchVideoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, alignSelf: 'flex-start' },
   watchVideoBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
 
   caseTabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 10, gap: 10 },
-  caseTab: { flex: 1, paddingVertical: 10, borderRadius: 14, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center', backgroundColor: '#fff' },
-  caseTabActive: { backgroundColor: '#E8927C' },
-  caseTabText: { fontSize: 15, fontWeight: 'bold', color: '#E8927C' },
+  caseTab: { flex: 1, paddingVertical: 10, borderRadius: 14, borderWidth: 2, borderColor: colors.primary, alignItems: 'center', backgroundColor: '#fff' },
+  caseTabActive: { backgroundColor: colors.primary },
+  caseTabText: { fontSize: 15, fontWeight: 'bold', color: colors.primary },
   caseTabTextActive: { color: '#fff' },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', padding: 16, gap: 12 },
-  gridCard: { width: 80, height: 80, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4, borderWidth: 2, borderColor: '#E8927C40' },
-  gridText: { fontSize: 38, fontWeight: 'bold', color: '#E8927C' },
+  gridCard: { width: 80, height: 80, backgroundColor: '#fff', borderRadius: 20, justifyContent: 'center', alignItems: 'center', elevation: 4, borderWidth: 2, borderColor: colors.primary + '40' },
+  gridText: { fontSize: 38, fontWeight: 'bold', color: colors.primary },
 
   canvasContainer: {
       flex: 1,
@@ -1276,33 +1284,33 @@ const styles = StyleSheet.create({
   // Tracing animation dot
   animDotOuter: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(232, 146, 124, 0.35)',
+    backgroundColor: colors.primary + '59',
     justifyContent: 'center', alignItems: 'center',
   },
   animDotInner: {
     width: 14, height: 14, borderRadius: 7,
-    backgroundColor: '#E8927C',
+    backgroundColor: colors.primary,
   },
 
   // Demo modal letter preview
   demoPreviewCanvas: {
     width: 200, height: 200, alignSelf: 'center',
     backgroundColor: '#FFF8F5', borderRadius: 20,
-    borderWidth: 2, borderColor: '#E8927C30',
+    borderWidth: 2, borderColor: colors.primary + '30',
     justifyContent: 'center', alignItems: 'center',
     marginBottom: 14, overflow: 'hidden',
   },
   demoPreviewGhost: {
     fontSize: 140, fontWeight: '900',
-    color: 'rgba(232, 146, 124, 0.25)',
+    color: colors.primary + '40',
     includeFontPadding: false,
   },
   demoPreviewLabel: {
     position: 'absolute', bottom: 8,
-    backgroundColor: 'rgba(232,146,124,0.15)',
+    backgroundColor: colors.primary + '26',
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8,
   },
-  demoPreviewLabelText: { fontSize: 11, color: '#E8927C', fontWeight: '700' },
+  demoPreviewLabelText: { fontSize: 11, color: colors.primary, fontWeight: '700' },
 
   controls: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
   colorRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
@@ -1310,40 +1318,40 @@ const styles = StyleSheet.create({
   activeColor: { borderWidth: 3, borderColor: '#333', transform: [{scale: 1.15}] },
 
   btnRow: { flexDirection: 'row', gap: 10 },
-  clearBtn: { flex: 1, paddingVertical: 12, backgroundColor: '#fff', borderRadius: 14, borderWidth: 2, borderColor: '#E8927C', alignItems: 'center' },
-  clearText: { color: '#E8927C', fontWeight: 'bold' },
-  checkBtn: { flex: 2, paddingVertical: 12, backgroundColor: '#E8927C', borderRadius: 14, alignItems: 'center', elevation: 5 },
+  clearBtn: { flex: 1, paddingVertical: 12, backgroundColor: '#fff', borderRadius: 14, borderWidth: 2, borderColor: colors.primary, alignItems: 'center' },
+  clearText: { color: colors.primary, fontWeight: 'bold' },
+  checkBtn: { flex: 2, paddingVertical: 12, backgroundColor: colors.primary, borderRadius: 14, alignItems: 'center', elevation: 5 },
   checkText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   successCard: { width: '80%', backgroundColor: '#fff', borderRadius: 25, padding: 30, alignItems: 'center', elevation: 10 },
   emoji: { fontSize: 60, marginBottom: 10 },
-  successTitle: { fontSize: 28, fontWeight: 'bold', color: '#673AB7' },
+  successTitle: { fontSize: 28, fontWeight: 'bold', color: colors.primary },
   successSub: { fontSize: 16, color: '#666', textAlign: 'center', marginVertical: 10 },
-  nextBtn: { backgroundColor: '#FF4081', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 20, marginTop: 10 },
+  nextBtn: { backgroundColor: colors.primary, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 20, marginTop: 10 },
   nextText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // Demo modal styles
   demoCard: { width: '95%', backgroundColor: '#fff', borderRadius: 25, padding: 20, elevation: 10, maxHeight: '92%' },
   demoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 12 },
   demoHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  demoLetterBadge: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF0E8', justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#E8927C40' },
-  demoLetterText: { fontSize: 22, fontWeight: 'bold', color: '#E8927C' },
+  demoLetterBadge: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primaryLight, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: colors.primary + '40' },
+  demoLetterText: { fontSize: 22, fontWeight: 'bold', color: colors.primary },
   demoTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', flex: 1 },
 
-  videoBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8927C', borderRadius: 16, padding: 14, marginBottom: 16, gap: 12 },
+  videoBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, borderRadius: 16, padding: 14, marginBottom: 16, gap: 12 },
   videoBtnIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
   videoBtnTitle: { color: '#fff', fontWeight: 'bold', fontSize: 15, marginBottom: 2 },
   videoBtnSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12 },
 
   demoSectionLabel: { fontSize: 13, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   demoStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
-  demoStepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#E8927C', justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
+  demoStepNum: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', flexShrink: 0, marginTop: 1 },
   demoStepNumText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
   demoTip: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
   demoContent: { maxHeight: '65%', marginBottom: 14 },
   demoText: { fontSize: 14, color: '#555', lineHeight: 20, flex: 1 },
-  demoCloseBtn: { backgroundColor: '#E8927C', borderRadius: 15, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  demoCloseBtn: { backgroundColor: colors.primary, borderRadius: 15, paddingVertical: 14, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 },
   demoCloseText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 
   // ── Compose mode styles ───────────────────────────────────────────
@@ -1358,7 +1366,7 @@ const styles = StyleSheet.create({
   composeBtnRow: { flexDirection: 'row', gap: 10, marginTop: 12, justifyContent: 'space-between' },
   composeBtn: { flex: 1, backgroundColor: '#607D8B', borderRadius: 14, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 },
   composeBtnStop: { backgroundColor: '#C62828' },
-  composeBtnCheck: { backgroundColor: '#7B1FA2' },
+  composeBtnCheck: { backgroundColor: colors.primary },
   composeBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 12 },
   autoRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   autoLabel: { color: '#455A64', fontWeight: 'bold' },
@@ -1382,28 +1390,28 @@ const styles = StyleSheet.create({
 
   // ── Stories mode styles ─────────────────────────────────────────────
   storiesContainer: { padding: 16, paddingBottom: 40 },
-  storiesHeader: { fontSize: 16, fontWeight: 'bold', color: '#5E35B1', marginBottom: 16 },
-  storyCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3, borderLeftWidth: 4, borderLeftColor: '#673AB7' },
+  storiesHeader: { fontSize: 16, fontWeight: 'bold', color: colors.primary, marginBottom: 16 },
+  storyCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, elevation: 3, borderLeftWidth: 4, borderLeftColor: colors.primary },
   storyCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   storyTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', flex: 1, marginRight: 8 },
   levelBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   levelText: { color: '#fff', fontWeight: 'bold', fontSize: 11 },
   storyPreview: { color: '#666', fontSize: 14, lineHeight: 20, marginBottom: 8 },
   storyMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  storyMetaText: { color: '#9575CD', fontSize: 12, fontWeight: '600' },
+  storyMetaText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
-  loadingText: { marginTop: 12, color: '#673AB7', fontWeight: '600' },
+  loadingText: { marginTop: 12, color: colors.primary, fontWeight: '600' },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
   emptyEmoji: { fontSize: 60, marginBottom: 16 },
   emptyText: { fontSize: 18, fontWeight: 'bold', color: '#555', marginBottom: 8 },
   emptySubtext: { fontSize: 14, color: '#888', textAlign: 'center' },
 
   // ── Story reference card (in compose) ───────────────────────────────
-  storyRefCard: { backgroundColor: '#EDE7F6', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#D1C4E9' },
+  storyRefCard: { backgroundColor: colors.primaryLight, borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: colors.primary + '40' },
   storyRefHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  storyRefLabel: { fontSize: 14, fontWeight: 'bold', color: '#5E35B1' },
+  storyRefLabel: { fontSize: 14, fontWeight: 'bold', color: colors.primary },
   storyRefText: { fontSize: 15, color: '#333', lineHeight: 24, backgroundColor: '#fff', padding: 12, borderRadius: 12, marginBottom: 10 },
-  speakStoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#7E57C2', borderRadius: 12, paddingVertical: 10, gap: 6 },
+  speakStoryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 10, gap: 6 },
   speakStoryText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
 
   // ── Submit button style ─────────────────────────────────────────────
@@ -1418,7 +1426,7 @@ const styles = StyleSheet.create({
   accuracyLabel: { fontSize: 14, color: 'rgba(255,255,255,0.9)', textAlign: 'center', fontWeight: '600' },
   comparisonStats: { textAlign: 'center', color: '#666', fontSize: 15, marginBottom: 16 },
   wordResultsContainer: { maxHeight: 200, marginBottom: 16 },
-  wordResultsTitle: { fontSize: 14, fontWeight: 'bold', color: '#5E35B1', marginBottom: 10 },
+  wordResultsTitle: { fontSize: 14, fontWeight: 'bold', color: colors.primary, marginBottom: 10 },
   wordResultsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   wordChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginBottom: 4 },
   wordCorrect: { backgroundColor: '#C8E6C9' },

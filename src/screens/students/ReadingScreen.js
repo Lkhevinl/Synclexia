@@ -7,7 +7,7 @@ import StudentPageHeader from '../../components/student/StudentPageHeader';
 import StudentCard from '../../components/student/StudentCard';
 import StudentButton from '../../components/student/StudentButton';
 import StudentProgressBar from '../../components/student/StudentProgressBar';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { logSession } from '../../lib/analyticsHelper';
@@ -21,6 +21,7 @@ const storyColor = (level) => LEVEL_COLORS[((parseInt(level) || 1) - 1) % LEVEL_
 export default function ReadingScreen() {
   const { profile } = useAuth();
   const { colors, getDyslexiaTextStyle } = useTheme();
+  const c = useCandyTokens();
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStory, setSelectedStory] = useState(null);
@@ -163,7 +164,7 @@ export default function ReadingScreen() {
       {/* 2. LOADING / BOOKSHELF GRID */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#E8927C" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={{ marginTop: 10, color: '#78909C' }}>Loading library...</Text>
         </View>
       ) : stories.length === 0 ? (
@@ -207,7 +208,7 @@ export default function ReadingScreen() {
               </TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={styles.readerContent}>
-              <Text style={[styles.storyText, getDyslexiaTextStyle()]}>
+              <Text style={[styles.storyText, { color: colors.onSurface }, getDyslexiaTextStyle()]}>
                 {storyTokens.map((t, i) => {
                   if (!t.isWord) return <Text key={`ws-${i}`}>{t.text}</Text>;
                   const isActive = isSpeaking && t.wordIndex === activeWordIndex;
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
   readerTitle: { fontSize: 20, fontWeight: '800', color: '#fff', flex: 1, marginRight: 10 },
   closeBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' },
   readerContent: { padding: 24 },
-  storyText: { fontSize: 24, lineHeight: 40, color: c.text, textAlign: 'center' },
+  storyText: { fontSize: 24, lineHeight: 40, textAlign: 'center' },
   readerControls: { padding: 16, borderTopWidth: 1, borderColor: '#eee', alignItems: 'center' },
   speakBtn: { alignSelf: 'stretch' },
   playAllBtn: { marginBottom: 8 },

@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
 import Icon from '../icons/Icon';
-import c from './candyTokens';
+import { useCandyTokens } from './candyTokens';
 
 export default function StudentActivityCard({ 
   title, 
@@ -15,12 +15,13 @@ export default function StudentActivityCard({
   accentColor,
   variant = 'default'
 }) {
+  const c = useCandyTokens();
   const accent = accentColor || c.primary;
   
   if (variant === 'featured') {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={featuredStyles.outer}>
-        <View style={featuredStyles.card}>
+        <View style={[featuredStyles.card, { backgroundColor: c.primaryLight }]}>
           <View style={featuredStyles.topRow}>
             <View style={[featuredStyles.iconCircle, { backgroundColor: accent }]}>
               {iconSource ? (
@@ -40,8 +41,8 @@ export default function StudentActivityCard({
                   <Text style={[featuredStyles.tagText, { color: accent }]}>{tag}</Text>
                 </View>
               ) : null}
-              <Text style={featuredStyles.title}>{title}</Text>
-              <Text style={featuredStyles.desc}>{description}</Text>
+              <Text style={[featuredStyles.title, { color: c.text }]}>{title}</Text>
+              <Text style={[featuredStyles.desc, { color: c.textMuted }]}>{description}</Text>
             </View>
             {illustrationSource && (
               <Image source={illustrationSource} style={featuredStyles.illustration} resizeMode="contain" />
@@ -69,8 +70,8 @@ export default function StudentActivityCard({
                 <Text style={[defaultStyles.tagText, { color: accent }]}>{tag}</Text>
               </View>
             ) : null}
-            <Text style={defaultStyles.title}>{title}</Text>
-            <Text style={defaultStyles.desc} numberOfLines={2}>{description}</Text>
+            <Text style={[defaultStyles.title, { color: c.text }]}>{title}</Text>
+            <Text style={[defaultStyles.desc, { color: c.textMuted }]} numberOfLines={2}>{description}</Text>
           </View>
 
           <View style={[defaultStyles.arrow, { backgroundColor: accent + '28' }]}>
@@ -97,7 +98,6 @@ const featuredStyles = StyleSheet.create({
     borderRadius: 20,
     padding: 16,
     overflow: 'hidden',
-    backgroundColor: '#FFF5F0',
   },
   topRow: {
     flexDirection: 'row',
@@ -146,12 +146,10 @@ const featuredStyles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '800',
-    color: c.text,
     marginBottom: 6,
   },
   desc: {
     fontSize: 13,
-    color: c.textMuted,
     lineHeight: 19,
   },
   illustration: {
@@ -213,11 +211,9 @@ const defaultStyles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: '800',
-    color: c.text,
   },
   desc: {
     fontSize: 12,
-    color: c.textMuted,
     lineHeight: 17,
   },
   arrow: {

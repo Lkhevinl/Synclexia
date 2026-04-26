@@ -1,14 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import c from './candyTokens';
+import { useCandyTokens } from './candyTokens';
 
 export default function StudentProgressBar({ progress = 0, height = 14, showLabel = false }) {
+  const c = useCandyTokens();
   const clamped = Math.min(100, Math.max(0, progress));
   return (
-    <View style={[styles.container, { height }]}>
+    <View style={[styles.container, { height, backgroundColor: c.primaryLight }]}>
       <LinearGradient
-        colors={['#FF9800', c.primary]}
+        colors={[c.primaryLight, c.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.fill, { width: `${clamped}%` }]}
@@ -23,7 +24,6 @@ export default function StudentProgressBar({ progress = 0, height = 14, showLabe
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    backgroundColor: c.primaryLight,
     borderRadius: 9999,
     borderWidth: 3,
     borderColor: '#fff',

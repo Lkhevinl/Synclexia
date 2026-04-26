@@ -17,7 +17,7 @@ import StudentBadge from '../../components/student/StudentBadge';
 import StudentIconBadge from '../../components/student/StudentIconBadge';
 import StudentActivityCard from '../../components/student/StudentActivityCard';
 import StudentSectionTitle from '../../components/student/StudentSectionTitle';
-import c from '../../components/student/candyTokens';
+import { useCandyTokens } from '../../components/student/candyTokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,6 +39,7 @@ const LoadingScreen = ({ surfaceColor }) => {
 export default function DashboardScreen({ navigation }) {
   const { theme, colors, a11yTextStyle } = useTheme();
   const { profile, fetchProfile } = useAuth();
+  const c = useCandyTokens();
 
   const generateUniqueCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -329,7 +330,7 @@ export default function DashboardScreen({ navigation }) {
           <LinearGradient
             colors={[c.primary, c.primaryDark]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
+            end={{ x: 0.8, y: 1 }}
             style={styles.header}
           >
             <TouchableOpacity
@@ -366,14 +367,14 @@ export default function DashboardScreen({ navigation }) {
             {/* QUICK STATS */}
             <View style={styles.statsRow}>
               {[
-                { icon: 'checkmark-circle', color: c.success,      value: stats.totalSessions, label: 'Completed' },
-                { icon: 'flame',            color: '#FF9800',       value: stats.streak,        label: 'Day Streak' },
-                { icon: 'trophy',           color: c.achievement,  value: `${stats.avgAccuracy}%`, label: 'Accuracy' },
+                { icon: 'checkmark-circle', color: c.success,  value: stats.totalSessions,      label: 'Completed' },
+                { icon: 'flame',            color: c.primary,  value: stats.streak,             label: 'Day Streak' },
+                { icon: 'trophy',           color: c.primary,  value: `${stats.avgAccuracy}%`,  label: 'Accuracy'  },
               ].map(({ icon, color, value, label }) => (
                 <StudentCard key={label} style={styles.statCard}>
                   <Icon name={icon} size="md" color={color} />
-                  <Text style={styles.statValue}>{value}</Text>
-                  <Text style={styles.statLabel}>{label}</Text>
+                  <Text style={[styles.statValue, { color: c.text }]}>{value}</Text>
+                  <Text style={[styles.statLabel, { color: c.textMuted }]}>{label}</Text>
                 </StudentCard>
               ))}
             </View>
@@ -382,10 +383,10 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.section}>
               <StudentSectionTitle title="Explore" subtitle="Learn phonics, reading, and writing" iconName="compass" />
               {[
-                { title: 'Phonics',  iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics learner.png'), desc: 'Tap to hear sounds and learn how to read words!',           route: 'Phonics',  tag: 'Listening',     accentColor: '#FF6B6B' },
-                { title: 'Reading',  iconSource: require('../../../assets/read.png'), illustrationSource: require('../../../assets/read leanrers.png'), desc: 'Select a book, listen to the story, and follow along!',    route: 'Reading',  tag: 'Comprehension', accentColor: '#4ECDC4' },
-                { title: 'Writing',  iconSource: require('../../../assets/write.png'), illustrationSource: require('../../../assets/practice writing.png'), desc: 'Practice writing letters and words to build your skills!', route: 'Writing',  tag: 'Practice',      accentColor: '#FFD93D' },
-              ].map(({ title, iconSource, illustrationSource, desc, route, tag, accentColor }) => (
+                { title: 'Phonics',  iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics learner.png'), desc: 'Tap to hear sounds and learn how to read words!',           route: 'Phonics',  tag: 'Listening'     },
+                { title: 'Reading',  iconSource: require('../../../assets/read.png'), illustrationSource: require('../../../assets/read leanrers.png'), desc: 'Select a book, listen to the story, and follow along!',    route: 'Reading',  tag: 'Comprehension' },
+                { title: 'Writing',  iconSource: require('../../../assets/write.png'), illustrationSource: require('../../../assets/practice writing.png'), desc: 'Practice writing letters and words to build your skills!', route: 'Writing',  tag: 'Practice'      },
+              ].map(({ title, iconSource, illustrationSource, desc, route, tag }) => (
                 <StudentActivityCard
                   key={title}
                   title={title}
@@ -393,7 +394,6 @@ export default function DashboardScreen({ navigation }) {
                   tag={tag}
                   iconSource={iconSource}
                   illustrationSource={illustrationSource}
-                  accentColor={accentColor}
                   variant="featured"
                   onPress={() => navigation.navigate(route)}
                 />
@@ -404,10 +404,10 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.section}>
               <StudentSectionTitle title="Play & Learn" subtitle="Practice your skills with fun games" iconName="game-controller" />
               {[
-                { title: 'Spelling',      iconSource: require('../../../assets/games.png'), illustrationSource: require('../../../assets/word games.png'), desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words',    accentColor: '#A78BFA' },
-                { title: 'Sound Games',   iconSource: require('../../../assets/gamers.png'), illustrationSource: require('../../../assets/sound games.png'),       desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening', accentColor: '#FF9F43' },
-                { title: 'Phonics Games', iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics games.png'),      desc: 'Have fun while mastering phonics with interactive games!', route: 'PhonicsActivity',       tag: 'Games',    accentColor: '#54A0FF' },
-              ].map(({ title, iconSource, illustrationSource, desc, route, tag, accentColor }) => (
+                { title: 'Spelling',      iconSource: require('../../../assets/games.png'), illustrationSource: require('../../../assets/word games.png'), desc: 'Learn to spell words correctly with fun exercises!',       route: 'Spelling',              tag: 'Words'    },
+                { title: 'Sound Games',   iconSource: require('../../../assets/gamers.png'), illustrationSource: require('../../../assets/sound games.png'),       desc: 'Play games that help you recognize sounds and patterns!',  route: 'PhonologicalAwareness', tag: 'Listening' },
+                { title: 'Phonics Games', iconSource: require('../../../assets/phonics.png'), illustrationSource: require('../../../assets/phonics games.png'),      desc: 'Have fun while mastering phonics with interactive games!', route: 'PhonicsActivity',       tag: 'Games'    },
+              ].map(({ title, iconSource, illustrationSource, desc, route, tag }) => (
                 <StudentActivityCard
                   key={title}
                   title={title}
@@ -415,7 +415,6 @@ export default function DashboardScreen({ navigation }) {
                   tag={tag}
                   iconSource={iconSource}
                   illustrationSource={illustrationSource}
-                  accentColor={accentColor}
                   variant="featured"
                   onPress={() => navigation.navigate(route)}
                 />
@@ -435,7 +434,7 @@ export default function DashboardScreen({ navigation }) {
                         <Text style={styles.clearAllText}>Clear All</Text>
                       </TouchableOpacity>
                     )}
-                    <TouchableOpacity onPress={() => setNotifVisible(false)} style={styles.modalCloseBtn}>
+                    <TouchableOpacity onPress={() => setNotifVisible(false)} style={[styles.modalCloseBtn, { backgroundColor: c.primaryLight }]}>
                       <Icon name="x" size="sm" color={c.primary} />
                     </TouchableOpacity>
                   </View>
@@ -445,14 +444,14 @@ export default function DashboardScreen({ navigation }) {
                     style={styles.unreadReplyItem}
                     onPress={() => { setNotifVisible(false); navigation.navigate('Support'); }}
                   >
-                    <Icon name="message-square-dashed" size="sm" color={c.success} />
+                    <Icon name="message-square-dashed" size="sm" color={c.primary} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.unreadReplyTitle}>New Feedback Replies!</Text>
                       <Text style={styles.unreadReplyBody}>
                         You have {unreadReplyCount} new {unreadReplyCount === 1 ? 'reply' : 'replies'}
                       </Text>
                     </View>
-                    <Icon name="arrow-right" size="sm" color={c.success} />
+                    <Icon name="arrow-right" size="sm" color={c.primary} />
                   </TouchableOpacity>
                 )}
                 <FlatList
@@ -467,12 +466,12 @@ export default function DashboardScreen({ navigation }) {
                   }
                   renderItem={({ item }) => (
                     <StudentCard variant="tinted" style={styles.notifItem}>
-                      <View style={styles.notifIcon}>
+                      <View style={[styles.notifIcon, { backgroundColor: c.primaryLight }]}>
                         <Icon name="megaphone" size="md" color={c.primary} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.notifTitle}>{item.title}</Text>
-                        <Text style={styles.notifBody} numberOfLines={2}>{item.content}</Text>
+                        <Text style={[styles.notifTitle, { color: c.primary }]}>{item.title}</Text>
+                        <Text style={[styles.notifBody, { color: c.textMuted }]} numberOfLines={2}>{item.content}</Text>
                         <Text style={styles.notifTime}>{new Date(item.created_at).toLocaleDateString()}</Text>
                       </View>
                       <TouchableOpacity
@@ -543,8 +542,8 @@ const styles = StyleSheet.create({
   // Stats
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
   statCard: { flex: 1, alignItems: 'center', padding: 12, gap: 4 },
-  statValue: { fontSize: 20, fontWeight: '800', color: c.text },
-  statLabel: { fontSize: 10, color: c.textMuted, fontWeight: '600' },
+  statValue: { fontSize: 20, fontWeight: '800' },
+  statLabel: { fontSize: 10, fontWeight: '600' },
   tipBadge: { alignSelf: 'flex-start', marginBottom: 18 },
 
   // Sections
@@ -565,10 +564,9 @@ const styles = StyleSheet.create({
     maxHeight: '75%', padding: 20,
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: c.text },
+  modalTitle: { fontSize: 20, fontWeight: '800' },
   modalCloseBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: c.primaryLight,
     justifyContent: 'center', alignItems: 'center',
   },
   unreadReplyItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderRadius: 14, padding: 14, marginBottom: 16 },
@@ -576,8 +574,8 @@ const styles = StyleSheet.create({
   unreadReplyBody: { color: '#558B2F', fontSize: 12 },
   notifItem: { flexDirection: 'row', marginBottom: 10, padding: 12, alignItems: 'flex-start', gap: 10 },
   notifIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
-  notifTitle: { fontWeight: 'bold', color: c.primary, marginBottom: 4, fontSize: 14 },
-  notifBody: { color: c.textMuted, fontSize: 13, lineHeight: 18 },
+  notifTitle: { fontWeight: 'bold', marginBottom: 4, fontSize: 14 },
+  notifBody: { fontSize: 13, lineHeight: 18 },
   notifTime: { fontSize: 11, color: '#aaa', marginTop: 4 },
   modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16 },

@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { STORAGE_KEYS, TIMEOUTS } from '../lib/constants';
 import { useTheme } from '../context/ThemeContext';
 import { isUserAdmin, isUserParent, isUserTeacher } from '../lib/userUtils';
-import c from '../components/student/candyTokens';
+import { useCandyTokens } from '../components/student/candyTokens';
 import LoadingScreen from '../screens/LoadingScreen';
 import DashboardSwitcher from '../components/DashboardSwitcher';
 
@@ -74,38 +74,35 @@ const Tab = createBottomTabNavigator();
 
 const ONBOARDING_KEY = STORAGE_KEYS.ONBOARDING_COMPLETE;
 
-// React Navigation v6 wraps the tab bar in a SafeAreaView that already
-// adds insets.bottom as padding. Do NOT add insets.bottom here too or it
-// doubles the bottom gap and pushes labels off-screen on iPhone.
-const TAB_BAR_STYLE = {
-  position: 'absolute',
-  backgroundColor: '#FFF4F0',
-  height: 68,
-  borderRadius: 50,
-  marginHorizontal: 16,
-  marginBottom: 20,
-  paddingTop: 10,
-  paddingBottom: 10,
-  paddingLeft: 10,
-  paddingRight: 10,
-  borderTopWidth: 0,
-  overflow: 'hidden',
-  elevation: 14,
-  shadowColor: c.primaryDark,
-  shadowOffset: { width: 0, height: 6 },
-  shadowOpacity: 0.18,
-  shadowRadius: 24,
-  borderWidth: 2,
-  borderColor: c.primary + '20',
-};
-
 function StudentTabs() {
+  const c = useCandyTokens();
+  const tabBarStyle = {
+    position: 'absolute',
+    backgroundColor: c.surface,
+    height: 68,
+    borderRadius: 50,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingLeft: 10,
+    paddingRight: 10,
+    borderTopWidth: 0,
+    overflow: 'hidden',
+    elevation: 14,
+    shadowColor: c.primaryDark,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    borderWidth: 2,
+    borderColor: c.primary + '20',
+  };
   return (
     <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: TAB_BAR_STYLE,
+        tabBarStyle,
         tabBarShowLabel: false,
         tabBarIcon: ({ focused }) => {
           let iconName;
@@ -135,6 +132,7 @@ function StudentTabs() {
               shadowRadius: 4,
             }}>
               <Icon name={iconName} size="lg" color={focused ? '#fff' : c.textMuted} />
+
             </View>
           );
         },
