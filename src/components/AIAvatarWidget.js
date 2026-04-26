@@ -266,6 +266,9 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                       <TouchableOpacity
                         style={[styles.tab, activeTab === 'strengths' ? styles.tabActiveGreen : styles.tabInactive]}
                         onPress={() => setActiveTab('strengths')}
+                        accessibilityRole="tab"
+                        accessibilityLabel="Strengths"
+                        accessibilityState={{ selected: activeTab === 'strengths' }}
                       >
                         <Text style={activeTab === 'strengths' ? styles.tabTextActive : styles.tabTextInactive}>
                           ✅ Strengths
@@ -274,6 +277,9 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                       <TouchableOpacity
                         style={[styles.tab, activeTab === 'focus' ? styles.tabActiveOrange : styles.tabInactive]}
                         onPress={() => setActiveTab('focus')}
+                        accessibilityRole="tab"
+                        accessibilityLabel="Focus Areas"
+                        accessibilityState={{ selected: activeTab === 'focus' }}
                       >
                         <Text style={activeTab === 'focus' ? styles.tabTextActive : styles.tabTextInactive}>
                           ⚠️ Focus Areas
@@ -282,39 +288,47 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                     </View>
 
                     {/* ── Strengths tab content ── */}
-                    {activeTab === 'strengths' && data.strengths.length > 0 && (
-                      <View style={styles.section}>
-                        {data.strengths.slice(0, 3).map(item => (
-                          <View key={item.activity} style={styles.itemRow}>
-                            <View style={[styles.itemIconWrap, { backgroundColor: '#E8F5E9' }]}>
-                              <Icon name={item.icon} size="sm" color="#4CAF50" />
+                    {activeTab === 'strengths' && (
+                      data.strengths.length > 0 ? (
+                        <View style={styles.section}>
+                          {data.strengths.slice(0, 3).map(item => (
+                            <View key={item.activity} style={styles.itemRow}>
+                              <View style={[styles.itemIconWrap, { backgroundColor: '#E8F5E9' }]}>
+                                <Icon name={item.icon} size="sm" color="#4CAF50" />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.itemLabel}>{item.label}</Text>
+                                <ProgressBar value={item.avgAccuracy} color="#4CAF50" />
+                              </View>
+                              <Text style={[styles.itemPct, { color: '#4CAF50' }]}>{item.avgAccuracy}%</Text>
                             </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.itemLabel}>{item.label}</Text>
-                              <ProgressBar value={item.avgAccuracy} color="#4CAF50" />
-                            </View>
-                            <Text style={[styles.itemPct, { color: '#4CAF50' }]}>{item.avgAccuracy}%</Text>
-                          </View>
-                        ))}
-                      </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.emptyText}>No strengths recorded yet — keep practising!</Text>
+                      )
                     )}
 
                     {/* ── Focus tab content ── */}
-                    {activeTab === 'focus' && data.weaknesses.length > 0 && (
-                      <View style={styles.section}>
-                        {data.weaknesses.slice(0, 3).map(item => (
-                          <View key={item.activity} style={styles.itemRow}>
-                            <View style={[styles.itemIconWrap, { backgroundColor: '#FFF3E0' }]}>
-                              <Icon name={item.icon} size="sm" color="#FF9800" />
+                    {activeTab === 'focus' && (
+                      data.weaknesses.length > 0 ? (
+                        <View style={styles.section}>
+                          {data.weaknesses.slice(0, 3).map(item => (
+                            <View key={item.activity} style={styles.itemRow}>
+                              <View style={[styles.itemIconWrap, { backgroundColor: '#FFF3E0' }]}>
+                                <Icon name={item.icon} size="sm" color="#FF9800" />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.itemLabel}>{item.label}</Text>
+                                <ProgressBar value={item.avgAccuracy} color="#FF9800" />
+                              </View>
+                              <Text style={[styles.itemPct, { color: '#FF9800' }]}>{item.avgAccuracy}%</Text>
                             </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.itemLabel}>{item.label}</Text>
-                              <ProgressBar value={item.avgAccuracy} color="#FF9800" />
-                            </View>
-                            <Text style={[styles.itemPct, { color: '#FF9800' }]}>{item.avgAccuracy}%</Text>
-                          </View>
-                        ))}
-                      </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <Text style={styles.emptyText}>No focus areas yet — you're doing great!</Text>
+                      )
                     )}
                   </>
                 ) : (
