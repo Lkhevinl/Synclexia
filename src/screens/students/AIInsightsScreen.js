@@ -8,6 +8,8 @@ import {
   Alert,
   Dimensions,
   Animated,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import Icon from '../../components/icons/Icon';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -35,6 +37,9 @@ export default function AIInsightsScreen({ navigation, route }) {
   const [error, setError] = useState(null);
   const [applied, setApplied] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const [cardModal, setCardModal] = useState({ visible: false, item: null, type: null });
+  const openCardModal = (item, type) => setCardModal({ visible: true, item, type });
+  const closeCardModal = () => setCardModal({ visible: false, item: null, type: null });
 
   // Parents pass studentId as a route param to view their child's report
   const targetId = route?.params?.studentId || profile?.id;
@@ -105,7 +110,7 @@ export default function AIInsightsScreen({ navigation, route }) {
     return (
       <TouchableOpacity
         style={[styles.activityCard, { backgroundColor: bgColor, borderColor }]}
-        onPress={() => navigation.navigate(item.route)}
+        onPress={() => openCardModal(item, variant === 'strength' ? 'strength' : 'weakness')}
         activeOpacity={0.8}
       >
         <View style={styles.activityCardTop}>
@@ -156,7 +161,7 @@ export default function AIInsightsScreen({ navigation, route }) {
   const RecommendationCard = ({ rec }) => (
     <TouchableOpacity
       style={[styles.recCard, { borderLeftColor: rec.color }]}
-      onPress={() => navigation.navigate(ACTIVITY_META[rec.activity]?.route ?? 'Dashboard')}
+      onPress={() => openCardModal(rec, 'recommendation')}
       activeOpacity={0.8}
     >
       <View style={styles.recHeader}>
@@ -168,6 +173,163 @@ export default function AIInsightsScreen({ navigation, route }) {
       <Text style={styles.recBody}>{rec.body}</Text>
     </TouchableOpacity>
   );
+
+  const CardDetailModal = () => {
+    const { visible, item, type } = cardModal;
+    if (!item) return null;
+
+    const isStrength = type === 'strength';
+    const isNotExplored = type === 'notExplored';
+    const isPracticeTool = type === 'practiceTool';
+    const isRecommendation = type === 'recommendation';
+    const showScoreStats = !isNotExplored && !isPracticeTool && !isRecommendation;
+    const accentColor = isStrength ? '#2E7D32'
+      : isNotExplored ? '#E8927C'
+      : isPracticeTool ? '#009688'
+      : isRecommendation ? item.color
+      : '#E65100';
+    const headerColors = isStrength
+      ? ['#4CAF50', '#2E7D32']
+      : isNotExplored
+      ? ['#E8927C', '#C87456']
+      : isPracticeTool
+      ? ['#009688', '#00695C']
+      : isRecommendation
+      ? [item.color, item.color + 'BB']
+      : ['#FF9800', '#E65100'];
+    const headerTitle = isStrength
+      ? 'Why You Mastered This'
+      : isNotExplored
+      ? 'Not Explored Yet'
+      : isPracticeTool
+      ? 'Practice Tool'
+      : isRecommendation
+      ? item.title
+      : 'Why This Needs Improvement';
+
+    let summaryText = '';
+    if (isStrength) {
+      const trendMsg =
+        item.trend === 'improving' ? 'and your scores are still improving'
+        : item.trend === 'declining' ? 'but your recent scores have dropped — keep practicing!'
+        : 'and holding steady';
+      summaryText = `You've completed ${item.totalSessions} session${item.totalSessions !== 1 ? 's' : ''} with a mastery score of ${item.masteryScore}% — ${trendMsg}. Your consistent practice has paid off!`;
+    } else if (isNotExplored) {
+      summaryText = `You haven't tried ${item.label} yet. This activity hasn't been explored, so there's no performance data available. Start practicing to unlock your potential in this area!`;
+    } else if (isPracticeTool) {
+      summaryText = `You've used ${item.label} in ${item.totalSessions} session${item.totalSessions !== 1 ? 's' : ''}. This tool supports your learning but isn't scored by the AI — keep using it to strengthen your skills!`;
+    } else if (isRecommendation) {
+      summaryText = item.body;
+    } else {
+      const trendMsg =
+        item.trend === 'improving' ? "The good news — you're on an upward trend!"
+        : item.trend === 'declining' ? 'Your scores have been dropping — more focused sessions are needed.'
+        : 'Consistent practice will help you build mastery.';
+      const sessions = item.totalSessions === 1 ? '1 session' : `${item.totalSessions} sessions`;
+      summaryText = `After ${sessions}, your mastery is at ${item.masteryScore}%. ${trendMsg}`;
+    }
+
+    return (
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={closeCardModal}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={closeCardModal}>
+          <TouchableOpacity style={styles.modalSheet} activeOpacity={1} onPress={() => {}}>
+            <LinearGradient colors={headerColors} style={styles.modalHeader}>
+              <View style={styles.modalHeaderIconBg}>
+                <Icon name={item.icon} size="lg" color="#fff" />
+              </View>
+              <Text style={styles.modalHeaderTitle}>{headerTitle}</Text>
+              <TouchableOpacity onPress={closeCardModal} style={styles.modalCloseBtn}>
+                <Icon name="x" size="md" color="#fff" />
+              </TouchableOpacity>
+            </LinearGradient>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.modalActivityRow}>
+                <Text style={[styles.modalActivityName, { color: item.color ?? '#333' }]}>
+                  {item.label ?? ACTIVITY_META[item.activity]?.label ?? ''}
+                </Text>
+                {showScoreStats && (
+                  <View style={[
+                    styles.modalScoreBadge,
+                    { backgroundColor: isStrength ? '#E8F5E9' : '#FFF3E0', borderColor: isStrength ? '#A5D6A7' : '#FFCC80' },
+                  ]}>
+                    <Text style={[styles.modalScoreNum, { color: accentColor }]}>{item.masteryScore}%</Text>
+                    <Text style={[styles.modalScoreUnit, { color: accentColor }]}> mastery</Text>
+                  </View>
+                )}
+              </View>
+
+              {showScoreStats && item.masteryLabel ? (
+                <Text style={[styles.modalMasteryTag, { color: item.masteryColor ?? accentColor }]}>
+                  {item.masteryLabel}
+                </Text>
+              ) : null}
+
+              {showScoreStats && (
+                <View style={styles.modalStatsRow}>
+                  <View style={styles.modalStatChip}>
+                    <Icon name="check-check" size="xs" color="#666" />
+                    <Text style={styles.modalStatText}>{item.totalSessions} sessions</Text>
+                  </View>
+                  <View style={styles.modalStatChip}>
+                    <Icon name="layers" size="xs" color="#666" />
+                    <Text style={styles.modalStatText}>{LEVEL_LABELS[item.adaptiveLevel] ?? 'Easy'}</Text>
+                  </View>
+                  {item.daysSinceLastSession != null && (
+                    <View style={styles.modalStatChip}>
+                      <Icon name="clock" size="xs" color="#666" />
+                      <Text style={styles.modalStatText}>
+                        {item.daysSinceLastSession === 0 ? 'Today' : `${item.daysSinceLastSession}d ago`}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={[styles.modalStatChip, { borderColor: TREND_COLOR[item.trend] + '55' }]}>
+                    <Icon name={TREND_ICON[item.trend]} size="xs" color={TREND_COLOR[item.trend]} />
+                    <Text style={[styles.modalStatText, { color: TREND_COLOR[item.trend] }]}>{item.trend}</Text>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.modalDivider} />
+
+              <View style={styles.modalSummaryBox}>
+                <Icon
+                  name={isStrength ? 'info' : isNotExplored ? 'compass' : isRecommendation ? 'lightbulb' : 'alert-circle'}
+                  size="sm"
+                  color={accentColor}
+                />
+                <Text style={styles.modalSummaryText}>{summaryText}</Text>
+              </View>
+
+              {showScoreStats && item.insight ? (
+                <View style={[styles.modalInsightBox, { backgroundColor: isStrength ? '#F1F8E9' : '#FFF8E1' }]}>
+                  <Text style={[styles.modalInsightText, { color: isStrength ? '#33691E' : '#BF360C' }]}>
+                    "{item.insight}"
+                  </Text>
+                </View>
+              ) : null}
+
+              {item.tip ? (
+                <View style={styles.modalTipBox}>
+                  <Icon name="lightbulb" size="sm" color="#FF9800" />
+                  <Text style={styles.modalTipText}>{item.tip}</Text>
+                </View>
+              ) : null}
+
+              <View style={{ height: 20 }} />
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.modalDoneBtn, { backgroundColor: accentColor }]}
+              onPress={closeCardModal}
+            >
+              <Text style={styles.modalDoneBtnText}>Got it!</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+    );
+  };
 
   const LearningPathItem = ({ item, index }) => {
     const needsAdjustment = item.suggestedLevel !== item.currentLevel;
@@ -319,7 +481,7 @@ export default function AIInsightsScreen({ navigation, route }) {
                   <TouchableOpacity
                     key={activity}
                     style={styles.notPracticedCard}
-                    onPress={() => navigation.navigate(meta.route)}
+                    onPress={() => openCardModal({ activity, ...meta }, 'notExplored')}
                     activeOpacity={0.8}
                   >
                     <LinearGradient
@@ -354,7 +516,7 @@ export default function AIInsightsScreen({ navigation, route }) {
               <TouchableOpacity
                 key={tool.activity}
                 style={styles.toolCard}
-                onPress={() => navigation.navigate(tool.route)}
+                onPress={() => openCardModal(tool, 'practiceTool')}
                 activeOpacity={0.8}
               >
                 <View style={[styles.toolIconBg, { backgroundColor: tool.color + '22' }]}>
@@ -439,6 +601,8 @@ export default function AIInsightsScreen({ navigation, route }) {
 
         <View style={{ height: 30 }} />
       </Animated.ScrollView>
+
+      <CardDetailModal />
     </ScreenWrapper>
   );
 }
@@ -711,4 +875,105 @@ const styles = StyleSheet.create({
   },
   applyBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   applyHint: { fontSize: 13, color: '#90A4AE', textAlign: 'center', lineHeight: 18 },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  modalHeaderIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBody: { padding: 16 },
+  modalActivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  modalActivityName: { fontSize: 18, fontWeight: 'bold' },
+  modalScoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  modalScoreNum: { fontSize: 18, fontWeight: 'bold' },
+  modalScoreUnit: { fontSize: 13, fontWeight: '600' },
+  modalMasteryTag: { fontSize: 13, fontWeight: '700', marginBottom: 10 },
+  modalStatsRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 12, marginTop: 6 },
+  modalStatChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  modalStatText: { fontSize: 12, fontWeight: '600', color: '#555' },
+  modalDivider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 12 },
+  modalSummaryBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
+  modalSummaryText: { flex: 1, fontSize: 14, lineHeight: 21, color: '#444' },
+  modalInsightBox: { borderRadius: 12, padding: 12, marginBottom: 12 },
+  modalInsightText: { fontSize: 14, lineHeight: 20, fontStyle: 'italic', fontWeight: '600' },
+  modalTipBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFF8E1',
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9800',
+  },
+  modalTipText: { flex: 1, fontSize: 13, color: '#555', lineHeight: 19 },
+  modalDoneBtn: {
+    margin: 16,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalDoneBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
 });

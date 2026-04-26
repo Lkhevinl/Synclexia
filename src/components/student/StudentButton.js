@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
   outlineOuter: {
     borderRadius: 9999,
     borderWidth: 2,
-    borderColor: c.primary,
     alignSelf: 'flex-start',
     backgroundColor: '#fff',
   },
@@ -80,7 +79,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   outlineText: {
-    color: c.primary,
     fontWeight: '700',
     fontSize: 15,
   },
