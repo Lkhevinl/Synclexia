@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   scoreNum: { fontSize: 24, fontWeight: 'bold' },
   scorePct: { fontSize: 13, fontWeight: '700', color: '#999' },
   scoreLabel: { fontSize: 13, fontWeight: '700' },
-  sessionMeta: { fontSize: 11, color: '#B0BEC5', marginTop: 2 },
+  sessionMeta: { fontSize: 11, color: '#B0BEC5', marginTop: 2, marginBottom: 14 },
 
   /* Sections */
   section: { marginBottom: 18 },
