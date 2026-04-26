@@ -251,24 +251,13 @@ export default function AIAvatarWidget({ studentId, studentName }) {
               >
                 {/* Chat bubble greeting */}
                 <ChatBubble
-                  text={`Hi ${firstName}! Here's your progress today 👇`}
+                  text={buildLexiMessage(firstName, data)}
                 />
 
-                {/* ── Score row ── */}
-                <View style={styles.scoreRow}>
-                  <View style={[styles.scoreCircle, { borderColor: color }]}>
-                    <Text style={[styles.scoreNum, { color }]}>{score}</Text>
-                    <Text style={[styles.scorePct, { color }]}>%</Text>
-                  </View>
-                  <View style={{ flex: 1, gap: 6 }}>
-                    <Text style={[styles.scoreLabel, { color }]}>{label}</Text>
-                    <ProgressBar value={score} color={color} />
-                    <Text style={styles.sessionMeta}>
-                      {data.totalSessions} session{data.totalSessions !== 1 ? 's' : ''} •{' '}
-                      {data.activitiesPracticed} activit{data.activitiesPracticed !== 1 ? 'ies' : 'y'} practised
-                    </Text>
-                  </View>
-                </View>
+                <Text style={styles.sessionMeta}>
+                  {data.totalSessions} session{data.totalSessions !== 1 ? 's' : ''} •{' '}
+                  {data.activitiesPracticed} activit{data.activitiesPracticed !== 1 ? 'ies' : 'y'} practised
+                </Text>
 
                 {hasActivity ? (
                   <>
