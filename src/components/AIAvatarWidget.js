@@ -222,7 +222,7 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                   </Svg>
                   <View>
                     <Text style={[styles.arcChipScore, { color }]}>{score}%</Text>
-                    <Text style={styles.arcChipLabel}>{label}</Text>
+                    <Text style={styles.arcChipLabel} numberOfLines={1}>{label}</Text>
                   </View>
                 </View>
               )}
