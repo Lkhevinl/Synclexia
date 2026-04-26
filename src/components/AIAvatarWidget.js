@@ -66,7 +66,7 @@ const bubble = StyleSheet.create({
     paddingVertical: 12,
     maxWidth: '88%',
   },
-  text: { fontSize: 14, color: '#333', lineHeight: 20 },
+  text: { fontSize: 15, color: '#333', lineHeight: 22 },
   tail: {
     width: 12,
     height: 8,
@@ -357,7 +357,7 @@ export default function AIAvatarWidget({ studentId, studentName }) {
               <View style={styles.loadingWrap}>
                 <Text style={styles.emptyText}>Couldn't load insights. Tap to try again.</Text>
                 <TouchableOpacity onPress={() => { setData(null); open(); }} style={{ marginTop: 12 }}>
-                  <Text style={{ color: '#E8927C', fontWeight: '700' }}>Retry</Text>
+                  <Text style={{ color: '#E8927C', fontWeight: '700', fontSize: 15 }}>Retry</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -462,8 +462,8 @@ const styles = StyleSheet.create({
   lexiNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   lexiName: { fontSize: 16, fontWeight: '800', color: '#263238' },
   onlineDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4CAF50' },
-  onlineText: { fontSize: 11, color: '#4CAF50', fontWeight: '600' },
-  lexiRole: { fontSize: 12, color: '#90A4AE' },
+  onlineText: { fontSize: 12, color: '#4CAF50', fontWeight: '600' },
+  lexiRole: { fontSize: 13, color: '#90A4AE' },
   closeBtn: {
     width: 32,
     height: 32,
@@ -486,27 +486,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0F0F0',
   },
-  arcChipScore: { fontSize: 11, fontWeight: '900' },
-  arcChipLabel:  { fontSize: 8, color: '#90A4AE' },
+  arcChipScore: { fontSize: 13, fontWeight: '900' },
+  arcChipLabel:  { fontSize: 10, color: '#90A4AE' },
 
   /* Tabs */
   tabRow:          { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  tab:             { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10 },
+  tab:             { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
   tabActiveGreen:  { backgroundColor: '#4CAF50', elevation: 3, shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   tabActiveOrange: { backgroundColor: '#FF9800', elevation: 3, shadowColor: '#FF9800', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
   tabInactive:     { backgroundColor: '#F5F5F5' },
-  tabTextActive:   { fontSize: 12, fontWeight: '800', color: '#fff' },
-  tabTextInactive: { fontSize: 12, fontWeight: '700', color: '#90A4AE' },
+  tabTextActive:   { fontSize: 14, fontWeight: '800', color: '#fff' },
+  tabTextInactive: { fontSize: 14, fontWeight: '700', color: '#90A4AE' },
 
   /* Loading */
   loadingWrap: { alignItems: 'center', paddingVertical: 44 },
-  loadingText: { marginTop: 14, fontSize: 14, color: '#E8927C', fontWeight: '600' },
+  loadingText: { marginTop: 14, fontSize: 15, color: '#E8927C', fontWeight: '600' },
 
   /* Scroll content */
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
 
   /* Session meta */
-  sessionMeta: { fontSize: 11, color: '#B0BEC5', marginTop: 2, marginBottom: 14 },
+  sessionMeta: { fontSize: 12, color: '#B0BEC5', marginTop: 2, marginBottom: 14 },
 
   /* Sections */
   section: { marginBottom: 18 },
@@ -523,13 +523,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  itemLabel: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 5 },
-  itemPct: { fontSize: 13, fontWeight: '800', minWidth: 38, textAlign: 'right' },
+  itemLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 5 },
+  itemPct: { fontSize: 14, fontWeight: '800', minWidth: 42, textAlign: 'right' },
 
   /* Empty */
   emptyWrap: { alignItems: 'center', paddingVertical: 28, paddingHorizontal: 16 },
   emptyEmoji: { fontSize: 44, marginBottom: 14 },
-  emptyText: { fontSize: 13, color: '#90A4AE', textAlign: 'center', lineHeight: 20 },
+  emptyText: { fontSize: 14, color: '#90A4AE', textAlign: 'center', lineHeight: 22 },
 
   /* Report button */
   reportBtn: {
@@ -549,5 +549,5 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 17,
   },
-  reportText: { fontSize: 15, fontWeight: 'bold', color: '#fff' },
+  reportText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
 });
