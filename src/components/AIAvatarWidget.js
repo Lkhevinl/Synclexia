@@ -505,36 +505,10 @@ const styles = StyleSheet.create({
   /* Scroll content */
   scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 10 },
 
-  /* Score row */
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    backgroundColor: '#FAF5F1',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-  },
-  scoreCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  scoreNum: { fontSize: 24, fontWeight: 'bold' },
-  scorePct: { fontSize: 13, fontWeight: '700', color: '#999' },
-  scoreLabel: { fontSize: 13, fontWeight: '700' },
   sessionMeta: { fontSize: 11, color: '#B0BEC5', marginTop: 2, marginBottom: 14 },
 
   /* Sections */
   section: { marginBottom: 18 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 13, fontWeight: '800', color: '#455A64', letterSpacing: 0.2 },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
