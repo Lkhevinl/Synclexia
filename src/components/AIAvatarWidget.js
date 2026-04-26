@@ -85,14 +85,20 @@ export default function AIAvatarWidget({ studentId, studentName }) {
   const navigation  = useNavigation();
   const targetId = studentId || profile?.id;
 
-  const [visible, setVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [data,    setData]    = useState(null);
+  const [visible,    setVisible]    = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [data,       setData]       = useState(null);
+  const [activeTab,  setActiveTab]  = useState('strengths');
 
   // Reset cached data whenever the target student changes (parent switching children)
   useEffect(() => {
     setData(null);
   }, [targetId]);
+
+  useEffect(() => {
+    if (!data) return;
+    setActiveTab(data.strengths.length > 0 ? 'strengths' : 'focus');
+  }, [data]);
 
   // Idle bounce for the floating button
   const bounceY  = useRef(new Animated.Value(0)).current;
