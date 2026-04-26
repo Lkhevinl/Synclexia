@@ -261,13 +261,29 @@ export default function AIAvatarWidget({ studentId, studentName }) {
 
                 {hasActivity ? (
                   <>
-                    {/* ── Strengths ── */}
-                    {data.strengths.length > 0 && (
+                    {/* ── Tabs ── */}
+                    <View style={styles.tabRow}>
+                      <TouchableOpacity
+                        style={[styles.tab, activeTab === 'strengths' ? styles.tabActiveGreen : styles.tabInactive]}
+                        onPress={() => setActiveTab('strengths')}
+                      >
+                        <Text style={activeTab === 'strengths' ? styles.tabTextActive : styles.tabTextInactive}>
+                          ✅ Strengths
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.tab, activeTab === 'focus' ? styles.tabActiveOrange : styles.tabInactive]}
+                        onPress={() => setActiveTab('focus')}
+                      >
+                        <Text style={activeTab === 'focus' ? styles.tabTextActive : styles.tabTextInactive}>
+                          ⚠️ Focus Areas
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* ── Strengths tab content ── */}
+                    {activeTab === 'strengths' && data.strengths.length > 0 && (
                       <View style={styles.section}>
-                        <View style={styles.sectionTitleRow}>
-                          <Icon name="check-circle" size="sm" color="#4CAF50" />
-                          <Text style={styles.sectionTitle}>  Your Strengths</Text>
-                        </View>
                         {data.strengths.slice(0, 3).map(item => (
                           <View key={item.activity} style={styles.itemRow}>
                             <View style={[styles.itemIconWrap, { backgroundColor: '#E8F5E9' }]}>
@@ -283,13 +299,9 @@ export default function AIAvatarWidget({ studentId, studentName }) {
                       </View>
                     )}
 
-                    {/* ── Weaknesses ── */}
-                    {data.weaknesses.length > 0 && (
+                    {/* ── Focus tab content ── */}
+                    {activeTab === 'focus' && data.weaknesses.length > 0 && (
                       <View style={styles.section}>
-                        <View style={styles.sectionTitleRow}>
-                          <Icon name="x-circle" size="sm" color="#EF5350" />
-                          <Text style={styles.sectionTitle}>  Areas to Focus</Text>
-                        </View>
                         {data.weaknesses.slice(0, 3).map(item => (
                           <View key={item.activity} style={styles.itemRow}>
                             <View style={[styles.itemIconWrap, { backgroundColor: '#FFF3E0' }]}>
@@ -462,6 +474,15 @@ const styles = StyleSheet.create({
   },
   arcChipScore: { fontSize: 11, fontWeight: '900' },
   arcChipLabel:  { fontSize: 8, color: '#90A4AE' },
+
+  /* Tabs */
+  tabRow:          { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  tab:             { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10 },
+  tabActiveGreen:  { backgroundColor: '#4CAF50', elevation: 3, shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  tabActiveOrange: { backgroundColor: '#FF9800', elevation: 3, shadowColor: '#FF9800', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  tabInactive:     { backgroundColor: '#F5F5F5' },
+  tabTextActive:   { fontSize: 12, fontWeight: '800', color: '#fff' },
+  tabTextInactive: { fontSize: 12, fontWeight: '700', color: '#90A4AE' },
 
   /* Loading */
   loadingWrap: { alignItems: 'center', paddingVertical: 44 },
