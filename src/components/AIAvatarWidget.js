@@ -95,9 +95,10 @@ export default function AIAvatarWidget({ studentId, studentName }) {
     setData(null);
   }, [targetId]);
 
+  // Default to Strengths tab when data loads; fall back to Focus if no strengths
   useEffect(() => {
     if (!data) return;
-    setActiveTab(data.strengths.length > 0 ? 'strengths' : 'focus');
+    setActiveTab(data.strengths?.length > 0 ? 'strengths' : 'focus');
   }, [data]);
 
   // Idle bounce for the floating button
