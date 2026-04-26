@@ -576,16 +576,16 @@ const styles = StyleSheet.create({
   activityLabel: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
   accuracyRow: { flexDirection: 'row', alignItems: 'baseline' },
   accuracyNumber: { fontSize: 20, fontWeight: 'bold', color: '#333' },
-  accuracyText: { fontSize: 12, color: '#666' },
-  masteryTag: { fontSize: 11, fontWeight: '700', marginTop: 2 },
+  accuracyText: { fontSize: 13, color: '#666' },
+  masteryTag: { fontSize: 13, fontWeight: '700', marginTop: 2 },
   toolsNote: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F5F5F5', borderRadius: 8, padding: 10, marginBottom: 10 },
-  toolsNoteText: { fontSize: 12, color: '#666', flex: 1 },
+  toolsNoteText: { fontSize: 13, color: '#666', flex: 1 },
   toolCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 8, elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4 },
   toolIconBg: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   toolLabel: { fontSize: 15, fontWeight: '700', marginBottom: 2 },
-  toolSessions: { fontSize: 12, color: '#888' },
+  toolSessions: { fontSize: 13, color: '#888' },
   toolBadge: { backgroundColor: '#F0F0F0', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  toolBadgeText: { fontSize: 11, color: '#888', fontWeight: '600' },
+  toolBadgeText: { fontSize: 13, color: '#888', fontWeight: '600' },
   trendBadge: {
     width: 28,
     height: 28,
@@ -604,8 +604,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  statPillText: { fontSize: 10, color: '#555', fontWeight: '600' },
-  activityInsight: { fontSize: 12, marginTop: 8, lineHeight: 16, fontStyle: 'italic' },
+  statPillText: { fontSize: 12, color: '#555', fontWeight: '600' },
+  activityInsight: { fontSize: 13, marginTop: 8, lineHeight: 18, fontStyle: 'italic' },
 
   // Not practiced
   notPracticedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   },
   notPracticedIcon: { fontSize: 32, marginBottom: 6 },
   notPracticedLabel: { fontSize: 13, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  notPracticedTry: { fontSize: 11, color: 'rgba(255,255,255,0.8)', marginTop: 4, fontWeight: '600' },
+  notPracticedTry: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4, fontWeight: '600' },
 
   // Recommendation cards
   recCard: {
@@ -686,8 +686,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  adjustBadgeText: { fontSize: 10, fontWeight: '700', color: '#3F51B5' },
-  pathReason: { fontSize: 12, color: '#777', lineHeight: 16 },
+  adjustBadgeText: { fontSize: 12, fontWeight: '700', color: '#3F51B5' },
+  pathReason: { fontSize: 13, color: '#777', lineHeight: 18 },
   pathDivider: { height: 1, backgroundColor: '#F0F0F0', marginHorizontal: 14 },
 
   // Apply button
@@ -710,5 +710,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   applyBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-  applyHint: { fontSize: 11, color: '#90A4AE', textAlign: 'center', lineHeight: 16 },
+  applyHint: { fontSize: 13, color: '#90A4AE', textAlign: 'center', lineHeight: 18 },
 });

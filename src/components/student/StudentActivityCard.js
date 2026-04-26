@@ -139,7 +139,7 @@ const featuredStyles = StyleSheet.create({
     marginBottom: 8,
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -204,7 +204,7 @@ const defaultStyles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
@@ -213,8 +213,8 @@ const defaultStyles = StyleSheet.create({
     fontWeight: '800',
   },
   desc: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 13,
+    lineHeight: 18,
   },
   arrow: {
     width: 44,

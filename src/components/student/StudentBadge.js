@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

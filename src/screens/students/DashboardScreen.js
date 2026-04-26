@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   },
   avatarInitial: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
   headerCenter: { flex: 1 },
-  headerGreeting: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  headerGreeting: { fontSize: 14, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
   headerName: { fontSize: 18, fontWeight: '800', color: '#fff' },
   bellBtn: {
     width: 42, height: 42, borderRadius: 21,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
   statCard: { flex: 1, alignItems: 'center', padding: 12, gap: 4 },
   statValue: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 10, fontWeight: '600' },
+  statLabel: { fontSize: 12, fontWeight: '600' },
   tipBadge: { alignSelf: 'flex-start', marginBottom: 18 },
 
   // Sections
@@ -571,14 +571,14 @@ const styles = StyleSheet.create({
   },
   unreadReplyItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderRadius: 14, padding: 14, marginBottom: 16 },
   unreadReplyTitle: { fontWeight: 'bold', color: '#2E7D32', fontSize: 14, marginBottom: 2 },
-  unreadReplyBody: { color: '#558B2F', fontSize: 12 },
+  unreadReplyBody: { color: '#558B2F', fontSize: 13 },
   notifItem: { flexDirection: 'row', marginBottom: 10, padding: 12, alignItems: 'flex-start', gap: 10 },
   notifIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
   notifTitle: { fontWeight: 'bold', marginBottom: 4, fontSize: 14 },
   notifBody: { fontSize: 13, lineHeight: 18 },
-  notifTime: { fontSize: 11, color: '#aaa', marginTop: 4 },
+  notifTime: { fontSize: 12, color: '#aaa', marginTop: 4 },
   modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   clearAllBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f0f0f0', borderRadius: 16 },
-  clearAllText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  clearAllText: { fontSize: 13, color: '#666', fontWeight: '600' },
   dismissBtn: { padding: 8, marginLeft: 4 },
 });

@@ -42,6 +42,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     color: '#fff',
     fontWeight: '800',
-    fontSize: 10,
+    fontSize: 12,
   },
 });
