@@ -129,7 +129,7 @@ export default function PhonicsScreen() {
   const visiblePhonemes = phonemes.filter(p => activeCats.has(p.category));
 
   return (
-    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
       <View style={styles.blobTopRight} pointerEvents="none" />
       <View style={styles.blobBottomLeft} pointerEvents="none" />
 

@@ -29,6 +29,41 @@ export const ACTIVITY_META = {
     route: 'Phonics',
     tip: 'Practice letter sounds daily — even 5 minutes helps!',
   },
+  phonics_blend: {
+    label: 'Blend It',
+    icon: 'link',
+    color: '#7C4DFF',
+    route: 'Phonics',
+    tip: 'Tap each sound in order, then press BLEND to put the word together!',
+  },
+  phonics_segment: {
+    label: 'Count the Sounds',
+    icon: 'hash',
+    color: '#5C6BC0',
+    route: 'Phonics',
+    tip: 'Tap the drum once for each sound you hear in the word!',
+  },
+  phonics_sound_match: {
+    label: 'Sound Match',
+    icon: 'music',
+    color: '#00897B',
+    route: 'Phonics',
+    tip: 'Listen carefully and match the sound to the correct option!',
+  },
+  phonics_word_build: {
+    label: 'Word Builder',
+    icon: 'type',
+    color: '#1E88E5',
+    route: 'Phonics',
+    tip: 'Tap the phoneme tiles in the correct order to build the word!',
+  },
+  phonics_tricky: {
+    label: 'Tricky Words',
+    icon: 'star',
+    color: '#8E24AA',
+    route: 'Phonics',
+    tip: 'Sight words don\'t follow the rules — read them by heart!',
+  },
   spelling: {
     label: 'Spelling',
     icon: 'type',
@@ -107,13 +142,13 @@ export async function analyzeStudentProfile(studentId, days = 60) {
     supabase
       .from(TABLES.SESSION_LOGS)
       .select('activity_type, score, total, accuracy, created_at')
-      .eq('student_id', studentId)
+      .or(`student_id.eq.${studentId},user_id.eq.${studentId}`)
       .gte('created_at', sinceISO)
       .order('created_at', { ascending: false }),
     supabase
       .from(TABLES.ADAPTIVE_STATE)
       .select('activity_type, current_level, attempts, correct_streak')
-      .eq('student_id', studentId),
+      .or(`student_id.eq.${studentId},user_id.eq.${studentId}`),
   ]);
 
   const sessions = sessionsResult.data ?? [];

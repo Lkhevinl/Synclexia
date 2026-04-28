@@ -242,9 +242,10 @@ function EmptyContent({ label, color, onBack }) {
 
 function BlendGame({ onBack, userId, items }) {
   const { colors } = useTheme();
+  const bg = useMemo(() => makeBgStyles(colors.primary, colors.primaryLight), [colors.primary, colors.primaryLight]);
   const words = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
-  const [tappedPhonemes, setTappedPhonemes] = useState([]);
+  const [tappedOrder, setTappedOrder] = useState([]);
   const [activePhonemeIndex, setActivePhonemeIndex] = useState(null);
   const [blended, setBlended] = useState(false);
   const [score, setScore] = useState(0);
@@ -253,6 +254,10 @@ function BlendGame({ onBack, userId, items }) {
   const speechRunIdRef = useRef(0);
 
   const current = words[idx];
+  const shuffledPhonemes = useMemo(
+    () => shuffleArr(current.phonemes.map((ph, i) => ({ ph, originalIdx: i }))),
+    [idx]
+  );
 
   useEffect(() => {
     return () => {
@@ -290,25 +295,39 @@ function BlendGame({ onBack, userId, items }) {
     await ttsService.speak(word);
   };
 
-  const speakPhoneme = (ph, phonemeIndex) => {
-    speakWithHighlight(ph, phonemeIndex);
-    if (!tappedPhonemes.includes(phonemeIndex)) {
-      setTappedPhonemes(prev => [...prev, phonemeIndex]);
-    }
+  const speakPhoneme = (ph, originalIdx) => {
+    speakWithHighlight(ph, originalIdx);
+    setTappedOrder(prev =>
+      prev.includes(originalIdx)
+        ? prev.filter(i => i !== originalIdx)
+        : [...prev, originalIdx]
+    );
   };
 
+  const shake = () => Animated.sequence([
+    Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
+    Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
+    Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
+  ]).start();
+
   const handleBlend = () => {
-    if (tappedPhonemes.length < current.phonemes.length) {
-      // Shake reminder
-      Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
-      ]).start();
+    if (tappedOrder.length < current.phonemes.length) {
+      shake();
       ttsService.speak('Tap each sound first!');
       return;
     }
-    // Phoneme-synced playback: highlight each phoneme as it is spoken, then speak the whole word.
+    const isCorrectOrder = tappedOrder.every((originalIdx, pos) => originalIdx === pos);
+    if (!isCorrectOrder) {
+      shake();
+      (async () => {
+        await ttsService.speak('Not quite! Listen to the correct order:');
+        for (const ph of current.phonemes) {
+          await ttsService.speakActivityPhonics(ph);
+        }
+      })();
+      setBlended(true);
+      return;
+    }
     speakPhonemeSequenceThenWord(current.phonemes, current.word);
     setBlended(true);
     setScore(s => s + 1);
@@ -323,13 +342,13 @@ function BlendGame({ onBack, userId, items }) {
       return;
     }
     setIdx(i => i + 1);
-    setTappedPhonemes([]);
+    setTappedOrder([]);
     setActivePhonemeIndex(null);
     setBlended(false);
   };
 
-  if (!words.length) return <EmptyContent label="Blend It!" color="#E53935" onBack={onBack} />;
-  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Blend It!" color="#E53935" />;
+  if (!words.length) return <EmptyContent label="Blend It!" color={colors.primary} onBack={onBack} />;
+  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Blend It!" color={colors.primary} />;
 
   const speakInstruction = () => {
     ttsService.speak('Tap each sound, then BLEND!');
@@ -352,17 +371,17 @@ function BlendGame({ onBack, userId, items }) {
         <Text style={bg.instruction}>Tap each sound, then BLEND!</Text>
 
         <View style={bg.phonemeRow}>
-          {current.phonemes.map((ph, i) => {
-            const tapped = tappedPhonemes.includes(i);
-            const active = activePhonemeIndex === i;
+          {shuffledPhonemes.map((tile) => {
+            const tapped = tappedOrder.includes(tile.originalIdx);
+            const active = activePhonemeIndex === tile.originalIdx;
             return (
               <TouchableOpacity
-                key={i}
+                key={tile.originalIdx}
                 style={[bg.phonemeTile, active && bg.phonemeTileActive, tapped && bg.phonemeTileTapped, active && tapped && bg.phonemeTileActiveTapped]}
-                onPress={() => speakPhoneme(ph, i)}
+                onPress={() => speakPhoneme(tile.ph, tile.originalIdx)}
                 activeOpacity={0.7}
               >
-                <Text style={[bg.phonemeText, active && bg.phonemeTextActive, tapped && bg.phonemeTextTapped]}>/{ph}/</Text>
+                <Text style={[bg.phonemeText, active && bg.phonemeTextActive, tapped && bg.phonemeTextTapped]}>/{tile.ph}/</Text>
               </TouchableOpacity>
             );
           })}
@@ -370,7 +389,7 @@ function BlendGame({ onBack, userId, items }) {
 
         <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
           <TouchableOpacity style={[bg.blendBtn, blended && bg.blendBtnDone]} onPress={blended ? handleNext : handleBlend} activeOpacity={0.8}>
-            <Text style={bg.blendBtnText}>{blended ? `"${current.word}"  →  Next` : 'BLEND!'}</Text>
+            <Text style={bg.blendBtnText}>{blended ? `"${current.word}" → Next` : 'BLEND'}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -378,21 +397,21 @@ function BlendGame({ onBack, userId, items }) {
   );
 }
 
-const bg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFEBEE' },
-  helpBtn: { padding: 6, backgroundColor: 'rgba(229,57,53,0.15)', borderRadius: 20 },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#E53935' },
+const makeBgStyles = (primary, light) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: light },
+  helpBtn: { padding: 6, backgroundColor: primary + '26', borderRadius: 20 },
+  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: primary },
   emoji: { fontSize: 80, marginBottom: 8 },
-  instruction: { fontSize: 15, color: '#B71C1C', fontWeight: '600', marginBottom: 20, backgroundColor: '#FFEBEE', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6 },
+  instruction: { fontSize: 15, color: primary, fontWeight: '600', marginBottom: 20, backgroundColor: light, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6 },
   phonemeRow: { flexDirection: 'row', gap: 10, marginBottom: 32, flexWrap: 'wrap', justifyContent: 'center' },
-  phonemeTile: { backgroundColor: '#FFEBEE', borderWidth: 3, borderColor: '#E53935', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, minWidth: 58, alignItems: 'center', elevation: 3, shadowColor: '#E53935', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
-  phonemeTileActive: { borderWidth: 3, borderColor: '#B71C1C', transform: [{ scale: 1.1 }] },
-  phonemeTileTapped: { backgroundColor: '#E53935', borderColor: '#B71C1C' },
+  phonemeTile: { backgroundColor: light, borderWidth: 3, borderColor: primary, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 14, minWidth: 58, alignItems: 'center', elevation: 3, shadowColor: primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  phonemeTileActive: { borderWidth: 3, borderColor: primary, transform: [{ scale: 1.1 }] },
+  phonemeTileTapped: { backgroundColor: primary, borderColor: primary },
   phonemeTileActiveTapped: { borderWidth: 3, borderColor: '#fff' },
-  phonemeText: { fontSize: 26, fontWeight: 'bold', color: '#E53935' },
-  phonemeTextActive: { color: '#B71C1C' },
+  phonemeText: { fontSize: 26, fontWeight: 'bold', color: primary },
+  phonemeTextActive: { color: primary },
   phonemeTextTapped: { color: '#fff' },
-  blendBtn: { backgroundColor: '#E53935', borderRadius: 18, paddingHorizontal: 44, paddingVertical: 16, elevation: 4, shadowColor: '#E53935', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
+  blendBtn: { backgroundColor: primary, borderRadius: 18, paddingHorizontal: 44, paddingVertical: 16, elevation: 4, shadowColor: primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
   blendBtnDone: { backgroundColor: '#43A047' },
   blendBtnText: { fontSize: 22, fontWeight: 'bold', color: '#fff', letterSpacing: 1 },
 });
@@ -400,6 +419,8 @@ const bg = StyleSheet.create({
 // ─── Segment Game ──────────────────────────────────────────────────────────────
 
 function SegmentGame({ onBack, userId, items }) {
+  const { colors } = useTheme();
+  const sg = useMemo(() => makeSgStyles(colors.primary, colors.primaryLight), [colors.primary, colors.primaryLight]);
   const segWords = useState(() => shuffleArr(items))[0];
   const [idx, setIdx] = useState(0);
   const [taps, setTaps] = useState(0);
@@ -462,8 +483,8 @@ function SegmentGame({ onBack, userId, items }) {
     }
   };
 
-  if (!segWords.length) return <EmptyContent label="Count the Sounds!" color="#FFD600" onBack={onBack} />;
-  if (finished) return <ScoreScreen score={score} total={segWords.length} onBack={onBack} label="Count the Sounds!" color="#FFD600" />;
+  if (!segWords.length) return <EmptyContent label="Count the Sounds!" color={colors.primary} onBack={onBack} />;
+  if (finished) return <ScoreScreen score={score} total={segWords.length} onBack={onBack} label="Count the Sounds!" color={colors.primary} />;
 
   const isCorrect = answered && taps === current.count;
 
@@ -516,29 +537,29 @@ function SegmentGame({ onBack, userId, items }) {
   );
 }
 
-const sg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFDE7' },
-  headerSub: { color: '#F57F17', fontSize: 14, fontWeight: '700' },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#FFD600' },
-  wordBox: { alignItems: 'center', backgroundColor: '#FFFDE7', borderRadius: 20, padding: 16, width: '68%', marginBottom: 14, borderWidth: 2, borderColor: '#FFD600' },
+const makeSgStyles = (primary, light) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: light },
+  headerSub: { color: primary, fontSize: 14, fontWeight: '700' },
+  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: primary },
+  wordBox: { alignItems: 'center', backgroundColor: light, borderRadius: 20, padding: 16, width: '68%', marginBottom: 14, borderWidth: 2, borderColor: primary },
   wordEmoji: { fontSize: 52 },
-  wordText: { fontSize: 32, fontWeight: 'bold', color: '#F57F17', marginTop: 4 },
-  tapHint: { fontSize: 12, color: '#FF8F00', marginTop: 4, fontWeight: '600' },
+  wordText: { fontSize: 32, fontWeight: 'bold', color: primary, marginTop: 4 },
+  tapHint: { fontSize: 12, color: primary, marginTop: 4, fontWeight: '600' },
   instruction: { fontSize: 14, color: '#5D4037', fontWeight: '600', marginBottom: 14, textAlign: 'center' },
-  drum: { backgroundColor: '#FFD600', borderRadius: 50, width: 110, height: 110, justifyContent: 'center', alignItems: 'center', elevation: 6, marginBottom: 18, shadowColor: '#FFD600', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8 },
+  drum: { backgroundColor: primary, borderRadius: 50, width: 110, height: 110, justifyContent: 'center', alignItems: 'center', elevation: 6, marginBottom: 18, shadowColor: primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8 },
   drumText: { fontSize: 40 },
-  drumCount: { fontSize: 24, fontWeight: 'bold', color: '#5D4037' },
+  drumCount: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
   boxRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap', justifyContent: 'center' },
-  soundBox: { width: 48, height: 48, borderWidth: 3, borderColor: '#FFD600', borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFDE7' },
-  soundBoxFilled: { backgroundColor: '#FFD600', borderColor: '#F57F17' },
-  soundBoxActive: { borderColor: '#F57F17', borderWidth: 3 },
-  phonemeInBox: { fontSize: 12, fontWeight: 'bold', color: '#5D4037' },
+  soundBox: { width: 48, height: 48, borderWidth: 3, borderColor: primary, borderRadius: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: light },
+  soundBoxFilled: { backgroundColor: primary, borderColor: primary },
+  soundBoxActive: { borderColor: primary, borderWidth: 3 },
+  phonemeInBox: { fontSize: 12, fontWeight: 'bold', color: '#fff' },
   result: { fontSize: 17, fontWeight: 'bold', marginBottom: 14, textAlign: 'center' },
   resultCorrect: { color: '#43A047' },
   resultWrong: { color: '#E53935' },
-  checkBtn: { backgroundColor: '#FFD600', borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: '#FFD600', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.5, shadowRadius: 6 },
-  checkBtnNext: { backgroundColor: '#FF8F00' },
-  checkBtnText: { color: '#5D4037', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
+  checkBtn: { backgroundColor: primary, borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.5, shadowRadius: 6 },
+  checkBtnNext: { backgroundColor: primary },
+  checkBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
 });
 
 // ─── Score Screen ──────────────────────────────────────────────────────────────
@@ -590,6 +611,8 @@ const ss = StyleSheet.create({
 // ─── Sound Match Game ───────────────────────────────────────────────────────────
 
 function SoundMatchGame({ onBack, userId, items: itemsProp }) {
+  const { colors } = useTheme();
+  const smg = useMemo(() => makeSmgStyles(colors.primary, colors.primaryLight), [colors.primary, colors.primaryLight]);
   const items = useState(() => shuffleArr(itemsProp ?? []))[0];
   const [idx, setIdx] = useState(0);
   const [wrongTapped, setWrongTapped] = useState(new Set());
@@ -597,7 +620,7 @@ function SoundMatchGame({ onBack, userId, items: itemsProp }) {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  if (!items.length) return <EmptyContent label="Sound Match!" color="#43A047" onBack={onBack} />;
+  if (!items.length) return <EmptyContent label="Sound Match!" color={colors.primary} onBack={onBack} />;
 
   const current = items[idx];
 
@@ -636,7 +659,7 @@ function SoundMatchGame({ onBack, userId, items: itemsProp }) {
     setSolved(false);
   };
 
-  if (finished) return <ScoreScreen score={score} total={items.length} onBack={onBack} label="Sound Match!" color="#43A047" />;
+  if (finished) return <ScoreScreen score={score} total={items.length} onBack={onBack} label="Sound Match!" color={colors.primary} />;
 
   const progressPct = `${(idx / items.length) * 100}%`;
 
@@ -713,124 +736,46 @@ function SoundMatchGame({ onBack, userId, items: itemsProp }) {
   );
 }
 
-const smg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f9ec' },
-  headerSub: { color: '#7dc668', fontSize: 14, fontWeight: '700' },
-
-  // Progress bar
+const makeSmgStyles = (primary, light) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: light },
+  headerSub: { color: primary, fontSize: 14, fontWeight: '700' },
   progressWrap: { paddingHorizontal: 20, paddingBottom: 10 },
-  progressBg: { backgroundColor: '#d6eecf', borderRadius: 99, height: 7, overflow: 'hidden' },
-  progressFill: { backgroundColor: '#4caf50', height: 7, borderRadius: 99 },
-
-  // Question card
-  card: {
-    marginHorizontal: 16,
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    paddingTop: 10,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    overflow: 'visible',
-    elevation: 3,
-    shadowColor: '#64b450',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    minHeight: 300,
-  },
-  question: { fontSize: 16, color: '#6aaa50', fontWeight: '700', marginBottom: 6 },
-  letterContainer: {
-    width: '100%',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  letter: {
-    fontSize: 160,
-    fontWeight: '900',
-    color: '#2e7d32',
-    textAlign: 'center',
-  },
-
-  question2: { fontSize: 16, color: '#6aaa50', fontWeight: '700', marginTop: 6 },
-
-  // 2×2 answer grid
-  optionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    margin: 20,
-    justifyContent: 'center',
-  },
-  optionBtn: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    borderWidth: 2.5,
-    borderColor: '#a8dfa0',
-    paddingVertical: 22,
-    width: '46%',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#64b450',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-  },
-  optionCorrect: {
-    backgroundColor: '#c8f0b8',
-    borderRadius: 18,
-    borderWidth: 2.5,
-    borderColor: '#4caf50',
-    paddingVertical: 22,
-    width: '46%',
-    alignItems: 'center',
-    elevation: 2,
-  },
-  optionWrong: {
-    backgroundColor: '#fde8e8',
-    borderRadius: 18,
-    borderWidth: 2.5,
-    borderColor: '#e57373',
-    paddingVertical: 22,
-    width: '46%',
-    alignItems: 'center',
-    elevation: 2,
-  },
-  optionText: { fontSize: 22, fontWeight: '800', color: '#3a7d2c', letterSpacing: 1 },
-  optionTextCorrect: { fontSize: 22, fontWeight: '800', color: '#2a6a1c', letterSpacing: 1 },
+  progressBg: { backgroundColor: light, borderRadius: 99, height: 7, overflow: 'hidden' },
+  progressFill: { backgroundColor: primary, height: 7, borderRadius: 99 },
+  card: { marginHorizontal: 16, backgroundColor: '#fff', borderRadius: 24, paddingTop: 10, paddingBottom: 16, paddingHorizontal: 20, alignItems: 'center', overflow: 'visible', elevation: 3, shadowColor: primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 12, minHeight: 300 },
+  question: { fontSize: 16, color: primary, fontWeight: '700', marginBottom: 6 },
+  letterContainer: { width: '100%', alignItems: 'center', paddingVertical: 16 },
+  letter: { fontSize: 160, fontWeight: '900', color: primary, textAlign: 'center' },
+  question2: { fontSize: 16, color: primary, fontWeight: '700', marginTop: 6 },
+  optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, margin: 20, justifyContent: 'center' },
+  optionBtn: { backgroundColor: '#fff', borderRadius: 18, borderWidth: 2.5, borderColor: primary + '66', paddingVertical: 22, width: '46%', alignItems: 'center', elevation: 2, shadowColor: primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+  optionCorrect: { backgroundColor: light, borderRadius: 18, borderWidth: 2.5, borderColor: primary, paddingVertical: 22, width: '46%', alignItems: 'center', elevation: 2 },
+  optionWrong: { backgroundColor: '#fde8e8', borderRadius: 18, borderWidth: 2.5, borderColor: '#e57373', paddingVertical: 22, width: '46%', alignItems: 'center', elevation: 2 },
+  optionText: { fontSize: 22, fontWeight: '800', color: primary, letterSpacing: 1 },
+  optionTextCorrect: { fontSize: 22, fontWeight: '800', color: primary, letterSpacing: 1 },
   optionTextWrong: { fontSize: 22, fontWeight: '800', color: '#c0392b', letterSpacing: 1 },
-
-  // Next button
-  nextBtn: {
-    backgroundColor: '#43A047',
-    borderRadius: 20,
-    marginHorizontal: 20,
-    paddingVertical: 18,
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#43A047',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-  },
+  nextBtn: { backgroundColor: primary, borderRadius: 20, marginHorizontal: 20, paddingVertical: 18, alignItems: 'center', elevation: 4, shadowColor: primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
   nextBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 20, letterSpacing: 1 },
 });
 
 // ─── Word Builder Game ────────────────────────────────────────────────────────
 
 function WordBuilderGame({ onBack, userId, items }) {
+  const { colors } = useTheme();
+  const wbg = useMemo(() => makeWbgStyles(colors.primary, colors.primaryLight), [colors.primary, colors.primaryLight]);
   const words = useState(() => shuffleArr(items ?? []))[0];
   const [idx, setIdx] = useState(0);
   const [built, setBuilt] = useState([]);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  if (!words.length) return <EmptyContent label="Word Builder!" color="#1E88E5" onBack={onBack} />;
+  if (!words.length) return <EmptyContent label="Word Builder!" color={colors.primary} onBack={onBack} />;
 
   const current = words[idx];
   const shuffledPhonemes = useMemo(() => shuffleArr(current.phonemes), [idx]);
 
   const handlePhonemePress = (ph) => {
+    ttsService.speakActivityPhonics(ph);
     if (built.includes(ph)) {
       setBuilt(b => b.filter(p => p !== ph));
     } else {
@@ -858,7 +803,7 @@ function WordBuilderGame({ onBack, userId, items }) {
     }, 1500);
   };
 
-  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Word Builder!" color="#1E88E5" />;
+  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Word Builder!" color={colors.primary} />;
 
   const isComplete = built.length === current.phonemes.length;
 
@@ -906,36 +851,38 @@ function WordBuilderGame({ onBack, userId, items }) {
   );
 }
 
-const wbg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#E3F2FD' },
-  headerSub: { color: '#1565C0', fontSize: 14, fontWeight: '700' },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#1E88E5' },
+const makeWbgStyles = (primary, light) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: light },
+  headerSub: { color: primary, fontSize: 14, fontWeight: '700' },
+  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: primary },
   emoji: { fontSize: 65, marginBottom: 10 },
-  instruction: { fontSize: 17, color: '#1565C0', fontWeight: '600', marginBottom: 18 },
-  buildArea: { flexDirection: 'row', gap: 8, minHeight: 72, backgroundColor: '#E3F2FD', borderRadius: 16, padding: 14, marginBottom: 22, alignItems: 'center', justifyContent: 'center', width: '100%', borderWidth: 2, borderColor: '#1E88E5', borderStyle: 'dashed' },
-  placeholder: { color: '#90CAF9', fontSize: 15, fontWeight: '600' },
-  builtTile: { backgroundColor: '#1E88E5', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, borderWidth: 2, borderColor: '#1565C0', elevation: 3 },
+  instruction: { fontSize: 17, color: primary, fontWeight: '600', marginBottom: 18 },
+  buildArea: { flexDirection: 'row', gap: 8, minHeight: 72, backgroundColor: light, borderRadius: 16, padding: 14, marginBottom: 22, alignItems: 'center', justifyContent: 'center', width: '100%', borderWidth: 2, borderColor: primary, borderStyle: 'dashed' },
+  placeholder: { color: primary + '88', fontSize: 15, fontWeight: '600' },
+  builtTile: { backgroundColor: primary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 12, borderWidth: 2, borderColor: primary, elevation: 3 },
   builtText: { fontSize: 26, fontWeight: 'bold', color: '#fff' },
   phonemeBank: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  phonemeTile: { backgroundColor: '#BBDEFB', borderRadius: 14, paddingHorizontal: 22, paddingVertical: 16, elevation: 4, borderWidth: 2, borderColor: '#1E88E5', shadowColor: '#1E88E5', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
+  phonemeTile: { backgroundColor: light, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 16, elevation: 4, borderWidth: 2, borderColor: primary, shadowColor: primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4 },
   phonemeUsed: { backgroundColor: '#ECEFF1', elevation: 0, borderColor: '#CFD8DC' },
-  phonemeText: { fontSize: 24, fontWeight: 'bold', color: '#1565C0' },
+  phonemeText: { fontSize: 24, fontWeight: 'bold', color: primary },
   phonemeTextUsed: { color: '#B0BEC5' },
-  checkBtn: { backgroundColor: '#1E88E5', borderRadius: 16, paddingHorizontal: 52, paddingVertical: 16, elevation: 4, shadowColor: '#1E88E5', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
-  checkBtnDisabled: { backgroundColor: '#90CAF9', elevation: 0 },
+  checkBtn: { backgroundColor: primary, borderRadius: 16, paddingHorizontal: 52, paddingVertical: 16, elevation: 4, shadowColor: primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
+  checkBtnDisabled: { backgroundColor: primary + '66', elevation: 0 },
   checkBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
 });
 
 // ─── Tricky Words Game ──────────────────────────────────────────────────────────
 
 function TrickyWordsGame({ onBack, userId, items }) {
+  const { colors } = useTheme();
+  const twg = useMemo(() => makeTwgStyles(colors.primary, colors.primaryLight), [colors.primary, colors.primaryLight]);
   const words = useState(() => shuffleArr(items ?? []))[0];
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
 
-  if (!words.length) return <EmptyContent label="Tricky Words!" color="#8E24AA" onBack={onBack} />;
+  if (!words.length) return <EmptyContent label="Tricky Words!" color={colors.primary} onBack={onBack} />;
 
   const current = words[idx];
   const options = useMemo(() => {
@@ -965,7 +912,7 @@ function TrickyWordsGame({ onBack, userId, items }) {
     setSelected(null);
   };
 
-  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Tricky Words!" color="#8E24AA" />;
+  if (finished) return <ScoreScreen score={score} total={words.length} onBack={onBack} label="Tricky Words!" color={colors.primary} />;
 
   return (
     <View style={twg.container}>
@@ -1006,21 +953,21 @@ function TrickyWordsGame({ onBack, userId, items }) {
   );
 }
 
-const twg = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3E5F5' },
-  headerSub: { color: '#6A1B9A', fontSize: 14, fontWeight: '700' },
-  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: '#8E24AA' },
+const makeTwgStyles = (primary, light) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: light },
+  headerSub: { color: primary, fontSize: 14, fontWeight: '700' },
+  card: { flex: 1, margin: 16, backgroundColor: '#fff', borderRadius: 24, padding: 24, alignItems: 'center', elevation: 6, borderWidth: 2, borderColor: primary },
   emoji: { fontSize: 52, marginBottom: 6 },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#6A1B9A', marginBottom: 16 },
-  sentenceBox: { backgroundColor: '#F3E5F5', borderRadius: 16, padding: 18, width: '100%', marginBottom: 18, borderWidth: 2, borderColor: '#8E24AA' },
+  title: { fontSize: 20, fontWeight: 'bold', color: primary, marginBottom: 16 },
+  sentenceBox: { backgroundColor: light, borderRadius: 16, padding: 18, width: '100%', marginBottom: 18, borderWidth: 2, borderColor: primary },
   sentence: { fontSize: 22, color: '#37474F', textAlign: 'center', fontWeight: '600' },
-  question: { fontSize: 15, color: '#6A1B9A', fontWeight: '600', marginBottom: 18 },
+  question: { fontSize: 15, color: primary, fontWeight: '600', marginBottom: 18 },
   optionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 18 },
-  optionBtn: { backgroundColor: '#F3E5F5', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 16, borderWidth: 3, borderColor: '#8E24AA', minWidth: 90, alignItems: 'center', elevation: 3, shadowColor: '#8E24AA', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
+  optionBtn: { backgroundColor: light, borderRadius: 16, paddingHorizontal: 24, paddingVertical: 16, borderWidth: 3, borderColor: primary, minWidth: 90, alignItems: 'center', elevation: 3, shadowColor: primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 },
   optionCorrect: { backgroundColor: '#E8F5E9', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 16, borderWidth: 3, borderColor: '#43A047', minWidth: 90, alignItems: 'center' },
   optionWrong: { backgroundColor: '#FFEBEE', borderRadius: 16, paddingHorizontal: 24, paddingVertical: 16, borderWidth: 3, borderColor: '#E53935', minWidth: 90, alignItems: 'center' },
   optionText: { fontSize: 22, fontWeight: 'bold', color: '#37474F' },
-  nextBtn: { backgroundColor: '#8E24AA', borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: '#8E24AA', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
+  nextBtn: { backgroundColor: primary, borderRadius: 16, paddingHorizontal: 44, paddingVertical: 14, elevation: 4, shadowColor: primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.4, shadowRadius: 6 },
   nextBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 18, letterSpacing: 1 },
 });
 
@@ -1094,7 +1041,7 @@ export default function PhonicsActivityScreen() {
 
   return (
     <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
-        <StudentPageHeader title="Phonics Games" />
+        {!mode && <StudentPageHeader title="Phonics Games" />}
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />

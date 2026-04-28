@@ -11,23 +11,29 @@ import { useTheme } from '../../context/ThemeContext';
 import { TABLES } from '../../lib/constants';
 
 const ACTIVITY_LABELS = {
-  phonics: 'Phonics', phonics_blend: 'Blending',
-  phonics_segment: 'Segmenting', spelling: 'Spelling', writing: 'Writing',
-  reading: 'Reading', phonological_awareness: 'Phonological',
-  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice', text_to_speech: 'Read Aloud',
+  phonics: 'Phonics', phonics_blend: 'Blend It',
+  phonics_segment: 'Count the Sounds', phonics_sound_match: 'Sound Match',
+  phonics_word_build: 'Word Builder', phonics_tricky: 'Tricky Words',
+  spelling: 'Spelling', writing: 'Writing',
+  reading: 'Reading', phonological_awareness: 'Sound Awareness',
+  phonics_activity: 'Mini Games', speech_to_text: 'Speech Practice',
+  text_to_speech: 'Read Aloud', text_recognition: 'Magic Scanner',
 };
 const ACTIVITY_ICON_NAMES = {
   phonics: 'mic', phonics_blend: 'link-2',
-  phonics_segment: 'scissors', spelling: 'type', writing: 'pencil',
+  phonics_segment: 'hash', phonics_sound_match: 'music',
+  phonics_word_build: 'type', phonics_tricky: 'star',
+  spelling: 'type', writing: 'pencil',
   reading: 'book-open', phonological_awareness: 'headphones',
-  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2', text_to_speech: 'volume-2',
+  phonics_activity: 'gamepad-2', speech_to_text: 'mic-2',
+  text_to_speech: 'volume-2', text_recognition: 'scan-line',
 };
 
 export default function ParentActivityLogScreen({ route }) {
   const { colors, a11yTextStyle } = useTheme();
   const { child } = route.params || {};
-  const sid = child?.profiles?.id ?? child?.student_id;
-  const name = child?.profiles?.full_name ?? 'Child';
+  const sid = child?.profiles?.id ?? child?.student_id ?? child?.id;
+  const name = child?.profiles?.full_name ?? child?.full_name ?? 'Child';
 
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +51,7 @@ export default function ParentActivityLogScreen({ route }) {
       const { data, error } = await supabase
         .from(TABLES.SESSION_LOGS)
         .select('*')
-        .eq('student_id', sid)
+        .or(`student_id.eq.${sid},user_id.eq.${sid}`)
         .gte('created_at', since.toISOString())
         .order('created_at', { ascending: false });
 
@@ -83,12 +89,22 @@ export default function ParentActivityLogScreen({ route }) {
 
   const changeDays = (d) => { setDaysBack(d); fetchSessions(d); };
 
+  const formatDateLabel = (isoString) => {
+    const d = new Date(isoString);
+    const today = new Date();
+    const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+    const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (sameDay(d, today)) return 'Today';
+    if (sameDay(d, yesterday)) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   // Group sessions by date
   const grouped = sessions.reduce((acc, s) => {
-    if (!s.created_at) return acc; // Skip sessions without valid dates
-    const date = new Date(s.created_at).toLocaleDateString();
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(s);
+    if (!s.created_at) return acc;
+    const label = formatDateLabel(s.created_at);
+    if (!acc[label]) acc[label] = [];
+    acc[label].push(s);
     return acc;
   }, {});
 
@@ -111,7 +127,7 @@ export default function ParentActivityLogScreen({ route }) {
             <Icon name={ACTIVITY_ICON_NAMES[session.activity_type] || 'bar-chart'} size="md" color="#607D8B" />
             <View style={{ flex: 1 }}>
               <Text style={s.sessionType}>{ACTIVITY_LABELS[session.activity_type] || session.activity_type}</Text>
-              <Text style={s.sessionScore}>{session.score}/{session.total} correct</Text>
+              <Text style={s.sessionScore}>{session.score}/{session.total} correct · {new Date(session.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <View style={[s.accBadge, { backgroundColor: accColor + '20', borderColor: accColor }]}>

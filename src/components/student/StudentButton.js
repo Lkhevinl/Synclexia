@@ -29,11 +29,7 @@ export default function StudentButton({ children, onPress, variant = 'primary', 
     <TouchableOpacity
       onPress={disabled ? undefined : onPress}
       activeOpacity={0.85}
-      style={[
-        styles.outer,
-        { borderBottomColor: SHADOW_COLORS[activeVariant] || c.primaryDark },
-        style,
-      ]}
+      style={[styles.outer, style]}
     >
       <View style={[styles.gradient, { backgroundColor: FILL_COLORS[activeVariant] || c.primary }]}>
         {typeof children === 'string'
@@ -47,7 +43,6 @@ export default function StudentButton({ children, onPress, variant = 'primary', 
 const styles = StyleSheet.create({
   outer: {
     borderRadius: 9999,
-    borderBottomWidth: 4,
     alignSelf: 'flex-start',
   },
   gradient: {

@@ -118,7 +118,7 @@ export default function SpeechToTextScreen() {
   const handleClear = () => { transcriptRef.current = ''; setTranscript(''); setError(null); };
 
   return (
-    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']}>
+    <ScreenWrapper role="student" padded={false}>
       <View style={styles.padded}>
         <StudentPageHeader title="Speech to Text" />
       </View>

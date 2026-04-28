@@ -621,18 +621,6 @@ export default function ParentDashboardScreen({ navigation }) {
                 </View>
               )}
 
-              {/* View Full Report Button */}
-              <TouchableOpacity
-                style={s.reportViewBtn}
-                onPress={() => navigation.navigate('AIInsights', { studentId: childProfile?.id || child?.profiles?.id || child?.student_id })}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={[colors.primary, colors.primaryDark ?? colors.primary]} style={s.reportViewGradient}>
-                  <Icon name="file-text" size="md" color="#fff" />
-                  <Text style={s.reportViewText}>View Detailed Report</Text>
-                  <Icon name="arrow-right" size="sm" color="rgba(255,255,255,0.8)" />
-                </LinearGradient>
-              </TouchableOpacity>
             </View>
           </>
         )}
@@ -641,10 +629,10 @@ export default function ParentDashboardScreen({ navigation }) {
         <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Quick Access</Text>
         <View style={s.navList}>
           {[
-            { icon: 'bar-chart', label: 'Progress Report', desc: 'View detailed learning history', screen: 'ParentProgress' },
+            { icon: 'bar-chart', label: 'Progress Report', desc: 'View detailed learning history', screen: 'AIInsights', params: { studentId: childProfile?.id || child?.profiles?.id || child?.student_id } },
             { icon: 'time',      label: 'Activity Log',    desc: 'See recent sessions and exercises', screen: 'ParentActivityLog' },
           ].map((item) => (
-            <TouchableOpacity key={item.screen} style={s.navCard} onPress={() => navigation.navigate(item.screen, navParams)} activeOpacity={0.85}>
+            <TouchableOpacity key={item.screen} style={s.navCard} onPress={() => navigation.navigate(item.screen, item.params ?? navParams)} activeOpacity={0.85}>
               <View style={s.navIconSquare}>
                 <Icon name={item.icon} size="md" color="#fff" />
               </View>
@@ -710,54 +698,6 @@ export default function ParentDashboardScreen({ navigation }) {
           </>
         )}
 
-        {/* ── Progress Snapshot ── */}
-        <Text style={[s.sectionTitle, { fontSize: theme.fontSize + 2 }, a11yTextStyle]}>Progress Snapshot (14 days)</Text>
-        <View style={s.card}>
-          {!progress || progress.totalSessions === 0 ? (
-            <View style={s.emptySnap}>
-              <Icon name="bar-chart" size="lg" color="#ddd" />
-              <Text style={[s.emptySnapText, { fontSize: theme.fontSize }, a11yTextStyle]}>No activity in the last 14 days</Text>
-            </View>
-          ) : (
-            <>
-              <View style={s.snapRow}>
-                <View style={s.snapItem}>
-                  <Text style={[s.snapVal, { fontSize: theme.fontSize + 4 }, a11yTextStyle]}>{progress.totalSessions}</Text>
-                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Sessions</Text>
-                </View>
-                <View style={s.snapDiv} />
-                <View style={s.snapItem}>
-                  <Text style={[s.snapVal, {
-                    color: progress.avgAccuracy >= 70 ? '#4CAF50' : progress.avgAccuracy >= 40 ? '#FF9800' : '#F44336',
-                    fontSize: theme.fontSize + 4
-                  }, a11yTextStyle]}>{progress.avgAccuracy}%</Text>
-                  <Text style={[s.snapLbl, { fontSize: theme.fontSize - 5 }, a11yTextStyle]}>Avg Accuracy</Text>
-                </View>
-              </View>
-              {Object.entries(progress.byActivity).slice(0, 3).map(([type, data]) => {
-                const acc = data.totalItems > 0 ? Math.round((data.totalScore / data.totalItems) * 100) : 0;
-                const color = acc >= 70 ? '#4CAF50' : acc >= 40 ? '#FF9800' : '#F44336';
-                return (
-                  <View key={type} style={s.actRow}>
-                    <Icon name={ACTIVITY_ICON_NAMES[type] || 'bar-chart'} size="md" color="#607D8B" />
-                    <View style={{ flex: 1 }}>
-                      <View style={s.actTop}>
-                        <Text style={[s.actLabel, { fontSize: theme.fontSize }, a11yTextStyle]}>{ACTIVITY_LABELS[type] || type}</Text>
-                        <Text style={[s.actAcc, { color, fontSize: theme.fontSize }, a11yTextStyle]}>{acc}%</Text>
-                      </View>
-                      <View style={s.barBg}>
-                        <View style={[s.barFill, { width: `${Math.min(acc, 100)}%`, backgroundColor: color }]} />
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
-              <TouchableOpacity style={s.viewAll} onPress={() => navigation.navigate('ParentProgress', navParams)}>
-                <Text style={[s.viewAllText, { fontSize: theme.fontSize }, a11yTextStyle]}>View full report</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>

@@ -14,9 +14,6 @@ import { logSession } from '../../lib/analyticsHelper';
 import { supabase } from '../../lib/supabase';
 import { TABLES } from '../../lib/constants';
 
-// Color palette — cycled by level number
-const LEVEL_COLORS = ['#FF7043', '#FFA726', '#EC407A', '#AB47BC', '#5C6BC0', '#26A69A', '#42A5F5', '#66BB6A'];
-const storyColor = (level) => LEVEL_COLORS[((parseInt(level) || 1) - 1) % LEVEL_COLORS.length];
 
 export default function ReadingScreen() {
   const { profile } = useAuth();
@@ -158,7 +155,7 @@ export default function ReadingScreen() {
   const storyTokens = selectedStory?.content ? tokenize(selectedStory.content).tokens : [];
 
   return (
-    <ScreenWrapper role="student" padded={false} edges={['left', 'right', 'bottom']} style={{ backgroundColor: colors.surface }}>
+    <ScreenWrapper role="student" padded={false} style={{ backgroundColor: colors.surface }}>
       <StudentPageHeader title="My Library" />
 
       {/* 2. LOADING / BOOKSHELF GRID */}
@@ -182,7 +179,7 @@ export default function ReadingScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.bookCover, { backgroundColor: storyColor(item.level) }]}
+              style={[styles.bookCover, { backgroundColor: colors.primary }]}
               onPress={() => handleRead(item)}
               activeOpacity={0.8}
             >
@@ -201,7 +198,7 @@ export default function ReadingScreen() {
       <Modal visible={!!selectedStory} animationType="slide" transparent onRequestClose={closeBook}>
         <View style={styles.modalOverlay}>
           <StudentCard style={styles.readerContainer}>
-            <View style={[styles.readerHeader, { backgroundColor: selectedStory ? storyColor(selectedStory.level) : c.primaryDark }]}>
+            <View style={[styles.readerHeader, { backgroundColor: colors.primary }]}>
               <Text style={styles.readerTitle} numberOfLines={1}>{selectedStory?.title}</Text>
               <TouchableOpacity onPress={closeBook} style={styles.closeBtn}>
                 <Icon name="x" size="md" color="#fff" />

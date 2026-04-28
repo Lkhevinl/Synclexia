@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   bodyContent: { paddingBottom: 100 },
 
-  cardContainer: { backgroundColor: '#fff', borderRadius: 28, borderWidth: 4, borderColor: '#fff', padding: 10, elevation: 8, shadowColor: c.primary, shadowOffset:{width:0,height:4}, shadowOpacity:0.15, shadowRadius:10, marginBottom: 16, justifyContent: 'center' },
+  cardContainer: { backgroundColor: '#fff', borderRadius: 28, borderWidth: 4, borderColor: '#fff', padding: 10, marginBottom: 16, justifyContent: 'center' },
   previewBox: { height: 260, backgroundColor: '#F5F7FA', borderRadius: 18, borderStyle: 'dashed', borderWidth: 2, borderColor: '#B0BEC5', overflow: 'hidden', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
 
